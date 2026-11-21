@@ -52,6 +52,7 @@ services:
       - 'host.docker.internal:host-gateway'
     volumes:
       - ./backend:/workspace/backend
+      - ./.private/backend-test-target:/workspace/backend/target
       - maven:/root/.m2
       - /var/run/docker.sock:/var/run/docker.sock
 
