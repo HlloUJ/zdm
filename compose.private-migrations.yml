@@ -1,0 +1,19 @@
+# Existing databases validate the exact two original files provided by the owner.
+x-private-migrations: &private-migrations
+  - type: bind
+    source: ${ZDM_PRIVATE_MIGRATIONS_DIR:?}/V5__set_builtin_super_admin.sql
+    target: /workspace/backend/src/main/resources/db/migration/V5__set_builtin_super_admin.sql
+    read_only: true
+    bind:
+      create_host_path: false
+  - type: bind
+    source: ${ZDM_PRIVATE_MIGRATIONS_DIR:?}/V132__grant_builtin_super_admin_supply_chain_identity.sql
+    target: /workspace/backend/src/main/resources/db/migration/V132__grant_builtin_super_admin_supply_chain_identity.sql
+    read_only: true
+    bind:
+      create_host_path: false
+services:
+  backend:
+    volumes: *private-migrations
+  backend-tools:
+    volumes: *private-migrations

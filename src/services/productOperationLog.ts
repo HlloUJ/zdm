@@ -1,0 +1,136 @@
+export interface ProductOperationLogRow {
+  id: number;
+  subjectName: string;
+  subjectId: number;
+  subjectCode?: string;
+  operationType: string;
+  operationSummary: string;
+  operatorName: string;
+  operatedAt: string;
+  operationSource?: string;
+  beforeStatus?: string | null;
+  afterStatus?: string | null;
+  standardReason?: string | null;
+  detailReason?: string | null;
+}
+
+// Every product log uses this vocabulary. A screen may show only the actions
+// that its business client can actually produce.
+export const productOperationTypes: Record<string, string> = {
+  CREATE: '发布商品',
+  SELECT: '放入仓库',
+  UPDATE: '编辑商品',
+  SOURCE_UPDATE: '供应链编辑商品',
+  PRICE_UPDATE: '编辑商品',
+  SHELF: '上架',
+  OFF_SHELF: '下架',
+  RESTORE: '放回仓库',
+  RESTORE_WAREHOUSE: '放回仓库',
+  RESTORE_RECYCLE: '放回仓库',
+  DELETE_TO_RECYCLE: '删除至回收站',
+  PHYSICAL_DELETE: '物理删除',
+  PURGE: '彻底删除',
+  SOLD_OUT: '售完',
+  STATUS_UPDATE: '状态变更',
+  SOURCE_SHELF: '供应链上架',
+  SOURCE_OFF_SHELF: '供应链下架',
+  SOURCE_DELETE: '供应链彻底删除',
+  SOURCE_DELETE_TO_RECYCLE: '供应链删除至回收站',
+  SOURCE_PURGE: '供应链彻底删除',
+  SOURCE_INTERNAL: '供应链状态变更',
+  OPERATIONS_OFF_SHELF: '运营管理平台下架',
+  OPERATIONS_SHELF: '运营管理平台上架',
+  OPERATIONS_DELETE_TO_RECYCLE: '运营管理平台删除至回收站',
+  OPERATIONS_PURGE: '运营管理平台彻底删除',
+};
+
+const fixedSummaries: Record<string, string> = {
+  CREATE: '发布商品',
+  SELECT: '从商品中心放入本店仓库',
+  UPDATE: '编辑商品',
+  PRICE_UPDATE: '编辑商品',
+  SHELF: '上架商品',
+  OFF_SHELF: '下架商品',
+  RESTORE: '放回仓库',
+  RESTORE_WAREHOUSE: '放回仓库',
+  RESTORE_RECYCLE: '放回仓库',
+  DELETE_TO_RECYCLE: '删除至回收站',
+  PURGE: '彻底删除商品',
+  PHYSICAL_DELETE: '物理删除商品',
+  SOLD_OUT: '商品售罄',
+  SOURCE_OFF_SHELF: '供应链已下架该商品',
+  SOURCE_DELETE: '供应链已彻底删除该商品',
+  SOURCE_DELETE_TO_RECYCLE: '供应链已将该商品删除至回收站',
+  SOURCE_PURGE: '供应链已彻底删除该商品',
+  OPERATIONS_OFF_SHELF: '运营管理平台已下架该商品',
+  OPERATIONS_SHELF: '运营管理平台已重新上架该商品',
+  OPERATIONS_DELETE_TO_RECYCLE: '运营管理平台已将该商品删除至回收站',
+  OPERATIONS_PURGE: '运营管理平台已彻底删除该商品',
+};
+
+const finishedSourceSummaries: Record<string, string> = {
+  SOURCE_OFF_SHELF: '该商品已被供应链下架',
+  SOURCE_DELETE: '该商品已被供应链彻底删除',
+  SOURCE_DELETE_TO_RECYCLE: '该商品已被供应链删除至回收站',
+  SOURCE_PURGE: '该商品已被供应链彻底删除',
+  OPERATIONS_OFF_SHELF: '该商品已被运营管理平台下架',
+  OPERATIONS_DELETE_TO_RECYCLE: '该商品已被运营管理平台删除至回收站',
+  OPERATIONS_PURGE: '该商品已被运营管理平台彻底删除',
+};
+
+export function finishedProductOperationSummary(
+  row: Pick<ProductOperationLogRow, 'operationType' | 'operationSummary'>,
+): string {
+  return finishedSourceSummaries[row.operationType] || productOperationSummary(row);
+}
+
+export function productOperationTypeLabel(type: string): string {
+  return productOperationTypes[canonicalProductOperationType(type)] || type;
+}
+
+export function canonicalProductOperationType(type: string): string {
+  if (type === 'REENTRY') return 'SOURCE_SHELF';
+  if (type === 'PRICE_UPDATE') return 'UPDATE';
+  return ['RESTORE_WAREHOUSE', 'RESTORE_RECYCLE'].includes(type) ? 'RESTORE' : type;
+}
+
+export function productOperationSummary(
+  row: Pick<ProductOperationLogRow, 'operationType' | 'operationSummary'>,
+): string {
+  if (row.operationType === 'REENTRY') return '供应链已上架，商品进入运营管理平台仓库';
+  if (row.operationType === 'UPDATE' && /^该商品.*已被修改$/.test(row.operationSummary)) return row.operationSummary;
+  return fixedSummaries[row.operationType] || row.operationSummary;
+}
+
+export function productOperationTypeOptions(types: readonly string[]) {
+  return [...new Set(types.map(canonicalProductOperationType))].map((value) => ({
+    value,
+    label: productOperationTypeLabel(value),
+  }));
+}
+
+const commonActions = ['UPDATE', 'SHELF', 'OFF_SHELF', 'RESTORE', 'DELETE_TO_RECYCLE', 'PURGE', 'SOLD_OUT'];
+const supplyEffects = ['SOURCE_SHELF', 'SOURCE_OFF_SHELF', 'SOURCE_DELETE_TO_RECYCLE', 'SOURCE_PURGE'];
+const operationsEffects = ['OPERATIONS_OFF_SHELF', 'OPERATIONS_DELETE_TO_RECYCLE', 'OPERATIONS_PURGE'];
+
+export function productLogFilterOptions(client: 'supply-chain' | 'admin' | 'store', finished = false) {
+  const upstreamActions = supplyEffects.flatMap((type) =>
+    finished && type === 'SOURCE_OFF_SHELF' ? [type, 'SOURCE_UPDATE'] : [type],
+  );
+  return productOperationTypeOptions([
+    ...(client === 'supply-chain'
+      ? ['CREATE', 'UPDATE', ...commonActions]
+      : client === 'admin'
+        ? [...commonActions, ...upstreamActions]
+        : [
+            'SELECT',
+            ...commonActions,
+            ...upstreamActions.filter((type) => type !== 'SOURCE_SHELF'),
+            ...operationsEffects,
+          ]),
+  ]);
+}
+
+export function productLogTime(value?: string): string {
+  return value ? value.replace('T', ' ').slice(0, 16).replaceAll('-', '/') : '—';
+}

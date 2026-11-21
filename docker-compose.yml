@@ -1,0 +1,75 @@
+name: ${COMPOSE_PROJECT_NAME:?Run npm run env:init in this directory}
+
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: ${ZDM_DB_NAME:?}
+      MYSQL_USER: zdm_admin
+      MYSQL_PASSWORD: ${ZDM_DB_PASSWORD:?}
+      MYSQL_ROOT_PASSWORD: ${ZDM_DB_ROOT_PASSWORD:?}
+      TZ: Asia/Shanghai
+    volumes:
+      - database:/var/lib/mysql
+    healthcheck:
+      test: ['CMD-SHELL', 'mysqladmin ping -h 127.0.0.1 --silent']
+      interval: 5s
+      timeout: 5s
+      retries: 40
+
+  backend:
+    image: maven:3.9.9-eclipse-temurin-21
+    working_dir: /workspace/backend
+    command: mvn -B --no-transfer-progress spring-boot:run
+    environment:
+      ZDM_DB_URL: jdbc:mysql://mysql:3306/${ZDM_DB_NAME:?}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+      ZDM_DB_USERNAME: zdm_admin
+      ZDM_DB_PASSWORD: ${ZDM_DB_PASSWORD:?}
+      ZDM_SECURITY_DEV_TOKENS_ENABLED: 'true'
+      ZDM_SECURITY_VERIFICATION_CODE: '888888'
+      ZDM_MEDIA_DIR: /data/zdm/craft-images
+      ZDM_STORE_EXIT_LEDGER_URL: http://ledger:8090
+    ports:
+      - '127.0.0.1:${ZDM_BACKEND_PORT:?}:8080'
+    volumes:
+      - ./backend:/workspace/backend
+      - maven:/root/.m2
+      - media:/data/zdm/craft-images
+    depends_on:
+      mysql:
+        condition: service_healthy
+      ledger:
+        condition: service_started
+
+  ledger:
+    build: ./infrastructure/store-exit-ledger
+    environment:
+      ZDM_LEDGER_NAMESPACE: ${ZDM_DB_NAME:?}
+      ZDM_LEDGER_AUTH_TOKEN: ${ZDM_LEDGER_AUTH_TOKEN:?}
+    volumes:
+      - ledger:/data/store-exit-ledger
+
+  backend-tools:
+    image: maven:3.9.9-eclipse-temurin-21
+    working_dir: /workspace/backend
+    profiles: [tools]
+    environment:
+      TESTCONTAINERS_HOST_OVERRIDE: host.docker.internal
+      TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE: /var/run/docker.sock
+      ZDM_SECURITY_DEV_TOKENS_ENABLED: 'true'
+      ZDM_SECURITY_VERIFICATION_CODE: '888888'
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    volumes:
+      - ./backend:/workspace/backend
+      - ./infrastructure/store-exit-ledger:/workspace/infrastructure/store-exit-ledger:ro
+      - maven:/root/.m2
+      - /var/run/docker.sock:/var/run/docker.sock
+
+volumes:
+  database:
+  maven:
+  media:
+  ledger:
+    labels:
+      com.zdm.retained-data: store-exit-ledger

@@ -1,0 +1,68 @@
+package com.zdm.platform.inventory;
+
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.zdm.platform.common.BaseEntity;
+import jakarta.validation.constraints.NotBlank;
+
+@TableName("slab_grades")
+public class SlabGrade extends BaseEntity implements com.zdm.platform.security.CreatorOwned, com.zdm.platform.account.NamedCreatorOwned {
+  @NotBlank
+  private String code;
+
+  @NotBlank
+  private String name;
+  private Integer sortOrder;
+
+  @com.baomidou.mybatisplus.annotation.TableField(exist = false)
+  private String createdByName;
+  private Long createdByAccountId;
+  private String remark;
+
+  public String getCode() {
+    return code;
+  }
+
+  public void setCode(String code) {
+    this.code = code;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(String name) {
+    this.name = name;
+  }
+
+  public Integer getSortOrder() {
+    return sortOrder;
+  }
+
+  public void setSortOrder(Integer sortOrder) {
+    this.sortOrder = sortOrder;
+  }
+
+  public String getCreatedByName() {
+    return createdByName;
+  }
+
+  public void setCreatedByName(String createdByName) {
+    this.createdByName = createdByName;
+  }
+
+  public Long getCreatedByAccountId() {
+    return createdByAccountId;
+  }
+
+  public void setCreatedByAccountId(Long createdByAccountId) {
+    this.createdByAccountId = createdByAccountId;
+  }
+
+  public String getRemark() {
+    return remark;
+  }
+
+  public void setRemark(String remark) {
+    this.remark = remark;
+  }
+}

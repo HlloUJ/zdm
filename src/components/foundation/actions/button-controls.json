@@ -1,0 +1,257 @@
+{
+  "version": 1,
+  "controls": [
+    {
+      "file": "src/components/AdminTopNav.vue",
+      "tag": "t-button",
+      "fingerprint": "b42114e8764d09d3824abe9aedb6d09d6cc2e8fdfa4cda90719c2b20d1e0ff1d",
+      "kind": "notification-indicator",
+      "reason": "既有无业务点击处理的通知指示图标"
+    },
+    {
+      "file": "src/components/permission/PermissionAssignmentMatrix.vue",
+      "tag": "button",
+      "fingerprint": "66e5009a6c1935cd2cb1318c543a0286730c54ec1cef5d146b69778b27d84549",
+      "kind": "selection-control",
+      "reason": "导航或选项选择控件，保留激活态与原有选择、拖拽交互"
+    },
+    {
+      "file": "src/components/product-logs/ProductLogFieldValue.vue",
+      "tag": "button",
+      "fingerprint": "c49ac7994a685960fd076426efc57069d9c92e00a07c8b484238a8095d23f1c5",
+      "kind": "media-surface",
+      "reason": "媒体缩略图是内容预览面，不改写图片、视频及原有遮罩外观"
+    },
+    {
+      "file": "src/pages/craft/finished-stock/index.vue",
+      "tag": "button",
+      "fingerprint": "fadcd65130fd762a771017d78149378b67459e21e3879a151344d1ab6d763a68",
+      "kind": "media-surface",
+      "reason": "媒体缩略图是内容预览面，不改写图片、视频及原有遮罩外观"
+    },
+    {
+      "file": "src/pages/finished-stock/management/components/FinishedCreationSnapshot.vue",
+      "tag": "button",
+      "fingerprint": "1a4f3f0d71c5f3feb2e4712ec46984965d8686cbc95121efb33de5d7f66eb165",
+      "kind": "media-surface",
+      "reason": "媒体缩略图是内容预览面，不改写图片、视频及原有遮罩外观"
+    },
+    {
+      "file": "src/pages/finished-stock/management/components/PriceSourceToggle.vue",
+      "tag": "button",
+      "fingerprint": "ac30f928c91b2d5830b06b47b0c266b03cabd8c2a3401427e19771ac56e78326",
+      "kind": "price-mode-control",
+      "reason": "价格跟随模式指示及切换控件，保留模式状态色"
+    },
+    {
+      "file": "src/pages/finished-stock/management/components/ProductDetail.vue",
+      "tag": "button",
+      "fingerprint": "5d758c6fdc8e156fd7357466358b71619ec40432de75b9a5fd4d3400e2fcd56d",
+      "kind": "media-surface",
+      "reason": "媒体缩略图是内容预览面，不改写图片、视频及原有遮罩外观"
+    },
+    {
+      "file": "src/pages/finished-stock/management/components/ProductDetail.vue",
+      "tag": "button",
+      "fingerprint": "a2a011ec3ce5adc006ac53f617a7b105f6e02de367c77da9524f6d8c63af93fa",
+      "kind": "media-surface",
+      "reason": "媒体缩略图是内容预览面，不改写图片、视频及原有遮罩外观"
+    },
+    {
+      "file": "src/pages/finished-stock/management/index.vue",
+      "tag": "t-link",
+      "fingerprint": "0bd78258e28c26c3062e2cc4b645e0644df0e52e29d9af1a43b91d590cc49403",
+      "kind": "section-navigation",
+      "reason": "导航或选项选择控件，保留激活态与原有选择、拖拽交互；2026-10-19按用户批准仅增加官方hover=color，保留原控件行为"
+    },
+    {
+      "file": "src/pages/finished-stock/management/index.vue",
+      "tag": "button",
+      "fingerprint": "cf72a33dff1f35feaaf36cf6b2f8ab340b82b030ce1a045d4710c0ae3831dfd0",
+      "kind": "media-surface",
+      "reason": "媒体缩略图是内容预览面，不改写图片、视频及原有遮罩外观"
+    },
+    {
+      "file": "src/pages/finished-stock/management/index.vue",
+      "tag": "button",
+      "fingerprint": "9735fa107a6090f7ca3270a39664ed91a4082c9c8304bc6c3193ca1d257e7300",
+      "kind": "selection-control",
+      "reason": "导航或选项选择控件，保留激活态与原有选择、拖拽交互"
+    },
+    {
+      "file": "src/pages/finished-stock/management/index.vue",
+      "tag": "button",
+      "fingerprint": "83384327f54f99b227796e33a483530acd3370a6e45997f0dd17313816178db9",
+      "kind": "selection-control",
+      "reason": "导航或选项选择控件，保留激活态与原有选择、拖拽交互"
+    },
+    {
+      "file": "src/pages/finished-stock/management/index.vue",
+      "tag": "button",
+      "fingerprint": "888e48953f213fe44ddd9d051d90bdd08565cabd55f13dbef2fcddbc3b8f9550",
+      "kind": "selection-control",
+      "reason": "导航或选项选择控件，保留激活态与原有选择、拖拽交互"
+    },
+    {
+      "file": "src/pages/finished-stock/management/index.vue",
+      "tag": "button",
+      "fingerprint": "aaf134488e2aa823729cc665fc0187c429a6feb3d5b9a17d354ae0aeb7aa5901",
+      "kind": "selection-control",
+      "reason": "导航或选项选择控件，保留激活态与原有选择、拖拽交互"
+    },
+    {
+      "file": "src/pages/finished-stock/store/StoreFinishedEditor.vue",
+      "tag": "t-link",
+      "fingerprint": "f3e43e62392be48eca355751350754f552895eff6a05ecc9288b2ed1e8d056a0",
+      "kind": "section-navigation",
+      "reason": "导航或选项选择控件，保留激活态与原有选择、拖拽交互；2026-10-19按用户批准仅增加官方hover=color，保留原控件行为"
+    },
+    {
+      "file": "src/pages/finished-stock/store/index.vue",
+      "tag": "button",
+      "fingerprint": "b6361edbd6b698781eeb82bd2c8217c859f2b7b26e5a74fb172c1747ecea1646",
+      "kind": "media-surface",
+      "reason": "媒体缩略图是内容预览面，不改写图片、视频及原有遮罩外观"
+    },
+    {
+      "file": "src/pages/finished-stock/supply-chain/index.vue",
+      "tag": "t-link",
+      "fingerprint": "0bd78258e28c26c3062e2cc4b645e0644df0e52e29d9af1a43b91d590cc49403",
+      "kind": "section-navigation",
+      "reason": "导航或选项选择控件，保留激活态与原有选择、拖拽交互；2026-10-19按用户批准仅增加官方hover=color，保留原控件行为"
+    },
+    {
+      "file": "src/pages/finished-stock/supply-chain/index.vue",
+      "tag": "button",
+      "fingerprint": "cf72a33dff1f35feaaf36cf6b2f8ab340b82b030ce1a045d4710c0ae3831dfd0",
+      "kind": "media-surface",
+      "reason": "媒体缩略图是内容预览面，不改写图片、视频及原有遮罩外观"
+    },
+    {
+      "file": "src/pages/finished-stock/supply-chain/index.vue",
+      "tag": "button",
+      "fingerprint": "9735fa107a6090f7ca3270a39664ed91a4082c9c8304bc6c3193ca1d257e7300",
+      "kind": "selection-control",
+      "reason": "导航或选项选择控件，保留激活态与原有选择、拖拽交互"
+    },
+    {
+      "file": "src/pages/finished-stock/supply-chain/index.vue",
+      "tag": "button",
+      "fingerprint": "83384327f54f99b227796e33a483530acd3370a6e45997f0dd17313816178db9",
+      "kind": "selection-control",
+      "reason": "导航或选项选择控件，保留激活态与原有选择、拖拽交互"
+    },
+    {
+      "file": "src/pages/finished-stock/supply-chain/index.vue",
+      "tag": "button",
+      "fingerprint": "888e48953f213fe44ddd9d051d90bdd08565cabd55f13dbef2fcddbc3b8f9550",
+      "kind": "selection-control",
+      "reason": "导航或选项选择控件，保留激活态与原有选择、拖拽交互"
+    },
+    {
+      "file": "src/pages/finished-stock/supply-chain/index.vue",
+      "tag": "button",
+      "fingerprint": "aaf134488e2aa823729cc665fc0187c429a6feb3d5b9a17d354ae0aeb7aa5901",
+      "kind": "selection-control",
+      "reason": "导航或选项选择控件，保留激活态与原有选择、拖拽交互"
+    },
+    {
+      "file": "src/pages/slab/management/components/SlabProductFormLayout.vue",
+      "tag": "t-link",
+      "fingerprint": "11ed12c45d8662356b69537a1ef29c44d3cf6c3bf0f82a69f385c41dc4e03eac",
+      "kind": "section-navigation",
+      "reason": "导航或选项选择控件，保留激活态与原有选择、拖拽交互；2026-10-19按用户批准仅增加官方hover=color，保留原控件行为"
+    },
+    {
+      "file": "src/pages/slab/management/index.vue",
+      "tag": "button",
+      "fingerprint": "34a7c9ba26dbda397252babc2e84b7ee444f6c75f72142f21c0c5c4dec62a2ef",
+      "kind": "media-surface",
+      "reason": "媒体缩略图是内容预览面，不改写图片、视频及原有遮罩外观"
+    },
+    {
+      "file": "src/pages/slab/management/index.vue",
+      "tag": "button",
+      "fingerprint": "3ec861587b947222e45b3533107dbb03d73a74c0bf3104766def9ca3525d2ac6",
+      "kind": "media-surface",
+      "reason": "媒体缩略图是内容预览面，不改写图片、视频及原有遮罩外观"
+    },
+    {
+      "file": "src/pages/slab/supply-chain/index.vue",
+      "tag": "button",
+      "fingerprint": "34a7c9ba26dbda397252babc2e84b7ee444f6c75f72142f21c0c5c4dec62a2ef",
+      "kind": "media-surface",
+      "reason": "媒体缩略图是内容预览面，不改写图片、视频及原有遮罩外观"
+    },
+    {
+      "file": "src/pages/slab/supply-chain/index.vue",
+      "tag": "button",
+      "fingerprint": "3ec861587b947222e45b3533107dbb03d73a74c0bf3104766def9ca3525d2ac6",
+      "kind": "media-surface",
+      "reason": "媒体缩略图是内容预览面，不改写图片、视频及原有遮罩外观"
+    },
+    {
+      "file": "src/pages/tenant/management/index.vue",
+      "tag": "t-button",
+      "fingerprint": "80199bcb830e46561c48963f0c909a5a1e951bc0874d833e6102ef468d64d16c",
+      "kind": "business-selection",
+      "reason": "导航或选项选择控件，保留激活态与原有选择、拖拽交互"
+    },
+    {
+      "file": "src/pages/selection-center/components/CategoryChoiceSpacing.vue",
+      "tag": "t-button",
+      "fingerprint": "f041cb1e3cf827c2bc424ed55e1eadf28d5248080f3230d786d24b69c91a97b4",
+      "kind": "selection-control",
+      "reason": "User confirmed selection-center PRD and V24 display code reuse; this exact local presentation only."
+    },
+    {
+      "file": "src/pages/selection-center/components/SelectionCategoryPanel.vue",
+      "tag": "t-button",
+      "fingerprint": "6fd61424f667764c9156e4483d16846fb873f473a48cd374d32691cd6dc67a61",
+      "kind": "selection-control",
+      "reason": "User confirmed selection-center PRD and V24 display code reuse; this exact local presentation only."
+    },
+    {
+      "file": "src/pages/selection-center/index.vue",
+      "tag": "t-button",
+      "fingerprint": "dfda3ad1d27f689da7c755edf0eb614b936eef5265f4f353a12b4b9a7998fa21",
+      "kind": "selection-control",
+      "reason": "User confirmed selection-center PRD and V24 display code reuse; this exact local presentation only."
+    },
+    {
+      "file": "src/pages/selection-center/index.vue",
+      "tag": "t-button",
+      "fingerprint": "7dc8854090dac6496d9674c809cbe3d5564f493cf20c4ab01f703fe1dcc0e096",
+      "kind": "selection-control",
+      "reason": "User confirmed selection-center PRD and V24 display code reuse; this exact local presentation only."
+    },
+    {
+      "file": "src/pages/selection-center/index.vue",
+      "tag": "t-button",
+      "fingerprint": "09c5b124ab0a04fcae8a6352c1891c9417561dd1ffe0513fb20699099e360232",
+      "kind": "selection-control",
+      "reason": "User confirmed selection-center PRD and V24 display code reuse; this exact local presentation only."
+    },
+    {
+      "file": "src/pages/selection-center/index.vue",
+      "tag": "t-button",
+      "fingerprint": "4de043623b13f71e7029763cbc61f3c4eed92ed7a063df4d2d0f08f37eac921c",
+      "kind": "selection-control",
+      "reason": "User confirmed selection-center PRD and V24 display code reuse; this exact local presentation only."
+    },
+    {
+      "file": "src/pages/selection-center/index.vue",
+      "tag": "t-button",
+      "fingerprint": "11f0b7668ed491a1433eaf3db22c3bb77690bb9e0fd80cf35ed7669ed6c5611c",
+      "kind": "selection-control",
+      "reason": "User confirmed selection-center PRD and V24 display code reuse; this exact local presentation only."
+    },
+    {
+      "file": "src/pages/selection-center/index.vue",
+      "tag": "t-button",
+      "fingerprint": "198c8b9668913c8803b9c55a2627a29a1f3833ac3fc2f93598cc6733cd44f3d9",
+      "kind": "selection-control",
+      "reason": "User confirmed selection-center PRD and V24 display code reuse; this exact local presentation only."
+    }
+  ]
+}

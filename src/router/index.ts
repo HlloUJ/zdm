@@ -1,0 +1,257 @@
+import { createRouter, createWebHistory } from 'vue-router';
+
+import { getLoginUser } from '@/services/auth';
+import { requireCurrentStoreScope } from '@/services/storeScopeValidity';
+import { getAuthToken, SESSION_EXPIRED_MESSAGE } from '@/services/http';
+import { adminFeedback } from '@/components/foundation/feedback/adminFeedback';
+import {
+  getFirstAccessiblePath,
+  hasMenuPermission,
+  hasAnyPermission,
+  routePermissionPrefixMap,
+} from '@/services/adminPermissions';
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes: [
+    {
+      path: '/store/selection-center',
+      name: 'storeSelectionCenter',
+      component: () => import('@/pages/selection-center/index.vue'),
+    },
+    {
+      path: '/supplier-supply-type-management',
+      name: 'supplierSupplyTypeManagement',
+      component: () => import('@/pages/supplier/supply-type/index.vue'),
+    },
+    {
+      path: '/supply-chain/finished-stock-management',
+      name: 'supplyChainFinishedStock',
+      component: () => import('@/pages/finished-stock/supply-chain/index.vue'),
+    },
+    {
+      path: '/supply-chain/accessory-management',
+      name: 'supplyChainAccessory',
+      component: () => import('@/modules/accessory/routes').then((m) => m.SupplyChainAccessory),
+    },
+    {
+      path: '/accessory-management',
+      name: 'accessoryManagement',
+      component: () => import('@/modules/accessory/routes').then((m) => m.AccessoryManagement),
+    },
+    {
+      path: '/store/accessory-management',
+      name: 'storeAccessoryManagement',
+      component: () => import('@/modules/accessory/routes').then((m) => m.StoreAccessory),
+    },
+    {
+      path: '/store/accessory-management/:id/edit',
+      name: 'storeAccessoryEdit',
+      component: () => import('@/modules/accessory/routes').then((m) => m.StoreAccessory),
+      meta: { permissionPrefix: 'store.accessory-management' },
+    },
+    {
+      path: '/supply-chain/slab-management',
+      name: 'supplyChainSlab',
+      component: () => import('@/pages/slab/supply-chain/index.vue'),
+    },
+    {
+      path: '/',
+      redirect: '/login',
+    },
+    {
+      path: '/login',
+      name: 'login',
+      component: () => import('@/pages/login/index.vue'),
+    },
+    {
+      path: '/employee-invite',
+      name: 'employeeInvite',
+      component: () => import('@/pages/employee-invite/index.vue'),
+    },
+    {
+      path: '/dashboard',
+      name: 'dashboard',
+      component: () => import('@/pages/dashboard/index.vue'),
+    },
+    {
+      path: '/finished-stock-management',
+      name: 'finishedStockManagement',
+      component: () => import('@/pages/finished-stock/management/index.vue'),
+    },
+    {
+      path: '/store/finished-stock-management',
+      name: 'storeFinishedStockManagement',
+      component: () => import('@/pages/finished-stock/store/index.vue'),
+    },
+    {
+      path: '/store/finished-stock-management/:id/edit',
+      name: 'storeFinishedStockEdit',
+      component: () => import('@/pages/finished-stock/store/index.vue'),
+      meta: { permissionPrefix: 'store.finished-stock-management' },
+    },
+    {
+      path: '/store/customer-management',
+      name: 'storeCustomerManagement',
+      component: () => import('@/pages/customer/index.vue'),
+    },
+    { path: '/store/order-management', redirect: '/store/order-management/sales' },
+    ...(['sales', 'fulfillment', 'settings'] as const).map((part) => ({
+      path: `/store/order-management/${part}`,
+      name: `storeOrder-${part}`,
+      component: () => import('@/pages/order/prototype/index.vue'),
+      meta: { permissionPrefix: `store.order-management.${part}` },
+    })),
+    {
+      path: '/store/price-configuration',
+      name: 'storeFinishedPriceConfiguration',
+      component: () => import('@/pages/finished-stock/store/price-configuration.vue'),
+    },
+    {
+      path: '/finished-stock-craft',
+      name: 'finishedStockCraft',
+      component: () => import('@/pages/craft/finished-stock/index.vue'),
+    },
+    {
+      path: '/employee-management',
+      name: 'employeeManagement',
+      component: () => import('@/pages/permission/employee/index.vue'),
+    },
+    {
+      path: '/role-management',
+      name: 'roleManagement',
+      component: () => import('@/pages/role/management/index.vue'),
+    },
+    {
+      path: '/terminal-function-allocation',
+      name: 'terminalFunctionAllocation',
+      component: () => import('@/pages/permission/terminal-function/index.vue'),
+    },
+    {
+      path: '/product-category',
+      name: 'productCategory',
+      component: () => import('@/pages/product/category/index.vue'),
+    },
+    {
+      path: '/product-attribute',
+      name: 'productAttribute',
+      component: () => import('@/pages/product/attribute/index.vue'),
+    },
+    {
+      path: '/slab-variety',
+      name: 'slabVariety',
+      component: () => import('@/pages/slab/variety/index.vue'),
+    },
+    {
+      path: '/slab-origin',
+      name: 'slabOrigin',
+      component: () => import('@/pages/slab/origin/index.vue'),
+    },
+    {
+      path: '/slab-texture',
+      name: 'slabTexture',
+      component: () => import('@/pages/slab/texture/index.vue'),
+    },
+    {
+      path: '/slab-color',
+      name: 'slabColor',
+      component: () => import('@/pages/slab/color/index.vue'),
+    },
+    {
+      path: '/slab-grade',
+      name: 'slabGrade',
+      component: () => import('@/pages/slab/grade/index.vue'),
+    },
+    {
+      path: '/slab-management',
+      name: 'slabManagement',
+      component: () => import('@/pages/slab/management/index.vue'),
+    },
+    {
+      path: '/supplier-management',
+      name: 'supplierManagement',
+      component: () => import('@/pages/supplier/management/index.vue'),
+    },
+    {
+      path: '/tenant-management',
+      name: 'tenantManagement',
+      component: () => import('@/pages/tenant/management/index.vue'),
+    },
+    {
+      path: '/tenant-store-management',
+      name: 'tenantStoreManagement',
+      component: () => import('@/pages/tenant/store/index.vue'),
+    },
+    {
+      path: '/store-level-management',
+      name: 'storeLevelManagement',
+      component: () => import('@/pages/store-level/management/index.vue'),
+    },
+    {
+      path: '/store-category-management',
+      name: 'storeCategoryManagement',
+      component: () => import('@/pages/store-category/management/index.vue'),
+    },
+    {
+      path: '/product-attribute-value',
+      name: 'productAttributeValue',
+      component: () => import('@/pages/product/attribute-value/index.vue'),
+    },
+    {
+      path: '/category-attribute-template',
+      name: 'categoryAttributeTemplate',
+      component: () => import('@/pages/product/category-attribute-template/index.vue'),
+    },
+    {
+      path: '/markup-configuration',
+      name: 'markupConfiguration',
+      component: () => import('@/pages/product/markup-configuration/index.vue'),
+    },
+    { path: '/finished-stock-category', redirect: '/product-category' },
+    { path: '/accessory-category', redirect: '/category-attribute-template' },
+    { path: '/finished-stock-attribute', redirect: '/product-attribute' },
+    { path: '/accessory-attribute', redirect: '/product-attribute-value' },
+  ],
+});
+
+const publicPaths = new Set(['/login', '/employee-invite']);
+
+router.beforeEach(async (to) => {
+  if (publicPaths.has(to.path)) return true;
+
+  const token = getAuthToken();
+  if (!token) {
+    return { path: '/login' };
+  }
+
+  const loginUser = getLoginUser();
+  if (to.path === '/store/selection-center') {
+    return hasAnyPermission(loginUser, ['store.finished-stock-management.select', 'store.accessory-management.select'])
+      ? true
+      : { path: '/dashboard' };
+  }
+  const permissionPrefix = routePermissionPrefixMap[to.path] ?? (to.meta.permissionPrefix as string | undefined);
+  if (!hasMenuPermission(loginUser, permissionPrefix)) {
+    const nextPath = getFirstAccessiblePath(loginUser);
+    if (!nextPath && to.path !== '/dashboard') return { path: '/dashboard' };
+    if (nextPath && nextPath !== to.path) return { path: nextPath };
+  }
+
+  if (to.path.startsWith('/store/order-management') && loginUser.storeId) {
+    try {
+      await requireCurrentStoreScope();
+    } catch (error) {
+      if (!getAuthToken()) return { path: '/login' };
+      adminFeedback.error(error instanceof Error ? error.message : '门店身份核验失败');
+      return false;
+    }
+  }
+  return true;
+});
+
+window.addEventListener('zdm-auth-session-cleared', () => {
+  adminFeedback.warning(SESSION_EXPIRED_MESSAGE);
+  void router.replace('/login');
+});
+
+export default router;

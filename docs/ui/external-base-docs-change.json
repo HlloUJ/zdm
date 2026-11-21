@@ -1,0 +1,10 @@
+{
+  "status": "applied-with-explicit-user-authorization",
+  "reference": "项目旁的管理后台原型基座",
+  "documents": [
+    "README-模板使用说明.md",
+    "zdm-admin-ui/README.md",
+    "zdm-admin-ui/AGENTS.md",
+    "zdm-admin-ui/templates/project-AGENTS.md"
+  ]
+}

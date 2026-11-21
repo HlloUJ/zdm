@@ -1,0 +1,2026 @@
+import { productWarehouseUrl } from './product-test-navigation';
+import { expect, test } from '@playwright/test';
+
+import { installAdminApiMocks } from './admin-api-mocks';
+
+const storeCategoryCatalogActionLabels = ['查看', '新增一级分类', '新增下级', '编辑', '排序', '停用/启用', '删除'];
+const categoryCatalogActionLabels = ['查看', '新增一级分类', '新增下级', '编辑', '排序', '停用/启用', '删除'];
+const productSecondMenuLabels = ['商品公共基础数据', '成品现货基础数据', '大板基础数据'];
+const adminProductSecondMenuLabels = ['成品现货管理', '配件管理', '大板管理', ...productSecondMenuLabels];
+const productThirdMenuLabels = [
+  '商品分类管理',
+  '属性库管理',
+  '属性值管理',
+  '分类属性模板',
+  '工艺管理',
+  '品种管理',
+  '产地管理',
+  '纹理管理',
+  '色系管理',
+  '等级管理',
+];
+const adminProductThirdMenuLabels = [
+  '—',
+  '—',
+  '—',
+  ...productThirdMenuLabels.slice(0, 4),
+  '价格配置',
+  ...productThirdMenuLabels.slice(4),
+];
+
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem('zdm-admin-token', 'dev-token');
+    window.localStorage.setItem(
+      'zdm-admin-user',
+      JSON.stringify({
+        id: 1,
+        name: '韩健',
+        phone: '19900009901',
+        roles: ['SUPER_ADMIN'],
+        permissions: ['all'],
+        dataPermission: 'all',
+      }),
+    );
+  });
+  await installAdminApiMocks(page);
+});
+
+test('allows account 15900000001 to operate the granted attribute tab', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      'zdm-admin-user',
+      JSON.stringify({
+        id: 3,
+        name: '张飞',
+        phone: '15900000001',
+        roles: ['ATTRIBUTE_OPERATOR'],
+        permissions: [
+          'admin.product-data-center.attribute.shared.view',
+          'admin.product-data-center.attribute.shared.create',
+          'admin.product-data-center.attribute.shared.toggle-status',
+          'admin.product-data-center.attribute.shared.delete',
+        ],
+        dataPermission: 'all',
+      }),
+    );
+  });
+
+  await page.goto(productWarehouseUrl('/product-attribute'));
+  const main = page.getByRole('main');
+  const row = main.locator('tbody tr').filter({ hasText: 'E2E 共享属性' });
+  const actions = row.locator('.table-actions');
+
+  await expect(main.getByRole('button', { name: '新增' })).toBeVisible();
+  await expect(actions.locator('.t-link')).toHaveText([/^(停用|启用)$/, '删除']);
+  await expect(row).toContainText('韩健');
+  await expect(row).toContainText('2026/08/04 09:00');
+  await expect(main.locator('thead th')).toContainText([
+    '属性名称',
+    '值类型',
+    '被引用次数',
+    '状态',
+    '创建人',
+    '创建时间',
+    '操作',
+  ]);
+  await expect(main.locator('.scope-controls .t-tabs')).toHaveCount(0);
+  await expect(main.getByText('E2E 成品现货专属属性', { exact: true })).toHaveCount(0);
+  await main.getByRole('button', { name: '新增', exact: true }).click();
+  const dialog = page.locator('.t-dialog:visible');
+  const radioLayout = await dialog.locator('.attribute-value-types').evaluate((group) => {
+    const bounds = group.closest('.t-form__controls')!.getBoundingClientRect();
+    return [...group.querySelectorAll('.t-radio')].map((radio) => ({
+      top: radio.getBoundingClientRect().top,
+      right: radio.getBoundingClientRect().right,
+      availableRight: bounds.right,
+    }));
+  });
+  expect(radioLayout).toHaveLength(3);
+  expect(
+    Math.max(...radioLayout.map((radio) => radio.top)) - Math.min(...radioLayout.map((radio) => radio.top)),
+  ).toBeLessThanOrEqual(1);
+  for (const radio of radioLayout) expect(radio.right).toBeLessThanOrEqual(radio.availableRight);
+  for (const label of ['标准选项', '数值+单位', '文本输入']) {
+    await dialog.getByText(label, { exact: true }).click();
+    await expect(dialog.getByRole('radio', { name: label, exact: true })).toBeChecked();
+  }
+  await dialog.getByRole('button', { name: '取消', exact: true }).click();
+});
+
+test('allows account 15900000001 to operate the granted attribute-value tab', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      'zdm-admin-user',
+      JSON.stringify({
+        id: 3,
+        name: '张飞',
+        phone: '15900000001',
+        roles: ['ATTRIBUTE_VALUE_OPERATOR'],
+        permissions: [
+          'admin.product-data-center.attribute-value.shared.view',
+          'admin.product-data-center.attribute-value.shared.create',
+          'admin.product-data-center.attribute-value.shared.toggle-status',
+          'admin.product-data-center.attribute-value.shared.delete',
+        ],
+        dataPermission: 'all',
+      }),
+    );
+  });
+
+  await page.goto(productWarehouseUrl('/product-attribute-value'));
+  const main = page.getByRole('main');
+  const row = main.locator('tbody tr').filter({ hasText: 'E2E 共享属性值' });
+  const actions = row.locator('.table-actions');
+
+  await expect(main.getByRole('button', { name: '新增' })).toBeVisible();
+  await expect(actions.locator('.t-link')).toHaveText([/^(停用|启用)$/, '删除']);
+  await expect(row).toContainText('韩健');
+  await expect(row).toContainText('2026/08/04 09:20');
+  await expect(main.locator('thead th')).toContainText([
+    '属性值名称',
+    '所属属性',
+    '被引用次数',
+    '状态',
+    '创建人',
+    '创建时间',
+    '操作',
+  ]);
+  await expect(main.locator('.source-card .t-tabs')).toHaveCount(0);
+  await expect(main.getByText('E2E 成品现货专属值', { exact: true })).toHaveCount(0);
+});
+
+test('shows only granted craft operation buttons for a restricted account', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      'zdm-admin-user',
+      JSON.stringify({
+        id: 9,
+        name: '受限工艺管理员',
+        phone: '15926620009',
+        roles: ['CRAFT_EDITOR'],
+        permissions: [
+          'admin.product-data-center.finished-stock-craft.view',
+          'admin.product-data-center.finished-stock-craft.edit',
+        ],
+        dataPermission: 'all',
+      }),
+    );
+  });
+
+  await page.goto(productWarehouseUrl('/finished-stock-craft'));
+  const main = page.getByRole('main');
+  const craftRow = main.locator('tbody tr').filter({ hasText: 'E2E 边工艺' });
+  const craftActions = craftRow.locator('.table-actions');
+
+  await expect(craftRow).toBeVisible();
+  await expect(main.getByRole('button', { name: '新增' })).toHaveCount(0);
+  await expect(craftActions.getByText('编辑', { exact: true })).toBeVisible();
+  await expect(craftActions.getByText('停用', { exact: true })).toHaveCount(0);
+  await expect(craftActions.getByText('启用', { exact: true })).toHaveCount(0);
+  await expect(craftActions.getByText('删除', { exact: true })).toHaveCount(0);
+});
+
+test('shows only granted category operation buttons for a restricted account', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      'zdm-admin-user',
+      JSON.stringify({
+        id: 10,
+        name: '受限分类管理员',
+        phone: '15926620010',
+        roles: ['CATEGORY_EDITOR'],
+        permissions: [
+          'admin.product-data-center.category.finished.view',
+          'admin.product-data-center.category.finished.edit',
+          'admin.product-data-center.category.finished.move-up',
+          'admin.product-data-center.category.finished.move-down',
+          'admin.product-data-center.category.finished.disable',
+          'admin.product-data-center.category.accessory.view',
+        ],
+        dataPermission: 'all',
+      }),
+    );
+  });
+
+  await page.goto(productWarehouseUrl('/product-category'));
+  const main = page.getByRole('main');
+  const categoryRow = main.locator('tbody tr').filter({ hasText: '成品现货' });
+  const categoryActions = categoryRow.locator('.table-actions');
+
+  await expect(categoryRow).toBeVisible();
+  await expect(main.getByRole('button', { name: '新增一级分类' })).toHaveCount(0);
+  await expect(categoryActions.getByText('新增下级', { exact: true })).toHaveCount(0);
+  await expect(categoryActions.getByText('编辑', { exact: true })).toBeVisible();
+  await expect(categoryActions.getByText('上移', { exact: true })).toHaveCount(0);
+  await expect(categoryRow.locator('[data-category-id]')).toBeVisible();
+  await expect(categoryActions.getByText('下移', { exact: true })).toHaveCount(0);
+  await expect(categoryActions.locator('.t-link').filter({ hasText: /^(停用|启用)$/ })).toBeVisible();
+  await expect(categoryActions.getByText('删除', { exact: true })).toHaveCount(0);
+  await expect(main.locator('.scope-tabs')).toContainText('成品现货分类');
+  await expect(main.locator('.scope-tabs')).toContainText('配件分类');
+});
+
+test('shows the finished category buttons granted to account 15900000001', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      'zdm-admin-user',
+      JSON.stringify({
+        id: 3,
+        name: '张飞',
+        phone: '15900000001',
+        roles: ['CATEGORY_OPERATOR'],
+        permissions: [
+          'admin.product-data-center.category.finished.view',
+          'admin.product-data-center.category.finished.create-root',
+          'admin.product-data-center.category.finished.disable',
+          'admin.product-data-center.category.finished.enable',
+          'admin.product-data-center.category.finished.delete',
+        ],
+        dataPermission: 'all',
+      }),
+    );
+  });
+
+  await page.goto(productWarehouseUrl('/product-category'));
+  const main = page.getByRole('main');
+  const rootRow = main.locator('tbody tr').filter({ hasText: '成品现货' });
+  const rootActions = rootRow.locator('.table-actions');
+
+  await expect(main.locator('.scope-tabs')).toHaveCount(0);
+  await expect(main.getByRole('button', { name: '新增一级分类' })).toBeVisible();
+  await expect(rootActions.getByText('新增下级', { exact: true })).toHaveCount(0);
+  await expect(rootActions.getByText('编辑', { exact: true })).toHaveCount(0);
+  await expect(rootActions.getByText('上移', { exact: true })).toHaveCount(0);
+  await expect(rootActions.getByText('下移', { exact: true })).toHaveCount(0);
+  await expect(rootActions.locator('.t-link').filter({ hasText: /^(停用|启用)$/ })).toBeVisible();
+  await expect(rootActions.getByText('删除', { exact: true })).toBeVisible();
+
+  await rootRow.getByRole('button', { name: '展开下级分类' }).click();
+  const childRow = main.locator('tbody tr').filter({ hasText: '岩板餐桌' });
+  await expect(childRow.locator('.table-actions .t-link').filter({ hasText: /^(停用|启用)$/ })).toBeVisible();
+});
+
+test('shows only the granted product category tab', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      'zdm-admin-user',
+      JSON.stringify({
+        id: 12,
+        name: '成品现货分类查看员',
+        phone: '15926620012',
+        roles: ['FINISHED_CATEGORY_VIEWER'],
+        permissions: ['admin.product-data-center.category.finished.view'],
+        dataPermission: 'all',
+      }),
+    );
+  });
+
+  await page.goto(productWarehouseUrl('/product-category'));
+  const main = page.getByRole('main');
+
+  await expect(main.locator('.scope-tabs')).toHaveCount(0);
+  await expect(main.locator('.zdm-admin-page-header')).toHaveCount(0);
+  await expect(main.getByText('配件分类', { exact: true })).toHaveCount(0);
+  await expect(main.locator('tbody')).toContainText('成品现货');
+});
+
+test('falls back to the only granted product category tab', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      'zdm-admin-user',
+      JSON.stringify({
+        id: 13,
+        name: '配件分类查看员',
+        phone: '15926620013',
+        roles: ['ACCESSORY_CATEGORY_VIEWER'],
+        permissions: ['admin.product-data-center.category.accessory.view'],
+        dataPermission: 'all',
+      }),
+    );
+  });
+
+  await page.route('**/api/admin/product-categories', (route) =>
+    route.fulfill({
+      json: {
+        code: 0,
+        data: [
+          { id: 201, scope: 'finished', name: '不可访问成品分类', sortOrder: 1, status: 'enabled', productCount: 0 },
+          { id: 202, scope: 'accessory', name: '可访问配件分类', sortOrder: 1, status: 'enabled', productCount: 0 },
+        ],
+      },
+    }),
+  );
+  await page.goto(productWarehouseUrl('/product-category'));
+  const main = page.getByRole('main');
+
+  await expect(main.locator('.scope-tabs')).toHaveCount(0);
+  await expect(main.locator('.zdm-admin-page-header')).toHaveCount(0);
+  await expect(main.getByText('成品现货分类', { exact: true })).toHaveCount(0);
+  await expect(main.getByText('可访问配件分类', { exact: true })).toBeVisible();
+  await expect(main.getByText('不可访问成品分类', { exact: true })).toHaveCount(0);
+});
+
+test('shows slab variety edit without status operation for an edit-only account', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      'zdm-admin-user',
+      JSON.stringify({
+        id: 11,
+        name: '受限品种管理员',
+        phone: '15926620011',
+        roles: ['SLAB_VARIETY_EDITOR'],
+        permissions: ['admin.product-data-center.slab-variety.view', 'admin.product-data-center.slab-variety.edit'],
+        dataPermission: 'all',
+      }),
+    );
+  });
+
+  await page.goto(productWarehouseUrl('/slab-variety'));
+  const main = page.getByRole('main');
+  const varietyRow = main.locator('tbody tr').filter({ hasText: '潘多拉' });
+  const varietyActions = varietyRow.locator('.table-actions');
+
+  await expect(varietyRow).toBeVisible();
+  await expect(main.locator('thead')).toContainText('创建人');
+  await expect(varietyRow).toContainText('韩健');
+  await expect(main.getByRole('button', { name: '新增' })).toHaveCount(0);
+  await expect(varietyActions.getByText('编辑', { exact: true })).toBeVisible();
+  await expect(varietyActions.getByText('停用', { exact: true })).toHaveCount(0);
+  await expect(varietyActions.getByText('删除', { exact: true })).toHaveCount(0);
+});
+
+test('shows slab variety status without edit operation for a status-only account', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      'zdm-admin-user',
+      JSON.stringify({
+        id: 12,
+        name: '受限品种管理员',
+        phone: '15926620012',
+        roles: ['SLAB_VARIETY_STATUS_MANAGER'],
+        permissions: [
+          'admin.product-data-center.slab-variety.view',
+          'admin.product-data-center.slab-variety.toggle-status',
+        ],
+        dataPermission: 'all',
+      }),
+    );
+  });
+
+  await page.goto(productWarehouseUrl('/slab-variety'));
+  const main = page.getByRole('main');
+  const varietyRow = main.locator('tbody tr').filter({ hasText: '潘多拉' });
+  const varietyActions = varietyRow.locator('.table-actions');
+
+  await expect(varietyRow).toBeVisible();
+  await expect(main.getByRole('button', { name: '新增' })).toHaveCount(0);
+  await expect(varietyActions.getByText('编辑', { exact: true })).toHaveCount(0);
+  await expect(varietyActions.getByText('删除', { exact: true })).toHaveCount(0);
+  await expect(varietyActions.locator('.t-link')).toHaveCount(1);
+  await expect(varietyActions.locator('.t-link')).toHaveText(/^(停用|启用)$/);
+});
+
+test('shows supplier status without unrelated operations for a status-only account', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      'zdm-admin-user',
+      JSON.stringify({
+        id: 13,
+        name: '受限供应商管理员',
+        clientCode: 'supply-chain',
+        phone: '15926620013',
+        roles: ['SUPPLIER_STATUS_MANAGER'],
+        permissions: ['admin.supplier-management.view', 'admin.supplier-management.toggle-status'],
+        dataPermission: 'all',
+      }),
+    );
+  });
+
+  await page.goto(productWarehouseUrl('/supplier-management'));
+  const main = page.getByRole('main');
+  const supplierRow = main.locator('tbody tr').filter({ hasText: '装点猫大板供应商' }).first();
+  const supplierActions = supplierRow.locator('.table-actions');
+
+  await expect(supplierRow).toBeVisible();
+  await expect(main.getByRole('button', { name: '新增' })).toHaveCount(0);
+  await expect(supplierActions.getByText('编辑', { exact: true })).toHaveCount(0);
+  await expect(supplierActions.getByText('删除', { exact: true })).toHaveCount(0);
+  await expect(supplierActions.locator('.t-link')).toHaveCount(1);
+  await expect(supplierActions.locator('.t-link')).toHaveText(/^(停用|启用)$/);
+});
+
+test('allows account 15900000002 with all data scope to view all suppliers', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      'zdm-admin-user',
+      JSON.stringify({
+        id: 4,
+        clientCode: 'supply-chain',
+        name: '张飞',
+        phone: '15900000002',
+        roles: ['OPERATION_MANAGER'],
+        permissions: ['admin.supplier-management.view'],
+        dataPermission: 'all',
+      }),
+    );
+  });
+
+  await page.goto(productWarehouseUrl('/supplier-management'));
+  const main = page.getByRole('main');
+
+  await expect(main.getByText('装点猫大板供应商', { exact: true })).toBeVisible();
+  await expect(main.getByText('装点猫成品供应商', { exact: true })).toBeVisible();
+  await expect(main.getByRole('button', { name: '新增' })).toHaveCount(0);
+  await expect(main.locator('.table-actions .t-link')).toHaveCount(0);
+});
+
+test('opens employee invitation and edit dialogs', async ({ page }) => {
+  await page.goto(productWarehouseUrl('/employee-management'));
+  const main = page.getByRole('main');
+
+  await expect(main.locator('.page-header')).toHaveCount(0);
+  await expect(main.getByText(/共 \d+ 条数据/)).toBeVisible();
+  await expect(main.locator('thead')).toContainText('创建人');
+  await expect(main.locator('thead')).toContainText('注册时间');
+
+  await main.getByRole('button', { name: '邀请员工', exact: true }).click();
+  const inviteDialog = page.locator('.t-dialog:visible').filter({ hasText: '邀请员工' });
+  await expect(inviteDialog).toBeVisible();
+  await expect(inviteDialog.locator('textarea')).toHaveValue(/employee-invite\?token=e2e-invite-token/);
+  await expect(inviteDialog.getByText('复制链接', { exact: true })).toBeVisible();
+  await expect(inviteDialog).toContainText('链接生成后5分钟内有效，可供多名员工使用，使用后不延长有效期。');
+  await inviteDialog.getByRole('button', { name: '关闭', exact: true }).click();
+
+  const firstEmployeeRow = page.locator('tbody tr').filter({ hasText: '19900009901' }).first();
+  await expect(firstEmployeeRow).toBeVisible();
+  await expect(firstEmployeeRow).toContainText('韩健');
+  await expect(firstEmployeeRow).toContainText('2026/07/27 09:00');
+  await expect(firstEmployeeRow.locator('.remark-cell')).toHaveCSS('max-width', '150px');
+  await expect(firstEmployeeRow.locator('.remark-cell')).toHaveCSS('text-overflow', 'ellipsis');
+  await firstEmployeeRow.locator('.remark-cell').hover();
+  await expect(page.locator('.t-popup').filter({ hasText: '系统内置超管' }).last()).toBeVisible();
+  await firstEmployeeRow.getByText('编辑', { exact: true }).click();
+  const profileDialog = page.locator('.t-dialog:visible').filter({ hasText: '编辑资料' });
+  await expect(profileDialog).toBeVisible();
+  await expect(profileDialog.locator('label').filter({ hasText: '姓名' })).toBeVisible();
+  await expect(profileDialog.locator('label').filter({ hasText: '性别' })).toBeVisible();
+  await expect(profileDialog.locator('label').filter({ hasText: '手机号码' })).toHaveCount(0);
+  await expect(profileDialog.locator('label').filter({ hasText: '备注' })).toBeVisible();
+  await expect(profileDialog.locator('label').filter({ hasText: '角色' })).toHaveCount(0);
+  await expect(profileDialog.getByText('数据权限')).toHaveCount(0);
+  await profileDialog.locator('textarea').fill('备注'.repeat(50));
+  const profileUpdateRequest = page.waitForRequest(
+    (request) => request.method() === 'PUT' && request.url().endsWith('/api/admin/employees/1'),
+  );
+  await profileDialog
+    .getByRole('button', { name: /^确认(?:新增|保存|(?:批量)?(?:下架|调整归属)|配置权限|业务开通|添加属性|邀请员工)$/ })
+    .click();
+  await expect((await profileUpdateRequest).postDataJSON()).toMatchObject({ phone: '19900009901' });
+  await expect(page.getByText('备注最多输入100个字符')).toHaveCount(0);
+  await expect(profileDialog).toBeHidden();
+
+  const firstEmployeeActions = firstEmployeeRow.locator('.table-actions');
+  await expect(firstEmployeeActions.getByText('角色', { exact: true })).toHaveCount(0);
+  await expect(firstEmployeeActions.getByText('停用', { exact: true })).toHaveCount(0);
+  await expect(firstEmployeeActions.getByText('启用', { exact: true })).toHaveCount(0);
+  await expect(firstEmployeeActions.getByText('删除', { exact: true })).toHaveCount(0);
+
+  const pendingEmployeeRow = page.locator('tbody tr').filter({ hasText: '15926628888' }).first();
+  await expect(pendingEmployeeRow).toBeVisible();
+  await pendingEmployeeRow.getByText('角色', { exact: true }).click();
+  const employeePermissionDialog = page.locator('.t-dialog:visible').filter({ hasText: '配置权限' });
+  await expect(employeePermissionDialog).toBeVisible();
+  await expect(employeePermissionDialog.locator('label').filter({ hasText: '角色' })).toBeVisible();
+  await expect(employeePermissionDialog.getByText('数据权限')).toBeVisible();
+  await expect(employeePermissionDialog.locator('label').filter({ hasText: '姓名' })).toHaveCount(0);
+  await expect(employeePermissionDialog.locator('label').filter({ hasText: '性别' })).toHaveCount(0);
+  await expect(employeePermissionDialog.locator('label').filter({ hasText: '备注' })).toHaveCount(0);
+  await employeePermissionDialog.locator('.t-select').click();
+  await expect(page.getByRole('listitem', { name: '超级管理员', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('listitem', { name: '运营管理平台角色' })).toBeVisible();
+  await expect(page.getByRole('listitem', { name: '未配置权限角色' })).toHaveCount(0);
+  await employeePermissionDialog.getByRole('button', { name: '取消' }).click();
+});
+
+test('employee invitation follows the selected system tab', async ({ page }) => {
+  await page.route(/\/api\/admin\/employees\?clientCode=supply-chain$/, (route) =>
+    route.fulfill({ contentType: 'application/json', body: JSON.stringify({ code: 0, data: [] }) }),
+  );
+  await page.goto(productWarehouseUrl('/employee-management'));
+  for (const [label, client] of [
+    ['运营管理平台', 'admin'],
+    ['供应链协同系统', 'supply-chain'],
+  ]) {
+    await page.getByRole('main').locator('.t-tabs__nav-item').filter({ hasText: label }).click();
+    const request = page.waitForRequest(
+      (item) => item.url().includes('/api/admin/employee-invites?') && item.method() === 'POST',
+    );
+    await page.getByRole('button', { name: '邀请员工', exact: true }).click();
+    expect(new URL((await request).url()).searchParams.get('clientCode')).toBe(client);
+    const dialog = page.locator('.t-dialog:visible').filter({ hasText: '邀请员工' });
+    await expect(dialog.getByText('复制链接', { exact: true })).toBeVisible();
+    await dialog.getByRole('button', { name: '关闭', exact: true }).click();
+  }
+});
+
+test('supply chain invitation displays its server-bound system', async ({ page }) => {
+  await page.route('**/api/open/employee-invites/e2e-invite-token', (route) =>
+    route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 0,
+        data: { token: 'e2e-invite-token', clientCode: 'supply-chain', expiresAt: '2099-01-01' },
+      }),
+    }),
+  );
+  await page.goto(productWarehouseUrl('/employee-invite?token=e2e-invite-token&clientCode=admin'));
+  await expect(page.getByRole('heading', { name: '供应链协同系统员工注册' })).toBeVisible();
+});
+
+test('platform supply-chain invitation keeps registration steps and enables administrator access', async ({ page }) => {
+  await page.route('**/api/open/employee-invites/e2e-invite-token', (route) =>
+    route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 0,
+        data: {
+          token: 'e2e-invite-token',
+          clientCode: 'supply-chain',
+          identityType: 'supply_chain_admin',
+          expiresAt: '2099-01-01',
+        },
+      }),
+    }),
+  );
+  await page.route('**/api/open/employee-invites/e2e-invite-token/register', (route) =>
+    route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 0,
+        data: {
+          employeeId: null,
+          identityType: 'supply_chain_admin',
+          status: 'enabled',
+          existingAccount: false,
+          existingEmployee: false,
+          canLogin: true,
+        },
+      }),
+    }),
+  );
+  await page.goto(productWarehouseUrl('/employee-invite?token=e2e-invite-token'));
+  await expect(page.getByRole('heading', { name: '供应链协同系统员工注册' })).toBeVisible();
+  await page.getByPlaceholder('请输入手机号').fill('15926627771');
+  await page.getByRole('button', { name: '获取验证码' }).click();
+  await expect(page.getByText('验证码已发送')).toBeVisible();
+  await page.getByPlaceholder('请输入验证码').fill('888888');
+  await page.getByRole('button', { name: '下一步' }).click();
+  await page.getByPlaceholder('请输入姓名').fill('初始管理员');
+  await page.locator('.gender-radio').getByText('女').click();
+  await page.getByRole('button', { name: '确认提交注册' }).click();
+  await expect(page.getByRole('heading', { name: '管理员身份已建立' })).toBeVisible();
+  await expect(page.getByText('您已成为供应链协同系统管理员，可使用该手机号登录供应链协同系统。')).toBeVisible();
+});
+
+test('registers from employee invite link', async ({ page }) => {
+  await page.goto(productWarehouseUrl('/employee-invite?token=e2e-invite-token'));
+
+  await expect(page.getByRole('heading', { name: '运营管理平台员工注册' })).toBeVisible();
+  await page.getByPlaceholder('请输入手机号').fill('15926629999');
+  await page.getByRole('button', { name: '获取验证码' }).click();
+  await expect(page.getByText('验证码已发送')).toBeVisible();
+  await page.getByPlaceholder('请输入验证码').fill('888888');
+  await page.getByRole('button', { name: '下一步' }).click();
+
+  await page.getByPlaceholder('请输入姓名').fill('待审核员工');
+  await page.locator('.gender-radio').getByText('男').click();
+  await page.getByRole('button', { name: '确认提交注册' }).click();
+
+  await expect(page.getByRole('heading', { name: '注册信息已提交' })).toBeVisible();
+  await expect(
+    page.getByText('注册信息已提交，请等待管理员分配权限并启用本平台员工身份，启用后即可登录。'),
+  ).toBeVisible();
+});
+
+for (const { canLogin, existingEmployee } of [
+  { canLogin: false, existingEmployee: false },
+  { canLogin: false, existingEmployee: true },
+  { canLogin: true, existingEmployee: true },
+]) {
+  test(`existing employee invite skips profile and reports access ${canLogin}, existing identity ${existingEmployee}`, async ({
+    page,
+  }) => {
+    let registerCalls = 0;
+    await page.route('**/api/open/employee-invites/e2e-invite-token/verify-code', (route) =>
+      route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({
+          code: 0,
+          data: {
+            requiresProfile: false,
+            registration: {
+              employeeId: 2,
+              status: canLogin ? 'enabled' : 'disabled',
+              existingAccount: true,
+              existingEmployee,
+              canLogin,
+            },
+          },
+        }),
+      }),
+    );
+    page.on('request', (request) => {
+      if (request.url().endsWith('/register')) registerCalls += 1;
+    });
+    await page.goto(productWarehouseUrl('/employee-invite?token=e2e-invite-token'));
+    await page.getByPlaceholder('请输入手机号').fill('19900009901');
+    await page.getByRole('button', { name: '获取验证码' }).click();
+    await expect(page.getByText('验证码已发送')).toBeVisible();
+    await page.getByPlaceholder('请输入验证码').fill('888888');
+    await page.getByRole('button', { name: '下一步' }).click();
+    await expect(
+      page.getByText(
+        canLogin
+          ? '该手机号码已在系统中存在账号，且已具备本平台访问权限，无需重复注册。您可直接使用原有账号登录本平台。'
+          : existingEmployee
+            ? '该手机号码已在本平台存在员工身份，无需重复注册。当前身份尚未启用，请联系本平台管理员确认权限配置及启用状态。'
+            : '该手机号码已在系统中存在账号，无需重新完成注册信息填写，待管理员分配角色权限后，可登录系统。',
+      ),
+    ).toBeVisible();
+    await expect(page.getByPlaceholder('请输入姓名')).toHaveCount(0);
+    expect(registerCalls).toBe(0);
+  });
+}
+
+for (const message of ['邀请链接已使用', '邀请链接已过期']) {
+  test(`employee invite displays ${message}`, async ({ page }) => {
+    await page.route('**/api/open/employee-invites/e2e-invite-token', (route) =>
+      route.fulfill({
+        status: 400,
+        contentType: 'application/json',
+        body: JSON.stringify({ code: 400, message, data: null }),
+      }),
+    );
+    await page.goto(productWarehouseUrl('/employee-invite?token=e2e-invite-token'));
+    await expect(page.getByRole('heading', { name: '邀请链接不可用' })).toBeVisible();
+    await expect(page.getByText(message)).toBeVisible();
+    await expect(page.getByRole('button', { name: '下一步' })).toHaveCount(0);
+  });
+}
+
+test('employee permission dialog validates only after submit and clears errors on reopen', async ({ page }) => {
+  await page.goto(productWarehouseUrl('/employee-management'));
+  const row = page.locator('tbody tr').filter({ hasText: '15926628888' }).first();
+  await row.getByText('角色', { exact: true }).click();
+  const dialog = page.locator('.t-dialog:visible').filter({ hasText: '配置权限' });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.locator('.t-is-error')).toHaveCount(0);
+  await dialog
+    .getByRole('button', {
+      name: /^确认(?:新增|保存|(?:批量)?(?:下架|调整归属)|配置权限|业务开通|添加属性|邀请员工)$/,
+      exact: true,
+    })
+    .click();
+  await expect(dialog.locator('.t-input__extra').getByText('请选择角色', { exact: true })).toBeVisible();
+  await expect(dialog.getByText('请选择数据权限', { exact: true })).toBeVisible();
+  await dialog.getByRole('button', { name: '取消', exact: true }).click();
+  await row.getByText('角色', { exact: true }).click();
+  await expect(dialog).toBeVisible();
+  await expect(dialog.locator('.t-is-error')).toHaveCount(0);
+});
+
+test('validates role and data permission before enabling employee', async ({ page }) => {
+  await page.goto(productWarehouseUrl('/employee-management'));
+
+  const pendingEmployeeRow = page.locator('tbody tr').filter({ hasText: '15926628888' }).first();
+  await expect(pendingEmployeeRow).toBeVisible();
+
+  await pendingEmployeeRow.getByText('启用', { exact: true }).click();
+
+  await expect(page.getByText('请先为员工配置角色和数据权限后再启用')).toBeVisible();
+  await expect(page.locator('.t-dialog:visible').filter({ hasText: '是否启用员工“待启用员工”？' })).toHaveCount(0);
+});
+
+test('opens enable confirmation after employee permissions are configured', async ({ page }) => {
+  await page.goto(productWarehouseUrl('/employee-management'));
+
+  const pendingEmployeeRow = page.locator('tbody tr').filter({ hasText: '15926628888' }).first();
+  await expect(pendingEmployeeRow).toBeVisible();
+
+  await pendingEmployeeRow.getByText('角色', { exact: true }).click();
+  const employeePermissionDialog = page.locator('.t-dialog:visible').filter({ hasText: '配置权限' });
+  await expect(employeePermissionDialog).toBeVisible();
+  await employeePermissionDialog.getByText('查看自己').click();
+  await employeePermissionDialog.locator('.t-select').click();
+  await expect(page.getByRole('listitem', { name: '超级管理员', exact: true })).toHaveCount(0);
+  await page.getByRole('listitem', { name: '运营管理平台角色' }).click();
+  await employeePermissionDialog.locator('.t-dialog__header').click();
+  const permissionUpdateRequest = page.waitForRequest(
+    (request) => request.method() === 'PATCH' && request.url().endsWith('/api/admin/employees/2/permissions'),
+  );
+  await employeePermissionDialog
+    .getByRole('button', { name: /^确认(?:新增|保存|(?:批量)?(?:下架|调整归属)|配置权限|业务开通|添加属性|邀请员工)$/ })
+    .click();
+  await expect((await permissionUpdateRequest).postDataJSON()).toEqual({ roleIds: '2', dataPermission: 'self' });
+  await expect(employeePermissionDialog).toBeHidden();
+  await expect(page.locator('.zdm-admin-feedback.t-is-success')).toHaveText('修改成功');
+
+  await pendingEmployeeRow.getByText('启用', { exact: true }).click();
+
+  await expect(
+    page.locator('.t-dialog:visible').filter({ hasText: '是否启用员工“待启用员工”？启用后恢复登录权限。' }),
+  ).toBeVisible();
+});
+
+test('filters menu and employee actions by logged-in permissions', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      'zdm-admin-user',
+      JSON.stringify({
+        id: 2,
+        name: '权限员工',
+        phone: '15900000001',
+        roles: ['ADMIN_MANAGER'],
+        permissions: [
+          'admin.permission-management.employee-management.view',
+          'admin.permission-management.employee-management.edit',
+        ],
+        employeeId: 999,
+        tenantId: 1,
+        storeId: 1,
+        storeType: 'cityPartner',
+        dataPermission: 'self',
+      }),
+    );
+  });
+
+  await page.goto(productWarehouseUrl('/employee-management'));
+  const sideNav = page.locator('.side-nav');
+  const firstEmployeeRow = page.locator('tbody tr').filter({ hasText: '19900009901' }).first();
+  const firstEmployeeActions = firstEmployeeRow.locator('.table-actions');
+
+  await expect(sideNav.getByText('工作台')).toHaveCount(0);
+  await expect(sideNav.getByText('员工管理')).toBeVisible();
+  await expect(sideNav.getByText('角色管理')).toHaveCount(0);
+  await expect(sideNav.getByText('商品分类管理')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /邀请员工/ })).toHaveCount(0);
+  await expect(firstEmployeeActions.getByText('编辑', { exact: true })).toBeVisible();
+  await expect(firstEmployeeActions.getByText('角色', { exact: true })).toHaveCount(0);
+  await expect(firstEmployeeActions.getByText('停用', { exact: true })).toHaveCount(0);
+  await expect(firstEmployeeActions.getByText('启用', { exact: true })).toHaveCount(0);
+  await expect(firstEmployeeActions.getByText('删除', { exact: true })).toHaveCount(0);
+
+  const pendingEmployeeRow = page.locator('tbody tr').filter({ hasText: '15926628888' }).first();
+  const pendingEmployeeActions = pendingEmployeeRow.locator('.table-actions');
+  await expect(pendingEmployeeActions.getByText('编辑', { exact: true })).toBeVisible();
+  await expect(pendingEmployeeActions.getByText('角色', { exact: true })).toHaveCount(0);
+});
+
+test('shows employee permission action without edit action for permission-only users', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      'zdm-admin-user',
+      JSON.stringify({
+        id: 5,
+        name: '员工权限管理员',
+        phone: '15900000005',
+        roles: ['EMPLOYEE_PERMISSION_MANAGER'],
+        permissions: [
+          'admin.permission-management.employee-management.view',
+          'admin.permission-management.employee-management.permission',
+        ],
+        employeeId: 5,
+        tenantId: 1,
+        storeId: 1,
+        storeType: 'cityPartner',
+        dataPermission: 'all',
+      }),
+    );
+  });
+
+  await page.goto(productWarehouseUrl('/employee-management'));
+  const permissionOnlyEmployeeRow = page.locator('tbody tr').filter({ hasText: '15926628888' }).first();
+  const permissionOnlyEmployeeActions = permissionOnlyEmployeeRow.locator('.table-actions');
+  await expect(permissionOnlyEmployeeActions.getByText('编辑', { exact: true })).toHaveCount(0);
+  await expect(permissionOnlyEmployeeActions.getByText('角色', { exact: true })).toBeVisible();
+  // Hiding the other actions must not shrink the reserved four-button column.
+  await expect(page.getByRole('columnheader', { name: '操作', exact: true })).toHaveCSS('width', '184px');
+});
+
+test('allows granted employee operations for records created by another account', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      'zdm-admin-user',
+      JSON.stringify({
+        id: 19,
+        name: '门店店长',
+        phone: '13900000001',
+        roles: ['STORE_MANAGER'],
+        permissions: [
+          'admin.permission-management.employee-management.view',
+          'admin.permission-management.employee-management.edit',
+          'admin.permission-management.employee-management.permission',
+          'admin.permission-management.employee-management.toggle-status',
+          'admin.permission-management.employee-management.delete',
+        ],
+        employeeId: 19,
+        tenantId: 14,
+        storeId: 14,
+        storeType: 'cityPartner',
+        dataPermission: 'self',
+      }),
+    );
+  });
+
+  await page.goto(productWarehouseUrl('/employee-management'));
+  const row = page.locator('tbody tr').filter({ hasText: '15926627777' }).first();
+  const actions = row.locator('.table-actions');
+
+  await actions.getByText('编辑', { exact: true }).click();
+  const profileDialog = page.locator('.t-dialog:visible').filter({ hasText: '编辑资料' });
+  await expect(profileDialog).toBeVisible();
+  await profileDialog.getByRole('button', { name: '取消' }).click();
+
+  await actions.getByText('角色', { exact: true }).click();
+  const permissionDialog = page.locator('.t-dialog:visible').filter({ hasText: '配置权限' });
+  await expect(permissionDialog).toBeVisible();
+  await permissionDialog.getByRole('button', { name: '取消' }).click();
+
+  await actions.getByText(/^(停用|启用)$/).click();
+  const statusDialog = page.locator('.t-dialog:visible').filter({ hasText: /是否(停用|启用)员工/ });
+  await expect(statusDialog).toBeVisible();
+  await statusDialog.getByRole('button', { name: '取消' }).click();
+
+  await actions.getByText('删除', { exact: true }).click();
+  const deleteDialog = page.locator('.t-dialog:visible').filter({ hasText: '是否删除员工' });
+  await expect(deleteDialog).toBeVisible();
+  await deleteDialog.getByRole('button', { name: '取消' }).click();
+});
+
+test('hides all operations for the current employee', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      'zdm-admin-user',
+      JSON.stringify({
+        id: 1,
+        name: '韩健',
+        phone: '15926627777',
+        roles: ['EMPLOYEE_MANAGER'],
+        permissions: [
+          'admin.permission-management.employee-management.view',
+          'admin.permission-management.employee-management.edit',
+          'admin.permission-management.employee-management.permission',
+          'admin.permission-management.employee-management.toggle-status',
+          'admin.permission-management.employee-management.delete',
+        ],
+        employeeId: 3,
+        tenantId: 1,
+        storeId: 1,
+        storeType: 'cityPartner',
+        dataPermission: 'all',
+      }),
+    );
+  });
+
+  await page.goto(productWarehouseUrl('/employee-management'));
+  const row = page.locator('tbody tr').filter({ hasText: '15926627777' }).first();
+
+  const actions = row.locator('.table-actions');
+  await expect(actions.getByText('编辑', { exact: true })).toHaveCount(0);
+  await expect(actions.getByText('角色', { exact: true })).toHaveCount(0);
+  await expect(actions.getByText('停用', { exact: true })).toHaveCount(0);
+  await expect(actions.getByText('删除', { exact: true })).toHaveCount(0);
+  await expect(actions.locator('.table-action-placeholder')).toHaveText('-');
+});
+
+test('shows current account info and logout on tenant management page', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      'zdm-admin-user',
+      JSON.stringify({
+        id: 4,
+        name: '租户管理员',
+        phone: '15900000004',
+        roles: ['TENANT_MANAGER'],
+        roleNames: ['租户管理员'],
+        identityType: 'tenant_admin',
+        permissions: ['admin.tenant.tenant-management.unarchived.view'],
+        employeeId: 4,
+        tenantId: 1,
+        dataPermission: 'all',
+      }),
+    );
+  });
+
+  await page.goto(productWarehouseUrl('/tenant-management'));
+
+  await expect(page.locator('.top-nav .user-name')).toHaveText('租户管理员');
+  await expect(page.locator('.top-nav .user-role')).toHaveText('租户管理员');
+  await expect(page.getByRole('button', { name: /退出登录/ })).toBeVisible();
+});
+
+test('shows only granted store management operations for a restricted account', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      'zdm-admin-user',
+      JSON.stringify({
+        id: 12,
+        name: '门店受限管理员',
+        phone: '15900000012',
+        roles: ['STORE_OPERATOR'],
+        permissions: [
+          'admin.tenant.tenant-store-management.operating.view',
+          'admin.tenant.tenant-store-management.operating.edit-level',
+          'admin.tenant.tenant-store-management.operating.archive',
+        ],
+        dataPermission: 'all',
+      }),
+    );
+  });
+
+  await page.goto(productWarehouseUrl('/tenant-store-management'));
+  const main = page.getByRole('main');
+  const row = main.locator('tbody tr').filter({ hasText: '杭州体验门店' });
+
+  await expect(main.getByRole('button', { name: '新增', exact: true })).toHaveCount(0);
+  await expect(row.getByRole('button', { name: '修改门店级别' })).toBeVisible();
+  await expect(row.locator('.table-actions .t-link')).toHaveText(['归档']);
+  await expect(row.getByText('编辑', { exact: true })).toHaveCount(0);
+  await expect(row.getByText('删除', { exact: true })).toHaveCount(0);
+
+  await row.getByRole('button', { name: '修改门店级别' }).click({ force: true });
+  const levelDialog = page.locator('.t-dialog:visible').filter({ hasText: '门店级别' });
+  await expect(levelDialog).toBeVisible();
+  await levelDialog.getByRole('button', { name: '取消' }).click();
+});
+
+test('filters role actions by logged-in permissions', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      'zdm-admin-user',
+      JSON.stringify({
+        id: 3,
+        name: '角色权限员工',
+        phone: '15900000002',
+        roles: ['ROLE_PERMISSION_MANAGER'],
+        identityType: 'platform_admin',
+        permissions: [
+          'admin.permission-management.employee-management.view',
+          'admin.permission-management.role-management.view',
+          'admin.permission-management.role-management.permission',
+        ],
+        employeeId: 3,
+        dataPermission: 'all',
+      }),
+    );
+  });
+
+  await page.goto(productWarehouseUrl('/role-management'));
+  const main = page.getByRole('main');
+  const sideNav = page.locator('.side-nav');
+
+  await expect(sideNav.getByText('员工管理')).toBeVisible();
+  await expect(sideNav.getByText('角色管理')).toBeVisible();
+  await expect(main.locator('.role-tabs')).toHaveCount(0);
+  await expect(main.getByRole('button', { name: /新增/ })).toHaveCount(0);
+
+  const operationRoleRow = page.locator('tbody tr').filter({ hasText: '运营管理平台角色' }).first();
+  await expect(operationRoleRow.getByText('权限', { exact: true })).toBeVisible();
+  await expect(operationRoleRow.getByText('编辑', { exact: true })).toHaveCount(0);
+  await expect(operationRoleRow.getByText('删除', { exact: true })).toHaveCount(0);
+});
+
+test('allows granted role operations for records created by another account', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      'zdm-admin-user',
+      JSON.stringify({
+        id: 19,
+        name: '门店店长',
+        phone: '13900000001',
+        roles: ['STORE_MANAGER'],
+        permissions: [
+          'admin.permission-management.role-management.view',
+          'admin.permission-management.role-management.edit',
+          'admin.permission-management.role-management.permission',
+          'admin.permission-management.role-management.delete',
+        ],
+        employeeId: 19,
+        tenantId: 14,
+        storeId: 14,
+        storeType: 'cityPartner',
+        dataPermission: 'self',
+      }),
+    );
+  });
+
+  await page.goto(productWarehouseUrl('/role-management'));
+  const row = page.locator('tbody tr').filter({ hasText: '运营管理平台角色' }).first();
+  const actions = row.locator('.table-actions');
+
+  await actions.getByText('编辑', { exact: true }).click();
+  const editDialog = page.locator('.t-dialog:visible').filter({ hasText: '编辑' });
+  await expect(editDialog).toBeVisible();
+  await editDialog.getByRole('button', { name: '取消' }).click();
+
+  await actions.getByText('权限', { exact: true }).click();
+  const permissionDialog = page.locator('.t-dialog:visible').filter({ hasText: '权限配置' });
+  await expect(permissionDialog).toBeVisible();
+  await permissionDialog.getByRole('button', { name: '取消' }).click();
+
+  await actions.getByText('删除', { exact: true }).click();
+  const deleteDialog = page.locator('.t-dialog:visible').filter({ hasText: '是否删除角色' });
+  await expect(deleteDialog).toBeVisible();
+  await deleteDialog.getByRole('button', { name: '取消' }).click();
+});
+
+test('opens role permission configuration dialog', async ({ page }) => {
+  await page.goto(productWarehouseUrl('/role-management'));
+  const main = page.getByRole('main');
+  await expect(main.locator('.page-header')).toHaveCount(0);
+  await expect(main.locator('.role-tabs')).toHaveCount(0);
+
+  const superAdminRoleRow = page.locator('tbody tr').filter({ hasText: '超级管理员' }).first();
+  await expect(superAdminRoleRow).toBeVisible();
+  await expect(superAdminRoleRow.getByText('权限', { exact: true })).toHaveCount(0);
+  await expect(superAdminRoleRow.getByText('删除', { exact: true })).toHaveCount(0);
+
+  const operationRoleRow = page.locator('tbody tr').filter({ hasText: '运营管理平台角色' }).first();
+  await expect(operationRoleRow).toBeVisible();
+  await expect(operationRoleRow.locator('.table-actions .t-link')).toHaveText(['编辑', '权限', '删除']);
+  await operationRoleRow.getByText('权限', { exact: true }).click();
+
+  const permissionDialog = page.locator('.t-dialog:visible').filter({ hasText: '权限配置' });
+  await expect(permissionDialog).toBeVisible();
+  await expect(permissionDialog.getByRole('heading', { name: '功能权限', exact: true })).toBeVisible();
+  const roleModuleList = permissionDialog.locator('.permission-module-list');
+  const roleMatrix = permissionDialog.locator('.permission-matrix');
+  await expect(roleModuleList.locator('.permission-module-item')).toHaveCount(4);
+  await expect(roleModuleList.locator('.permission-module-item > span:first-child')).toHaveText([
+    '租户与门店',
+    '商品管理',
+    '供应商供货类型管理',
+    '权限管理',
+  ]);
+  await expect(roleModuleList.getByText('租户与门店', { exact: true })).toBeVisible();
+  await expect(roleModuleList.getByText('门店分类管理', { exact: true })).toHaveCount(0);
+  await expect(roleModuleList.getByText('商品管理', { exact: true })).toBeVisible();
+  await expect(roleModuleList.getByText('权限管理', { exact: true })).toBeVisible();
+  await expect(roleModuleList.getByText('供应商供货类型管理', { exact: true })).toBeVisible();
+  await expect(roleMatrix.locator('thead')).toContainText('二级菜单');
+  await expect(roleMatrix.locator('thead')).toContainText('三级菜单');
+  await expect(roleMatrix.locator('thead')).toContainText('页面');
+  await expect(roleMatrix.locator('thead')).toContainText('tab');
+  await expect(roleMatrix.locator('thead')).toContainText('操作权限');
+  await roleModuleList.getByText('供应商供货类型管理', { exact: true }).click();
+  await expect(roleMatrix.locator('tbody .permission-menu-cell').first()).toHaveText('一级菜单直达');
+  await roleModuleList.getByText('租户与门店', { exact: true }).click();
+  await expect(roleMatrix.locator('tbody .permission-menu-cell')).toHaveText(['租户管理', '门店管理', '门店基础数据']);
+  await expect(roleMatrix.locator('tbody .permission-third-menu-cell')).toHaveText(['—', '—', '门店级别管理']);
+  const tenantPermissionRow = roleMatrix.locator('tbody tr').filter({ hasText: '租户管理页' });
+  await expect(tenantPermissionRow.locator('.permission-action-grid .t-checkbox')).toHaveText([
+    '查看',
+    '新增',
+    '业务开通',
+    '编辑',
+    '归档',
+  ]);
+  const archivedTenantPermissionRow = roleMatrix.locator('tbody tr').filter({ hasText: '已归档' }).first();
+  await expect(archivedTenantPermissionRow.locator('.permission-action-grid .t-checkbox')).toHaveText([
+    '查看',
+    '恢复运营',
+    '彻底删除',
+  ]);
+  const storePermissionRow = roleMatrix.locator('tbody tr').filter({ hasText: '门店管理页' });
+  await expect(storePermissionRow.locator('.permission-action-grid .t-checkbox')).toHaveText([
+    '查看',
+    '新增',
+    '修改门店级别',
+    '编辑',
+    '归档',
+  ]);
+  const archivedStorePermissionRow = roleMatrix.locator('tbody tr').filter({ hasText: '已归档' }).nth(1);
+  await expect(archivedStorePermissionRow.locator('.permission-action-grid .t-checkbox')).toHaveText([
+    '查看',
+    '恢复运营',
+    '彻底删除',
+  ]);
+  const storeLevelPermissionRow = roleMatrix.locator('tbody tr').filter({ hasText: '门店级别管理页' });
+  await expect(storeLevelPermissionRow.locator('.permission-action-grid .t-checkbox')).toHaveText([
+    '查看',
+    '新增',
+    '编辑',
+    '排序',
+    '停用/启用',
+    '删除',
+  ]);
+  await roleModuleList.getByText('商品管理', { exact: true }).click();
+  await expect(roleMatrix.locator('tbody tr')).toHaveCount(37);
+  const finishedRows = roleMatrix.locator('tbody tr');
+  await expect(finishedRows.first()).toContainText('成品现货管理页');
+  const expectedFinishedActions = [
+    ['操作日志'],
+    ['查看'],
+    ['查看', '上架', '编辑', '删除'],
+    ['查看', '下架', '编辑', '删除'],
+    ['查看', '详情'],
+    ['查看', '清空回收站', '详情', '放回仓库', '彻底删除'],
+  ];
+  for (const [index, labels] of expectedFinishedActions.entries()) {
+    await expect(finishedRows.nth(index).locator('.permission-action-grid .t-checkbox')).toHaveText(labels);
+  }
+  await expect(finishedRows.nth(6)).toContainText('配件管理页');
+  for (const [index, labels] of expectedFinishedActions.entries()) {
+    await expect(finishedRows.nth(index + 6).locator('.permission-action-grid .t-checkbox')).toHaveText(labels);
+  }
+  await expect(roleMatrix.locator('tbody .permission-menu-cell')).toHaveText(adminProductSecondMenuLabels);
+  await expect(roleMatrix.locator('tbody .permission-third-menu-cell')).toHaveText(adminProductThirdMenuLabels);
+  const slabGlobalPermissionRow = roleMatrix.locator('tbody tr').filter({ hasText: '页面全局' }).last();
+  await expect(slabGlobalPermissionRow.locator('.permission-action-grid .t-checkbox')).toHaveText(['操作日志']);
+  await expect(roleMatrix.getByText('操作日志', { exact: true })).toHaveCount(3);
+  await expect(roleMatrix.getByText('商品分类管理', { exact: true })).toBeVisible();
+  await expect(roleMatrix.getByText('商品分类管理页', { exact: true })).toBeVisible();
+  const finishedCategoryPermissionRow = roleMatrix.locator('tbody tr').filter({ hasText: '成品现货分类' });
+  const accessoryCategoryPermissionRow = roleMatrix.locator('tbody tr').filter({ hasText: '配件分类' });
+  await expect(finishedCategoryPermissionRow.locator('.permission-action-grid .t-checkbox')).toHaveText(
+    categoryCatalogActionLabels,
+  );
+  await expect(accessoryCategoryPermissionRow.locator('.permission-action-grid .t-checkbox')).toHaveText(
+    categoryCatalogActionLabels,
+  );
+  const attributeActionLabels = ['查看', '新增', '停用/启用', '删除'];
+  const sharedAttributePermissionRow = roleMatrix
+    .locator('tbody tr')
+    .filter({ has: page.getByText('共享基础属性', { exact: true }) });
+  const finishedAttributePermissionRow = roleMatrix.locator('tbody tr').filter({ hasText: '成品现货专属属性' });
+  const accessoryAttributePermissionRow = roleMatrix.locator('tbody tr').filter({ hasText: '配件专属属性' });
+  await expect(sharedAttributePermissionRow.getByText('属性库管理', { exact: true })).toBeVisible();
+  for (const row of [sharedAttributePermissionRow, finishedAttributePermissionRow, accessoryAttributePermissionRow]) {
+    await expect(row.locator('.permission-action-grid .t-checkbox')).toHaveText(attributeActionLabels);
+  }
+  const sharedAttributeValuePermissionRow = roleMatrix.locator('tbody tr').filter({ hasText: '共享基础属性值' });
+  const finishedAttributeValuePermissionRow = roleMatrix.locator('tbody tr').filter({ hasText: '成品现货专属值' });
+  const accessoryAttributeValuePermissionRow = roleMatrix.locator('tbody tr').filter({ hasText: '配件专属值' });
+  await expect(sharedAttributeValuePermissionRow.getByText('属性值管理', { exact: true })).toBeVisible();
+  for (const row of [
+    sharedAttributeValuePermissionRow,
+    finishedAttributeValuePermissionRow,
+    accessoryAttributeValuePermissionRow,
+  ]) {
+    await expect(row.locator('.permission-action-grid .t-checkbox')).toHaveText(attributeActionLabels);
+  }
+  const finishedTemplatePermissionRow = roleMatrix.locator('tbody tr').filter({ hasText: '成品现货模板' });
+  const accessoryTemplatePermissionRow = roleMatrix.locator('tbody tr').filter({ hasText: '配件模板' });
+  await expect(finishedTemplatePermissionRow.getByText('分类属性模板', { exact: true })).toBeVisible();
+  const templateActionLabels = ['查看', '创建新版本草稿', '版本记录', '排序'];
+  await expect(finishedTemplatePermissionRow.locator('.permission-action-grid .t-checkbox')).toHaveText(
+    templateActionLabels,
+  );
+  await expect(accessoryTemplatePermissionRow.locator('.permission-action-grid .t-checkbox')).toHaveText(
+    templateActionLabels,
+  );
+  const markupActionLabels = ['查看', '保存指导价', '新增', '编辑', '停用/启用', '排序', '删除'];
+  const finishedMarkupPermissionRow = roleMatrix.locator('tbody tr').filter({ hasText: '成品价格配置' });
+  const slabMarkupPermissionRow = roleMatrix.locator('tbody tr').filter({ hasText: '大板价格配置' });
+  const accessoryMarkupPermissionRow = roleMatrix.locator('tbody tr').filter({ hasText: '配件价格配置' });
+  await expect(accessoryMarkupPermissionRow.locator('.permission-action-grid .t-checkbox')).toHaveText(
+    markupActionLabels,
+  );
+  await expect(finishedMarkupPermissionRow.getByText('价格配置', { exact: true })).toBeVisible();
+  await expect(finishedMarkupPermissionRow.locator('.permission-action-grid .t-checkbox')).toHaveText(
+    markupActionLabels,
+  );
+  await expect(slabMarkupPermissionRow.locator('.permission-action-grid .t-checkbox')).toHaveText([
+    '查看',
+    '保存指导价',
+    '新增',
+    '编辑',
+    '停用/启用',
+    '排序',
+    '删除',
+  ]);
+  const slabVarietyPermissionRow = roleMatrix.locator('tbody tr').filter({ hasText: '品种管理页' });
+  await expect(slabVarietyPermissionRow.getByText('大板基础数据', { exact: true })).toBeVisible();
+  await expect(slabVarietyPermissionRow.locator('.permission-action-grid .t-checkbox')).toHaveText([
+    '查看',
+    '新增',
+    '编辑',
+    '停用/启用',
+    '删除',
+  ]);
+  const slabOriginPermissionRow = roleMatrix.locator('tbody tr').filter({ hasText: '产地管理页' });
+  await expect(slabOriginPermissionRow.getByText('产地管理', { exact: true })).toBeVisible();
+  await expect(slabOriginPermissionRow.locator('.permission-action-grid .t-checkbox')).toHaveText([
+    '查看',
+    '新增',
+    '编辑',
+    '停用/启用',
+    '删除',
+  ]);
+  const slabTexturePermissionRow = roleMatrix.locator('tbody tr').filter({ hasText: '纹理管理页' });
+  await expect(slabTexturePermissionRow.getByText('纹理管理', { exact: true })).toBeVisible();
+  await expect(slabTexturePermissionRow.locator('.permission-action-grid .t-checkbox')).toHaveText([
+    '查看',
+    '新增',
+    '别名',
+    '编辑',
+    '停用/启用',
+    '删除',
+  ]);
+  const slabColorPermissionRow = roleMatrix.locator('tbody tr').filter({ hasText: '色系管理页' });
+  await expect(slabColorPermissionRow.getByText('色系管理', { exact: true })).toBeVisible();
+  await expect(slabColorPermissionRow.locator('.permission-action-grid .t-checkbox')).toHaveText([
+    '查看',
+    '新增',
+    '色系分类管理',
+    '编辑',
+    '停用/启用',
+    '删除',
+  ]);
+  const slabGradePermissionRow = roleMatrix.locator('tbody tr').filter({ hasText: '等级管理页' });
+  await expect(slabGradePermissionRow.getByText('等级管理', { exact: true })).toBeVisible();
+  await expect(slabGradePermissionRow.locator('.permission-action-grid .t-checkbox')).toHaveText([
+    '查看',
+    '新增',
+    '排序',
+    '编辑',
+    '停用/启用',
+    '删除',
+  ]);
+  await expect(roleMatrix.getByText('成品现货基础数据', { exact: true })).toBeVisible();
+  await expect(roleMatrix.getByText('成品现货工艺管理页', { exact: true })).toBeVisible();
+  const craftPermissionRow = roleMatrix.locator('tbody tr').filter({ hasText: '成品现货工艺管理页' });
+  await expect(craftPermissionRow.locator('.permission-action-grid .t-checkbox')).toHaveText([
+    '查看',
+    '新增',
+    '编辑',
+    '停用/启用',
+    '删除',
+  ]);
+  await roleModuleList.getByText('供应商供货类型管理', { exact: true }).click();
+  const supplierPermissionRow = roleMatrix.locator('tbody tr').filter({ hasText: '供应商供货类型管理' });
+  await expect(supplierPermissionRow.locator('.permission-action-grid .t-checkbox')).toHaveText([
+    '查看',
+    '新增',
+    '编辑',
+    '停用/启用',
+    '删除',
+  ]);
+  await roleModuleList.getByText('权限管理', { exact: true }).click();
+  await expect(roleMatrix.locator('tbody tr')).toHaveCount(3);
+  await expect(roleMatrix.getByText('终端功能分配页', { exact: true })).toHaveCount(0);
+  await expect(roleMatrix.getByText('员工管理', { exact: true })).toBeVisible();
+  await expect(roleMatrix.getByText('员工管理页', { exact: true })).toBeVisible();
+  const employeePermissionRow = roleMatrix.locator('tbody tr').filter({ hasText: '员工管理页' });
+  await expect(employeePermissionRow.locator('.permission-action-grid .t-checkbox')).toHaveText([
+    '查看',
+    '邀请员工',
+    '编辑',
+    '角色',
+    '停用/启用',
+    '删除',
+  ]);
+  const employeeViewPermission = employeePermissionRow.getByRole('checkbox', { name: '查看' });
+  await employeePermissionRow.getByText('编辑', { exact: true }).click();
+  await expect(employeeViewPermission).toBeChecked();
+  await employeePermissionRow.getByText('查看', { exact: true }).click();
+  await expect(employeePermissionRow.locator('.permission-action-grid input[type="checkbox"]:checked')).toHaveCount(0);
+  const rolePermissionRow = roleMatrix.locator('tbody tr').filter({ hasText: '角色管理页' });
+  await expect(rolePermissionRow.locator('.permission-tab-cell')).toHaveText('—');
+  await expect(rolePermissionRow.locator('.permission-action-grid .t-checkbox')).toHaveText([
+    '查看',
+    '新增',
+    '编辑',
+    '权限',
+    '删除',
+  ]);
+  await expect(roleMatrix.getByText('城市合伙人门店角色', { exact: true })).toHaveCount(0);
+  await expect(roleMatrix.getByText('大板供应商门店角色', { exact: true })).toHaveCount(0);
+  await expect(permissionDialog.getByRole('button', { name: '全选全部' })).toBeEnabled();
+  await expect(permissionDialog.getByRole('button', { name: '清空全部' })).toBeEnabled();
+  await expect(permissionDialog.getByRole('checkbox', { name: '全选当前模块' })).toBeEnabled();
+  await permissionDialog.getByRole('button', { name: '取消' }).click();
+
+  await operationRoleRow.getByText('删除', { exact: true }).click();
+  const deleteDialog = page.locator('.t-dialog:visible').filter({ hasText: '是否删除角色' });
+  await expect(deleteDialog).toContainText(
+    '是否删除角色“运营管理平台角色”？删除后，使用该角色的用户将被清空角色并自动停用账号，无法继续登录。请及时为相关用户重新分配角色。',
+  );
+  await deleteDialog.getByRole('button', { name: '取消' }).click();
+});
+
+test('filters terminal allocation to shared and terminal-only modules and persists selection', async ({ page }) => {
+  await page.goto(productWarehouseUrl('/terminal-function-allocation'));
+  const main = page.getByRole('main');
+  const moduleList = main.locator('.permission-module-list');
+  const matrix = main.locator('.permission-matrix');
+  await expect(matrix.locator('thead th')).toHaveText(['二级菜单', '三级菜单', '页面', 'tab', '操作权限']);
+  await expect(page.locator('.side-nav').getByText('门店分类管理', { exact: true })).toHaveCount(0);
+
+  for (const terminal of ['城市合伙人门店管理后台', '大板供应商门店管理后台']) {
+    await main.locator('.terminal-tabs').getByText(terminal, { exact: true }).click();
+    await expect(moduleList.locator('.permission-module-item > span:first-child')).toHaveText([
+      ...(terminal === '城市合伙人门店管理后台' ? ['商品管理', '客户管理', '订单管理', '价格配置'] : []),
+      '供应商管理',
+      '门店分类管理',
+      '权限管理',
+    ]);
+    if (terminal === '城市合伙人门店管理后台') {
+      await moduleList.getByText('商品管理', { exact: true }).click();
+      await expect(matrix.getByText('一级菜单直达')).toHaveCount(0);
+      await expect(matrix.locator('tbody .permission-menu-cell')).toHaveText(['成品现货管理', '配件管理']);
+      await expect(matrix.getByText('成品现货管理页', { exact: true })).toBeVisible();
+      await expect(matrix.getByText('配件管理页', { exact: true })).toBeVisible();
+      for (const tab of ['仓库中', '已上架', '已售完', '回收站']) {
+        await expect(matrix.getByText(tab, { exact: true })).toHaveCount(2);
+      }
+      await moduleList.getByText('客户管理', { exact: true }).click();
+      await expect(matrix.getByText('日常客户', { exact: true })).toBeVisible();
+      await expect(matrix.getByText('归档客户', { exact: true })).toBeVisible();
+      await expect(matrix.locator('.permission-action-grid .t-checkbox')).toHaveText([
+        '查看',
+        '新增',
+        '批量调整归属',
+        '详情',
+        '跟进',
+        '编辑',
+        '归档',
+        '查看',
+        '批量调整归属',
+        '详情',
+        '跟进',
+        '编辑',
+        '取消归档',
+        '彻底删除',
+      ]);
+      await moduleList.getByText('价格配置', { exact: true }).click();
+      await expect(matrix.getByText('一级菜单直达')).toBeVisible();
+      await expect(matrix.getByText('指导价设置')).toHaveCount(0);
+    }
+    await moduleList.getByText('供应商管理', { exact: true }).click();
+    await expect(matrix.locator('.permission-action-grid .t-checkbox')).toHaveText([
+      '查看',
+      '新增',
+      '编辑',
+      '停用/启用',
+      '删除',
+    ]);
+    await moduleList.getByText('门店分类管理', { exact: true }).click();
+    await expect(matrix.getByText('成品现货分类', { exact: true })).toBeVisible();
+    await expect(matrix.getByText('配件分类', { exact: true })).toBeVisible();
+    await expect(matrix.locator('.permission-action-grid .t-checkbox')).toHaveText([
+      ...storeCategoryCatalogActionLabels,
+      ...storeCategoryCatalogActionLabels,
+    ]);
+    await moduleList.getByText('权限管理', { exact: true }).click();
+    await expect(matrix.getByText('员工管理页', { exact: true })).toBeVisible();
+    await expect(matrix.getByText('角色管理页', { exact: true })).toBeVisible();
+    await expect(matrix.getByText('终端功能分配页', { exact: true })).toHaveCount(0);
+    await expect(matrix.locator('.permission-action-grid .t-checkbox')).toHaveCount(11);
+  }
+
+  await moduleList.getByText('门店分类管理', { exact: true }).click();
+  await matrix.getByText('全选当前模块', { exact: true }).click();
+  const saved = page.waitForRequest(
+    (request) => request.method() === 'PUT' && request.url().endsWith('/terminal-function-policies/supplier'),
+  );
+  await main.getByRole('button', { name: /^确认(?:新增|保存|配置权限)$/, exact: true }).click();
+  const payload = (await saved).postDataJSON();
+  expect(payload.functionPermissions.split(',')).toHaveLength(14);
+  expect(
+    payload.functionPermissions
+      .split(',')
+      .every((value: string) => value.startsWith('admin.tenant.store-category-management.')),
+  ).toBe(true);
+  await expect(page.getByText('修改成功', { exact: true })).toBeVisible();
+  await page.reload();
+  await main.locator('.terminal-tabs').getByText('大板供应商门店管理后台', { exact: true }).click();
+  await moduleList.getByText('门店分类管理', { exact: true }).click();
+  await expect(matrix.locator('.module-allocation-count')).toHaveText('已下放 14 / 14');
+});
+
+test('assigns supply-chain selling delete rights separately for finished stock, accessories and slabs', async ({
+  page,
+}) => {
+  await page.goto(productWarehouseUrl('/terminal-function-allocation'));
+  const main = page.getByRole('main');
+  await main.locator('.terminal-tabs').getByText('供应链协同系统', { exact: true }).click();
+  await main.locator('.permission-module-list').getByText('商品管理', { exact: true }).click();
+  const matrix = main.locator('.permission-matrix');
+  await expect(matrix.getByText('成品现货管理页', { exact: true })).toBeVisible();
+  await expect(matrix.getByText('大板管理页', { exact: true })).toBeVisible();
+  const offShelf = matrix.locator('tbody tr').filter({
+    has: page.locator('.permission-tab-cell').getByText('已上架', { exact: true }),
+  });
+  await expect(offShelf).toHaveCount(3);
+  for (let index = 0; index < 3; index += 1) {
+    const detail = offShelf.nth(index).getByRole('checkbox', { name: '删除', exact: true });
+    await expect(detail).toBeEnabled();
+    await offShelf.nth(index).getByText('删除', { exact: true }).click();
+  }
+
+  const saved = page.waitForRequest(
+    (request) => request.method() === 'PUT' && request.url().endsWith('/terminal-function-policies/supply-chain'),
+  );
+  await main.getByRole('button', { name: /^确认(?:新增|保存|配置权限)$/, exact: true }).click();
+  const permissions = (await saved).postDataJSON().functionPermissions.split(',');
+  expect(permissions).toContain('supply-chain.finished-stock-management.selling.delete');
+  expect(permissions).toContain('supply-chain.accessory-management.selling.delete');
+  expect(permissions).toContain('supply-chain.slab-management.selling.delete');
+});
+
+for (const storeType of ['cityPartner', 'slabSupplier']) {
+  test(`keeps platform functions outside ${storeType} runtime menus and routes`, async ({ page }) => {
+    await page.addInitScript((type) => {
+      window.localStorage.setItem(
+        'zdm-admin-user',
+        JSON.stringify({
+          id: 12,
+          name: '组织管理员',
+          phone: '15900000012',
+          roles: ['STORE_ADMIN'],
+          tenantId: 1,
+          storeId: 1,
+          storeType: type,
+          permissions: ['all'],
+          dataPermission: 'all',
+        }),
+      );
+    }, storeType);
+    await page.goto(productWarehouseUrl('/store-category-management'));
+    await expect(page).toHaveURL(/store-category-management$/);
+    const menu = page.locator('.side-nav');
+    await expect(menu.getByText('门店分类管理', { exact: true })).toBeVisible();
+    await expect(menu.getByText('商品管理', { exact: true })).toHaveCount(storeType === 'cityPartner' ? 1 : 0);
+    await expect(menu.locator('[data-menu-path="/finished-stock-management"]')).toHaveCount(0);
+    await expect(menu.locator('[data-menu-path="/accessory-management"]')).toHaveCount(0);
+    await expect(menu.getByText('租户与门店', { exact: true })).toHaveCount(0);
+    await expect(menu.getByText('终端功能分配', { exact: true })).toHaveCount(0);
+    await page.goto(productWarehouseUrl('/terminal-function-allocation'));
+    await expect(page).not.toHaveURL(/terminal-function-allocation$/);
+    await page.goto(productWarehouseUrl('/product-category'));
+    await expect(page).not.toHaveURL(/product-category$/);
+  });
+}
+
+test('rejects platform allocation access with legacy view permission', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      'zdm-admin-user',
+      JSON.stringify({
+        id: 19,
+        name: '功能分配查看员',
+        phone: '15900000019',
+        roles: ['VIEWER'],
+        permissions: ['admin.permission-management.terminal-function-allocation.view'],
+        dataPermission: 'all',
+      }),
+    );
+  });
+  await page.goto(productWarehouseUrl('/terminal-function-allocation'));
+  await expect(page).not.toHaveURL(/terminal-function-allocation$/);
+  await expect(page.locator('.side-nav').getByText('终端功能分配', { exact: true })).toHaveCount(0);
+});
+
+test('allocates supply chain employee and role management and persists selection', async ({ page }) => {
+  await page.goto(productWarehouseUrl('/terminal-function-allocation'));
+  const main = page.getByRole('main');
+  await main.locator('.terminal-tabs').getByText('供应链协同系统', { exact: true }).click();
+  await main.locator('.permission-module-list').getByText('权限管理', { exact: true }).click();
+  const matrix = main.locator('.permission-matrix');
+  await expect(matrix.locator('.permission-action-grid .t-checkbox')).toHaveText([
+    '查看',
+    '邀请员工',
+    '编辑',
+    '角色',
+    '停用/启用',
+    '删除',
+    '查看',
+    '新增',
+    '编辑',
+    '权限',
+    '删除',
+  ]);
+  await expect(matrix.getByText('终端功能分配页', { exact: true })).toHaveCount(0);
+  await main.getByRole('button', { name: '清空全部', exact: true }).click();
+  await matrix.getByText('全选当前模块', { exact: true }).click();
+  const saved = page.waitForRequest(
+    (r) => r.method() === 'PUT' && r.url().endsWith('/terminal-function-policies/supply-chain'),
+  );
+  await main.getByRole('button', { name: /^确认(?:新增|保存|配置权限)$/, exact: true }).click();
+  const permissions = (await saved).postDataJSON().functionPermissions.split(',');
+  expect(permissions).toHaveLength(11);
+  expect(
+    permissions.every((p: string) => /^(admin.permission-management.(employee|role)-management.supply-chain.)/.test(p)),
+  ).toBe(true);
+  await expect(page.getByText('修改成功', { exact: true })).toBeVisible();
+  await page.reload();
+  await main.locator('.terminal-tabs').getByText('供应链协同系统', { exact: true }).click();
+  await main.locator('.permission-module-list').getByText('权限管理', { exact: true }).click();
+  await expect(matrix.locator('.module-allocation-count')).toHaveText('已下放 11 / 11');
+});
+
+test('supply chain view-only staff pages use own system and hide actions and platform tabs', async ({ page }) => {
+  await page.addInitScript(() =>
+    localStorage.setItem(
+      'zdm-admin-user',
+      JSON.stringify({
+        id: 100,
+        clientCode: 'supply-chain',
+        name: '供应链查看员',
+        roles: ['VIEWER'],
+        dataPermission: 'all',
+        permissions: [
+          'admin.permission-management.employee-management.supply-chain.view',
+          'admin.permission-management.role-management.supply-chain.view',
+        ],
+      }),
+    ),
+  );
+  for (const [path, api] of [
+    ['employee-management', 'employees'],
+    ['role-management', 'roles'],
+  ]) {
+    const request = page.waitForRequest((r) => r.url().includes(`/api/admin/${api}?`));
+    await page.goto(productWarehouseUrl('/' + path));
+    expect(new URL((await request).url()).searchParams.get('clientCode')).toBe('supply-chain');
+    await expect(page.getByRole('main').locator('.t-tabs__nav')).toHaveCount(0);
+    await expect(page.getByRole('main').getByRole('button', { name: /邀请员工|新增/ })).toHaveCount(0);
+  }
+  await expect(page.locator('.side-nav').getByText('终端功能分配', { exact: true })).toHaveCount(0);
+});
+
+test('supply chain manages its own roles independently of creation source', async ({ page }) => {
+  await page.addInitScript(() =>
+    localStorage.setItem(
+      'zdm-admin-user',
+      JSON.stringify({
+        id: 1,
+        clientCode: 'supply-chain',
+        name: '供应链负责人',
+        roles: ['MANAGER'],
+        dataPermission: 'all',
+        permissions: ['view', 'create', 'edit', 'permission', 'delete'].map(
+          (action) => `admin.permission-management.role-management.supply-chain.${action}`,
+        ),
+      }),
+    ),
+  );
+  await page.route(/\/api\/admin\/roles\?clientCode=supply-chain$/, (route) =>
+    route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 0,
+        data: [
+          { id: 300, name: '平台创建角色', code: 'PLATFORM', status: 'enabled', createdByClientCode: 'admin' },
+          { id: 301, name: '供应链自建角色', code: 'LOCAL', status: 'enabled', createdByClientCode: 'supply-chain' },
+          { id: 302, name: '历史来源未确认', code: 'LEGACY', status: 'enabled' },
+        ],
+      }),
+    }),
+  );
+  await page.goto(productWarehouseUrl('/role-management'));
+  for (const name of ['平台创建角色', '历史来源未确认']) {
+    const row = page.locator('tbody tr').filter({ hasText: name });
+    await expect(row).toBeVisible();
+    await expect(row.locator('.table-actions .t-link')).toHaveText(['编辑', '权限', '删除']);
+  }
+  await expect(
+    page.locator('tbody tr').filter({ hasText: '供应链自建角色' }).locator('.table-actions .t-link'),
+  ).toHaveText(['编辑', '权限', '删除']);
+});
+
+test('platform roles stay on its own client and supply-chain administrators have account operations', async ({
+  page,
+}) => {
+  const roleRequests: string[] = [];
+  page.on('request', (r) => {
+    if (r.url().includes('/api/admin/roles?')) roleRequests.push(r.url());
+  });
+  await page.goto(productWarehouseUrl('/role-management'));
+  await expect(page.getByRole('main').locator('.t-tabs__nav')).toHaveCount(0);
+  expect(roleRequests.every((url) => new URL(url).searchParams.get('clientCode') === 'admin')).toBe(true);
+  await page.route(/\/api\/admin\/employees\?clientCode=supply-chain$/, (route) =>
+    route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 0,
+        data: [
+          {
+            id: 901,
+            name: '初始管理员',
+            phone: '15926627771',
+            status: 'enabled',
+            identityType: 'supply_chain_admin',
+          },
+        ],
+      }),
+    }),
+  );
+  await page.goto(productWarehouseUrl('/employee-management'));
+  await page.getByRole('main').locator('.t-tabs__nav-item').filter({ hasText: '供应链协同系统' }).click();
+  const row = page.locator('tbody tr').filter({ hasText: '初始管理员' });
+  await expect(row).toBeVisible();
+  await expect(row).toContainText('管理员');
+  await expect(row.locator('.table-actions .t-link')).toHaveText(['编辑', '停用', '删除']);
+  await expect(page.getByRole('main').getByRole('button', { name: '邀请员工', exact: true })).toBeVisible();
+  await expect(page.getByRole('main').locator('.zdm-admin-filter-form')).toBeVisible();
+  await page.locator('.name-filter input').fill('不匹配的姓名');
+  await page.getByRole('button', { name: '查询', exact: true }).click();
+  await expect(row).toHaveCount(0);
+  await page.getByRole('button', { name: '重置', exact: true }).click();
+  await expect(row).toBeVisible();
+  expect(roleRequests.every((url) => new URL(url).searchParams.get('clientCode') === 'admin')).toBe(true);
+});
+
+test('platform edits, disables, enables and deletes only the selected supply-chain administrator', async ({ page }) => {
+  let administrator = {
+    id: 901,
+    name: '供应链管理员',
+    phone: '15926627771',
+    gender: 'female',
+    remark: '',
+    status: 'enabled',
+    identityType: 'supply_chain_admin',
+  };
+  await page.route(/\/api\/admin\/employees\?clientCode=supply-chain$/, (route) =>
+    route.fulfill({ contentType: 'application/json', body: JSON.stringify({ code: 0, data: [administrator] }) }),
+  );
+  const mutations: string[] = [];
+  await page.route(/\/api\/admin\/supply-chain-administrators\/901(?:\/status)?$/, (route) => {
+    mutations.push(route.request().method() + ' ' + new URL(route.request().url()).pathname);
+    if (route.request().method() === 'DELETE') {
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ code: 0, data: true }) });
+    }
+    administrator = { ...administrator, ...route.request().postDataJSON() };
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ code: 0, data: administrator }) });
+  });
+  await page.goto(productWarehouseUrl('/employee-management'));
+  await page.getByRole('main').locator('.t-tabs__nav-item').filter({ hasText: '供应链协同系统' }).click();
+  const row = page.locator('tbody tr').filter({ hasText: '15926627771' });
+  await expect(row.locator('.table-actions .t-link')).toHaveText(['编辑', '停用', '删除']);
+  await row.getByText('编辑', { exact: true }).click();
+  const profile = page.locator('.t-dialog:visible').filter({ hasText: '编辑资料' });
+  await expect(profile).toBeVisible();
+  await profile.locator('input').first().fill('供应链管理员新名');
+  await profile.locator('textarea').fill('管理员备注');
+  await profile
+    .getByRole('button', {
+      name: /^确认(?:新增|保存|(?:批量)?(?:下架|调整归属)|配置权限|业务开通|添加属性|邀请员工)$/,
+      exact: true,
+    })
+    .click();
+  await expect(profile).toBeHidden();
+  await expect(row).toContainText('供应链管理员新名');
+  for (const action of ['停用', '启用']) {
+    await row.getByText(action, { exact: true }).last().click();
+    const confirm = page.locator('.t-dialog:visible').filter({ hasText: `是否${action}员工` });
+    await confirm.getByRole('button', { name: `确认${action}`, exact: true }).click();
+    await expect(confirm).toBeHidden();
+    await expect(row.locator('.table-actions .t-link')).toHaveText([
+      '编辑',
+      action === '停用' ? '启用' : '停用',
+      '删除',
+    ]);
+  }
+  await row.getByText('删除', { exact: true }).click();
+  const confirm = page.locator('.t-dialog:visible').filter({ hasText: '是否删除员工' });
+  await confirm.getByRole('button', { name: '确认删除', exact: true }).click();
+  await expect(row).toHaveCount(0);
+  expect(mutations).toEqual([
+    'PUT /api/admin/supply-chain-administrators/901',
+    'PATCH /api/admin/supply-chain-administrators/901/status',
+    'PATCH /api/admin/supply-chain-administrators/901/status',
+    'DELETE /api/admin/supply-chain-administrators/901',
+  ]);
+});
+
+test('shows only granted attribute tabs and falls back to the first accessible tab', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      'zdm-admin-user',
+      JSON.stringify({
+        id: 12,
+        name: '属性库多 Tab 管理员',
+        phone: '15926620012',
+        roles: ['ATTRIBUTE_TAB_VIEWER'],
+        permissions: [
+          'admin.product-data-center.attribute.finished.view',
+          'admin.product-data-center.attribute.accessory.view',
+        ],
+        dataPermission: 'self',
+      }),
+    );
+  });
+
+  await page.goto(productWarehouseUrl('/product-attribute'));
+  const main = page.getByRole('main');
+
+  await expect(main.locator('.scope-controls .t-tabs__nav-item')).toHaveText(['成品现货专属属性', '配件专属属性']);
+  await expect(main.getByText('E2E 成品现货专属属性', { exact: true })).toBeVisible();
+  await expect(main.getByText('E2E 共享属性', { exact: true })).toHaveCount(0);
+  await expect(main.locator('.zdm-admin-page-header')).toHaveCount(0);
+});
+
+test('shows only granted attribute-value tabs and falls back to the first accessible tab', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      'zdm-admin-user',
+      JSON.stringify({
+        id: 14,
+        name: '属性值多 Tab 管理员',
+        phone: '15926620014',
+        roles: ['ATTRIBUTE_VALUE_TAB_VIEWER'],
+        permissions: [
+          'admin.product-data-center.attribute-value.finished.view',
+          'admin.product-data-center.attribute-value.accessory.view',
+        ],
+        dataPermission: 'self',
+      }),
+    );
+  });
+
+  await page.goto(productWarehouseUrl('/product-attribute-value'));
+  const main = page.getByRole('main');
+
+  await expect(main.locator('.scope-controls .t-tabs__nav-item')).toHaveText(['成品现货专属值', '配件专属值']);
+  await expect(main.getByText('E2E 成品现货专属值', { exact: true })).toBeVisible();
+  await expect(main.getByText('E2E 共享属性值', { exact: true })).toHaveCount(0);
+});
+
+for (const identity of [
+  { name: '普通平台all账号', clientCode: 'admin', roles: ['ADMIN_MANAGER'] },
+  { name: '供应链超级管理员', clientCode: 'supply-chain', roles: ['SUPER_ADMIN'] },
+  { name: '有租户归属的超级管理员', clientCode: 'admin', roles: ['SUPER_ADMIN'], tenantId: 1 },
+]) {
+  test(`terminal allocation rejects ${identity.name} even with all and legacy permissions`, async ({ page }) => {
+    await page.addInitScript((user) => {
+      window.localStorage.setItem(
+        'zdm-admin-user',
+        JSON.stringify({
+          id: 19,
+          phone: '15900000019',
+          ...user,
+          permissions: [
+            'all',
+            'admin.permission-management.terminal-function-allocation.view',
+            'admin.permission-management.terminal-function-allocation.save',
+          ],
+        }),
+      );
+    }, identity);
+    await page.goto(productWarehouseUrl('/terminal-function-allocation'));
+    await expect(page).not.toHaveURL(/terminal-function-allocation$/);
+    await expect(page.locator('.side-nav').getByText('终端功能分配', { exact: true })).toHaveCount(0);
+  });
+}
+
+test('builtin store manager exposes permissions only while ordinary roles keep edit and delete', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      'zdm-admin-user',
+      JSON.stringify({
+        id: 7,
+        name: '管理员',
+        clientCode: 'admin',
+        tenantId: 1,
+        storeId: 2,
+        storeType: 'cityPartner',
+        roles: ['STORE_ADMIN'],
+        permissions: ['all'],
+        dataPermission: 'all',
+      }),
+    );
+  });
+  await page.route('**/api/admin/roles**', async (route) => {
+    if (route.request().url().includes('permission-scope'))
+      return route.fulfill({
+        json: { code: 0, data: { audience: 'store', functionPermissions: 'store.customer-management.daily.view' } },
+      });
+    return route.fulfill({
+      json: {
+        code: 0,
+        data: [
+          {
+            id: 701,
+            name: '店长',
+            code: 'OLD_MANAGER',
+            builtinKey: 'STORE_MANAGER',
+            status: 'enabled',
+            dataScope: 'all',
+            functionPermissions: '',
+            createdAt: '2026-10-16T10:00:00',
+          },
+          {
+            id: 702,
+            name: '普通导购',
+            code: 'GUIDE',
+            status: 'enabled',
+            dataScope: 'all',
+            functionPermissions: '',
+            createdAt: '2026-10-16T10:00:00',
+          },
+        ],
+      },
+    });
+  });
+  await page.goto(productWarehouseUrl('/role-management'));
+  const manager = page.locator('tbody tr').filter({ hasText: '店长' });
+  await expect(manager.locator('.table-actions .t-link')).toHaveText(['权限']);
+  const ordinary = page.locator('tbody tr').filter({ hasText: '普通导购' });
+  await expect(ordinary.locator('.table-actions .t-link')).toHaveText(['编辑', '权限', '删除']);
+  await manager.getByText('权限', { exact: true }).click();
+  await expect(page.getByText('权限配置', { exact: true })).toBeVisible();
+});
+
+test('store role customer matrix retains bulk assignment and removes retired standalone grants', async ({ page }) => {
+  await page.addInitScript(() =>
+    localStorage.setItem(
+      'zdm-admin-user',
+      JSON.stringify({
+        id: 7,
+        name: '管理员',
+        clientCode: 'admin',
+        tenantId: 1,
+        storeId: 2,
+        storeType: 'cityPartner',
+        roles: ['STORE_ADMIN'],
+        permissions: ['all'],
+        dataPermission: 'all',
+      }),
+    ),
+  );
+  let saved: Record<string, unknown> | undefined;
+  const role = {
+    id: 702,
+    name: '普通导购',
+    code: 'GUIDE',
+    status: 'enabled',
+    dataScope: 'all',
+    functionPermissions: 'store.customer-management.daily.assign,store.customer-management.archived.assign',
+    createdAt: '2026-10-16T10:00:00',
+  };
+  await page.route('**/api/admin/roles**', async (route) => {
+    if (route.request().url().includes('permission-scope'))
+      return route.fulfill({ json: { code: 0, data: { audience: 'store', functionPermissions: 'all' } } });
+    if (route.request().method() === 'PUT') {
+      saved = route.request().postDataJSON();
+      return route.fulfill({ json: { code: 0, data: { ...role, ...saved } } });
+    }
+    return route.fulfill({ json: { code: 0, data: [role] } });
+  });
+  await page.goto(productWarehouseUrl('/role-management'));
+  await page.locator('tbody tr').filter({ hasText: '普通导购' }).getByText('权限', { exact: true }).click();
+  const dialog = page.locator('.t-dialog:visible').filter({ hasText: '权限配置' });
+  await dialog.locator('.permission-module-list').getByText('客户管理', { exact: true }).click();
+  const matrix = dialog.locator('.permission-matrix');
+  await expect(matrix.locator('.permission-action-grid .t-checkbox')).toHaveText([
+    '查看',
+    '新增',
+    '批量调整归属',
+    '详情',
+    '跟进',
+    '编辑',
+    '归档',
+    '查看',
+    '批量调整归属',
+    '详情',
+    '跟进',
+    '编辑',
+    '取消归档',
+    '彻底删除',
+  ]);
+  const daily = matrix.locator('tbody tr').filter({ hasText: '日常客户' });
+  await daily
+    .locator('.t-checkbox')
+    .filter({ hasText: /^编辑$/ })
+    .click();
+  await dialog.getByRole('button', { name: '确认配置权限', exact: true }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.locator('.zdm-admin-feedback.t-is-success')).toHaveText('修改成功');
+  expect(String(saved?.functionPermissions).split(',').sort()).toEqual([
+    'store.customer-management.daily.edit',
+    'store.customer-management.daily.view',
+  ]);
+});
+
+for (const [terminal, action, client, modules] of [
+  [
+    '供应链协同系统',
+    '发布商品',
+    'supply-chain',
+    ['finished-stock-management', 'accessory-management', 'slab-management'],
+  ],
+  ['城市合伙人门店管理后台', '选品中心', 'store', ['finished-stock-management', 'accessory-management']],
+] as const) {
+  test(`${terminal} saves global ${action} once per module without selecting logs or state views`, async ({ page }) => {
+    await page.goto('/terminal-function-allocation');
+    const main = page.getByRole('main');
+    await main.locator('.terminal-tabs').getByText(terminal, { exact: true }).click();
+    await main.getByRole('button', { name: '清空全部', exact: true }).click();
+    await main.locator('.permission-module-list').getByText('商品管理', { exact: true }).click();
+    const matrix = main.locator('.permission-matrix');
+    const globals = matrix
+      .locator('tbody tr')
+      .filter({ has: page.locator('.permission-tab-cell').getByText('页面全局', { exact: true }) });
+    await expect(globals).toHaveCount(modules.length);
+    for (let i = 0; i < modules.length; i++) {
+      await expect(globals.nth(i).locator('.permission-action-grid .t-checkbox')).toHaveText([action, '操作日志']);
+      await globals.nth(i).getByText(action, { exact: true }).click();
+      await expect(globals.nth(i).getByRole('checkbox', { name: '操作日志', exact: true })).not.toBeChecked();
+    }
+    const allRows = matrix
+      .locator('tbody tr')
+      .filter({ has: page.locator('.permission-tab-cell').getByText('全部', { exact: true }) });
+    await expect(allRows).toHaveCount(modules.length);
+    for (let i = 0; i < modules.length; i++)
+      await expect(allRows.nth(i).locator('.permission-action-grid .t-checkbox')).toHaveText(['查看']);
+    const saved = page.waitForRequest(
+      (r) => r.method() === 'PUT' && r.url().endsWith(`/terminal-function-policies/${client}`),
+    );
+    await main.getByRole('button', { name: /^确认(?:新增|保存|配置权限)$/, exact: true }).click();
+    expect((await saved).postDataJSON().functionPermissions.split(',').sort()).toEqual(
+      modules.map((m) => `${client}.${m}.${client === 'store' ? 'select' : 'publish'}`).sort(),
+    );
+    await page.reload();
+    await main.locator('.terminal-tabs').getByText(terminal, { exact: true }).click();
+    await main.locator('.permission-module-list').getByText('商品管理', { exact: true }).click();
+    for (let i = 0; i < modules.length; i++)
+      await expect(globals.nth(i).getByRole('checkbox', { name: action, exact: true })).toBeChecked();
+  });
+}
+
+test('store role uses terminal global product-center candidates and saves without hidden state or log grants', async ({
+  page,
+}) => {
+  await page.addInitScript(() =>
+    localStorage.setItem(
+      'zdm-admin-user',
+      JSON.stringify({
+        id: 7,
+        name: '管理员',
+        clientCode: 'admin',
+        tenantId: 1,
+        storeId: 2,
+        storeType: 'cityPartner',
+        roles: ['STORE_ADMIN'],
+        permissions: ['all'],
+        dataPermission: 'all',
+      }),
+    ),
+  );
+  const grant = 'store.finished-stock-management.select';
+  let permissions = '';
+  await page.route('**/api/admin/roles**', async (route) => {
+    if (route.request().url().includes('permission-scope'))
+      return route.fulfill({ json: { code: 0, data: { audience: 'store', functionPermissions: grant } } });
+    if (route.request().method() === 'PUT') {
+      permissions = route.request().postDataJSON().functionPermissions;
+      return route.fulfill({
+        json: {
+          code: 0,
+          data: {
+            id: 702,
+            name: '普通导购',
+            code: 'GUIDE',
+            status: 'enabled',
+            dataScope: 'all',
+            createdAt: '2026-10-16T10:00:00',
+            functionPermissions: permissions,
+          },
+        },
+      });
+    }
+    return route.fulfill({
+      json: {
+        code: 0,
+        data: [
+          {
+            id: 702,
+            name: '普通导购',
+            code: 'GUIDE',
+            status: 'enabled',
+            dataScope: 'all',
+            functionPermissions: permissions,
+            createdAt: '2026-10-16T10:00:00',
+          },
+        ],
+      },
+    });
+  });
+  await page.goto('/role-management');
+  const open = async () =>
+    page.locator('tbody tr').filter({ hasText: '普通导购' }).getByText('权限', { exact: true }).click();
+  await open();
+  const dialog = page.locator('.t-dialog:visible').filter({ hasText: '权限配置' });
+  const matrix = dialog.locator('.permission-matrix');
+  await expect(matrix.locator('.permission-action-grid .t-checkbox')).toHaveText(['选品中心']);
+  await matrix.getByText('选品中心', { exact: true }).click();
+  await dialog.getByRole('button', { name: '确认配置权限', exact: true }).click();
+  await expect(dialog).toBeHidden();
+  expect(permissions).toBe(grant);
+  await open();
+  await expect(dialog.getByRole('checkbox', { name: '选品中心', exact: true })).toBeChecked();
+  await expect(matrix.locator('.permission-action-grid .t-checkbox')).toHaveText(['选品中心']);
+});

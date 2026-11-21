@@ -1,0 +1,47 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: zdm-platform-backend
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+  datasource:
+    url: ${ZDM_DB_URL:jdbc:mysql://127.0.0.1:3306/zdm_admin?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai}
+    username: ${ZDM_DB_USERNAME:zdm_admin}
+    password: ${ZDM_DB_PASSWORD:zdm_admin_pwd}
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    banner: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+zdm:
+  store-exit:
+    ledger-directory: ${ZDM_STORE_EXIT_LEDGER_DIR:}
+    ledger-service-url: ${ZDM_STORE_EXIT_LEDGER_URL:http://zdm-store-exit-ledger-SCOPE:8090}
+  security:
+    dev-tokens-enabled: ${ZDM_SECURITY_DEV_TOKENS_ENABLED:false}
+    verification-code: ${ZDM_SECURITY_VERIFICATION_CODE:}
+    session-duration: ${ZDM_SECURITY_SESSION_DURATION:PT12H}
+  media:
+    storage-path: ${ZDM_MEDIA_DIR:/data/zdm/craft-images}
+    cleanup-cron: ${ZDM_MEDIA_CLEANUP_CRON:0 0 0 * * *}
+    retry-delay-ms: ${ZDM_MEDIA_RETRY_DELAY_MS:60000}
+    time-zone: Asia/Shanghai
