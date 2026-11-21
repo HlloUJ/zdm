@@ -1,0 +1,67 @@
+import { request } from './http';
+
+export interface EmployeeInviteResponse {
+  identityType?: string;
+  token: string;
+  expiresAt: string;
+  clientCode: 'admin' | 'supply-chain';
+}
+
+export interface VerifyInviteCodePayload {
+  phone: string;
+  verifyCode: string;
+}
+
+export interface RequestInviteCodePayload {
+  phone: string;
+}
+
+export interface EmployeeInviteRegisterPayload extends VerifyInviteCodePayload {
+  name: string;
+  gender: 'male' | 'female';
+}
+
+export interface EmployeeInviteRegisterResponse {
+  identityType?: string;
+  employeeId: number | null;
+  status: 'enabled' | 'disabled';
+  existingAccount: boolean;
+  existingEmployee: boolean;
+  canLogin: boolean;
+}
+
+export interface EmployeeInviteVerifyResponse {
+  requiresProfile: boolean;
+  registration: EmployeeInviteRegisterResponse | null;
+}
+
+export function createEmployeeInvite(clientCode: 'admin' | 'supply-chain') {
+  return request<EmployeeInviteResponse>(`/admin/employee-invites?clientCode=${encodeURIComponent(clientCode)}`, {
+    method: 'POST',
+  });
+}
+
+export function inspectEmployeeInvite(token: string) {
+  return request<EmployeeInviteResponse>(`/open/employee-invites/${encodeURIComponent(token)}`);
+}
+
+export function requestEmployeeInviteCode(token: string, payload: RequestInviteCodePayload) {
+  return request<boolean>(`/open/employee-invites/${encodeURIComponent(token)}/request-code`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function verifyEmployeeInviteCode(token: string, payload: VerifyInviteCodePayload) {
+  return request<EmployeeInviteVerifyResponse>(`/open/employee-invites/${encodeURIComponent(token)}/verify-code`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function registerEmployeeInvite(token: string, payload: EmployeeInviteRegisterPayload) {
+  return request<EmployeeInviteRegisterResponse>(`/open/employee-invites/${encodeURIComponent(token)}/register`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}

@@ -1,0 +1,380 @@
+/* prettier-ignore */
+@import url('../components/foundation/official/query-layout.css');
+@import url('../components/foundation/official/responsive-layout.css');
+@import url('../components/foundation/official/product-form-layout.css');
+@import url('../components/foundation/official/form-feedback-layout.css');
+@import url('../components/foundation/official/textarea-count-layout.css');
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+html {
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+}
+
+body {
+  font: var(--td-font-body-medium);
+  font-family: -apple-system, BlinkMacSystemFont, var(--td-font-family);
+  background: var(--td-bg-color-page);
+  color: var(--td-text-color-secondary);
+  min-width: 0;
+  -webkit-font-smoothing: antialiased;
+  padding: 0;
+}
+
+pre {
+  font-family: var(--td-font-family);
+}
+
+ul,
+dl,
+li,
+dd,
+dt {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+figure,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin: 0;
+}
+
+.admin-layout {
+  min-height: 100vh;
+  background: var(--td-bg-color-page);
+}
+
+.admin-layout .top-nav,
+.admin-layout > .top-nav.top-nav {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--td-comp-paddingLR-xl);
+  background: var(--td-bg-color-container);
+  border-bottom: 1px solid var(--td-component-border);
+}
+
+.admin-layout > .top-nav.top-nav .brand {
+  width: 224px;
+  height: 100%;
+  flex: 0 0 224px;
+  display: flex;
+  align-items: center;
+  gap: var(--td-comp-margin-s);
+}
+
+.admin-layout > .top-nav.top-nav .brand-logo {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: var(--td-text-color-anti);
+  background: var(--td-brand-color);
+  font: var(--td-font-title-small);
+}
+
+.admin-layout > .top-nav.top-nav .brand-title {
+  color: var(--td-text-color-primary);
+  font: var(--td-font-title-medium);
+}
+
+.admin-layout > .top-nav.top-nav .brand-subtitle {
+  margin-top: 2px;
+  color: var(--td-text-color-placeholder);
+  font: var(--td-font-body-small);
+}
+
+.admin-layout > .top-nav.top-nav .top-actions {
+  margin-left: auto;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--td-comp-margin-s);
+}
+
+.admin-layout > .top-nav.top-nav .user-entry {
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--td-comp-margin-s);
+  padding: 0 var(--td-comp-paddingLR-s);
+  color: var(--td-text-color-secondary);
+  font: var(--td-font-body-medium);
+}
+
+.admin-layout .admin-shell,
+.admin-layout > .admin-shell.admin-shell {
+  min-height: calc(100vh - 64px);
+  display: flex;
+  align-items: stretch;
+  background: var(--td-bg-color-page);
+}
+
+.admin-layout .side-nav,
+.admin-layout > .admin-shell > .side-nav:not(.side-nav--compact) {
+  width: 232px;
+  flex: 0 0 232px;
+  order: 0;
+  align-self: stretch;
+  padding: 0;
+  background: var(--td-bg-color-container);
+  border-right: 1px solid var(--td-component-border);
+}
+
+.admin-layout .page,
+.admin-layout > .admin-shell > .page.page {
+  min-width: 760px;
+  flex: 1 1 auto;
+  order: 1;
+  padding: var(--td-comp-paddingTB-xl) var(--td-comp-paddingLR-xl) !important;
+}
+
+.admin-layout .page-header,
+.admin-layout > .admin-shell > .page > .page-header.page-header {
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-direction: row;
+  gap: var(--td-comp-margin-l);
+  margin-bottom: var(--td-comp-margin-xxl);
+}
+
+:root {
+  --zdm-admin-page-padding-y: var(--td-comp-paddingTB-xl);
+  --zdm-admin-page-padding-x: var(--td-comp-paddingLR-xl);
+  --zdm-admin-card-padding: var(--td-comp-paddingLR-xxl);
+  --zdm-admin-card-radius: var(--td-radius-medium);
+  --zdm-admin-section-gap: var(--td-comp-margin-xxl);
+}
+
+.zdm-admin-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 24px;
+  margin-bottom: var(--zdm-admin-section-gap);
+}
+
+.zdm-admin-list-layout {
+  display: grid;
+  gap: var(--td-comp-margin-xxl);
+  padding: var(--td-comp-paddingTB-xxl) var(--td-comp-paddingLR-xxl);
+  background: var(--td-bg-color-container);
+  border-radius: var(--td-radius-medium);
+}
+
+/* Existing sibling sections retain their slots/events but share one visual
+   common-table container. The join uses the official table-container margin. */
+.admin-layout .page > .filter-card:has(+ .table-card) {
+  padding-bottom: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.admin-layout .page > .filter-card + .table-card {
+  margin-top: 0;
+  padding-top: var(--td-comp-margin-xxl);
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.admin-layout .table-toolbar {
+  flex-direction: row;
+}
+
+.zdm-admin-list-layout__toolbar {
+  min-width: 0;
+  margin-bottom: var(--td-comp-margin-xxl);
+}
+
+.admin-layout .zdm-admin-list-layout__pagination,
+.admin-layout .zdm-admin-pagination {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0;
+  padding: var(--td-comp-paddingTB-l) var(--td-comp-paddingLR-l);
+}
+
+.admin-layout .zdm-admin-list-layout__pagination .zdm-admin-pagination {
+  width: 100%;
+  margin-top: 0;
+  padding: 0;
+}
+
+.admin-layout .side-nav .menu {
+  width: 224px;
+  margin: 0 auto;
+  border-right: 0;
+}
+
+.admin-layout .side-nav,
+.admin-layout .side-nav .t-menu--scroll {
+  scrollbar-width: none;
+}
+
+.admin-layout .side-nav::-webkit-scrollbar,
+.admin-layout .side-nav .t-menu--scroll::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.admin-layout > .top-nav.top-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.admin-layout .side-nav {
+  position: sticky;
+  top: 64px;
+  height: calc(100vh - 64px);
+  height: calc(100dvh - 64px);
+  overflow: hidden auto;
+  overscroll-behavior-y: contain;
+}
+
+.admin-layout .side-nav .menu {
+  width: 100%;
+}
+
+/* Existing custom drag handles occupy the native table's special drag column.
+   Retain their usable hit area rather than applying normal text-cell padding. */
+.admin-layout .zdm-row-sort-table th:first-child,
+.admin-layout .zdm-row-sort-table td:first-child {
+  padding-left: 0;
+  padding-right: var(--td-comp-paddingLR-s);
+}
+
+.admin-layout .zdm-row-sort-table th:nth-child(2),
+.admin-layout .zdm-row-sort-table td:nth-child(2) {
+  padding-left: 0;
+}
+
+/* Official Starter SideNav uses a 72px collapsed layout placeholder. */
+.admin-layout .side-nav.side-nav--compact {
+  width: 72px;
+  flex-basis: 72px;
+  padding-inline: 4px;
+}
+
+/* Match the native 16px menu spacer with a real hit target. Some pointer
+   transitions do not preserve hover through the native pseudo-element. */
+.zdm-menu-hover-bridge {
+  display: none;
+}
+
+.t-menu__popup .zdm-menu-hover-bridge {
+  display: block;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -16px;
+  width: 16px;
+  z-index: 1;
+}
+
+.t-popup[data-popper-placement^='left'] > .t-menu__popup .zdm-menu-hover-bridge {
+  left: auto;
+  right: -16px;
+}
+
+/* Pagination uses one responsive layout for external controls and native Table.
+   Keep the desktop layout and native control appearance; only reflow when the
+   containing pagination region cannot fit the full set of controls. */
+.admin-layout :is(.zdm-admin-pagination, .zdm-admin-list-layout__pagination, .t-table__pagination) {
+  min-width: 0;
+  container-type: inline-size;
+  container-name: admin-pagination;
+}
+
+@media (max-width: 991px) {
+  .admin-layout .page:has(.t-pagination),
+  .admin-layout > .admin-shell > .page.page:has(.t-pagination) {
+    min-width: 0;
+  }
+
+  .admin-layout .zdm-admin-list-layout:has(.t-pagination) {
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-layout .zdm-admin-list-layout__content:has(.t-pagination),
+  .admin-layout .t-space-item:has(.zdm-admin-pagination) {
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
+@container admin-pagination (max-width: 640px) {
+  .admin-layout .t-pagination {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'total total total'
+      'size size size'
+      'previous pages next';
+    row-gap: var(--td-comp-margin-s);
+    min-width: 0;
+  }
+
+  .admin-layout .t-pagination__total {
+    grid-area: total;
+  }
+
+  .admin-layout .t-pagination__select {
+    grid-area: size;
+    justify-self: end;
+    margin-right: 0;
+  }
+
+  .admin-layout .t-pagination__btn-prev {
+    grid-area: previous;
+  }
+
+  .admin-layout .t-pagination__pager {
+    grid-area: pages;
+    min-width: 0;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    row-gap: var(--td-comp-margin-s);
+  }
+
+  .admin-layout .t-pagination__btn-next {
+    grid-area: next;
+  }
+
+  .admin-layout .t-pagination__jump {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+}
+
+@media (max-width: 767px) {
+  .admin-layout .page .zdm-admin-responsive-panels {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

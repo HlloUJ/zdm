@@ -1,0 +1,525 @@
+import { productWarehouseUrl } from './product-test-navigation';
+import { checkDecimalEditing } from './decimal-editing';
+import { expect, test } from '@playwright/test';
+
+import { installAdminApiMocks } from './admin-api-mocks';
+
+const seedLogin = async (page: import('@playwright/test').Page, permissions: string[], roles = ['ADMIN']) => {
+  await page.addInitScript(
+    ({ permissionValues, roleValues }) => {
+      window.localStorage.setItem('zdm-admin-token', 'dev-token');
+      window.localStorage.setItem(
+        'zdm-admin-user',
+        JSON.stringify({
+          id: 1,
+          name: '运营管理员',
+          roles: roleValues,
+          permissions: permissionValues,
+          dataPermission: 'all',
+        }),
+      );
+    },
+    { permissionValues: permissions, roleValues: roles },
+  );
+};
+
+const mockMarkupConfigurations = async (page: import('@playwright/test').Page) => {
+  const storeLevels = [
+    { id: 11, name: '城市中心店', status: 'enabled', sortOrder: 1 },
+    { id: 12, name: '区域合作店', status: 'enabled', sortOrder: 2 },
+    { id: 13, name: '社区门店', status: 'enabled', sortOrder: 3 },
+  ];
+  const finished = [
+    {
+      id: 3,
+      storeLevelId: 11,
+      name: '城市中心店',
+      priceCoefficient: 1.3,
+      sortOrder: 1,
+      createdByAccountId: 99,
+      createdByName: '其他运营员工',
+      status: 'enabled' as 'enabled' | 'disabled',
+    },
+    {
+      id: 4,
+      storeLevelId: 12,
+      name: '区域合作店',
+      priceCoefficient: 1.1,
+      sortOrder: 2,
+      createdByAccountId: 99,
+      createdByName: '其他运营员工',
+      status: 'enabled' as 'enabled' | 'disabled',
+    },
+  ];
+  const slabs = [
+    {
+      id: 2,
+      storeLevelId: 11,
+      name: '城市中心店',
+      priceCoefficient: 1.2,
+      sortOrder: 1,
+      createdByAccountId: 99,
+      createdByName: '其他运营员工',
+      status: 'enabled' as 'enabled' | 'disabled',
+      autoReferenceCount: 4,
+    },
+    {
+      id: 6,
+      storeLevelId: 12,
+      name: '区域合作店',
+      priceCoefficient: 1.05,
+      sortOrder: 2,
+      createdByAccountId: 99,
+      createdByName: '其他运营员工',
+      status: 'enabled' as 'enabled' | 'disabled',
+      autoReferenceCount: 0,
+    },
+  ];
+  await page.route('**/api/admin/store-levels/pricing-options', async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({ code: 0, message: 'ok', data: storeLevels }),
+    });
+  });
+  await page.route('**/api/admin/finished-markup-configurations**', async (route) => {
+    if (route.request().method() === 'PATCH' && route.request().url().endsWith('/status')) {
+      const id = Number(new URL(route.request().url()).pathname.split('/').at(-2));
+      const row = finished.find((item) => item.id === id)!;
+      row.status = route.request().postDataJSON().status;
+      return route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({ code: 0, message: 'ok', data: row }),
+      });
+    }
+    if (route.request().method() === 'PATCH' && route.request().url().endsWith('/reorder')) {
+      const orderedIds = route.request().postDataJSON().orderedIds as number[];
+      const orderedRows = orderedIds.map((id) => finished.find((item) => item.id === id)!);
+      finished.splice(0, finished.length, ...orderedRows);
+    }
+    if (route.request().method() === 'DELETE') {
+      const id = Number(new URL(route.request().url()).pathname.split('/').at(-1));
+      const index = finished.findIndex((item) => item.id === id);
+      if (index >= 0) finished.splice(index, 1);
+      return route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({ code: 0, message: 'ok', data: true }),
+      });
+    }
+    if (route.request().method() === 'POST') {
+      const payload = route.request().postDataJSON();
+      const level = storeLevels.find((item) => item.id === payload.storeLevelId)!;
+      finished.push({
+        id: 5,
+        name: level.name,
+        createdByAccountId: 1,
+        createdByName: '运营管理员',
+        sortOrder: finished.length + 1,
+        status: 'enabled',
+        ...payload,
+      });
+    }
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({ code: 0, message: 'ok', data: finished }),
+    });
+  });
+  await page.route('**/api/admin/slab-markup-configurations**', async (route) => {
+    if (route.request().method() === 'PATCH' && route.request().url().endsWith('/reorder')) {
+      const orderedIds = route.request().postDataJSON().orderedIds as number[];
+      const orderedRows = orderedIds.map((id) => slabs.find((item) => item.id === id)!);
+      slabs.splice(0, slabs.length, ...orderedRows);
+    }
+    if (route.request().method() === 'PATCH' && route.request().url().endsWith('/status')) {
+      const id = Number(new URL(route.request().url()).pathname.split('/').at(-2));
+      const row = slabs.find((item) => item.id === id)!;
+      row.status = route.request().postDataJSON().status;
+      return route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({ code: 0, message: 'ok', data: row }),
+      });
+    }
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({ code: 0, message: 'ok', data: slabs }),
+    });
+  });
+  await page.route('**/api/admin/finished-guide-price-setting', async (route) => {
+    const coefficient = route.request().method() === 'PUT' ? route.request().postDataJSON().priceCoefficient : 1.5;
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 0,
+        message: 'ok',
+        data: { id: 1, priceCoefficient: coefficient },
+      }),
+    });
+  });
+  await page.route('**/api/admin/slab-guide-price-setting', async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({ code: 0, message: 'ok', data: { id: 2, priceCoefficient: 1.4 } }),
+    });
+  });
+};
+
+test('价格配置引用统一门店级别并仅配置系数', async ({ page }) => {
+  await seedLogin(page, ['all'], ['SUPER_ADMIN']);
+  await mockMarkupConfigurations(page);
+  await page.goto(productWarehouseUrl('/markup-configuration'));
+
+  await expect(page.getByRole('main').locator('.page-header')).toHaveCount(0);
+  await expect(page.getByText('指导价设置', { exact: true })).toBeVisible();
+  await expect(page.getByRole('columnheader', { name: '门店级别' })).toBeVisible();
+  await expect(page.getByRole('columnheader', { name: '状态' })).toBeVisible();
+  await expect(page.locator('thead').getByTitle('拖拽排序')).toBeVisible();
+  await expect(page.getByRole('cell', { name: '城市中心店', exact: true })).toBeVisible();
+
+  const finishedRow = page.getByRole('row').filter({ hasText: '城市中心店' });
+  const finishedStatusRequest = page.waitForRequest(
+    (request) => request.method() === 'PATCH' && request.url().endsWith('/finished-markup-configurations/3/status'),
+  );
+  await finishedRow.getByText('停用', { exact: true }).click();
+  await expect(page.locator('.zdm-admin-confirm-dialog:visible')).toContainText('是否停用成品价格配置“城市中心店”？');
+  await page.getByRole('button', { name: '确认停用', exact: true }).click();
+  expect((await finishedStatusRequest).postDataJSON()).toEqual({ status: 'disabled' });
+  await expect(page.getByText('已停用“城市中心店”', { exact: true })).toBeVisible();
+  await expect(finishedRow.getByText('已停用', { exact: true })).toBeVisible();
+  await expect(finishedRow.locator('.t-tag').filter({ hasText: '已停用' })).toHaveClass(/t-tag--danger/);
+  await expect(finishedRow.getByText('编辑', { exact: true })).toBeVisible();
+
+  const finishedReorderRequest = page.waitForRequest(
+    (request) =>
+      request.method() === 'PATCH' && request.url().endsWith('/api/admin/finished-markup-configurations/reorder'),
+  );
+  await page
+    .getByRole('row')
+    .filter({ hasText: '城市中心店' })
+    .locator('td')
+    .nth(1)
+    .dragTo(page.getByRole('row').filter({ hasText: '区域合作店' }).locator('td').nth(1));
+  expect((await finishedReorderRequest).postDataJSON()).toEqual({ orderedIds: [4, 3] });
+  await expect(page.getByText('已更新排序“城市中心店”', { exact: true })).toBeVisible();
+  await page.getByText('已更新排序“城市中心店”', { exact: true }).first().waitFor({ state: 'detached' });
+
+  const guideCoefficientInput = page.locator('.guide-coefficient-input input');
+  await expect(guideCoefficientInput).toHaveValue('1.50');
+  await checkDecimalEditing(guideCoefficientInput);
+  await guideCoefficientInput.fill('0.5');
+  await guideCoefficientInput.blur();
+  await expect(page.getByText('价格系数不能小于1.00', { exact: true })).toBeVisible();
+
+  await page.getByRole('button', { name: '新增', exact: true }).click();
+  const createDialog = page.locator('.t-dialog:visible').filter({ has: page.getByText('新增', { exact: true }) });
+  await createDialog.getByPlaceholder('请选择门店级别', { exact: true }).click();
+  const levelDropdown = page.locator('.t-select__dropdown:visible');
+  await expect(levelDropdown.getByText('城市中心店', { exact: true })).toBeVisible();
+  await expect(levelDropdown.getByText('区域合作店', { exact: true })).toBeVisible();
+  await levelDropdown.getByText('社区门店', { exact: true }).click();
+  await expect(createDialog.locator('.price-level-select')).toHaveCSS(
+    'width',
+    await createDialog.locator('.price-coefficient-input').evaluate((element) => getComputedStyle(element).width),
+  );
+  await checkDecimalEditing(createDialog.locator('.price-coefficient-input input'));
+  await createDialog.locator('.price-coefficient-input input').fill('-1');
+  await expect(createDialog.locator('.price-coefficient-input input')).toHaveValue('');
+  await createDialog.locator('.price-coefficient-input input').fill('1.234');
+  await createDialog.locator('.price-coefficient-input input').blur();
+  await expect(createDialog.locator('.price-coefficient-input input')).toHaveValue('');
+  await expect(createDialog.getByText('最多输入两位小数', { exact: true })).toHaveCount(0);
+  await createDialog.locator('.price-coefficient-input input').fill('0');
+  await createDialog.locator('.price-coefficient-input input').blur();
+  await expect(createDialog.getByText('请输入正确的价格系数', { exact: true })).toHaveCount(0);
+  await createDialog.locator('.price-coefficient-input input').fill('0.50');
+  const createRequest = page.waitForRequest(
+    (request) => request.method() === 'POST' && request.url().endsWith('/api/admin/finished-markup-configurations'),
+  );
+  await createDialog
+    .getByRole('button', { name: /^确认(?:新增|保存|(?:批量)?(?:下架|调整归属)|配置权限|业务开通|添加属性|邀请员工)$/ })
+    .click();
+  expect((await createRequest).postDataJSON()).toEqual({ storeLevelId: 13, priceCoefficient: 0.5 });
+
+  await page.getByText('大板价格配置', { exact: true }).click();
+  await checkDecimalEditing(page.locator('.guide-coefficient-input input'));
+  await expect(page.getByRole('columnheader', { name: '状态' })).toBeVisible();
+  await expect(page.getByRole('cell', { name: '城市中心店', exact: true })).toBeVisible();
+  await expect(page.getByRole('cell', { name: '1.2', exact: true })).toBeVisible();
+  const slabReorderRequest = page.waitForRequest(
+    (request) =>
+      request.method() === 'PATCH' && request.url().endsWith('/api/admin/slab-markup-configurations/reorder'),
+  );
+  await page
+    .getByRole('row')
+    .filter({ hasText: '城市中心店' })
+    .locator('td')
+    .nth(1)
+    .dragTo(page.getByRole('row').filter({ hasText: '区域合作店' }).locator('td').nth(1));
+  expect((await slabReorderRequest).postDataJSON()).toEqual({ orderedIds: [6, 2] });
+  await expect(page.getByText('已更新排序“城市中心店”', { exact: true })).toBeVisible();
+
+  const slabRow = page.getByRole('row').filter({ hasText: '城市中心店' });
+  const statusRequest = page.waitForRequest(
+    (request) => request.method() === 'PATCH' && request.url().endsWith('/slab-markup-configurations/2/status'),
+  );
+  await slabRow.getByText('停用', { exact: true }).click();
+  await page.getByRole('button', { name: '确认停用', exact: true }).click();
+  expect((await statusRequest).postDataJSON()).toEqual({ status: 'disabled' });
+  await expect(page.getByText('已停用“城市中心店”', { exact: true })).toBeVisible();
+  await expect(slabRow.locator('.t-tag').filter({ hasText: '已停用' })).toHaveClass(/t-tag--danger/);
+  await expect(slabRow.getByText('编辑', { exact: true })).toBeVisible();
+
+  await slabRow.getByText('删除', { exact: true }).click();
+  await expect(page.getByText('该价格配置正在被4条大板价格使用，不能删除，请先停用', { exact: true })).toBeVisible();
+  await expect(page.locator('.zdm-admin-confirm-dialog:visible')).toHaveCount(0);
+
+  const unusedSlabRow = page.getByRole('row').filter({ hasText: '区域合作店' });
+  await unusedSlabRow.getByText('删除', { exact: true }).click();
+  await expect(page.locator('.zdm-admin-confirm-dialog:visible')).toContainText('是否删除价格配置“区域合作店”？');
+});
+
+test('只有一个 Tab 权限时隐藏 Tab 栏', async ({ page }) => {
+  await seedLogin(page, ['admin.product-data-center.markup-configuration.finished.view']);
+  await mockMarkupConfigurations(page);
+  await page.goto(productWarehouseUrl('/markup-configuration'));
+
+  await expect(page.locator('.t-tabs')).toHaveCount(0);
+  await expect(page.getByText('指导价设置', { exact: true })).toBeVisible();
+  await expect(page.locator('.guide-coefficient-input input')).toBeDisabled();
+  await expect(page.getByRole('button', { name: '确认保存' })).toHaveCount(0);
+});
+
+test('价格配置无排序和停启权限时隐藏对应操作', async ({ page }) => {
+  await seedLogin(
+    page,
+    [
+      'admin.product-data-center.markup-configuration.finished.view',
+      'admin.product-data-center.markup-configuration.finished.edit',
+      'admin.product-data-center.markup-configuration.finished.delete',
+    ],
+    ['MARKUP_OPERATOR'],
+  );
+  await mockMarkupConfigurations(page);
+  await page.goto(productWarehouseUrl('/markup-configuration'));
+
+  const row = page.getByRole('row').filter({ hasText: '城市中心店' });
+  await expect(row.getByText('编辑', { exact: true })).toBeVisible();
+  await expect(row.getByText('删除', { exact: true })).toBeVisible();
+  await expect(row.getByText('停用', { exact: true })).toHaveCount(0);
+  await expect(page.locator('.zdm-row-sort-table')).toHaveCount(0);
+
+  await row.getByText('删除', { exact: true }).click();
+  await expect(page.locator('.zdm-admin-confirm-dialog:visible')).toContainText('是否删除价格配置“城市中心店”？');
+  const deleteRequest = page.waitForRequest(
+    (request) => request.method() === 'DELETE' && request.url().endsWith('/api/admin/finished-markup-configurations/3'),
+  );
+  await page.getByRole('button', { name: '确认删除', exact: true }).click();
+  await deleteRequest;
+  await expect(page.getByRole('row').filter({ hasText: '城市中心店' })).toHaveCount(0);
+});
+
+test('大板隐藏停用级别历史价格，启用级别缺失价格不预计算', async ({ page }) => {
+  await seedLogin(page, ['all'], ['SUPER_ADMIN']);
+  await installAdminApiMocks(page);
+  await page.route('**/api/admin/slab-markup-configurations/options', async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 0,
+        message: 'ok',
+        data: [{ id: 8, storeLevelId: 1, name: '当前发布模板', priceCoefficient: 1.2, status: 'enabled' }],
+      }),
+    });
+  });
+  await page.route('**/api/admin/slabs', async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 0,
+        message: 'ok',
+        data: [
+          {
+            id: 901,
+            name: '独立价格大板',
+            serialNo: 'SLAB-SNAPSHOT-901',
+            warehouse: '平台仓',
+            publisherType: '平台发布',
+            createdByName: '运营管理员',
+            costPrice: 100,
+            guidePrice: 150,
+            guidePriceCoefficient: 1.5,
+            markupPrices: [
+              {
+                storeLevelId: 99,
+                storeLevelName: '历史门店级别',
+                priceCoefficient: 1.75,
+                costPrice: 100,
+                price: 175,
+                priceSource: 'manual',
+              },
+            ],
+            status: 'warehouse',
+          },
+        ],
+      }),
+    });
+  });
+
+  await page.goto(productWarehouseUrl('/slab-management'));
+  const row = page.getByRole('row', { name: /独立价格大板/ });
+  await row.getByText('编辑', { exact: true }).click();
+  const drawer = page.locator('.slab-publish-page');
+  await expect(drawer.getByText('历史门店级别', { exact: false })).toHaveCount(0);
+  await expect(drawer.getByText('当前发布模板', { exact: true })).toHaveCount(0);
+  await expect(drawer.locator('input[value="175.00"]')).toHaveCount(0);
+
+  await page.reload();
+  await row.getByText('编辑', { exact: true }).click();
+  await expect(drawer).toBeVisible();
+  const historicalRow = drawer.locator('.price-editor__row').filter({ hasText: '历史门店级别' });
+  await expect(historicalRow).toHaveCount(0);
+  const configuredCurrentLevel = drawer.locator('.price-editor__row').filter({ hasText: '1级' });
+  await expect(configuredCurrentLevel.getByRole('textbox').first()).toHaveValue('1.20');
+  await expect(configuredCurrentLevel.getByRole('textbox').last()).toHaveValue('');
+  const unconfiguredCurrentLevel = drawer.locator('.price-editor__row').filter({ hasText: '2级' });
+  await expect(unconfiguredCurrentLevel.getByRole('textbox').first()).toHaveValue('');
+  await expect(unconfiguredCurrentLevel.getByRole('textbox').last()).toHaveValue('');
+});
+
+test('大板缺少中间级别价格时仍按门店级别顺序展示', async ({ page }) => {
+  await seedLogin(page, ['all'], ['SUPER_ADMIN']);
+  await installAdminApiMocks(page);
+  await page.route('**/api/admin/slabs/form-options', async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 0,
+        message: 'ok',
+        data: {
+          varieties: [],
+          origins: [],
+          textures: [],
+          colorCategories: [],
+          grades: [],
+          suppliers: [],
+          storeLevels: [
+            { id: 1, label: '1级', status: 'enabled' },
+            { id: 2, label: '2级', status: 'enabled' },
+            { id: 3, label: '3级', status: 'enabled' },
+          ],
+        },
+      }),
+    });
+  });
+  await page.route('**/api/admin/slab-markup-configurations/options', async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 0,
+        message: 'ok',
+        data: [
+          { id: 11, storeLevelId: 1, name: '1级', priceCoefficient: 1.1, status: 'enabled' },
+          { id: 12, storeLevelId: 2, name: '2级', priceCoefficient: 1.2, status: 'enabled' },
+          { id: 13, storeLevelId: 3, name: '3级', priceCoefficient: 1.3, status: 'enabled' },
+        ],
+      }),
+    });
+  });
+  await page.route('**/api/admin/slabs', async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 0,
+        message: 'ok',
+        data: [
+          {
+            id: 902,
+            name: '缺失中间级别价格大板',
+            serialNo: 'SLAB-SNAPSHOT-902',
+            warehouse: '平台仓',
+            publisherType: '平台发布',
+            costPrice: 100,
+            guidePrice: 150,
+            guidePriceCoefficient: 1.5,
+            markupPrices: [
+              {
+                storeLevelId: 1,
+                storeLevelName: '1级',
+                priceCoefficient: 1.1,
+                costPrice: 100,
+                price: 110,
+                priceSource: 'auto',
+                sourceConfigurationId: 11,
+              },
+              {
+                storeLevelId: 3,
+                storeLevelName: '3级',
+                priceCoefficient: 1.3,
+                costPrice: 100,
+                price: 130,
+                priceSource: 'auto',
+                sourceConfigurationId: 13,
+              },
+            ],
+            status: 'warehouse',
+          },
+        ],
+      }),
+    });
+  });
+
+  await page.goto(productWarehouseUrl('/slab-management'));
+  await page
+    .getByRole('row', { name: /缺失中间级别价格大板/ })
+    .getByText('编辑', { exact: true })
+    .click();
+  const drawer = page.locator('.slab-publish-page');
+  const rows = drawer.locator('.price-editor__row');
+  await expect(rows).toHaveCount(5);
+  await expect(rows.nth(2)).toContainText('1级');
+  await expect(rows.nth(3)).toContainText('2级');
+  await expect(rows.nth(4)).toContainText('3级');
+});
+
+for (const scope of ['finished', 'accessory', 'slab'] as const) {
+  test(`${scope} 价格配置新增只显示标准成功提示`, async ({ page }) => {
+    await seedLogin(page, ['all'], ['SUPER_ADMIN']);
+    const unmocked: string[] = [];
+    await page.route('**/api/**', (route) => {
+      unmocked.push(`${route.request().method()} ${new URL(route.request().url()).pathname}`);
+      return route.abort('blockedbyclient');
+    });
+    await installAdminApiMocks(page);
+    await mockMarkupConfigurations(page);
+    await page.route('**/api/admin/accessory-guide-price-setting', (route) =>
+      route.fulfill({ json: { code: 0, data: { id: 3, priceCoefficient: 1.5 } } }),
+    );
+    await page.route(new RegExp(`/api/admin/${scope}-markup-configurations(?:\\?.*)?$`), async (route) => {
+      const payload = route.request().method() === 'POST' ? route.request().postDataJSON() : null;
+      await route.fulfill({
+        json: {
+          code: 0,
+          data: payload
+            ? {
+                ...payload,
+                id: 99,
+                name: '社区门店',
+                status: 'enabled',
+                sortOrder: 1,
+              }
+            : [],
+        },
+      });
+    });
+    await page.goto(productWarehouseUrl('/markup-configuration'));
+    if (scope !== 'finished')
+      await page.getByText(scope === 'slab' ? '大板价格配置' : '配件价格配置', { exact: true }).click();
+    await page.getByRole('button', { name: '新增', exact: true }).click();
+    const dialog = page.locator('.t-dialog:visible').filter({ has: page.getByText('新增', { exact: true }) });
+    await dialog.getByPlaceholder('请选择门店级别', { exact: true }).click();
+    await page.locator('.t-select__dropdown:visible').getByText('社区门店', { exact: true }).click();
+    await dialog.locator('.price-coefficient-input input').fill('1.50');
+    await dialog.getByRole('button', { name: '确认新增', exact: true }).click();
+    await expect(page.locator('.zdm-admin-feedback')).toHaveText('已新增“社区门店”');
+    await expect(page.locator('.zdm-admin-feedback')).toHaveCount(1);
+    expect(unmocked).toEqual([]);
+  });
+}

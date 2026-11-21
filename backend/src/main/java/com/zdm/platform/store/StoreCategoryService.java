@@ -1,0 +1,243 @@
+package com.zdm.platform.store;
+
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.zdm.platform.account.CreatorAwareService;
+import com.zdm.platform.security.CurrentIdentityProvider;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class StoreCategoryService extends CreatorAwareService<StoreCategoryMapper, StoreCategory> {
+  private static final String DUPLICATE_NAME_MESSAGE = "同级分类名称不能重复";
+  @org.springframework.beans.factory.annotation.Autowired
+  private com.zdm.platform.inventory.StoreAccessorySalePriceService accessorySalePrices;
+  private final CurrentIdentityProvider identityProvider;
+  private final JdbcTemplate jdbc;
+  private final com.zdm.platform.inventory.StoreFinishedSalePriceService salePrices;
+
+  public StoreCategoryService(CurrentIdentityProvider identityProvider, JdbcTemplate jdbc, com.zdm.platform.inventory.StoreFinishedSalePriceService salePrices) {
+    this.identityProvider = identityProvider;
+    this.jdbc = jdbc;
+    this.salePrices = salePrices;
+  }
+
+  private Long requireStoreId() {
+    var identity = identityProvider.require();
+    if (!"admin".equals(identity.clientCode()) || identity.storeId() == null || identity.tenantId() == null) {
+      throw new AccessDeniedException("当前身份未关联门店");
+    }
+    if (baseMapper.countStore(identity.storeId(), identity.tenantId()) != 1) {
+      throw new AccessDeniedException("当前身份未关联门店");
+    }
+    return identity.storeId();
+  }
+
+  private void requireScope(String scope) {
+    if (!List.of("finished", "accessory").contains(Objects.toString(scope, ""))) {
+      throw new IllegalArgumentException("分类类型不正确");
+    }
+  }
+
+  public List<StoreCategory> listOrdered(String scope) {
+    requireScope(scope);
+    var categories = lambdaQuery().eq(StoreCategory::getStoreId, requireStoreId())
+        .eq(StoreCategory::getScope, scope).orderByAsc(StoreCategory::getSortOrder)
+        .orderByDesc(StoreCategory::getCreatedAt).orderByDesc(StoreCategory::getId).list();
+    if ("finished".equals(scope)) {
+      var counts = new java.util.HashMap<Long, Integer>();
+      jdbc.queryForList("SELECT store_category_id,COUNT(*) AS total FROM store_finished_products WHERE store_id=? AND store_category_id IS NOT NULL GROUP BY store_category_id", requireStoreId())
+          .forEach(row -> counts.put(((Number) row.get("store_category_id")).longValue(), ((Number) row.get("total")).intValue()));
+      categories.forEach(category -> category.setProductCount(counts.getOrDefault(category.getId(), 0)));
+    }
+    if ("accessory".equals(scope)) {
+      var counts = new java.util.HashMap<Long, Integer>();
+      jdbc.queryForList("SELECT store_category_id,COUNT(*) AS total FROM store_accessory_products WHERE store_id=? AND store_category_id IS NOT NULL GROUP BY store_category_id", requireStoreId())
+          .forEach(row -> counts.put(((Number) row.get("store_category_id")).longValue(), ((Number) row.get("total")).intValue()));
+      categories.forEach(category -> category.setProductCount(counts.getOrDefault(category.getId(), 0)));
+    }
+    return categories;
+  }
+
+  public StoreCategory requireCategory(Long id, String scope) {
+    requireScope(scope);
+    StoreCategory category = lambdaQuery().eq(StoreCategory::getId, id)
+        .eq(StoreCategory::getStoreId, requireStoreId()).eq(StoreCategory::getScope, scope).one();
+    if (category == null) {
+      throw new IllegalArgumentException("分类不存在或已被删除");
+    }
+    return category;
+  }
+
+  public boolean hasPriceCoefficient(Long id, String scope) {
+    StoreCategory category = requireCategory(id, scope);
+    Integer count = jdbc.queryForObject("""
+        SELECT COUNT(*) FROM store_price_rules
+        WHERE tenant_id = ? AND store_id = ? AND kind = 'price' AND scope = ? AND category_id = ?
+        """, Integer.class, identityProvider.require().tenantId(), category.getStoreId(), scope, id);
+    return count != null && count > 0;
+  }
+
+  @Transactional
+  public StoreCategory createCategory(StoreCategoryCreateRequest request) {
+    requireScope(request.scope());
+    Long storeId = requireStoreId();
+    if ("finished".equals(request.scope())) { salePrices.lockCategories(storeId); }
+    if ("accessory".equals(request.scope())) { accessorySalePrices.lockCategories(storeId); }
+    if (request.parentId() != null) {
+      jdbc.queryForList("SELECT id FROM store_categories WHERE store_id = ? AND scope = ? AND id = ? FOR UPDATE",
+          storeId, request.scope(), request.parentId());
+      StoreCategory parent = requireCategory(request.parentId(), request.scope());
+      // Read the current rule after acquiring the category lock, not an earlier MySQL snapshot.
+      boolean hasPrice = !jdbc.queryForList("""
+          SELECT id FROM store_price_rules
+          WHERE tenant_id = ? AND store_id = ? AND kind = 'price' AND scope = ? AND category_id = ? FOR UPDATE
+          """, Long.class, identityProvider.require().tenantId(), storeId, request.scope(), parent.getId()).isEmpty();
+      if (hasPrice && !request.confirmPriceRemoval()) {
+        throw new IllegalArgumentException("该分类已设置价格系数，请确认新增下级分类并清除原价格系数");
+      }
+      if (parent.getParentId() != null
+          && requireCategory(parent.getParentId(), request.scope()).getParentId() != null) {
+        throw new IllegalArgumentException("门店分类最多支持三级");
+      }
+    }
+    if ("finished".equals(request.scope()) && request.parentId() != null) {
+      salePrices.freezeCategories(storeId, List.of(request.parentId()));
+    }
+    if ("accessory".equals(request.scope()) && request.parentId() != null) {
+      accessorySalePrices.freezeCategories(storeId, List.of(request.parentId()));
+    }
+    requireUniqueName(request.scope(), request.parentId(), request.name().trim(), null);
+    for (StoreCategory sibling : listSiblings(request.scope(), request.parentId())) {
+      sibling.setSortOrder(sibling.getSortOrder() + 1);
+      updateById(sibling);
+    }
+    StoreCategory category = new StoreCategory();
+    category.setStoreId(storeId);
+    category.setScope(request.scope());
+    category.setParentId(request.parentId());
+    category.setName(request.name().trim());
+    category.setStatus(request.status());
+    category.setProductCount(0);
+    category.setSortOrder(1);
+    category.setCreatedByAccountId(identityProvider.require().accountId());
+    try {
+      save(category);
+    } catch (DuplicateKeyException exception) {
+      throw new IllegalArgumentException(DUPLICATE_NAME_MESSAGE, exception);
+    }
+    if (request.parentId() != null) {
+      jdbc.update("""
+          DELETE FROM store_price_rules
+          WHERE tenant_id = ? AND store_id = ? AND kind = 'price' AND scope = ? AND category_id = ?
+          """, identityProvider.require().tenantId(), storeId, request.scope(), request.parentId());
+    }
+    return requireCategory(category.getId(), request.scope());
+  }
+
+  @Transactional
+  public StoreCategory updateCategory(Long id, String scope, StoreCategoryUpdateRequest request) {
+    if ("finished".equals(scope)) { salePrices.lockCategories(requireStoreId()); }
+    if ("accessory".equals(scope)) { accessorySalePrices.lockCategories(requireStoreId()); }
+    StoreCategory category = requireCategory(id, scope);
+    requireUniqueName(scope, category.getParentId(), request.name().trim(), id);
+    category.setName(request.name().trim());
+    try {
+      updateById(category);
+    } catch (DuplicateKeyException exception) {
+      throw new IllegalArgumentException(DUPLICATE_NAME_MESSAGE, exception);
+    }
+    if (request.status() != null && !request.status().equals(category.getStatus())) {
+      updateStatus(id, scope, request.status());
+    }
+    return requireCategory(id, scope);
+  }
+
+  @Transactional
+  public StoreCategory updateStatus(Long id, String scope, String status) {
+    if ("finished".equals(scope)) { salePrices.lockCategories(requireStoreId()); }
+    if ("accessory".equals(scope)) { accessorySalePrices.lockCategories(requireStoreId()); }
+    StoreCategory category = requireCategory(id, scope);
+    var familyIds = new HashSet<Long>();
+    familyIds.add(id);
+    var categories = listOrdered(scope);
+    boolean changed;
+    do {
+      changed = false;
+      for (StoreCategory child : categories) {
+        if (child.getParentId() != null && familyIds.contains(child.getParentId()) && familyIds.add(child.getId())) {
+          changed = true;
+        }
+      }
+    } while (changed);
+    if ("finished".equals(scope) && "disabled".equals(status)) {
+      salePrices.freezeCategories(category.getStoreId(), List.copyOf(familyIds));
+    }
+    if ("accessory".equals(scope) && "disabled".equals(status)) {
+      accessorySalePrices.freezeCategories(category.getStoreId(), List.copyOf(familyIds));
+    }
+    update(Wrappers.<StoreCategory>lambdaUpdate()
+        .eq(StoreCategory::getStoreId, category.getStoreId()).eq(StoreCategory::getScope, scope)
+        .in(StoreCategory::getId, familyIds).set(StoreCategory::getStatus, status));
+    return requireCategory(id, scope);
+  }
+
+  @Transactional
+  public List<StoreCategory> sortCategories(StoreCategorySortRequest request) {
+    requireScope(request.scope());
+    if (request.parentId() != null) {
+      requireCategory(request.parentId(), request.scope());
+    }
+    var siblings = listSiblings(request.scope(), request.parentId());
+    var ids = request.orderedIds();
+    var expected = siblings.stream().map(StoreCategory::getId).collect(java.util.stream.Collectors.toSet());
+    if (new HashSet<>(ids).size() != ids.size() || !expected.equals(new HashSet<>(ids))) {
+      throw new IllegalArgumentException("只能对当前门店同类型的完整同级分类排序，请刷新后重试");
+    }
+    for (int index = 0; index < ids.size(); index++) {
+      StoreCategory category = requireCategory(ids.get(index), request.scope());
+      category.setSortOrder(index + 1);
+      updateById(category);
+    }
+    return listOrdered(request.scope());
+  }
+
+  @Transactional
+  public void deleteCategory(Long id, String scope) {
+    if ("finished".equals(scope)) { salePrices.lockCategories(requireStoreId()); }
+    if ("accessory".equals(scope)) { accessorySalePrices.lockCategories(requireStoreId()); }
+    StoreCategory category = requireCategory(id, scope);
+    if (!listSiblings(scope, id).isEmpty()) {
+      throw new IllegalArgumentException("该分类包含下级分类，请先删除或转移下级分类");
+    }
+    Long associatedProducts = jdbc.queryForObject("SELECT COUNT(*) FROM " + ("accessory".equals(scope) ? "store_accessory_products" : "store_finished_products") + " WHERE store_id=? AND store_category_id=?", Long.class, category.getStoreId(), id);
+    if (category.getProductCount() != null && category.getProductCount() > 0
+        || associatedProducts != null && associatedProducts > 0) {
+      throw new IllegalArgumentException("该分类已关联商品，不能删除，请先停用该分类");
+    }
+    if (!removeById(id)) {
+      throw new IllegalArgumentException("分类删除失败，请刷新后重试");
+    }
+    var siblings = listSiblings(scope, category.getParentId());
+    for (int index = 0; index < siblings.size(); index++) {
+      siblings.get(index).setSortOrder(index + 1);
+      updateById(siblings.get(index));
+    }
+  }
+
+  private List<StoreCategory> listSiblings(String scope, Long parentId) {
+    return listOrdered(scope).stream().filter(category -> Objects.equals(parentId, category.getParentId())).toList();
+  }
+
+  private void requireUniqueName(String scope, Long parentId, String name, Long excludedId) {
+    if (listSiblings(scope, parentId).stream()
+        .anyMatch(category -> category.getName().equals(name) && !Objects.equals(category.getId(), excludedId))) {
+      throw new IllegalArgumentException(DUPLICATE_NAME_MESSAGE);
+    }
+  }
+}

@@ -1,0 +1,100 @@
+package com.zdm.platform.inventory;
+
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.zdm.platform.account.CreatorAwareService;
+import com.zdm.platform.security.CurrentIdentityProvider;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class SlabOriginService extends CreatorAwareService<SlabOriginMapper, SlabOrigin> {
+  private static final String DUPLICATE_NAME_MESSAGE = "产地名称已存在";
+  private static final String REFERENCED_MESSAGE =
+      "该产地已被大板库存引用，不能删除，请先停用该产地";
+
+  private final SlabInventoryMapper slabInventoryMapper;
+  private final CurrentIdentityProvider identityProvider;
+
+  public SlabOriginService(
+      SlabInventoryMapper slabInventoryMapper,
+      CurrentIdentityProvider identityProvider) {
+    this.slabInventoryMapper = slabInventoryMapper;
+    this.identityProvider = identityProvider;
+  }
+
+  @Transactional
+  public SlabOrigin createOrigin(SlabOrigin origin) {
+    origin.setId(null);
+    normalizeAndValidateName(origin, null);
+    origin.setCreatedByAccountId(identityProvider.require().accountId());
+    save(origin);
+    return origin;
+  }
+
+  @Transactional
+  public SlabOrigin updateOrigin(Long id, SlabOrigin payload) {
+    SlabOrigin existing = getById(id);
+    if (existing == null) {
+      return null;
+    }
+    payload.setId(id);
+    payload.setStatus(existing.getStatus());
+    payload.setCreatedByAccountId(existing.getCreatedByAccountId());
+    normalizeAndValidateName(payload, id);
+    updateById(payload);
+    return getById(id);
+  }
+
+  @Transactional
+  public SlabOrigin updateStatus(Long id, String status) {
+    SlabOrigin existing = getById(id);
+    if (existing == null) {
+      return null;
+    }
+    existing.setStatus(status);
+    updateById(existing);
+    return getById(id);
+  }
+
+  @Transactional
+  public boolean deleteOrigin(Long id) {
+    SlabOrigin existing = getById(id);
+    if (existing == null) {
+      return false;
+    }
+    Long referenceCount = slabInventoryMapper.selectCount(
+        Wrappers.<SlabInventory>lambdaQuery().eq(SlabInventory::getOriginId, id));
+    if (referenceCount > 0) {
+      throw new IllegalArgumentException(REFERENCED_MESSAGE);
+    }
+    try {
+      return removeById(id);
+    } catch (DataIntegrityViolationException exception) {
+      throw new IllegalArgumentException(REFERENCED_MESSAGE, exception);
+    }
+  }
+
+
+  private void normalizeAndValidateName(SlabOrigin origin, Long excludedOriginId) {
+    String originName = origin.getName().trim();
+    origin.setName(originName);
+    var duplicateQuery = lambdaQuery().eq(SlabOrigin::getName, originName);
+    if (excludedOriginId != null) {
+      duplicateQuery.ne(SlabOrigin::getId, excludedOriginId);
+    }
+    if (duplicateQuery.count() > 0) {
+      throw new IllegalArgumentException(DUPLICATE_NAME_MESSAGE);
+    }
+  }
+  @Override
+  public SlabOrigin getById(java.io.Serializable id) {
+    SlabOrigin entity = super.getById(id);
+    if (entity != null) {
+      com.zdm.platform.security.DataScope.requireAccess(
+          identityProvider.require(), entity.getCreatedByAccountId());
+    }
+    return entity;
+  }
+
+}

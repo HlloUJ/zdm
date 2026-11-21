@@ -1,0 +1,204 @@
+<template>
+  <t-drawer
+    :visible="visible"
+    header="操作日志"
+    size="min(1240px, 100%)"
+    :footer="false"
+    @update:visible="emit('update:visible', $event)"
+  >
+    <t-space direction="vertical" size="large" style="width: 100%">
+      <t-form
+        class="zdm-admin-filter-form zdm-standard-query"
+        data-query-layout="log"
+        label-width="80px"
+        :data="filter"
+        colon
+      >
+        <div class="standard-query-row">
+          <div class="operation-log-filters">
+            <t-form-item :label="subjectLabel" class="operation-log-keyword-filter">
+              <t-input
+                :value="filter.keyword"
+                clearable
+                :data-query-search-scope="keywordPlaceholder"
+                :placeholder="controlPlaceholder(keywordPlaceholder ?? subjectLabel, 'input')"
+                @change="emit('filter-change', 'keyword', $event)"
+              />
+            </t-form-item>
+            <t-form-item label="操作类型">
+              <t-select
+                :value="filter.operationType"
+                :popup-props="
+                  operationTypePopupMinWidth
+                    ? { overlayInnerStyle: { width: 'auto', minWidth: operationTypePopupMinWidth } }
+                    : undefined
+                "
+                clearable
+                placeholder="请选择操作类型"
+                @change="emit('filter-change', 'operationType', String($event || ''))"
+              >
+                <t-option v-for="item in typeOptions" :key="item.value" v-bind="item" />
+              </t-select>
+            </t-form-item>
+            <t-form-item label="操作人" class="operation-log-operator-filter">
+              <t-input
+                :value="filter.operatorName"
+                clearable
+                placeholder="请输入操作人"
+                @change="emit('filter-change', 'operatorName', $event)"
+              />
+            </t-form-item>
+            <t-form-item label="操作时间" class="operation-log-date-filter">
+              <t-date-range-picker
+                :value="filter.dateRange"
+                class="operation-log-date-picker"
+                clearable
+                allow-input
+                value-type="YYYY-MM-DD"
+                :placeholder="['请选择开始日期', '请选择结束日期']"
+                @change="emit('filter-change', 'dateRange', Array.isArray($event) ? $event : [])"
+              />
+            </t-form-item>
+          </div>
+          <div class="operation-log-filter-actions">
+            <t-button :theme="buttonTheme('search')" @click="emit('search')"
+              ><template #icon><t-icon name="search" /></template>查询</t-button
+            >
+            <t-button :theme="buttonTheme('reset')" variant="base" @click="emit('reset')"
+              ><template #icon><t-icon name="refresh" /></template>重置</t-button
+            >
+          </div>
+        </div>
+      </t-form>
+      <div>
+        <t-table row-key="id" :data="records" :columns="columns" :loading="loading" hover>
+          <template #subjectName="{ row }">
+            <div>{{ row.subjectName }}</div>
+            <div>ID：{{ row.subjectId }}</div>
+            <div v-if="row.subjectCode && subjectCodeLabel">{{ subjectCodeLabel }}：{{ row.subjectCode }}</div>
+          </template>
+          <template #operationType="{ row }">{{ productOperationTypeLabel(row.operationType) }}</template>
+          <template #operationSummary="{ row }">{{ summaryLabel(row) }}</template>
+          <template #operatedAt="{ row }">{{ formatTime(row.operatedAt) }}</template>
+          <template #operation="{ row }"
+            ><t-link hover="color" :theme="buttonTheme('view')" @click="emit('open-detail', row.id)"
+              >详情</t-link
+            ></template
+          >
+          <template #empty>暂无操作日志</template>
+        </t-table>
+        <AdminPagination
+          :current="pagination.current"
+          :page-size="pagination.pageSize"
+          :total="total"
+          @change="emit('page-change', $event)"
+        />
+      </div>
+    </t-space>
+  </t-drawer>
+  <AdminDialog
+    :confirmation="{ kind: 'close', text: '关闭' }"
+    confirm-function="close"
+    :visible="detailVisible"
+    header="操作详情"
+    width="min(1240px, 94vw)"
+    :cancel-btn="null"
+    @confirm="emit('update:detailVisible', false)"
+    @update:visible="emit('update:detailVisible', $event)"
+  >
+    <t-space v-if="detail" direction="vertical" size="large" style="width: 100%">
+      <t-descriptions title="操作信息" bordered :column="3">
+        <t-descriptions-item :label="`${subjectLabel}名称`" :span="3">{{ detail.subjectName }}</t-descriptions-item>
+        <t-descriptions-item label="操作类型">{{
+          productOperationTypeLabel(detail.operationType)
+        }}</t-descriptions-item>
+        <t-descriptions-item label="操作人">{{ detail.operatorName }}</t-descriptions-item>
+        <t-descriptions-item label="操作时间">{{ formatTime(detail.operatedAt) }}</t-descriptions-item>
+        <t-descriptions-item label="操作来源">{{ sourceLabel(detail) }}</t-descriptions-item>
+        <t-descriptions-item label="操作内容">{{ summaryLabel(detail) }}</t-descriptions-item>
+        <t-descriptions-item v-if="detail.beforeStatus || detail.afterStatus" label="状态变化">
+          {{ statusLabel(detail.beforeStatus) }} → {{ statusLabel(detail.afterStatus) }}
+        </t-descriptions-item>
+      </t-descriptions>
+      <slot name="detail" :detail="detail" />
+      <t-descriptions
+        v-if="showReason(detail) && (detail.standardReason || detail.detailReason)"
+        title="操作说明"
+        bordered
+        :column="2"
+      >
+        <t-descriptions-item label="原因" :span="2">{{ detail.standardReason || '未填写' }}</t-descriptions-item>
+        <t-descriptions-item label="详细说明" :span="2">{{ detail.detailReason || '未填写' }}</t-descriptions-item>
+      </t-descriptions>
+    </t-space>
+  </AdminDialog>
+</template>
+
+<script setup lang="ts">
+import { buttonTheme } from '@/components/foundation/actions/buttonFunctions';
+import { controlPlaceholder } from '@/utils/controlPlaceholder';
+import { computed } from 'vue';
+import type { PrimaryTableCol, TableRowData } from 'tdesign-vue-next';
+import type { PageInfo } from 'tdesign-vue-next';
+import { AdminDialog, AdminPagination } from '@/components/foundation';
+import {
+  productLogTime,
+  productOperationSummary,
+  productOperationTypeLabel,
+  type ProductOperationLogRow,
+} from '@/services/productOperationLog';
+
+type Filter = { keyword: string; operationType: string; operatorName: string; dateRange: string[] };
+type Pagination = { current: number; pageSize: number };
+const props = withDefaults(
+  defineProps<{
+    visible: boolean;
+    detailVisible: boolean;
+    records: ProductOperationLogRow[];
+    detail: ProductOperationLogRow | null;
+    total: number;
+    loading?: boolean;
+    filter: Filter;
+    pagination: Pagination;
+    typeOptions: { value: string; label: string }[];
+    operationTypePopupMinWidth?: string;
+    subjectLabel: string;
+    keywordPlaceholder: string;
+    subjectCodeLabel?: string;
+    statusLabel: (value?: string | null) => string;
+    formatTime?: (value?: string) => string;
+    sourceLabel: (row: ProductOperationLogRow) => string;
+    showReason?: (row: ProductOperationLogRow) => boolean;
+    summaryLabel?: (row: ProductOperationLogRow) => string;
+  }>(),
+  {
+    operationTypePopupMinWidth: undefined,
+    loading: false,
+    subjectCodeLabel: '',
+    formatTime: productLogTime,
+    showReason: () => true,
+    summaryLabel: productOperationSummary,
+  },
+);
+const emit = defineEmits<{
+  'update:visible': [value: boolean];
+  'update:detailVisible': [value: boolean];
+  search: [];
+  reset: [];
+  'filter-change': [field: keyof Filter, value: string | string[]];
+  'page-change': [page: PageInfo];
+  'open-detail': [id: number];
+}>();
+const columns = computed<PrimaryTableCol<TableRowData>[]>(() => [
+  {
+    colKey: 'subjectName',
+    title: `${props.subjectLabel}名称/ID${props.subjectCodeLabel ? `/${props.subjectCodeLabel}` : ''}`,
+    minWidth: 220,
+  },
+  { colKey: 'operationType', title: '操作类型', width: 140 },
+  { colKey: 'operationSummary', title: '操作内容', minWidth: 180 },
+  { colKey: 'operatorName', title: '操作人', width: 120 },
+  { colKey: 'operatedAt', title: '操作时间', width: 180 },
+  { colKey: 'operation', title: '操作', width: 76, fixed: 'right' },
+]);
+</script>
