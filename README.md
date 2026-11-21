@@ -49,4 +49,4 @@ COMPOSE_FILE=docker-compose.yml:compose.private-migrations.yml
 ZDM_PRIVATE_MIGRATIONS_DIR=/absolute/path/to/private-migrations
 ```
 
-在已恢复隔离副本的对应 Compose 数据库上运行 `npm run backend:dev`。首次连接会按 Spring Boot 的正常 Flyway 流程先校验已有迁移，再执行尚未应用的版本。可用 `npm run backend:logs` 查看校验结果。新建普通测试库直接使用前述开发命令。
+在已恢复隔离副本的对应 Compose 数据库上运行 `npm run backend:dev`。首次连接会按 Spring Boot 的正常 Flyway 流程先校验已有迁移，再执行尚未应用的版本。可用 `npm run backend:logs` 查看校验结果。已有库运行与自动化业务测试各自使用独立的构建输出。测试使用公开的合成数据和 Testcontainers 新建的测试库。新建普通测试库直接使用前述开发命令。
