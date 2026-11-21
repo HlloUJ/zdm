@@ -1,0 +1,726 @@
+<template>
+  <div class="admin-layout">
+    <AdminTopNav />
+
+    <div class="admin-shell">
+      <AdminSideMenu />
+
+      <main class="page">
+        <section class="filter-card">
+          <t-form class="zdm-admin-filter-form zdm-standard-query" label-width="80px" :data="searchForm" colon>
+            <div class="filter-row">
+              <div class="filter-fields">
+                <t-form-item label="工艺名称">
+                  <t-input v-model="searchForm.name" clearable placeholder="请输入工艺名称" />
+                </t-form-item>
+                <t-form-item label="工艺类型" class="craft-type-filter">
+                  <t-select v-model="searchForm.type" clearable placeholder="请选择工艺类型">
+                    <t-option
+                      v-for="item in craftTypeOptions"
+                      :key="item.value"
+                      :label="item.label"
+                      :value="item.value"
+                    />
+                  </t-select>
+                </t-form-item>
+                <t-form-item label="工艺宽度">
+                  <div class="width-range">
+                    <DecimalInput
+                      plain
+                      large-number
+                      :model-value="searchForm.widthStart"
+                      clearable
+                      inputmode="decimal"
+                      placeholder="请输入工艺宽度"
+                      @update:model-value="handleWidthSearchInput('widthStart', $event)"
+                    />
+                    <span>-</span>
+                    <DecimalInput
+                      plain
+                      large-number
+                      :model-value="searchForm.widthEnd"
+                      clearable
+                      inputmode="decimal"
+                      placeholder="请输入工艺宽度"
+                      @update:model-value="handleWidthSearchInput('widthEnd', $event)"
+                    />
+                  </div>
+                </t-form-item>
+                <t-form-item label="状态" class="zdm-status-filter craft-status-filter">
+                  <t-select v-model="searchForm.status" clearable placeholder="请选择状态">
+                    <t-option label="启用" value="normal" />
+                    <t-option label="停用" value="disabled" />
+                  </t-select>
+                </t-form-item>
+              </div>
+
+              <div class="filter-actions">
+                <t-button :theme="buttonTheme('search')" @click="handleSearch">
+                  <template #icon><t-icon name="search" /></template>
+                  查询
+                </t-button>
+                <t-button :theme="buttonTheme('reset')" variant="base" @click="handleReset">
+                  <template #icon><t-icon name="refresh" /></template>
+                  重置
+                </t-button>
+              </div>
+            </div>
+          </t-form>
+        </section>
+
+        <section class="table-card">
+          <AdminListToolbar :has-actions="canCreateCraft"
+            ><t-button v-if="canCreateCraft" :theme="buttonTheme('create')" @click="openCreateDialog">
+              <template #icon><t-icon name="add" /></template>
+              新增
+            </t-button></AdminListToolbar
+          >
+
+          <t-table row-key="id" :data="pageData" :columns="columns" :loading="loading" hover table-layout="fixed">
+            <template #index="{ rowIndex }">
+              {{ (pagination.current - 1) * pagination.pageSize + rowIndex + 1 }}
+            </template>
+            <template #image="{ row }">
+              <button class="craft-image" type="button" aria-label="预览工艺图片" @click="openImagePreview(row)">
+                <img v-if="row.image?.[0]?.url" class="craft-image__thumb" :src="row.image[0].url" alt="工艺图片" />
+                <span v-else class="craft-image__empty">暂无图片</span>
+              </button>
+            </template>
+            <template #status="{ row }">
+              <t-tag :theme="row.status === 'normal' ? 'success' : 'danger'" variant="light">
+                {{ row.status === 'normal' ? '启用' : '停用' }}
+              </t-tag>
+            </template>
+            <template #operation="{ row }">
+              <div class="table-actions">
+                <t-link v-if="canEditCraft" :theme="buttonTheme('edit')" hover="color" @click="openEditDialog(row)"
+                  >编辑</t-link
+                >
+                <t-link
+                  v-if="canToggleCraftStatus"
+                  :theme="buttonTheme(row.status === 'normal' ? 'disable' : 'enable')"
+                  hover="color"
+                  @click="openStatusConfirm(row)"
+                >
+                  {{ row.status === 'normal' ? '停用' : '启用' }}
+                </t-link>
+                <t-link
+                  v-if="canDeleteCraft"
+                  :theme="buttonTheme('delete')"
+                  hover="color"
+                  @click="openDeleteConfirm(row)"
+                  >删除</t-link
+                >
+                <span v-if="!canEditCraft && !canToggleCraftStatus && !canDeleteCraft">-</span>
+              </div>
+            </template>
+          </t-table>
+
+          <AdminPagination
+            v-model:current="pagination.current"
+            v-model:page-size="pagination.pageSize"
+            :total="paginationTotal"
+            :page-size-options="pageSizeOptions"
+          />
+        </section>
+      </main>
+    </div>
+
+    <t-dialog
+      v-model:visible="formDialogVisible"
+      dialog-class-name="zdm-admin-dialog zdm-admin-single-form"
+      :header="dialogMode === 'create' ? '新增' : '编辑'"
+      width="480px"
+      placement="center"
+      :close-on-overlay-click="true"
+      :confirm-btn="dialogButtonProps('submit', formConfirmation(dialogMode))"
+      :cancel-btn="cancelButtonProps('取消')"
+      @confirm="handleSubmit"
+      @cancel="closeFormDialog"
+      @close="closeFormDialog"
+    >
+      <t-form ref="formRef" :data="formData" :rules="formRules" label-width="100px" colon>
+        <t-form-item label="工艺图片" name="image">
+          <AdminMediaUpload
+            v-model="formData.image"
+            title="工艺图片"
+            accept="image/*"
+            :show-title="false"
+            label="点击上传图片"
+            :upload="uploadCraftMedia"
+            @uploaded="formRef?.clearValidate(['image'])"
+            @removed="releasePendingCraftMedia"
+            @preview="openFormImagePreview"
+          />
+        </t-form-item>
+        <t-form-item label="工艺名称" name="name">
+          <t-input v-model="formData.name" clearable placeholder="请输入工艺名称" />
+        </t-form-item>
+        <t-form-item label="工艺类型" name="type">
+          <t-select v-model="formData.type" placeholder="请选择工艺类型">
+            <t-option v-for="item in craftTypeOptions" :key="item.value" :label="item.label" :value="item.value" />
+          </t-select>
+        </t-form-item>
+        <t-form-item label="工艺宽度" name="width" :show-error-message="!numericError(formData.width)">
+          <DecimalInput
+            plain
+            large-number
+            :model-value="formData.width"
+            clearable
+            inputmode="decimal"
+            placeholder="请输入工艺宽度"
+            suffix="mm"
+            @update:model-value="handleFormWidthInput"
+          />
+        </t-form-item>
+        <t-form-item label="备注" name="remark">
+          <t-textarea v-model="formData.remark" placeholder="请输入备注" :maxlength="100" :autosize="{}" />
+        </t-form-item>
+      </t-form>
+    </t-dialog>
+
+    <AdminConfirmDialog
+      v-model:visible="confirmDialogVisible"
+      :function="buttonFunctionFor('status', confirmState.type)"
+      :action="confirmState.type === 'delete' ? '删除' : confirmState.type === 'disable' ? '停用' : '启用'"
+      object-type="成品工艺"
+      :object-name="confirmState.row?.name"
+      @confirm="handleConfirm"
+      @cancel="closeConfirmDialog"
+      @close="closeConfirmDialog"
+    >
+      {{ confirmState.content }}
+    </AdminConfirmDialog>
+
+    <AdminDialog
+      v-model:visible="imagePreviewVisible"
+      :header="previewCraftName"
+      :prevent-scroll-through="true"
+      width="min(960px, 94vw)"
+      :confirmation="{ kind: 'none' }"
+      confirm-function="close"
+      mode="modal"
+      show-overlay
+      close-on-overlay-click
+      :footer="false"
+      @close="imagePreviewVisible = false"
+    >
+      <div class="image-preview">
+        <img
+          v-if="previewImageUrl"
+          class="image-preview__img"
+          style="max-width: 100%"
+          :src="previewImageUrl"
+          alt="工艺大图"
+        />
+        <div v-else class="image-preview__empty">暂无图片</div>
+        <div>统一3D工艺图</div>
+      </div>
+    </AdminDialog>
+  </div>
+</template>
+
+<script setup lang="ts">
+import DecimalInput from '@/components/DecimalInput.vue';
+import { numericError } from '@/utils/numericInput';
+import { AdminDialog } from '@/components/foundation';
+import { formConfirmation, dialogButtonProps } from '@/components/foundation/actions/confirmation';
+import { buttonTheme, buttonFunctionFor, cancelButtonProps } from '@/components/foundation/actions/buttonFunctions';
+import { rejectFormSubmission } from '@/utils/submitValidation';
+import AdminListToolbar from '@/components/foundation/AdminListToolbar.vue';
+import type { FormInstanceFunctions, FormRule, PrimaryTableCol, TableRowData, UploadFile } from 'tdesign-vue-next';
+import AdminSideMenu from '@/components/AdminSideMenu.vue';
+import AdminTopNav from '@/components/AdminTopNav.vue';
+import {
+  adminFeedback,
+  AdminConfirmDialog,
+  AdminMediaUpload,
+  AdminPagination,
+  type AdminMediaValue,
+} from '@/components/foundation';
+import { hasPermission } from '@/services/adminPermissions';
+import { getLoginUser } from '@/services/auth';
+import { sortByCreatedAtDesc } from '@/services/recordSorting';
+import {
+  createCraft,
+  deleteCraft,
+  listCrafts,
+  updateCraft,
+  updateCraftStatus,
+  releaseTemporaryCraftImage,
+  uploadCraftImage,
+  type CraftPayload,
+  type CraftRecord,
+} from '@/services/crafts';
+import { computed, onMounted, reactive, ref } from 'vue';
+type CraftStatus = 'normal' | 'disabled';
+type ConfirmType = 'enable' | 'disable' | 'delete';
+
+interface CraftItem {
+  id: number;
+  imageMediaId?: number;
+  image: UploadFile[];
+  name: string;
+  type: string;
+  width: string;
+  status: CraftStatus;
+  createdByName: string;
+  createdByAccountId?: number;
+  createdAt: string;
+  remark?: string;
+}
+
+interface CraftForm {
+  image?: AdminMediaValue;
+  name: string;
+  type: string;
+  width: string;
+  remark: string;
+}
+
+const craftTypeOptions = [
+  { label: '边工艺', value: '边工艺' },
+  { label: '面工艺', value: '面工艺' },
+  { label: '拼接工艺', value: '拼接工艺' },
+];
+const pageSizeOptions = [10, 20, 50];
+const craftPermissionPrefix = 'admin.product-data-center.finished-stock-craft';
+
+const tableData = ref<CraftItem[]>([]);
+const loading = ref(false);
+const loginUser = computed(() => getLoginUser());
+const canCreateCraft = computed(() => hasPermission(loginUser.value, `${craftPermissionPrefix}.create`));
+const canEditCraft = computed(() => hasPermission(loginUser.value, `${craftPermissionPrefix}.edit`));
+const canToggleCraftStatus = computed(() => hasPermission(loginUser.value, `${craftPermissionPrefix}.toggle-status`));
+const canDeleteCraft = computed(() => hasPermission(loginUser.value, `${craftPermissionPrefix}.delete`));
+
+const columns = computed<PrimaryTableCol<TableRowData>[]>(() => [
+  { colKey: 'index', title: '序号', width: 72, align: 'left' },
+  { colKey: 'image', title: '工艺图片', width: 112 },
+  { colKey: 'name', title: '工艺名称', minWidth: 160 },
+  { colKey: 'type', title: '工艺类型', width: 120 },
+  { colKey: 'width', title: '工艺宽度（mm）', width: 150, ellipsisTitle: true },
+  { colKey: 'status', title: '状态', width: 100 },
+  { colKey: 'createdByName', title: '创建人', width: 120 },
+  { colKey: 'createdAt', title: '创建时间', width: 180 },
+  {
+    colKey: 'operation',
+    title: '操作',
+    width: 156,
+    align: 'left',
+    fixed: 'right',
+  },
+]);
+
+const searchForm = reactive({
+  name: '',
+  type: '',
+  widthStart: '',
+  widthEnd: '',
+  status: '',
+});
+const appliedSearchForm = reactive({ ...searchForm });
+
+const pagination = reactive({
+  current: 1,
+  pageSize: 10,
+});
+
+const formRef = ref<FormInstanceFunctions>();
+const formDialogVisible = ref(false);
+const dialogMode = ref<'create' | 'edit'>('create');
+const editingId = ref<number | null>(null);
+const formData = reactive<CraftForm>({
+  image: undefined,
+  name: '',
+  type: '',
+  width: '',
+  remark: '',
+});
+
+const formRules: Record<string, FormRule[]> = {
+  width: [{ validator: (value) => !numericError(value), message: '请输入非负数字，最多两位小数', type: 'error' }],
+  image: [{ required: true, message: '请上传工艺图片', type: 'error' }],
+  name: [{ required: true, message: '请输入工艺名称', type: 'error' }],
+  type: [{ required: true, message: '请选择工艺类型', type: 'error' }],
+};
+
+const confirmDialogVisible = ref(false);
+const imagePreviewVisible = ref(false);
+const previewCraftName = ref('工艺图片');
+const previewImageUrl = ref('');
+const confirmState = reactive<{
+  content: string;
+  type: ConfirmType;
+  row: CraftItem | null;
+}>({
+  content: '',
+  type: 'disable',
+  row: null,
+});
+
+const filteredData = computed(() => {
+  const name = appliedSearchForm.name.trim();
+  const widthStart = Number(appliedSearchForm.widthStart);
+  const widthEnd = Number(appliedSearchForm.widthEnd);
+  const hasWidthStart = appliedSearchForm.widthStart.trim() !== '' && !Number.isNaN(widthStart);
+  const hasWidthEnd = appliedSearchForm.widthEnd.trim() !== '' && !Number.isNaN(widthEnd);
+
+  return tableData.value.filter((item) => {
+    const itemWidth = Number(item.width);
+    const nameMatched = !name || item.name.includes(name);
+    const typeMatched = !appliedSearchForm.type || item.type === appliedSearchForm.type;
+    const widthStartMatched = !hasWidthStart || itemWidth >= widthStart;
+    const widthEndMatched = !hasWidthEnd || itemWidth <= widthEnd;
+    const statusMatched = !appliedSearchForm.status || item.status === appliedSearchForm.status;
+    return nameMatched && typeMatched && widthStartMatched && widthEndMatched && statusMatched;
+  });
+});
+
+const pageData = computed(() => {
+  const start = (pagination.current - 1) * pagination.pageSize;
+  return filteredData.value.slice(start, start + pagination.pageSize);
+});
+
+const paginationTotal = computed(() => filteredData.value.length);
+const normalizeStatus = (status?: CraftRecord['status']): CraftStatus =>
+  status === 'disabled' ? 'disabled' : 'normal';
+
+const toBackendStatus = (status: CraftStatus): CraftPayload['status'] =>
+  status === 'disabled' ? 'disabled' : 'enabled';
+
+const formatDateTime = (value?: string) => {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value.replace(/-/g, '/').replace('T', ' ').slice(0, 16);
+
+  const pad = (num: number) => num.toString().padStart(2, '0');
+  return `${date.getFullYear()}/${pad(date.getMonth() + 1)}/${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+};
+
+const toUploadFiles = (record: CraftRecord): UploadFile[] => {
+  return record.imageUrl ? [{ name: `${record.name || 'craft'}.png`, status: 'success', url: record.imageUrl }] : [];
+};
+
+const toCraftItem = (record: CraftRecord): CraftItem => ({
+  id: record.id,
+  imageMediaId: record.imageMediaId,
+  image: toUploadFiles(record),
+  name: record.name,
+  type: record.type,
+  width: record.width ?? '',
+  status: normalizeStatus(record.status),
+  createdByName: record.createdByName || '-',
+  createdByAccountId: record.createdByAccountId,
+  createdAt: formatDateTime(record.createdAt),
+  remark: record.remark ?? '',
+});
+
+const toCraftPayload = (status: CraftStatus, imageMediaId?: number): CraftPayload => ({
+  name: formData.name.trim(),
+  type: formData.type,
+  width: formData.width,
+  imageMediaId,
+  description: formData.remark.trim(),
+  pricingMethod: formData.width ? 'width' : undefined,
+  remark: formData.remark.trim(),
+  status: toBackendStatus(status),
+});
+
+const loadCrafts = async () => {
+  loading.value = true;
+  try {
+    const records = await listCrafts();
+    tableData.value = sortByCreatedAtDesc(records).map(toCraftItem);
+    ensureCurrentPage();
+  } catch (error) {
+    adminFeedback.error(error instanceof Error ? error.message : '工艺列表加载失败');
+  } finally {
+    loading.value = false;
+  }
+};
+
+const resetFormData = () => {
+  formData.image = undefined;
+  formData.name = '';
+  formData.type = '';
+  formData.width = '';
+  formData.remark = '';
+};
+
+const fillFormData = (row: CraftItem) => {
+  formData.image =
+    row.imageMediaId && row.image[0]?.url
+      ? { name: `${row.name || 'craft'}.png`, mediaId: row.imageMediaId, url: row.image[0].url }
+      : undefined;
+  formData.name = row.name;
+  formData.type = row.type;
+  formData.width = row.width;
+  formData.remark = row.remark ?? '';
+};
+
+const handleSearch = () => {
+  if (numericError(searchForm.widthStart) || numericError(searchForm.widthEnd)) return;
+  Object.assign(appliedSearchForm, searchForm);
+  pagination.current = 1;
+};
+
+const handleWidthSearchInput = (field: 'widthStart' | 'widthEnd', value: string) => {
+  searchForm[field] = value;
+};
+
+const handleFormWidthInput = (value: string) => {
+  formData.width = value;
+};
+
+const handleReset = () => {
+  searchForm.name = '';
+  searchForm.type = '';
+  searchForm.widthStart = '';
+  searchForm.widthEnd = '';
+  searchForm.status = '';
+  handleSearch();
+};
+
+const openCreateDialog = () => {
+  dialogMode.value = 'create';
+  editingId.value = null;
+  resetFormData();
+  formDialogVisible.value = true;
+};
+
+const openEditDialog = (row: CraftItem) => {
+  dialogMode.value = 'edit';
+  editingId.value = row.id;
+  fillFormData(row);
+  formDialogVisible.value = true;
+};
+
+const closeFormDialog = () => {
+  formDialogVisible.value = false;
+  formRef.value?.clearValidate();
+  if (pendingUploadedMediaIds.size) {
+    const mediaIds = [...pendingUploadedMediaIds];
+    pendingUploadedMediaIds.clear();
+    mediaIds.forEach((mediaId) => void releaseTemporaryCraftImage(mediaId));
+  }
+};
+
+const pendingUploadedMediaIds = new Set<number>();
+
+const uploadCraftMedia = async (file: File): Promise<AdminMediaValue> => {
+  const uploaded = await uploadCraftImage(file);
+  pendingUploadedMediaIds.add(uploaded.id);
+  return { name: file.name, mediaId: uploaded.id, url: uploaded.url };
+};
+
+const releasePendingCraftMedia = (media: AdminMediaValue) => {
+  const mediaId = media.mediaId;
+  if (!mediaId || !pendingUploadedMediaIds.has(mediaId)) return;
+  pendingUploadedMediaIds.delete(mediaId);
+  void releaseTemporaryCraftImage(mediaId);
+};
+
+const openFormImagePreview = () => {
+  if (!formData.image?.url) return;
+  previewCraftName.value = formData.name.trim() || '工艺图片';
+  previewImageUrl.value = formData.image.url;
+  imagePreviewVisible.value = true;
+};
+
+const handleSubmit = async () => {
+  const result = await formRef.value?.validate();
+
+  const normalizedName = formData.name.trim();
+  const duplicateName = tableData.value.some(
+    (item) => item.id !== editingId.value && item.name.trim() === normalizedName,
+  );
+  if (duplicateName) {
+    formRef.value?.setValidateMessage({ name: [{ type: 'error', message: '工艺名称已存在' }] });
+  }
+  if (result !== true || duplicateName) return rejectFormSubmission(formRef.value);
+
+  try {
+    const imageMediaId = formData.image?.mediaId;
+    if (dialogMode.value === 'create') {
+      await createCraft(toCraftPayload('normal', imageMediaId));
+      await loadCrafts();
+      pagination.current = 1;
+    } else if (editingId.value) {
+      const current = tableData.value.find((item) => item.id === editingId.value);
+      await updateCraft(editingId.value, toCraftPayload(current?.status ?? 'normal', imageMediaId));
+      await loadCrafts();
+    }
+
+    pendingUploadedMediaIds.clear();
+    closeFormDialog();
+    if (dialogMode.value === 'create') {
+      adminFeedback.created(normalizedName);
+    } else {
+      adminFeedback.actionSuccess({ action: '修改', target: normalizedName });
+    }
+  } catch (error) {
+    adminFeedback.error(error instanceof Error ? error.message : '操作失败');
+  }
+};
+
+const openStatusConfirm = (row: CraftItem) => {
+  const isNormal = row.status === 'normal';
+  confirmState.type = isNormal ? 'disable' : 'enable';
+  confirmState.row = row;
+  confirmState.content = isNormal ? `是否停用工艺“${row.name}”？` : `是否启用工艺“${row.name}”？`;
+  confirmDialogVisible.value = true;
+};
+
+const openDeleteConfirm = (row: CraftItem) => {
+  confirmState.type = 'delete';
+  confirmState.row = row;
+  confirmState.content = `是否删除工艺“${row.name}”？`;
+  confirmDialogVisible.value = true;
+};
+
+const openImagePreview = (row: CraftItem) => {
+  previewCraftName.value = row.name;
+  previewImageUrl.value = row.image[0]?.url ?? '';
+  imagePreviewVisible.value = true;
+};
+
+const closeConfirmDialog = () => {
+  confirmDialogVisible.value = false;
+  confirmState.row = null;
+};
+
+const ensureCurrentPage = () => {
+  const maxPage = Math.max(Math.ceil(filteredData.value.length / pagination.pageSize), 1);
+  if (pagination.current > maxPage) {
+    pagination.current = maxPage;
+  }
+};
+
+const handleConfirm = async () => {
+  if (!confirmState.row) return;
+  const target = confirmState.row;
+  const action = confirmState.type === 'delete' ? '删除' : confirmState.type === 'enable' ? '启用' : '停用';
+
+  try {
+    if (confirmState.type === 'delete') {
+      await deleteCraft(target.id);
+      tableData.value = tableData.value.filter((item) => item.id !== target.id);
+      ensureCurrentPage();
+    } else {
+      const updated = await updateCraftStatus(
+        target.id,
+        toBackendStatus(confirmState.type === 'enable' ? 'normal' : 'disabled'),
+      );
+      const targetIndex = tableData.value.findIndex((item) => item.id === target.id);
+      if (targetIndex !== -1) {
+        tableData.value.splice(targetIndex, 1, toCraftItem(updated));
+      }
+    }
+
+    closeConfirmDialog();
+    if (confirmState.type === 'delete') {
+      adminFeedback.deleted(target.name);
+    } else {
+      adminFeedback.actionSuccess({ action, target: target.name });
+    }
+  } catch (error) {
+    adminFeedback.error(error instanceof Error ? error.message : '操作失败');
+  }
+};
+
+onMounted(loadCrafts);
+</script>
+
+<style scoped>
+.filter-card,
+.table-card {
+  background: var(--td-bg-color-container);
+  padding: var(--td-comp-paddingTB-xxl) var(--td-comp-paddingLR-xxl);
+  border-radius: var(--td-radius-medium);
+}
+
+.table-card {
+  margin-top: var(--td-comp-margin-xxl);
+  padding: var(--td-comp-paddingTB-xxl) var(--td-comp-paddingLR-xxl);
+  border-radius: var(--td-radius-medium);
+}
+
+.width-range {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--td-comp-margin-xs);
+}
+
+.width-range span {
+  color: var(--td-text-color-placeholder);
+}
+
+.table-toolbar {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: var(--td-comp-margin-l);
+  margin-bottom: var(--td-comp-margin-xxl);
+}
+
+.table-toolbar h2 {
+  margin: 0;
+  color: var(--td-text-color-primary);
+  font: var(--td-font-title-medium);
+  letter-spacing: 0;
+}
+
+.table-toolbar p {
+  margin: var(--td-comp-margin-xxs) 0 0;
+  color: var(--td-text-color-secondary);
+  font: var(--td-font-body-medium);
+}
+
+.craft-image {
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  border-radius: var(--td-radius-medium);
+  color: var(--td-text-color-placeholder);
+  background: var(--td-bg-color-secondarycontainer);
+  border: 1px solid var(--td-component-border);
+}
+
+.craft-image:hover {
+  border-color: var(--td-brand-color);
+}
+
+.craft-image__thumb {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.craft-image__empty {
+  font: var(--td-font-body-small);
+}
+
+.table-actions {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: var(--td-comp-margin-m) var(--td-comp-margin-l);
+}
+
+@media (max-width: 960px) {
+  .page-header,
+  .table-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+</style>

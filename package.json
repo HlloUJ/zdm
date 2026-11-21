@@ -1,0 +1,38 @@
+{
+  "name": "zdm",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "env:init": "node dev/init-env.mjs",
+    "dev": "vite --configLoader runner",
+    "build": "vue-tsc --noEmit && vite build --configLoader runner",
+    "test:unit": "vitest run",
+    "test:e2e": "playwright test",
+    "backend:dev": "docker compose up -d --build backend",
+    "backend:logs": "docker compose logs --tail=100 backend",
+    "backend:test": "docker compose run --rm --no-deps backend-tools mvn -B --no-transfer-progress test"
+  },
+  "dependencies": {
+    "@vant/area-data": "^2.1.0",
+    "@wangeditor/editor": "^5.1.23",
+    "dompurify": "^3.4.15",
+    "tdesign-icons-vue-next": "^0.4.4",
+    "tdesign-vue-next": "^1.20.2",
+    "typescript": "~6.0.3",
+    "vite": "^8.1.2",
+    "vue": "^3.5.39",
+    "vue-router": "^5.1.0",
+    "vue-tsc": "^3.3.6"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.0",
+    "@types/node": "^24.1.0",
+    "@vitejs/plugin-vue": "^6.0.7",
+    "@vitest/coverage-v8": "^4.1.10",
+    "@vue/test-utils": "2.2.7",
+    "jsdom": "^29.1.1",
+    "undici": "7.29.0",
+    "vitest": "^4.1.10"
+  }
+}

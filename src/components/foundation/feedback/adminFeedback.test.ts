@@ -1,0 +1,96 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const messageMocks = vi.hoisted(() => ({
+  success: vi.fn(() => Promise.resolve({ close: vi.fn() })),
+  error: vi.fn(() => Promise.resolve({ close: vi.fn() })),
+  warning: vi.fn(() => Promise.resolve({ close: vi.fn() })),
+  info: vi.fn(() => Promise.resolve({ close: vi.fn() })),
+}));
+
+vi.mock('tdesign-vue-next', () => ({ MessagePlugin: messageMocks }));
+
+describe('adminFeedback', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.resetModules();
+    Object.values(messageMocks).forEach((mock) => mock.mockClear());
+  });
+
+  it('统一成功提示的位置、时长和样式类', async () => {
+    const { adminFeedback } = await import('./adminFeedback');
+
+    adminFeedback.success('已保存“一级分类3”');
+
+    expect(messageMocks.success).toHaveBeenCalledWith(
+      expect.objectContaining({
+        className: 'zdm-admin-feedback',
+        content: '已保存“一级分类3”',
+        duration: 2500,
+        offset: [0, -8],
+        placement: 'top',
+      }),
+    );
+  });
+
+  it('短时间内不重复展示相同提示', async () => {
+    const { adminFeedback } = await import('./adminFeedback');
+
+    adminFeedback.warning('排序已更新');
+    adminFeedback.warning('排序已更新');
+
+    expect(messageMocks.warning).toHaveBeenCalledTimes(1);
+  });
+
+  it('登录失效时只展示路由统一提示，不重复展示页面错误提示', async () => {
+    const { adminFeedback } = await import('./adminFeedback');
+    const { SESSION_EXPIRED_MESSAGE } = await import('@/services/http');
+
+    adminFeedback.warning(SESSION_EXPIRED_MESSAGE);
+    adminFeedback.error(SESSION_EXPIRED_MESSAGE);
+    adminFeedback.error({ content: SESSION_EXPIRED_MESSAGE });
+
+    expect(messageMocks.warning).toHaveBeenCalledTimes(1);
+    expect(messageMocks.error).not.toHaveBeenCalled();
+  });
+
+  it('按动作和对象生成明确的成功文案', async () => {
+    const { buildActionSuccessText } = await import('./adminFeedback');
+
+    expect(buildActionSuccessText('停用', '一级分类3')).toBe('已停用“一级分类3”');
+    expect(buildActionSuccessText('保存')).toBe('保存已完成');
+    expect(buildActionSuccessText('修改')).toBe('修改成功');
+    expect(buildActionSuccessText('修改', '客户')).toBe('修改成功');
+    expect(buildActionSuccessText('编辑', '门店')).toBe('修改成功');
+  });
+
+  it('统一删除成功提示为已删除加名称', async () => {
+    const { adminFeedback } = await import('./adminFeedback');
+
+    adminFeedback.deleted('一级分类3');
+
+    expect(messageMocks.success).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: '已删除“一级分类3”',
+      }),
+    );
+  });
+
+  it('统一新增成功提示为已新增加名称', async () => {
+    const { adminFeedback } = await import('./adminFeedback');
+
+    adminFeedback.created('一级分类3');
+
+    expect(messageMocks.success).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: '已新增“一级分类3”',
+      }),
+    );
+  });
+
+  it('不向页面暴露数据库内部错误', async () => {
+    const { getSafeErrorMessage } = await import('./adminFeedback');
+
+    expect(getSafeErrorMessage(new Error('SQL constraint exception'))).toBe('请稍后重试');
+    expect(getSafeErrorMessage(new Error('分类名称已存在'))).toBe('分类名称已存在');
+  });
+});

@@ -1,0 +1,287 @@
+package com.zdm.platform.store;
+
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.zdm.platform.security.CurrentIdentity;
+import com.zdm.platform.security.CurrentIdentityProvider;
+import java.util.List;
+import java.util.Objects;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class StoreService extends ServiceImpl<StoreMapper, Store> {
+  private static final String DELETE_FAILED_MESSAGE = "门店经营数据删除失败，请稍后重试";
+  private static final String SUPPLIER_REFERENCED_MESSAGE = "该门店仍有供应商被商品引用，不能彻底删除";
+  private static final String DUPLICATE_NAME_MESSAGE = "店铺名称已存在";
+
+  private final com.zdm.platform.role.StoreBuiltinRoleService builtinRoles;
+  private final CurrentIdentityProvider identityProvider;
+  private final StoreLevelService storeLevelService;
+  private final JdbcTemplate jdbcTemplate;
+  private final com.zdm.platform.account.AccountLifecycleService accountLifecycle;
+
+  public StoreService(
+      com.zdm.platform.role.StoreBuiltinRoleService builtinRoles,
+      CurrentIdentityProvider identityProvider,
+      StoreLevelService storeLevelService,
+      JdbcTemplate jdbcTemplate, com.zdm.platform.account.AccountLifecycleService accountLifecycle) {
+    this.builtinRoles = builtinRoles;
+    this.identityProvider = identityProvider;
+    this.storeLevelService = storeLevelService;
+    this.jdbcTemplate = jdbcTemplate;
+    this.accountLifecycle = accountLifecycle;
+  }
+
+  public List<Store> listForCurrentAdmin(boolean archived) {
+    identityProvider.require();
+    return lambdaQuery()
+        .eq(Store::getStatus, archived ? "disabled" : "enabled")
+        .orderByDesc(Store::getCreatedAt)
+        .list();
+  }
+
+  @Transactional
+  public boolean createStore(Store store) {
+    CurrentIdentity identity = identityProvider.require();
+    store.setId(null);
+    normalizeAndValidateName(store, null);
+    requireOpenedBusiness(store.getTenantId(), store.getType());
+    storeLevelService.requireEnabled(store.getStoreLevelId());
+    store.setStatus("enabled");
+    store.setCreatedBy(identity.displayName());
+    store.setCreatedByAccountId(identity.accountId());
+    boolean saved = save(store);
+    builtinRoles.provision(store.getId(), store.getTenantId(), identity.accountId());
+    provisionStoreAdmins(store);
+    return saved;
+  }
+
+  @Transactional
+  public Store updateStore(Long id, Store payload) {
+    Store existing = getById(id);
+    if (existing == null) {
+      return null;
+    }
+    requireOperating(existing);
+    normalizeAndValidateName(payload, id);
+    payload.setTenantId(existing.getTenantId());
+    if (!Objects.equals(existing.getType(), payload.getType())) {
+      requireOpenedBusiness(existing.getTenantId(), payload.getType());
+    }
+    payload.setId(id);
+    payload.setCreatedByAccountId(existing.getCreatedByAccountId());
+    payload.setStoreLevelId(existing.getStoreLevelId());
+    payload.setStatus(existing.getStatus());
+    payload.setCreatedBy(existing.getCreatedBy());
+    updateById(payload);
+    return getById(id);
+  }
+
+  @Transactional
+  public Store updateLevel(Long id, Long storeLevelId) {
+    Store existing = getById(id);
+    if (existing == null) {
+      return null;
+    }
+    requireOperating(existing);
+    storeLevelService.requireEnabled(storeLevelId);
+    existing.setStoreLevelId(storeLevelId);
+    updateById(existing);
+    return getById(id);
+  }
+
+  @Transactional
+  public Store archiveStore(Long id) {
+    Store existing = getById(id);
+    if (existing == null) {
+      return null;
+    }
+    requireOperating(existing);
+    existing.setStatus("disabled");
+    updateById(existing);
+    jdbcTemplate.update("UPDATE stores SET archived_by_tenant = 0 WHERE id = ?", id);
+    revokeStoreSessions(id);
+    return getById(id);
+  }
+
+  @Transactional
+  public Store restoreStore(Long id) {
+    Store existing = getById(id);
+    if (existing == null) {
+      return null;
+    }
+    requireArchived(existing);
+    requireTenantOperating(existing.getTenantId());
+    existing.setStatus("enabled");
+    updateById(existing);
+    jdbcTemplate.update("UPDATE stores SET archived_by_tenant = 0 WHERE id = ?", id);
+    return getById(id);
+  }
+
+  @Transactional
+  public boolean deleteStore(Long id) {
+    Store existing = getById(id);
+    if (existing == null) {
+      return false;
+    }
+    requireArchived(existing);
+    requireStoreSuppliersUnreferenced(id);
+    List<Long> accountIds = jdbcTemplate.queryForList("""
+        SELECT account_id FROM account_identities WHERE store_id=?
+        UNION SELECT account_id FROM employees WHERE store_id=? AND account_id IS NOT NULL
+        UNION SELECT account_id FROM account_roles WHERE store_id=? ORDER BY account_id
+        """, Long.class, id, id, id);
+    accountIds.forEach(accountLifecycle::lockAccount);
+    var protectedAccounts = accountIds.stream().filter(accountLifecycle::isProtected).toList();
+    try {
+      jdbcTemplate.update(
+          "DELETE FROM auth_sessions WHERE identity_id IN (SELECT id FROM account_identities WHERE store_id = ?)",
+          id);
+      jdbcTemplate.update(
+          "DELETE FROM account_roles WHERE store_id = ? OR role_id IN (SELECT id FROM roles WHERE store_id = ?)",
+          id,
+          id);
+      jdbcTemplate.update("DELETE FROM account_identities WHERE store_id = ?", id);
+      jdbcTemplate.update("DELETE FROM employee_invites WHERE store_id = ?", id);
+      jdbcTemplate.update("DELETE FROM employees WHERE store_id = ?", id);
+      jdbcTemplate.update(
+          "DELETE FROM role_permissions WHERE role_id IN (SELECT id FROM roles WHERE store_id = ?)",
+          id);
+      jdbcTemplate.update("DELETE FROM roles WHERE store_id = ?", id);
+      jdbcTemplate.update("DELETE FROM suppliers WHERE store_id = ?", id);
+      deleteStoreCategories(id);
+      boolean removed = removeById(id);
+      if (removed) {
+        accountIds.stream().filter(accountId -> !protectedAccounts.contains(accountId))
+            .forEach(accountLifecycle::releaseIfUnbound);
+      }
+      return removed;
+    } catch (DataIntegrityViolationException exception) {
+      throw new IllegalArgumentException(DELETE_FAILED_MESSAGE, exception);
+    }
+  }
+
+  private void requireStoreSuppliersUnreferenced(Long storeId) {
+    Integer referenceCount = jdbcTemplate.queryForObject(
+        """
+        SELECT COUNT(*)
+        FROM suppliers supplier
+        WHERE supplier.store_id = ?
+          AND (
+            EXISTS (SELECT 1 FROM slab_inventory slab WHERE slab.supplier_id = supplier.id)
+            OR EXISTS (SELECT 1 FROM finished_products product WHERE product.supplier_id = supplier.id)
+            OR EXISTS (SELECT 1 FROM accessory_products product WHERE product.supplier_id = supplier.id)
+          )
+        """,
+        Integer.class,
+        storeId);
+    if (referenceCount != null && referenceCount > 0) {
+      throw new IllegalArgumentException(SUPPLIER_REFERENCED_MESSAGE);
+    }
+  }
+
+  private void revokeStoreSessions(Long storeId) {
+    jdbcTemplate.update(
+        """
+        UPDATE auth_sessions
+        SET revoked_at = CURRENT_TIMESTAMP
+        WHERE revoked_at IS NULL
+          AND identity_id IN (SELECT id FROM account_identities WHERE store_id = ?)
+        """,
+        storeId);
+  }
+
+  private void deleteStoreCategories(Long storeId) {
+    int deletedCount;
+    do {
+      deletedCount = jdbcTemplate.update(
+          """
+          DELETE category
+          FROM store_categories category
+          LEFT JOIN store_categories child ON child.parent_id = category.id
+          WHERE category.store_id = ? AND child.id IS NULL
+          """,
+          storeId);
+    } while (deletedCount > 0);
+  }
+
+
+  private void requireOpenedBusiness(Long tenantId, String storeType) {
+    Integer count = jdbcTemplate.queryForObject(
+        """
+        SELECT COUNT(*)
+        FROM tenant_businesses tb
+        JOIN tenants t ON t.id = tb.tenant_id AND t.status = 'enabled'
+        WHERE tb.tenant_id = ? AND tb.business_type = ? AND tb.status = 'enabled'
+        """,
+        Integer.class,
+        tenantId,
+        storeType);
+    if (count == null || count == 0) {
+      throw new IllegalArgumentException("该租户未启用对应业务，不能创建或变更为该类型门店");
+    }
+  }
+
+  private void requireTenantOperating(Long tenantId) {
+    Integer count = jdbcTemplate.queryForObject(
+        "SELECT COUNT(*) FROM tenants WHERE id = ? AND status = 'enabled'",
+        Integer.class,
+        tenantId);
+    if (count == null || count == 0) {
+      throw new IllegalArgumentException("所属租户已归档，不能恢复门店运营");
+    }
+  }
+
+  private void normalizeAndValidateName(Store store, Long excludedStoreId) {
+    String storeName = store.getName().trim();
+    store.setName(storeName);
+    var duplicateQuery = lambdaQuery().eq(Store::getName, storeName);
+    if (excludedStoreId != null) {
+      duplicateQuery.ne(Store::getId, excludedStoreId);
+    }
+    if (duplicateQuery.count() > 0) {
+      throw new IllegalArgumentException(DUPLICATE_NAME_MESSAGE);
+    }
+  }
+
+  private void provisionStoreAdmins(Store store) {
+    jdbcTemplate.update(
+        """
+        INSERT INTO account_identities
+          (account_id, client_code, identity_type, subject_id, tenant_id, store_id, status)
+        SELECT account_id, 'admin', 'store_admin', ?, ?, ?, ?
+        FROM account_identities
+        WHERE identity_type = 'tenant_admin' AND tenant_id = ? AND status = 'enabled'
+        ON DUPLICATE KEY UPDATE status = VALUES(status)
+        """,
+        store.getId(),
+        store.getTenantId(),
+        store.getId(),
+        store.getStatus(),
+        store.getTenantId());
+  }
+
+  private void requireOperating(Store store) {
+    if (!"enabled".equals(store.getStatus())) {
+      throw new IllegalArgumentException("该门店已归档");
+    }
+  }
+
+  private void requireArchived(Store store) {
+    if (!"disabled".equals(store.getStatus())) {
+      throw new IllegalArgumentException("请先归档门店");
+    }
+  }
+  @Override
+  public Store getById(java.io.Serializable id) {
+    Store entity = super.getById(id);
+    if (entity != null) {
+      com.zdm.platform.security.DataScope.requireAccess(
+          identityProvider.require(), entity.getCreatedByAccountId());
+    }
+    return entity;
+  }
+
+}

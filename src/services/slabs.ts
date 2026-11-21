@@ -1,0 +1,312 @@
+import type { WarehouseEntryInformation } from './warehouseEntry';
+import { request } from './http';
+import { releaseTemporaryMedia, uploadMedia, type MediaResource } from './media';
+
+export type SlabStatus = 'warehouse' | 'selling' | 'soldOut' | 'recycle';
+export type SlabPublishTargetStatus = Extract<SlabStatus, 'warehouse' | 'selling'>;
+export type SlabPublisherType = '平台发布' | '接口获取';
+export interface SlabPrice {
+  storeLevelId: number;
+  storeLevelName?: string;
+  priceCoefficient: number;
+  costPrice: number;
+  price: number;
+  priceSource?: 'auto' | 'manual';
+  sourceConfigurationId?: number;
+  manualUpdatedByName?: string;
+  manualUpdatedByAccountId?: number;
+  manualUpdatedAt?: string;
+}
+
+export interface SlabOffShelfRecord {
+  id: number;
+  slabId: number;
+  standardReason: string;
+  detailReason?: string;
+  offShelvedAt: string;
+  offShelvedByName: string;
+  offShelvedByAccountId?: number;
+}
+
+export interface SlabRecord extends WarehouseEntryInformation {
+  stateOperatorName?: string;
+  stateOperatedAt?: string;
+
+  sourceStatus?: 'warehouse' | 'selling' | 'soldOut' | 'recycle' | 'purged';
+  sourceUnavailable?: boolean;
+  sourceMessage?: string;
+  operationsSnapshotMissing?: boolean;
+  operationsDeleted?: boolean;
+  sourceOffShelfRecords?: SlabOffShelfRecord[];
+  stock?: number;
+  id: number;
+  supplierId?: number;
+  varietyId?: number;
+  originId?: number;
+  textureId?: number;
+  colorId?: number;
+  gradeId?: number;
+  name: string;
+  serialNo: string;
+  warehouse?: string;
+  publisherType?: SlabPublisherType;
+  mainImageMediaId?: number;
+  scanImageMediaId?: number;
+  designImageMediaId?: number;
+  videoMediaId?: number;
+  videoCoverMediaId?: number;
+  mainImageUrl?: string;
+  scanImageUrl?: string;
+  designImageUrl?: string;
+  videoUrl?: string;
+  videoCoverUrl?: string;
+  createdByName?: string;
+  createdByAccountId?: number;
+  originName?: string;
+  varietyName?: string;
+  supplierName?: string;
+  lengthMm?: number;
+  widthMm?: number;
+  thicknessMm?: number;
+  toleranceMm?: number;
+  corner1LengthMm?: number;
+  corner1WidthMm?: number;
+  corner2LengthMm?: number;
+  corner2WidthMm?: number;
+  corner3LengthMm?: number;
+  corner3WidthMm?: number;
+  corner4LengthMm?: number;
+  corner4WidthMm?: number;
+  areaSquareMeter?: number;
+  costPrice?: number;
+  guidePrice?: number;
+  guidePriceCoefficient?: number;
+  markupPrices?: SlabPrice[];
+  offShelfRecords?: SlabOffShelfRecord[];
+  status?: SlabStatus;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface SlabPayload {
+  stock?: number;
+  supplierId?: number;
+  varietyId?: number;
+  originId?: number;
+  textureId?: number;
+  colorId?: number;
+  gradeId?: number;
+  name: string;
+  serialNo: string;
+  warehouse?: string;
+  publisherType?: SlabPublisherType;
+  mainImageMediaId?: number;
+  scanImageMediaId?: number;
+  designImageMediaId?: number;
+  videoMediaId?: number;
+  videoCoverMediaId?: number;
+  lengthMm?: number;
+  widthMm?: number;
+  thicknessMm?: number;
+  toleranceMm?: number;
+  corner1LengthMm?: number;
+  corner1WidthMm?: number;
+  corner2LengthMm?: number;
+  corner2WidthMm?: number;
+  corner3LengthMm?: number;
+  corner3WidthMm?: number;
+  corner4LengthMm?: number;
+  corner4WidthMm?: number;
+  areaSquareMeter?: number;
+  costPrice?: number;
+  guidePrice?: number;
+  guidePriceCoefficient?: number;
+  markupPrices?: SlabPrice[];
+  status: SlabStatus;
+}
+
+export interface SlabPublishOption {
+  id: number;
+  label: string;
+  description?: string;
+  status: 'enabled' | 'disabled';
+}
+
+export interface SlabPublishColorCategoryOption extends SlabPublishOption {
+  children: SlabPublishOption[];
+}
+
+export interface SlabPublishOptions {
+  varieties: SlabPublishOption[];
+  origins: SlabPublishOption[];
+  textures: SlabPublishOption[];
+  colorCategories: SlabPublishColorCategoryOption[];
+  grades: SlabPublishOption[];
+  suppliers: SlabPublishOption[];
+  storeLevels: SlabPublishOption[];
+}
+
+export type SlabOperationType =
+  | 'CREATE'
+  | 'UPDATE'
+  | 'PRICE_UPDATE'
+  | 'SHELF'
+  | 'OFF_SHELF'
+  | 'RESTORE_WAREHOUSE'
+  | 'RESTORE_RECYCLE'
+  | 'RESTORE'
+  | 'DELETE_TO_RECYCLE'
+  | 'PHYSICAL_DELETE'
+  | 'PURGE'
+  | 'STATUS_UPDATE'
+  | 'REENTRY'
+  | 'SOURCE_SHELF'
+  | 'SOURCE_OFF_SHELF'
+  | 'SOURCE_DELETE'
+  | 'SOURCE_DELETE_TO_RECYCLE'
+  | 'SOURCE_PURGE';
+
+export interface SlabOperationChange {
+  before?: unknown;
+  after?: unknown;
+}
+
+export interface SlabOperationLogRecord {
+  id: number;
+  slabId: number;
+  slabSerialNo: string;
+  slabName: string;
+  publisherType: SlabPublisherType;
+  operationType: SlabOperationType;
+  operationSummary: string;
+  beforeStatus?: SlabStatus;
+  afterStatus?: SlabStatus;
+  standardReason?: string;
+  detailReason?: string;
+  changeDetails?: string;
+  operationSource: 'MANUAL' | 'EXTERNAL_API' | 'SYSTEM' | 'SUPPLY_CHAIN';
+  operatorName: string;
+  operatorAccountId?: number;
+  operatedAt: string;
+}
+
+export interface SlabOperationLogPage {
+  records: SlabOperationLogRecord[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface SlabOperationLogQuery {
+  keyword?: string;
+  operationType?: SlabOperationType | '';
+  operatorName?: string;
+  startDate?: string;
+  endDate?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export function resolveSlabPublishTargetStatus(activeStatus: SlabStatus): SlabPublishTargetStatus {
+  return activeStatus === 'selling' ? 'selling' : 'warehouse';
+}
+
+export function getSlabDetail(id: number) {
+  return request<SlabRecord>(`/admin/slabs/${id}`);
+}
+
+export function listSlabs() {
+  return request<SlabRecord[]>('/admin/slabs');
+}
+
+export function getSlabPublishOptions() {
+  return request<SlabPublishOptions>('/admin/slabs/form-options');
+}
+
+export function createSlab(payload: SlabPayload) {
+  return request<SlabRecord>('/admin/slabs', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function uploadSlabImage(file: File) {
+  return uploadMedia('/admin/slabs/images', file);
+}
+
+export function releaseTemporarySlabMedia(mediaId: MediaResource['id']) {
+  return releaseTemporaryMedia('/admin/slabs/images', mediaId);
+}
+
+export function updateSlab(id: number, payload: SlabPayload) {
+  return request<SlabRecord>(`/admin/slabs/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateSlabSourceCost(id: number, costPrice: number) {
+  return request<SlabRecord>(`/admin/slabs/${id}/source-cost`, {
+    method: 'PUT',
+    body: JSON.stringify({ costPrice }),
+  });
+}
+
+export function checkSlabAction(
+  ids: number[],
+  action: 'shelf' | 'offShelf' | 'restore' | 'delete' | 'purge' | 'clearRecycle',
+) {
+  return request<boolean>('/admin/slabs/action-check', {
+    method: 'POST',
+    body: JSON.stringify({ ids, action }),
+  });
+}
+
+export function updateSlabStatuses(ids: number[], status: SlabStatus | 'offShelf', reason?: string, detail?: string) {
+  return request<boolean>('/admin/slabs/batch-status', {
+    method: 'PUT',
+    body: JSON.stringify({
+      ids,
+      status: status === 'offShelf' ? 'warehouse' : status,
+      operation: status === 'offShelf' ? 'offShelf' : undefined,
+      reason,
+      detail,
+    }),
+  });
+}
+
+export function removeSlab(id: number, payload: { reason?: string; detail?: string } = {}) {
+  return request<boolean>(`/admin/slabs/${id}/delete`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function listSlabOperationLogs(query: SlabOperationLogQuery = {}) {
+  const search = new URLSearchParams();
+  Object.entries(query).forEach(([key, value]) => {
+    if (value !== undefined && value !== '') search.set(key, String(value));
+  });
+  const queryString = search.toString();
+  const suffix = queryString ? `?${queryString}` : '';
+  return request<SlabOperationLogPage>(`/admin/slabs/operation-logs${suffix}`);
+}
+
+export function deleteSlab(id: number) {
+  return request<boolean>(`/admin/slabs/${id}`, {
+    method: 'DELETE',
+  });
+}
+
+export function deleteSlabs(ids: number[]) {
+  return request<boolean>('/admin/slabs/batch-purge', {
+    method: 'DELETE',
+    body: JSON.stringify(ids),
+  });
+}
+
+export function clearRecycleSlabs() {
+  return request<number>('/admin/slabs/clear-recycle', {
+    method: 'DELETE',
+  });
+}

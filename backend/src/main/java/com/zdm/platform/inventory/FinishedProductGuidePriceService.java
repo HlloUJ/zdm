@@ -1,0 +1,99 @@
+package com.zdm.platform.inventory;
+
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
+@Service
+public class FinishedProductGuidePriceService {
+  private final FinishedProductGuidePriceMapper mapper;
+  private final FinishedGuidePriceSettingMapper settingMapper;
+
+  public FinishedProductGuidePriceService(FinishedProductGuidePriceMapper mapper, FinishedGuidePriceSettingMapper settingMapper) {
+    this.mapper = mapper;
+    this.settingMapper = settingMapper;
+  }
+
+  public List<FinishedProductGuidePrice> listPrices(Long productId) {
+    return mapper.selectList(Wrappers.<FinishedProductGuidePrice>lambdaQuery()
+        .eq(FinishedProductGuidePrice::getFinishedProductId, productId)
+        .orderByAsc(FinishedProductGuidePrice::getSkuId));
+  }
+
+  public Map<Long, List<FinishedProductGuidePrice>> listPricesByProductIds(List<Long> productIds) {
+    if (productIds.isEmpty()) {
+      return Map.of();
+    }
+    return mapper.selectList(Wrappers.<FinishedProductGuidePrice>lambdaQuery()
+        .in(FinishedProductGuidePrice::getFinishedProductId, productIds)
+        .orderByAsc(FinishedProductGuidePrice::getFinishedProductId)
+        .orderByAsc(FinishedProductGuidePrice::getSkuId)).stream()
+        .collect(Collectors.groupingBy(FinishedProductGuidePrice::getFinishedProductId));
+  }
+
+  @Transactional
+  public void replacePrices(Long productId, List<FinishedProductGuidePrice> requestedPrices) {
+    if (requestedPrices == null || requestedPrices.isEmpty()) {
+      throw new IllegalArgumentException("请完善每个成品规格的指导价");
+    }
+    var previous = listPrices(productId).stream().collect(Collectors.toMap(FinishedProductGuidePrice::getSkuId, java.util.function.Function.identity()));
+    var setting = settingMapper.selectById(1L);
+    List<FinishedProductGuidePrice> normalized = requestedPrices.stream()
+        .map(price -> {
+          var normalizedPrice = normalize(productId, price);
+          var existing = previous.get(price.getSkuId());
+          String source = price.getPriceSource() == null
+              ? (existing == null || existing.getPriceSource() == null ? "manual" : existing.getPriceSource())
+              : price.getPriceSource();
+          if (!List.of("auto", "manual").contains(source)) {
+            throw new IllegalArgumentException("指导价来源不正确");
+          }
+          if ("auto".equals(source) && (setting == null
+              || normalizedPrice.getPriceCoefficient().compareTo(setting.getPriceCoefficient()) != 0)) {
+            throw new IllegalArgumentException("跟随配置指导价必须使用当前有效系数");
+          }
+          normalizedPrice.setPriceSource(source);
+          return normalizedPrice;
+        })
+        .toList();
+    long distinctVariants = normalized.stream().map(FinishedProductGuidePrice::getSkuId).distinct().count();
+    if (distinctVariants != normalized.size()) {
+      throw new IllegalArgumentException("同一成品规格只能填写一条指导价");
+    }
+    mapper.delete(Wrappers.<FinishedProductGuidePrice>lambdaQuery()
+        .eq(FinishedProductGuidePrice::getFinishedProductId, productId));
+    normalized.forEach(mapper::insert);
+  }
+
+  private FinishedProductGuidePrice normalize(Long productId, FinishedProductGuidePrice price) {
+    if (price.getSkuId() == null || price.getSkuId() <= 0) {
+      throw new IllegalArgumentException("SKU ID 不能为空");
+    }
+    BigDecimal coefficient = price.getPriceCoefficient();
+    BigDecimal cost = price.getCostPrice();
+    BigDecimal value = price.getPrice();
+    if (coefficient == null || coefficient.signum() < 0
+        || cost == null || cost.signum() < 0
+        || value == null || value.signum() < 0) {
+      throw new IllegalArgumentException("指导价系数、成本价和指导价不能为空且不能小于0");
+    }
+    BigDecimal expected = cost.multiply(coefficient).setScale(2, RoundingMode.HALF_UP);
+    if (value.setScale(2, RoundingMode.HALF_UP).compareTo(expected) != 0) {
+      throw new IllegalArgumentException("指导价必须等于成本价按指导价系数计算后的结果");
+    }
+    FinishedProductGuidePrice normalized = new FinishedProductGuidePrice();
+    normalized.setFinishedProductId(productId);
+    normalized.setSkuId(price.getSkuId());
+    normalized.setVariantLabel(StringUtils.hasText(price.getVariantLabel()) ? price.getVariantLabel().trim() : null);
+    normalized.setPriceCoefficient(coefficient.setScale(4, RoundingMode.HALF_UP));
+    normalized.setCostPrice(cost.setScale(2, RoundingMode.HALF_UP));
+    normalized.setPrice(expected);
+    return normalized;
+  }
+}

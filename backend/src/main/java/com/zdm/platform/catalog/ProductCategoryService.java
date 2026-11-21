@@ -1,0 +1,197 @@
+package com.zdm.platform.catalog;
+
+import com.zdm.platform.account.CreatorAwareService;
+import com.zdm.platform.common.CategoryProductCounts;
+import com.zdm.platform.security.CurrentIdentityProvider;
+import com.zdm.platform.security.DataScope;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class ProductCategoryService extends CreatorAwareService<ProductCategoryMapper, ProductCategory> {
+  private static final String DUPLICATE_NAME_MESSAGE = "同级分类名称不能重复";
+
+  private final CurrentIdentityProvider identityProvider;
+  private final JdbcTemplate jdbcTemplate;
+
+  public ProductCategoryService(
+      CurrentIdentityProvider identityProvider,
+      JdbcTemplate jdbcTemplate) {
+    this.identityProvider = identityProvider;
+    this.jdbcTemplate = jdbcTemplate;
+  }
+
+  public List<ProductCategory> listNewestFirst() {
+    List<ProductCategory> categories = lambdaQuery()
+        .orderByDesc(ProductCategory::getCreatedAt)
+        .orderByDesc(ProductCategory::getId)
+        .list();
+    return attachActualFinishedProductCounts(categories);
+  }
+
+  public List<ProductCategory> listNewestFirst(Collection<String> scopes) {
+    if (scopes.isEmpty()) {
+      return List.of();
+    }
+    List<ProductCategory> categories = lambdaQuery()
+        .in(ProductCategory::getScope, scopes)
+        .orderByDesc(ProductCategory::getCreatedAt)
+        .orderByDesc(ProductCategory::getId)
+        .list();
+    return attachActualFinishedProductCounts(categories);
+  }
+
+  @Transactional
+  public ProductCategory createCategory(ProductCategory category) {
+    category.setId(null);
+    category.setProductCount(0);
+    normalizeAndValidateCategory(category, null);
+    category.setCreatedByAccountId(identityProvider.require().accountId());
+    try {
+      save(category);
+    } catch (DuplicateKeyException exception) {
+      throw new IllegalArgumentException(DUPLICATE_NAME_MESSAGE, exception);
+    }
+    return category;
+  }
+
+  @Transactional
+  public ProductCategory updateCategory(Long id, ProductCategory payload) {
+    ProductCategory existing = getById(id);
+    if (existing == null) {
+      throw new IllegalArgumentException("分类不存在");
+    }
+    payload.setId(id);
+    payload.setCreatedByAccountId(existing.getCreatedByAccountId());
+    payload.setCreatedAt(existing.getCreatedAt());
+    payload.setProductCount(resolveActualProductCount(existing));
+    normalizeAndValidateCategory(payload, id);
+    try {
+      updateById(payload);
+    } catch (DuplicateKeyException exception) {
+      throw new IllegalArgumentException(DUPLICATE_NAME_MESSAGE, exception);
+    }
+    return listNewestFirst(List.of(existing.getScope())).stream()
+        .filter(category -> java.util.Objects.equals(category.getId(), id))
+        .findFirst().orElseThrow(() -> new IllegalArgumentException("分类不存在"));
+  }
+
+  @Transactional
+  public void deleteCategory(Long id) {
+    ProductCategory category = getById(id);
+    if (category == null) {
+      throw new IllegalArgumentException("分类不存在或已被删除");
+    }
+    if (lambdaQuery().eq(ProductCategory::getParentId, id).count() > 0) {
+      throw new IllegalArgumentException("该分类包含下级分类，请先删除或转移下级分类");
+    }
+    Long referencedProductCount = jdbcTemplate.queryForObject(
+        "SELECT COUNT(*) FROM (SELECT category_id FROM finished_products UNION ALL SELECT category_id FROM accessory_products) products WHERE category_id = ?",
+        Long.class,
+        id);
+    if (referencedProductCount != null && referencedProductCount > 0) {
+      throw new IllegalArgumentException("该分类已关联商品，不能删除，请先停用该分类");
+    }
+    if (java.util.Objects.requireNonNull(jdbcTemplate.queryForObject(
+        "SELECT COUNT(*) FROM category_template_versions WHERE category_id = ?", Long.class, id)) > 0) {
+      throw new IllegalArgumentException("该分类已配置发布属性模板，不能删除，请先移除模板配置");
+    }
+    if (!removeById(id)) {
+      throw new IllegalArgumentException("分类删除失败，请刷新后重试");
+    }
+  }
+
+
+  private List<ProductCategory> attachActualFinishedProductCounts(
+      List<ProductCategory> categories) {
+    if (categories.stream().noneMatch(category -> List.of("finished", "accessory").contains(category.getScope()))) {
+      return categories;
+    }
+    Map<Long, Integer> countByCategoryId = jdbcTemplate.query(
+        """
+        SELECT category_id, COUNT(*)
+        FROM (SELECT category_id FROM finished_products UNION ALL SELECT category_id FROM accessory_products) products
+        WHERE category_id IS NOT NULL
+        GROUP BY category_id
+        """,
+        resultSet -> {
+          Map<Long, Integer> counts = new HashMap<>();
+          while (resultSet.next()) {
+            counts.put(resultSet.getLong(1), Math.toIntExact(resultSet.getLong(2)));
+          }
+          return counts;
+        });
+    categories.stream()
+        .filter(category -> List.of("finished", "accessory").contains(category.getScope()))
+        .forEach(category -> category.setProductCount(
+            countByCategoryId.getOrDefault(category.getId(), 0)));
+    var countedCategories = DataScope.filter(identityProvider.require(), categories).stream()
+        .filter(category -> List.of("finished", "accessory").contains(category.getScope())).toList();
+    var totals = CategoryProductCounts.rollUp(
+        countedCategories, ProductCategory::getId, ProductCategory::getParentId,
+        ProductCategory::getProductCount,
+        (child, parent) -> java.util.Objects.equals(child.getScope(), parent.getScope())
+            && java.util.Objects.equals(child.getTenantId(), parent.getTenantId()));
+    countedCategories.forEach(category -> category.setProductCount(totals.get(category.getId())));
+    return categories;
+  }
+
+  private int resolveActualProductCount(ProductCategory category) {
+    if (!List.of("finished", "accessory").contains(category.getScope())) {
+      return category.getProductCount() == null ? 0 : category.getProductCount();
+    }
+    Long count = jdbcTemplate.queryForObject(
+        "SELECT COUNT(*) FROM (SELECT category_id FROM finished_products UNION ALL SELECT category_id FROM accessory_products) products WHERE category_id = ?",
+        Long.class,
+        category.getId());
+    return count == null ? 0 : Math.toIntExact(count);
+  }
+
+  private void normalizeAndValidateCategory(ProductCategory category, Long excludedCategoryId) {
+    category.setName(category.getName().trim());
+    validateParentScope(category);
+    var duplicateQuery = lambdaQuery()
+        .eq(ProductCategory::getScope, category.getScope())
+        .eq(ProductCategory::getName, category.getName());
+    if (category.getParentId() == null) {
+      duplicateQuery.isNull(ProductCategory::getParentId);
+    } else {
+      duplicateQuery.eq(ProductCategory::getParentId, category.getParentId());
+    }
+    if (excludedCategoryId != null) {
+      duplicateQuery.ne(ProductCategory::getId, excludedCategoryId);
+    }
+    if (duplicateQuery.count() > 0) {
+      throw new IllegalArgumentException(DUPLICATE_NAME_MESSAGE);
+    }
+  }
+
+  private void validateParentScope(ProductCategory category) {
+    if (category.getParentId() == null) {
+      return;
+    }
+    ProductCategory parent = getById(category.getParentId());
+    if (parent == null) {
+      throw new IllegalArgumentException("上级分类不存在");
+    }
+    if (!parent.getScope().equals(category.getScope())) {
+      throw new IllegalArgumentException("上级分类与当前分类类型不一致");
+    }
+  }
+  @Override
+  public ProductCategory getById(java.io.Serializable id) {
+    ProductCategory entity = super.getById(id);
+    if (entity != null) {
+      com.zdm.platform.security.DataScope.requireAccess(
+          identityProvider.require(), entity.getCreatedByAccountId());
+    }
+    return entity;
+  }
+
+}

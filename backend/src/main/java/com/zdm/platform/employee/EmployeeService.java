@@ -1,0 +1,474 @@
+package com.zdm.platform.employee;
+
+import com.zdm.platform.account.CreatorAwareService;
+import com.zdm.platform.security.CurrentIdentity;
+import com.zdm.platform.security.CurrentIdentityProvider;
+import com.zdm.platform.security.PermissionGuard;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
+@Service
+public class EmployeeService extends CreatorAwareService<EmployeeMapper, Employee> {
+  private static final String PERMISSION_PREFIX = "admin.permission-management.employee-management";
+
+  private final JdbcTemplate jdbcTemplate;
+  private final com.zdm.platform.account.AccountLifecycleService accountLifecycle;
+  private final CurrentIdentityProvider identityProvider;
+  private final PermissionGuard permissionGuard;
+  private final EmployeeInviteAccess inviteAccess;
+  private final SupplyChainAdminService supplyChainAdmins;
+
+  public EmployeeService(
+      JdbcTemplate jdbcTemplate,
+      CurrentIdentityProvider identityProvider,
+      PermissionGuard permissionGuard, EmployeeInviteAccess inviteAccess,
+      com.zdm.platform.account.AccountLifecycleService accountLifecycle,
+      SupplyChainAdminService supplyChainAdmins) {
+    this.supplyChainAdmins = supplyChainAdmins;
+    this.jdbcTemplate = jdbcTemplate;
+    this.identityProvider = identityProvider;
+    this.permissionGuard = permissionGuard;
+    this.inviteAccess = inviteAccess;
+    this.accountLifecycle = accountLifecycle;
+  }
+
+  @Override
+  public Employee getById(java.io.Serializable id) {
+    Employee employee = super.getById(id);
+    if (employee != null) {
+      withPersonalProfiles(List.of(employee));
+    }
+    return employee;
+  }
+
+  private List<Employee> withPersonalProfiles(List<Employee> employees) {
+    var ids = employees.stream().map(Employee::getAccountId).filter(Objects::nonNull).distinct().toList();
+    if (ids.isEmpty()) {
+      return employees;
+    }
+    String placeholders = String.join(",", java.util.Collections.nCopies(ids.size(), "?"));
+    var profiles = jdbcTemplate.query("SELECT id,display_name,gender,phone FROM accounts WHERE id IN (" + placeholders + ")",
+        (rs, row) -> new PersonalProfile(rs.getLong("id"), rs.getString("display_name"), rs.getString("gender"), rs.getString("phone")),
+        ids.toArray());
+    var byId = profiles.stream().collect(java.util.stream.Collectors.toMap(PersonalProfile::id, value -> value));
+    for (Employee employee : employees) {
+      PersonalProfile profile = byId.get(employee.getAccountId());
+      if (profile != null) {
+        employee.setName(profile.name());
+        employee.setGender(profile.gender());
+        employee.setPhone(profile.phone());
+      }
+    }
+    return employees;
+  }
+
+  private record PersonalProfile(Long id, String name, String gender, String phone) {}
+
+  public List<Employee> listForCurrentAdmin() { return listForCurrentAdmin(null); }
+
+  public List<Employee> listForCurrentAdmin(String clientCode) {
+    CurrentIdentity identity = requireSupportedOrganizationScope();
+    String client = com.zdm.platform.security.ManagedClientScope.resolve(identity,clientCode);
+    permissionGuard.requirePermission(permissionPrefix(client) + ".view");
+    if (!Objects.equals(client, identity.clientCode())) {
+      return supplyChainAdmins.openingRecords();
+    }
+    if (identity.storeId() == null) {
+      return withPersonalProfiles(lambdaQuery().eq(Employee::getClientCode, com.zdm.platform.security.ManagedClientScope.resolve(identity, clientCode)).isNull(Employee::getTenantId).isNull(Employee::getStoreId).list());
+    }
+    com.zdm.platform.security.ManagedClientScope.resolve(identity, clientCode);
+    return withPersonalProfiles(lambdaQuery()
+        .eq(Employee::getClientCode, identity.clientCode())
+        .eq(Employee::getTenantId, identity.tenantId())
+        .eq(Employee::getStoreId, identity.storeId())
+        .list());
+  }
+
+  @Transactional
+  public Employee createEmployee(Employee employee) {
+    permissionGuard.requirePermission(permissionPrefix(employee.getClientCode()) + ".create");
+    authorizeCreate(employee);
+    applyCurrentOrganizationScope(employee);
+    Long accountId = accountLifecycle.findOrCreate(employee.getPhone(), employee.getName(), employee.getGender()).id();
+    employee.setAccountId(accountId);
+    if (lambdaQuery().eq(Employee::getAccountId, accountId)
+        .eq(Employee::getClientCode, employee.getClientCode())
+        .eq(employee.getTenantId() != null, Employee::getTenantId, employee.getTenantId())
+        .isNull(employee.getTenantId() == null, Employee::getTenantId)
+        .eq(employee.getStoreId() != null, Employee::getStoreId, employee.getStoreId())
+        .isNull(employee.getStoreId() == null, Employee::getStoreId).count() > 0) {
+      throw new IllegalArgumentException("该账号已是当前业务端和组织的员工");
+    }
+    employee.setCreatedByAccountId(identityProvider.require().accountId());
+    validateBeforeEnabled(employee, true);
+    save(employee);
+    syncAdminIdentity(employee);
+    syncAdminRoles(employee);
+    return getById(employee.getId());
+  }
+
+  @Transactional
+  public Employee updateEmployee(Long id, Employee payload) {
+    Employee existing = getById(id);
+    if (existing == null) {
+      throw new IllegalArgumentException("员工不存在");
+    }
+    CurrentIdentity identity = requireEmployeeOrganizationScope(existing);
+    requireSelfUpdateAllowed(identity, existing, payload);
+    lockExistingEmployee(existing);
+
+    if (payload.getStoreId() != null && !Objects.equals(payload.getStoreId(), existing.getStoreId())) {
+      throw new AccessDeniedException("不能将员工转移到其他门店");
+    }
+    payload.setClientCode(existing.getClientCode());
+    payload.setId(id);
+    payload.setAccountId(existing.getAccountId());
+    if (payload.getGender() == null) {
+      payload.setGender(existing.getGender());
+    }
+    if (!StringUtils.hasText(payload.getPhone())) {
+      payload.setPhone(existing.getPhone());
+    }
+    payload.setTenantId(existing.getTenantId());
+    payload.setStoreId(existing.getStoreId());
+    payload.setCreatedByAccountId(existing.getCreatedByAccountId());
+    authorizeUpdate(existing, payload);
+
+    if (payload.getAccountId() == null) {
+      payload.setAccountId(accountLifecycle.findOrCreate(payload.getPhone(), payload.getName(), payload.getGender()).id());
+    }
+
+    validateBeforeEnabled(payload, !Objects.equals(existing.getRoleIds(), payload.getRoleIds()));
+    updateById(payload);
+    syncAdminIdentity(payload);
+    syncAdminRoles(payload);
+    accountLifecycle.updatePersonalProfile(payload.getAccountId(), payload.getName(), payload.getGender());
+    return getById(id);
+  }
+
+  @Transactional
+  public Employee updatePermissions(Long id, EmployeePermissionUpdateRequest request) {
+    Employee existing = getById(id);
+    if (existing == null) {
+      throw new IllegalArgumentException("员工不存在");
+    }
+    CurrentIdentity identity = requireEmployeeOrganizationScope(existing);
+    if (Objects.equals(existing.getId(), identity.employeeId())) {
+      throw new AccessDeniedException("不能修改当前登录员工的角色");
+    }
+    permissionGuard.requirePermission(permissionPrefix(existing.getClientCode()) + ".permission");
+
+    lockExistingEmployee(existing);
+    existing.setRoleIds(request.roleIds());
+    existing.setDataPermission(request.dataPermission());
+    validateBeforeEnabled(existing, true);
+    updateById(existing);
+    syncAdminRoles(existing);
+    return getById(id);
+  }
+
+  @Transactional
+  public boolean deleteEmployee(Long id) {
+    Employee existing = getById(id);
+    if (existing == null) {
+      return false;
+    }
+    permissionGuard.requirePermission(permissionPrefix(existing.getClientCode()) + ".delete");
+    requireDeletableEmployee(existing);
+    lockExistingEmployee(existing);
+    boolean protectedAccount = accountLifecycle.isProtected(existing.getAccountId());
+    removeAdminRoles(existing);
+    jdbcTemplate.update("""
+        DELETE FROM auth_sessions WHERE identity_id IN (
+          SELECT id FROM account_identities WHERE account_id=? AND client_code=?
+            AND identity_type='employee' AND subject_id=?)
+        """, existing.getAccountId(), existing.getClientCode(), existing.getId());
+    jdbcTemplate.update("""
+        DELETE FROM account_identities WHERE account_id=? AND client_code=?
+          AND identity_type='employee' AND subject_id=?
+        """, existing.getAccountId(), existing.getClientCode(), existing.getId());
+    boolean removed = removeById(id);
+    if (removed && !protectedAccount) {
+      accountLifecycle.releaseIfUnbound(existing.getAccountId());
+    }
+    return removed;
+  }
+
+  @Transactional
+  public EmployeeInviteRegisterResponse registerInvitedEmployee(
+      EmployeeInvite invite,
+      EmployeeInviteRegisterRequest request) {
+    var existing = accountLifecycle.findByPhoneForUpdate(request.phone());
+    if (existing.isEmpty() && (!StringUtils.hasText(request.name())
+        || !List.of("male", "female").contains(request.gender() == null ? "" : request.gender()))) {
+      throw new IllegalArgumentException("请填写姓名并选择性别");
+    }
+    var account = existing.orElseGet(() -> accountLifecycle.findOrCreate(request.phone(), request.name().trim(), request.gender()));
+    boolean existingAccount = !account.created();
+    Long accountId = account.id();
+    if (!"enabled".equals(account.status())) {
+      throw new IllegalArgumentException("该手机号码对应的账号已被停用，暂时无法接受邀请，请联系管理员处理。");
+    }
+    invite.setAcceptedAccountId(accountId);
+    Employee duplicate = findInvitedEmployee(invite, accountId);
+    boolean canLogin = inviteAccess.canLogin(accountId, invite);
+    if (duplicate != null || canLogin) {
+      return new EmployeeInviteRegisterResponse(duplicate == null ? null : duplicate.getId(),
+          duplicate == null ? "enabled" : duplicate.getStatus(), true, duplicate != null, canLogin);
+    }
+
+    Employee employee = new Employee();
+    employee.setAccountId(accountId);
+    employee.setClientCode(invite.getClientCode());
+    employee.setTenantId(invite.getTenantId());
+    employee.setStoreId(invite.getStoreId());
+    employee.setName(account.name());
+    employee.setGender(account.gender());
+    employee.setPhone(request.phone());
+    employee.setStatus("disabled");
+    employee.setCreatedByAccountId(invite.getCreatedByAccountId());
+    save(employee);
+    syncAdminIdentity(employee);
+    return new EmployeeInviteRegisterResponse(employee.getId(), employee.getStatus(), existingAccount, false, false);
+  }
+
+  public boolean hasAccount(String phone) {
+    return findAccountId(phone).isPresent();
+  }
+
+  private Employee findInvitedEmployee(EmployeeInvite invite, Long accountId) {
+    return lambdaQuery()
+        .eq(Employee::getAccountId, accountId)
+        .eq(Employee::getClientCode, invite.getClientCode())
+        .eq(invite.getTenantId() != null, Employee::getTenantId, invite.getTenantId())
+        .isNull(invite.getTenantId() == null, Employee::getTenantId)
+        .eq(invite.getStoreId() != null, Employee::getStoreId, invite.getStoreId())
+        .isNull(invite.getStoreId() == null, Employee::getStoreId)
+        .last("LIMIT 1 FOR UPDATE")
+        .one();
+  }
+
+  private void applyCurrentOrganizationScope(Employee employee) {
+    CurrentIdentity identity = requireSupportedOrganizationScope();
+    if (employee.getStoreId() != null && !Objects.equals(employee.getStoreId(), identity.storeId())) {
+      throw new AccessDeniedException("不能为其他门店创建员工");
+    }
+    if (employee.getTenantId() != null && !Objects.equals(employee.getTenantId(), identity.tenantId())) {
+      throw new AccessDeniedException("不能为其他租户创建员工");
+    }
+    requireOwnClient(identity, employee.getClientCode());
+    employee.setClientCode(identity.clientCode());
+    employee.setTenantId(identity.tenantId());
+    employee.setStoreId(identity.storeId());
+  }
+
+  private void validateBeforeEnabled(Employee employee, boolean assigningRoles) {
+    boolean enabled = "enabled".equals(employee.getStatus());
+    if (enabled && !StringUtils.hasText(employee.getRoleIds())) {
+      throw new IllegalArgumentException("请先为员工配置角色后再启用");
+    }
+    if (enabled && !StringUtils.hasText(employee.getDataPermission())) {
+      throw new IllegalArgumentException("请先为员工配置数据权限后再启用");
+    }
+    if (!StringUtils.hasText(employee.getRoleIds())) { return; }
+    for (Long roleId : parseRoleIds(employee.getRoleIds())) {
+      List<String> roleCodes = jdbcTemplate.queryForList(
+          """
+          SELECT code
+          FROM roles
+          WHERE id = ?
+            AND client_code = ?
+            AND tenant_id <=> ?
+            AND store_id <=> ?
+          """,
+          String.class,
+          roleId,
+          employee.getClientCode(),
+          employee.getTenantId(),
+          employee.getStoreId());
+      if (roleCodes.isEmpty()) {
+        throw new AccessDeniedException("只能配置当前组织的角色");
+      }
+      if (assigningRoles && roleCodes.contains("SUPER_ADMIN")) {
+        throw new AccessDeniedException("不能为员工分配超级管理员角色");
+      }
+    }
+  }
+
+  private Optional<Long> findAccountId(String phone) {
+    List<Long> ids = jdbcTemplate.query(
+        "SELECT id FROM accounts WHERE phone = ? LIMIT 1",
+        (rs, rowNum) -> rs.getLong("id"),
+        phone);
+    return ids.stream().findFirst();
+  }
+
+  private void syncAdminIdentity(Employee employee) {
+    jdbcTemplate.update(
+        """
+        INSERT INTO account_identities
+          (account_id, client_code, identity_type, subject_id, tenant_id, store_id, status)
+        VALUES (?, ?, 'employee', ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+          tenant_id = VALUES(tenant_id),
+          store_id = VALUES(store_id),
+          status = VALUES(status)
+        """,
+        employee.getAccountId(),
+        employee.getClientCode(),
+        employee.getId(),
+        employee.getTenantId(),
+        employee.getStoreId(),
+        employee.getStatus());
+  }
+
+  private void syncAdminRoles(Employee employee) {
+    removeAdminRoles(employee);
+    if (!"enabled".equals(employee.getStatus())) {
+      return;
+    }
+    for (Long roleId : parseRoleIds(employee.getRoleIds())) {
+      jdbcTemplate.update(
+          """
+          INSERT INTO account_roles (account_id, role_id, client_code, tenant_id, store_id)
+          VALUES (?, ?, ?, ?, ?)
+          """,
+          employee.getAccountId(),
+          roleId,
+          employee.getClientCode(),
+          employee.getTenantId(),
+          employee.getStoreId());
+    }
+  }
+
+  private void removeAdminRoles(Employee employee) {
+    if (employee.getAccountId() == null) {
+      return;
+    }
+    jdbcTemplate.update(
+        """
+        DELETE FROM account_roles
+        WHERE account_id = ?
+          AND client_code = ?
+          AND tenant_id <=> ?
+          AND store_id <=> ?
+        """,
+        employee.getAccountId(),
+        employee.getClientCode(),
+        employee.getTenantId(),
+        employee.getStoreId());
+  }
+
+  private List<Long> parseRoleIds(String value) {
+    return Arrays.stream(value.split(","))
+        .map(String::trim)
+        .filter(StringUtils::hasText)
+        .map(roleId -> {
+          try {
+            return Long.parseLong(roleId);
+          } catch (NumberFormatException ex) {
+            throw new IllegalArgumentException("角色数据格式错误");
+          }
+        })
+        .toList();
+  }
+
+  public static String permissionPrefix(String client) {
+    return PERMISSION_PREFIX + ("supply-chain".equals(client)?".supply-chain":"");
+  }
+  private void authorizeCreate(Employee employee) {
+    if (StringUtils.hasText(employee.getRoleIds())
+        || StringUtils.hasText(employee.getDataPermission())) {
+      permissionGuard.requirePermission(permissionPrefix(employee.getClientCode()) + ".permission");
+    }
+    if ("enabled".equals(employee.getStatus())) {
+      permissionGuard.requirePermission(permissionPrefix(employee.getClientCode()) + ".toggle-status");
+    }
+  }
+
+  private void authorizeUpdate(Employee existing, Employee payload) {
+    boolean profileChanged = !Objects.equals(existing.getTenantId(), payload.getTenantId())
+        || !Objects.equals(existing.getStoreId(), payload.getStoreId())
+        || !Objects.equals(existing.getName(), payload.getName())
+        || !Objects.equals(existing.getGender(), payload.getGender())
+        || !Objects.equals(existing.getPhone(), payload.getPhone())
+        || !Objects.equals(existing.getRemark(), payload.getRemark());
+    boolean permissionChanged = !Objects.equals(existing.getRoleIds(), payload.getRoleIds())
+        || !Objects.equals(existing.getDataPermission(), payload.getDataPermission());
+    boolean statusChanged = !Objects.equals(existing.getStatus(), payload.getStatus());
+
+    if (profileChanged || (!permissionChanged && !statusChanged)) {
+      permissionGuard.requirePermission(permissionPrefix(existing.getClientCode()) + ".edit");
+    }
+    if (permissionChanged) {
+      permissionGuard.requirePermission(permissionPrefix(existing.getClientCode()) + ".permission");
+    }
+    if (statusChanged) {
+      permissionGuard.requirePermission(permissionPrefix(existing.getClientCode()) + ".toggle-status");
+    }
+  }
+
+  private void requireSelfUpdateAllowed(CurrentIdentity identity, Employee existing, Employee payload) {
+    if (!Objects.equals(existing.getId(), identity.employeeId())) {
+      return;
+    }
+    boolean permissionChanged = !Objects.equals(existing.getRoleIds(), payload.getRoleIds())
+        || !Objects.equals(existing.getDataPermission(), payload.getDataPermission());
+    if (permissionChanged) {
+      throw new AccessDeniedException("不能修改当前登录员工的角色");
+    }
+    if (!Objects.equals(existing.getStatus(), payload.getStatus())) {
+      throw new AccessDeniedException("不能停用当前登录员工");
+    }
+    throw new AccessDeniedException("不能编辑当前登录员工");
+  }
+
+  private void lockExistingEmployee(Employee employee) {
+    accountLifecycle.lockAccount(employee.getAccountId());
+    if (jdbcTemplate.queryForList("SELECT id FROM employees WHERE id=? FOR UPDATE", Long.class, employee.getId()).isEmpty()) {
+      throw new IllegalArgumentException("员工已删除，请刷新后重试");
+    }
+  }
+
+  private void requireDeletableEmployee(Employee employee) {
+    CurrentIdentity identity = requireEmployeeOrganizationScope(employee);
+    if (Objects.equals(employee.getId(), identity.employeeId())) {
+      throw new AccessDeniedException("不能删除当前登录员工");
+    }
+  }
+
+  private CurrentIdentity requireEmployeeOrganizationScope(Employee employee) {
+    CurrentIdentity identity = requireSupportedOrganizationScope();
+    requireOwnClient(identity, employee.getClientCode());
+    com.zdm.platform.security.DataScope.requireAccess(identity, employee.getCreatedByAccountId());
+    if (!Objects.equals(employee.getTenantId(), identity.tenantId())
+        || !Objects.equals(employee.getStoreId(), identity.storeId())) {
+      throw new AccessDeniedException("当前组织无权操作该员工");
+    }
+    return identity;
+  }
+
+  private void requireOwnClient(CurrentIdentity identity, String clientCode) {
+    if (!Objects.equals(identity.clientCode(), clientCode)) {
+      throw new AccessDeniedException("当前身份不能维护其他业务端的员工");
+    }
+  }
+
+  private CurrentIdentity requireSupportedOrganizationScope() {
+    CurrentIdentity identity = identityProvider.require();
+    boolean platformScope = identity.tenantId() == null && identity.storeId() == null;
+    boolean storeScope = identity.tenantId() != null && identity.storeId() != null;
+    if (!platformScope && !storeScope) {
+      throw new AccessDeniedException("请先切换到具体门店身份");
+    }
+    return identity;
+  }
+
+}
