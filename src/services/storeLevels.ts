@@ -1,0 +1,43 @@
+import { request } from './http';
+
+export interface StoreLevelRecord {
+  id: number;
+  name: string;
+  sortOrder?: number;
+  createdByName?: string;
+  createdByAccountId?: number;
+  remark?: string;
+  status?: 'enabled' | 'disabled';
+  createdAt?: string;
+  updatedAt?: string;
+  finishedPriceConfigured?: boolean;
+  slabPriceConfigured?: boolean;
+  priceComplete?: boolean;
+}
+
+export interface StoreLevelPayload {
+  name: string;
+  remark?: string;
+  status: 'enabled' | 'disabled';
+}
+
+export const listStoreLevels = () => request<StoreLevelRecord[]>('/admin/store-levels');
+export const listStoreLevelPricingOptions = () => request<StoreLevelRecord[]>('/admin/store-levels/pricing-options');
+export const listStoreLevelOptions = () => request<StoreLevelRecord[]>('/admin/stores/level-options');
+export const createStoreLevel = (payload: StoreLevelPayload) =>
+  request<StoreLevelRecord>('/admin/store-levels', { method: 'POST', body: JSON.stringify(payload) });
+export const updateStoreLevel = (id: number, payload: StoreLevelPayload) =>
+  request<StoreLevelRecord>(`/admin/store-levels/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+export const updateStoreLevelStatus = (id: number, status: StoreLevelPayload['status']) =>
+  request<StoreLevelRecord>(`/admin/store-levels/${id}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  });
+export const previewStoreLevelDisable = (id: number) => request<boolean>(`/admin/store-levels/${id}/disable-preview`);
+export const reorderStoreLevels = (orderedIds: number[]) =>
+  request<StoreLevelRecord[]>('/admin/store-levels/reorder', {
+    method: 'PATCH',
+    body: JSON.stringify({ orderedIds }),
+  });
+export const previewStoreLevelDelete = (id: number) => request<boolean>(`/admin/store-levels/${id}/delete-preview`);
+export const deleteStoreLevel = (id: number) => request<boolean>(`/admin/store-levels/${id}`, { method: 'DELETE' });

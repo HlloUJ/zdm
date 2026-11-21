@@ -1,0 +1,206 @@
+[
+  {
+    "prefix": "admin.finished-stock-management.publish",
+    "scope": "removed"
+  },
+  {
+    "prefix": "admin.accessory-management.publish",
+    "scope": "removed"
+  },
+  {
+    "prefix": "admin.slab-management.publish",
+    "scope": "removed"
+  },
+  {
+    "prefix": "admin.supplier-management.manage-supply-types",
+    "scope": "admin-only"
+  },
+  {
+    "prefix": "admin.tenant.store-category-management",
+    "scope": "terminal-only"
+  },
+  {
+    "prefix": "admin.tenant",
+    "scope": "admin-only"
+  },
+  {
+    "prefix": "admin.product-data-center",
+    "scope": "admin-only"
+  },
+  {
+    "prefix": "admin.finished-stock-management",
+    "scope": "admin-only"
+  },
+  {
+    "prefix": "store.finished-stock-management",
+    "scope": "store-only"
+  },
+  {
+    "prefix": "store.price-configuration",
+    "scope": "store-only"
+  },
+  {
+    "prefix": "admin.slab-management",
+    "scope": "admin-only"
+  },
+  {
+    "prefix": "admin.supplier-management",
+    "scope": "supplier-directory"
+  },
+  {
+    "prefix": "admin.permission-management.employee-management",
+    "scope": "shared-management"
+  },
+  {
+    "prefix": "admin.permission-management.role-management",
+    "scope": "shared-management"
+  },
+  {
+    "prefix": "admin.permission-management.terminal-function-allocation",
+    "scope": "removed"
+  },
+  {
+    "prefix": "supply-chain",
+    "scope": "supply-chain-only"
+  },
+  {
+    "prefix": "admin.supplier-supply-type-management",
+    "scope": "admin-only"
+  },
+  {
+    "prefix": "admin.finished-stock-management.create",
+    "scope": "removed"
+  },
+  {
+    "prefix": "admin.finished-stock-management.edit",
+    "scope": "removed"
+  },
+  {
+    "prefix": "admin.finished-stock-management.warehouse.publish",
+    "scope": "removed"
+  },
+  {
+    "prefix": "admin.finished-stock-management.selling.publish",
+    "scope": "removed"
+  },
+  {
+    "prefix": "admin.finished-stock-management.warehouse.edit",
+    "scope": "admin-only"
+  },
+  {
+    "prefix": "admin.finished-stock-management.selling.edit",
+    "scope": "admin-only"
+  },
+  {
+    "prefix": "admin.finished-stock-management.off-shelf.edit",
+    "scope": "removed"
+  },
+  {
+    "prefix": "admin.slab-management.create",
+    "scope": "removed"
+  },
+  {
+    "prefix": "admin.slab-management.edit",
+    "scope": "removed"
+  },
+  {
+    "prefix": "admin.slab-management.warehouse.publish",
+    "scope": "removed"
+  },
+  {
+    "prefix": "admin.slab-management.selling.publish",
+    "scope": "removed"
+  },
+  {
+    "prefix": "admin.slab-management.warehouse.edit",
+    "scope": "admin-only"
+  },
+  {
+    "prefix": "admin.slab-management.selling.edit",
+    "scope": "admin-only"
+  },
+  {
+    "prefix": "admin.slab-management.off-shelf.edit",
+    "scope": "removed"
+  },
+  {
+    "prefix": "admin.permission-management.role-management.supply-chain",
+    "scope": "supply-chain-only"
+  },
+  {
+    "prefix": "admin.permission-management.employee-management.supply-chain",
+    "scope": "supply-chain-only"
+  },
+  {
+    "prefix": "store.price-configuration.discount.finished.batch-set",
+    "scope": "removed"
+  },
+  {
+    "prefix": "store.price-configuration.discount.accessory.batch-set",
+    "scope": "removed"
+  },
+  {
+    "prefix": "admin.permission-management.employee-management.supply-chain.view",
+    "scope": "internal-management"
+  },
+  {
+    "prefix": "admin.permission-management.employee-management.supply-chain.create",
+    "scope": "internal-management"
+  },
+  {
+    "prefix": "admin.permission-management.employee-management.supply-chain.edit",
+    "scope": "internal-management"
+  },
+  {
+    "prefix": "admin.permission-management.employee-management.supply-chain.toggle-status",
+    "scope": "internal-management"
+  },
+  {
+    "prefix": "admin.permission-management.employee-management.supply-chain.delete",
+    "scope": "internal-management"
+  },
+  {
+    "prefix": "store.customer-management",
+    "scope": "store-only"
+  },
+  {
+    "prefix": "admin.accessory-management",
+    "scope": "admin-only"
+  },
+  {
+    "prefix": "store.accessory-management",
+    "scope": "store-only"
+  },
+  {
+    "prefix": "admin.accessory-management.create",
+    "scope": "removed"
+  },
+  {
+    "prefix": "admin.accessory-management.edit",
+    "scope": "removed"
+  },
+  {
+    "prefix": "admin.accessory-management.warehouse.publish",
+    "scope": "removed"
+  },
+  {
+    "prefix": "admin.accessory-management.selling.publish",
+    "scope": "removed"
+  },
+  {
+    "prefix": "admin.accessory-management.warehouse.edit",
+    "scope": "admin-only"
+  },
+  {
+    "prefix": "admin.accessory-management.selling.edit",
+    "scope": "admin-only"
+  },
+  {
+    "prefix": "admin.accessory-management.off-shelf.edit",
+    "scope": "removed"
+  },
+  {
+    "prefix": "store.order-management",
+    "scope": "store-only"
+  }
+]

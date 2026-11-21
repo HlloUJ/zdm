@@ -1,0 +1,2124 @@
+<template>
+  <div class="admin-layout">
+    <AdminTopNav />
+    <div class="admin-shell">
+      <AdminSideMenu />
+      <main class="page zdm-admin-responsive-page" :class="{ 'page--form': formPageVisible }">
+        <div v-if="formPageVisible" ref="formAnchorSlot" :style="{ height: `${formAnchorHeight}px` }">
+          <AdminSectionCard class="form-anchor-card" :style="formAnchorStyle">
+            <nav ref="formAnchorNav" class="form-anchor-nav" aria-label="商品信息分区导航">
+              <t-space size="large">
+                <t-link
+                  v-for="section in formSections"
+                  :key="section.key"
+                  hover="color"
+                  data-button-control="section-navigation"
+                  :href="`#finished-product-${section.key}`"
+                  :theme="activeFormSection === section.key ? 'primary' : 'default'"
+                  :aria-current="activeFormSection === section.key ? 'location' : undefined"
+                  @click.prevent="scrollToFormSection(section.key)"
+                >
+                  {{ section.label }}
+                </t-link>
+              </t-space>
+            </nav>
+          </AdminSectionCard>
+        </div>
+        <AdminListToolbar v-if="!formPageVisible && !finishedTabs.length" :has-auxiliary="canViewOperationLogs"
+          ><template #auxiliary
+            ><t-button
+              v-if="canViewOperationLogs"
+              :theme="buttonTheme('logs')"
+              variant="outline"
+              @click="operationLogsVisible = true"
+              >操作日志</t-button
+            ></template
+          ></AdminListToolbar
+        >
+        <template v-if="!formPageVisible && finishedTabs.length">
+          <AdminListLayout v-if="finishedTabs.length" class="finished-list-layout">
+            <template #toolbar>
+              <div class="list-controls">
+                <t-tabs
+                  v-if="showFinishedTabRail"
+                  :value="activeTab"
+                  class="status-tabs"
+                  @change="
+                    activeTab = String($event) as StockTab;
+                    handleTabChange();
+                  "
+                >
+                  <t-tab-panel
+                    v-for="tab in finishedTabs.map((tab) => ({ value: tab.value, label: tabLabel(tab) }))"
+                    :key="tab.value"
+                    :value="tab.value"
+                    :label="tab.label"
+                  />
+                </t-tabs>
+                <t-form class="zdm-admin-filter-form zdm-standard-query" label-width="80px" :data="currentFilter" colon>
+                  <div class="filter-row">
+                    <div class="filter-fields">
+                      <t-form-item label="商品">
+                        <t-input
+                          :value="currentFilter.keyword"
+                          clearable
+                          data-query-search-scope="商品名称/ID"
+                          placeholder="请输入商品名称/ID"
+                          @change="updateManagementListFilter('keyword', String($event || ''))"
+                          @enter="handleSearch()"
+                        />
+                      </t-form-item>
+                      <t-form-item label="商品分类"
+                        ><t-select-input
+                          :value="currentFilter.category"
+                          :value-display="currentFilter.category?.split(' / ').at(-1)"
+                          :popup-visible="categoryFilterVisible"
+                          :popup-props="{
+                            placement: 'bottom-left',
+                            overlayInnerStyle: { width: 'auto' },
+                            popperOptions: { modifiers: [{ name: 'flip', enabled: false }] },
+                          }"
+                          clearable
+                          placeholder="请选择"
+                          @popup-visible-change="categoryFilterVisible = $event"
+                          @clear="currentFilter.category = ''"
+                        >
+                          <template #suffixIcon
+                            ><t-icon :name="categoryFilterVisible ? 'chevron-up' : 'chevron-down'"
+                          /></template>
+                          <template #panel>
+                            <t-cascader-panel
+                              v-if="categoryFilterVisible"
+                              :value="''"
+                              :options="categoryCascaderOptions"
+                              :check-strictly="false"
+                              trigger="hover"
+                              @change="handleCategoryFilterChange"
+                            />
+                          </template> </t-select-input
+                      ></t-form-item>
+                      <t-form-item label="供应商">
+                        <t-select
+                          :value="currentFilter.supplier"
+                          clearable
+                          placeholder="请选择供应商"
+                          @change="updateManagementListFilter('supplier', String($event || ''))"
+                        >
+                          <t-option v-for="item in supplierOptions" :key="item" :label="item" :value="item" />
+                        </t-select>
+                      </t-form-item>
+                    </div>
+                    <div class="filter-actions">
+                      <t-button :theme="buttonTheme('search')" @click="handleSearch()">
+                        <template #icon><t-icon name="search" /></template>查询
+                      </t-button>
+                      <t-button :theme="buttonTheme('reset')" variant="base" @click="handleReset()">
+                        <template #icon><t-icon name="refresh" /></template>重置
+                      </t-button>
+                    </div>
+                  </div>
+                </t-form>
+                <AdminListToolbar
+                  :has-actions="batchButtons.length > 0"
+                  :selected-count="selectedKeys.length"
+                  :has-batch-actions="hasBatchActions"
+                  :has-auxiliary="canViewOperationLogs"
+                  ><t-button
+                    v-for="action in managementToolbarActions"
+                    :key="action.id"
+                    :theme="buttonTheme(buttonFunctionFor('stock', action.id))"
+                    :variant="action.variant"
+                    :class="action.className"
+                    :disabled="action.disabled"
+                    @click="handleBatchAction(action.id as BatchAction)"
+                  >
+                    <template v-if="action.icon" #icon><t-icon :name="action.icon" /></template>
+                    {{ action.label }} </t-button
+                  ><template #auxiliary
+                    ><t-button
+                      v-if="canViewOperationLogs"
+                      :theme="buttonTheme('logs')"
+                      variant="outline"
+                      @click="operationLogsVisible = true"
+                      >操作日志</t-button
+                    ></template
+                  ></AdminListToolbar
+                >
+              </div>
+            </template>
+            <template #table
+              ><SourceUnavailableOverlay :rows="pageData.filter(sourceBlocked)">
+                <FinishedRowWarnings :rows="pageData" :errors="shelfErrors" @close="(id) => delete shelfErrors[id]">
+                  <t-table
+                    :key="activeTab"
+                    class="finished-stock-table"
+                    :row-class-name="({ row }: { row: StockItem }) => (sourceBlocked(row) ? 'source-unavailable' : '')"
+                    :row-attributes="
+                      ({ row }: { row: StockItem }) =>
+                        sourceBlocked(row)
+                          ? { 'data-source-id': row.id, inert: true }
+                          : shelfErrors[row.id]
+                            ? { 'data-shelf-error-id': row.id }
+                            : {}
+                    "
+                    row-key="id"
+                    :data="pageData"
+                    :columns="columns"
+                    :sort="tableSort"
+                    :sort-icon="stateActivitySortIcon"
+                    :loading="loading"
+                    hover
+                    table-layout="fixed"
+                    @sort-change="onTimeSortChange"
+                  >
+                    <template #selectTitle>
+                      <t-checkbox
+                        :checked="pageAllSelected"
+                        :indeterminate="pagePartiallySelected"
+                        @change="toggleCurrentPage"
+                      />
+                    </template>
+                    <template #select="{ row }">
+                      <t-checkbox
+                        :checked="selectedKeySet.has(row.id)"
+                        @change="(checked: boolean) => toggleRow(row.id, checked)"
+                      />
+                    </template>
+                    <template #image="{ row }">
+                      <button
+                        class="product-image preview-trigger"
+                        type="button"
+                        title="点击查看大图"
+                        @click="openImagePreview(row)"
+                      >
+                        <img v-if="row.image" :src="row.image" :alt="row.name" />
+                        <t-icon v-else name="image-off" />
+                      </button>
+                    </template>
+                    <template #product="{ row }">
+                      <div class="product-meta">
+                        <div class="product-name">{{ row.name }}</div>
+                        <div class="product-code">
+                          ID：{{ row.id }} <ProductListStatusTag v-if="activeTab === 'all'" :status="row.status" />
+                        </div>
+                      </div>
+                    </template>
+                    <template #supplier="{ row }">
+                      <div class="tenant-cell">
+                        <span>{{ row.supplier }}</span>
+                        <!-- TODO(warehouse-management): 仓库模块补全后改为展示商品关联的真实仓库，当前临时显示平台仓。 -->
+                        <span class="store-text">平台仓</span>
+                      </div>
+                    </template>
+                    <template #createdAt="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+                    <template #warehouseEntry="{ row }"><WarehouseEntryInformation :entry="row" /></template>
+                    <template #stateOperatorName="{ row }"
+                      ><span>{{ row.stateOperatorName || '历史记录未记录' }}</span></template
+                    >
+                    <template #stateOperatedAt="{ row }">{{
+                      row.stateOperatedAt ? formatDateTime(row.stateOperatedAt) : '历史记录未记录'
+                    }}</template>
+                    <template #operation="{ row }">
+                      <div class="table-actions">
+                        <t-link
+                          v-for="action in managementRowButtons(row)"
+                          :key="action.id"
+                          :theme="buttonTheme(buttonFunctionFor('stock', action.id))"
+                          hover="color"
+                          @click="handleManagementRowButton(action.id, row)"
+                          >{{ action.label }}</t-link
+                        >
+                      </div>
+                    </template>
+                    <template #empty>
+                      <div class="table-empty">暂无数据</div>
+                    </template>
+                  </t-table>
+                </FinishedRowWarnings>
+                <template #overlay="{ row }">
+                  <t-space align="center" size="small">
+                    <t-icon name="info-circle" />
+                    <span>{{ row.sourceMessage || '上游商品不可用' }}</span>
+                  </t-space>
+                  <t-space size="small">
+                    <t-button
+                      v-if="
+                        hasFinishedAction(['warehouse', 'selling'].includes(row.status) ? 'edit' : 'detail', row.status)
+                      "
+                      size="small"
+                      :theme="buttonTheme('view')"
+                      @click="handleRowAction('detail', row)"
+                    >
+                      详情
+                    </t-button>
+                    <t-button
+                      v-if="hasFinishedAction('purge', 'recycle')"
+                      size="small"
+                      :theme="buttonTheme('purge')"
+                      variant="base"
+                      @click="handleRowAction('purge', row)"
+                      >彻底删除</t-button
+                    >
+                  </t-space>
+                </template>
+              </SourceUnavailableOverlay></template
+            >
+            <template #pagination>
+              <AdminPagination
+                :current="currentPagination.current"
+                :page-size="currentPagination.pageSize"
+                :total="paginationTotal"
+                :page-size-options="pageSizeOptions"
+                @update:current="currentPagination.current = $event"
+                @update:page-size="currentPagination.pageSize = $event"
+              />
+            </template>
+          </AdminListLayout> </template
+        ><template v-else-if="formPageVisible">
+          <section ref="productFormRoot" class="form-shell">
+            <AdminSectionCard class="form-heading-card" aria-label="发布商品信息">
+              <div class="form-title-row">
+                <div>
+                  <h1>{{ formPageTitle }}</h1>
+                  <div class="selected-category">当前分类：{{ selectedCategoryPath }}</div>
+                </div>
+                <t-button :theme="buttonTheme('back')" variant="base" @click="closeFormPage">
+                  <template #icon><t-icon name="rollback" /></template>
+                  返回列表
+                </t-button>
+              </div>
+            </AdminSectionCard>
+            <ProductDetail
+              v-if="editingProduct"
+              class="readonly-product-fields"
+              :product="editingProduct"
+              :attribute-names="detailAttributeNames"
+              :operations="true"
+              :show-sales="false"
+              editor-layout
+              @preview="openProductMediaPreview"
+            />
+
+            <AdminSectionCard id="finished-product-sales" class="form-section" aria-label="销售信息">
+              <h2 class="form-section-title">销售信息</h2>
+              <t-form :data="productForm" label-width="100px" colon>
+                <t-form-item
+                  label="销售规格"
+                  required-mark
+                  v-bind="
+                    !specRows.length
+                      ? fieldFeedback(submitAttempted, '请创建销售规格')
+                      : salesSpecificationFeedback.field('specifications', [
+                          confirmedSpecMode,
+                          confirmedSpecDimensions,
+                          specRows,
+                        ])
+                  "
+                >
+                  <div v-if="specRows.length" ref="specTableElement" class="spec-table-block">
+                    <t-table
+                      row-key="id"
+                      :data="specRows"
+                      :columns="specColumns"
+                      :rowspan-and-colspan="specRowspanAndColspan"
+                      :table-content-width="specTableContentWidth"
+                      bordered
+                      hover
+                      table-layout="auto"
+                    >
+                      <template #specText="{ row }">
+                        <div class="spec-name-cell">
+                          <span>{{ row.specText || '-' }}</span>
+                        </div>
+                      </template>
+                      <template v-for="field in salesAttributeFields" :key="field.key" #[field.key]="{ row }">
+                        <span class="readonly-spec-value">{{ row[field.key] || '-' }}</span>
+                      </template>
+                      <template #cost="{ row }">
+                        <span>{{ formatReadonlyPrice(row.cost) }}</span>
+                      </template>
+                      <template
+                        v-for="configuration in productPriceLevels"
+                        #[`markup-${configuration.id}`]="{ row }"
+                        :key="configuration.id"
+                      >
+                        <div class="partner-price-cell">
+                          <div class="price-pair with-source">
+                            <SpecPriceInput
+                              v-model="row.markupPrices[configuration.id].coefficient"
+                              placeholder="请输入系数"
+                              label="系数"
+                              :submitted="submitAttempted"
+                              @change="handleMarkupCoefficientChange(row, configuration.id, $event)"
+                              @commit="markSpecPriceManual(row, configuration.id)"
+                            />
+                            <SpecPriceInput
+                              v-model="row.markupPrices[configuration.id].price"
+                              placeholder="请输入价格"
+                              label="价格"
+                              :submitted="submitAttempted"
+                              @change="handleMarkupPriceChange(row, configuration.id, $event)"
+                              @commit="markSpecPriceManual(row, configuration.id)"
+                            />
+                            <PriceSourceToggle
+                              :source="row.markupPrices[configuration.id].priceSource"
+                              :available="
+                                Boolean(configuration.configurationId) && configuration.priceCoefficient != null
+                              "
+                              @toggle="toggleSpecPriceSource(row, configuration.id)"
+                            />
+                          </div>
+                        </div>
+                      </template>
+                      <template #guide="{ row }">
+                        <div class="price-pair with-source">
+                          <SpecPriceInput
+                            v-model="row.guideCoefficient"
+                            placeholder="请输入系数"
+                            label="系数"
+                            :submitted="submitAttempted"
+                            @change="handleSpecCoefficientChange(row, 'guideCoefficient', 'guide', $event)"
+                            @commit="markGuidePriceManual(row)"
+                          />
+                          <SpecPriceInput
+                            v-model="row.guide"
+                            placeholder="请输入价格"
+                            label="价格"
+                            :submitted="submitAttempted"
+                            @change="handleSpecPriceChange(row, 'guide', 'guideCoefficient', $event)"
+                            @commit="markGuidePriceManual(row)"
+                          />
+                          <PriceSourceToggle
+                            :source="row.guidePriceSource"
+                            :available="guidePriceSettingCoefficient != null"
+                            @toggle="toggleGuidePriceSource(row)"
+                          />
+                        </div>
+                      </template>
+                      <template #level1="{ row }">
+                        <div class="price-pair">
+                          <t-input
+                            v-model="row.level1Coefficient"
+                            placeholder="请输入系数"
+                            @change="handleSpecCoefficientChange(row, 'level1Coefficient', 'level1', $event)"
+                            @blur="formatDecimalValue(row, 'level1Coefficient')"
+                          />
+                          <t-input
+                            v-model="row.level1"
+                            placeholder="请输入价格"
+                            @change="handleSpecPriceChange(row, 'level1', 'level1Coefficient', $event)"
+                            @blur="formatDecimalValue(row, 'level1')"
+                          />
+                        </div>
+                      </template>
+                      <template #level2="{ row }">
+                        <div class="price-pair">
+                          <t-input
+                            v-model="row.level2Coefficient"
+                            placeholder="请输入系数"
+                            @change="handleSpecCoefficientChange(row, 'level2Coefficient', 'level2', $event)"
+                            @blur="formatDecimalValue(row, 'level2Coefficient')"
+                          />
+                          <t-input
+                            v-model="row.level2"
+                            placeholder="请输入价格"
+                            @change="handleSpecPriceChange(row, 'level2', 'level2Coefficient', $event)"
+                            @blur="formatDecimalValue(row, 'level2')"
+                          />
+                        </div>
+                      </template>
+                      <template #level3="{ row }">
+                        <div class="price-pair">
+                          <t-input
+                            v-model="row.level3Coefficient"
+                            placeholder="请输入系数"
+                            @change="handleSpecCoefficientChange(row, 'level3Coefficient', 'level3', $event)"
+                            @blur="formatDecimalValue(row, 'level3Coefficient')"
+                          />
+                          <t-input
+                            v-model="row.level3"
+                            placeholder="请输入价格"
+                            @change="handleSpecPriceChange(row, 'level3', 'level3Coefficient', $event)"
+                            @blur="formatDecimalValue(row, 'level3')"
+                          />
+                        </div>
+                      </template>
+                      <template #quantity="{ row }">
+                        <span>{{ row.quantity ?? '-' }}</span>
+                      </template>
+                    </t-table>
+                    <div class="spec-table-actions">
+                      <t-button :theme="buttonTheme('batch-fill')" variant="outline" @click="openPriceDrawer">
+                        <template #icon><t-icon name="edit" /></template>
+                        批量填写
+                      </t-button>
+                    </div>
+                  </div>
+                </t-form-item>
+                <t-form-item label="总库存">
+                  <t-input-number :model-value="totalStock" theme="normal" :min="0" disabled />
+                </t-form-item>
+              </t-form>
+            </AdminSectionCard>
+
+            <AdminSectionCard class="form-submit-bar">
+              <t-button :theme="buttonTheme('submit')" :loading="saving" @click="submitProductForm">
+                <template #icon><t-icon name="check" /></template>
+                {{ formConfirmationText('edit') }}
+              </t-button>
+              <t-button :theme="buttonTheme('cancel')" variant="base" @click="closeFormPage">取消</t-button>
+            </AdminSectionCard>
+          </section>
+        </template>
+      </main>
+    </div>
+
+    <t-drawer
+      v-model:visible="priceDrawerVisible"
+      header="批量填写"
+      placement="right"
+      size="min(1180px, 100%)"
+      lazy
+      destroy-on-close
+      @close="closePriceDrawer"
+    >
+      <div ref="priceFormRoot" class="batch-fill-panel">
+        <t-card class="batch-section" title="选择批量范围">
+          <template #actions
+            ><t-typography-text theme="secondary">未选择属性值时默认填充全部规格</t-typography-text></template
+          >
+          <div class="batch-filter-list">
+            <div v-for="filter in batchFilterOptions" :key="filter.field" class="batch-filter-row">
+              <t-typography-text class="batch-filter-label" strong>{{ filter.label }}</t-typography-text>
+              <div class="batch-filter-values">
+                <t-check-tag
+                  :checked="!batchFillFilters[filter.field].length"
+                  size="small"
+                  :checked-props="{ theme: 'primary', variant: 'light-outline' }"
+                  :unchecked-props="{ variant: 'outline' }"
+                  @change="clearBatchFilterField(filter.field)"
+                >
+                  全部
+                </t-check-tag>
+                <t-check-tag
+                  v-for="value in filter.values"
+                  :key="value"
+                  :checked="isBatchFilterValueSelected(filter.field, value)"
+                  size="small"
+                  :checked-props="{ theme: 'primary', variant: 'light-outline' }"
+                  :unchecked-props="{ variant: 'outline' }"
+                  @change="toggleBatchFilterValue(filter.field, value)"
+                >
+                  {{ value }}
+                </t-check-tag>
+              </div>
+            </div>
+          </div>
+          <t-typography-text class="batch-match-tip" theme="secondary"
+            >当前将批量填充 {{ batchFillMatchedRows.length }} 条规格</t-typography-text
+          >
+        </t-card>
+
+        <t-card class="batch-section" title="填写字段">
+          <template #actions
+            ><t-typography-text theme="secondary">留空的字段不会覆盖原规格数据</t-typography-text></template
+          >
+          <div class="batch-field-grid">
+            <t-form-item label="指导价">
+              <div class="price-pair wide">
+                <SpecPriceInput
+                  v-model="batchFillForm.guideCoefficient"
+                  form-layout
+                  placeholder="请输入系数"
+                  label="系数"
+                  optional
+                  :submitted="batchFillSubmitted"
+                  @change="handleBatchCoefficientChange('guideCoefficient', 'guide', $event)"
+                />
+                <SpecPriceInput
+                  v-model="batchFillForm.guide"
+                  form-layout
+                  placeholder="请输入价格"
+                  label="价格"
+                  optional
+                  :submitted="batchFillSubmitted"
+                  @change="handleBatchPriceChange('guide', 'guideCoefficient', $event)"
+                />
+              </div>
+            </t-form-item>
+            <t-form-item
+              v-for="configuration in productPriceLevels"
+              :key="configuration.id"
+              :label="configuration.name"
+            >
+              <div class="price-pair wide">
+                <SpecPriceInput
+                  v-model="batchMarkupPrices[configuration.id].coefficient"
+                  form-layout
+                  placeholder="请输入系数"
+                  label="系数"
+                  optional
+                  :submitted="batchFillSubmitted"
+                  @change="handleBatchMarkupChange(configuration.id, 'coefficient', $event)"
+                />
+                <SpecPriceInput
+                  v-model="batchMarkupPrices[configuration.id].price"
+                  form-layout
+                  placeholder="请输入价格"
+                  label="价格"
+                  optional
+                  :submitted="batchFillSubmitted"
+                  @change="handleBatchMarkupChange(configuration.id, 'price', $event)"
+                />
+              </div>
+            </t-form-item>
+          </div>
+        </t-card>
+      </div>
+      <template #footer>
+        <t-space size="small">
+          <t-button :theme="buttonTheme('save')" @click="savePriceDrawer">
+            <template #icon><t-icon name="save" /></template>
+            {{ formConfirmationText('edit') }}
+          </t-button>
+          <t-button :theme="buttonTheme('cancel')" @click="closePriceDrawer">取消</t-button>
+        </t-space>
+      </template>
+    </t-drawer>
+    <t-dialog
+      v-model:visible="reasonDialogVisible"
+      header="下架"
+      width="520px"
+      placement="center"
+      :confirm-btn="dialogButtonProps('off-shelf', operationConfirmation('下架', reasonState.isBatch))"
+      :cancel-btn="cancelButtonProps('取消')"
+      @confirm="submitReason"
+      @cancel="closeReasonDialog"
+      @close="closeReasonDialog"
+    >
+      <t-form ref="reasonFormRoot" :data="reasonForm" label-width="100px" colon>
+        <t-form-item label="下架原因" required-mark>
+          <t-select
+            v-bind="reasonFeedback.field('reason', reasonForm.reason)"
+            v-model="reasonForm.reason"
+            placeholder="请选择下架原因"
+          >
+            <t-option v-for="item in offShelfReasons" :key="item" :label="item" :value="item" />
+          </t-select>
+        </t-form-item>
+        <t-form-item label="详细说明">
+          <t-textarea v-model="reasonForm.detail" :maxlength="100" placeholder="请输入详细说明" :autosize="{}" />
+        </t-form-item>
+      </t-form>
+    </t-dialog>
+    <t-drawer
+      v-model:visible="detailDialogVisible"
+      header="商品详情"
+      :close-btn="true"
+      size="min(1240px, 100%)"
+      placement="right"
+      :footer="false"
+      @close="closeDetailDialog"
+    >
+      <ProductDetail
+        v-if="detailProduct"
+        :product="detailProduct"
+        :attribute-names="detailAttributeNames"
+        :operations="true"
+        :enabled-level-ids="enabledPriceLevels.map((level) => level.id)"
+        drawer-layout
+        @preview="openProductMediaPreview"
+      />
+    </t-drawer>
+    <AdminDialog
+      v-model:visible="imagePreviewVisible"
+      :header="imagePreviewTitle"
+      :width="productPreviewType === 'video' ? '960px' : 'min(960px, 94vw)'"
+      :confirmation="{ kind: 'none' }"
+      confirm-function="close"
+      mode="modal"
+      show-overlay
+      close-on-overlay-click
+      :prevent-scroll-through="false"
+      :footer="false"
+      @close="closeImagePreview"
+    >
+      <div class="image-preview-dialog">
+        <video
+          v-if="imagePreviewVisible && productPreviewType === 'video'"
+          :src="imagePreviewSrc"
+          controls
+          autoplay
+          playsinline
+          aria-label="商品视频播放器"
+        />
+        <img v-else-if="imagePreviewVisible" :src="imagePreviewSrc" :alt="imagePreviewTitle" style="max-width: 100%" />
+      </div>
+    </AdminDialog>
+    <FinishedOperationLogs v-if="canViewOperationLogs" v-model:visible="operationLogsVisible" />
+    <AdminConfirmDialog
+      v-model:visible="confirmDialogVisible"
+      :confirm-loading="saving"
+      :function="buttonFunctionFor('stock', confirmState.type)"
+      :action="confirmAction"
+      object-type="商品"
+      :object-name="confirmState.product?.name"
+      @confirm="handleConfirm"
+      @cancel="closeConfirmDialog"
+      @close="closeConfirmDialog"
+    >
+      {{ confirmState.content }}
+    </AdminConfirmDialog>
+    <OperationsBatchShelfResult
+      v-model:visible="batchShelfResultVisible"
+      :result="batchShelfResult"
+      :operation="batchOperation"
+    />
+  </div>
+</template>
+
+<script setup lang="ts">
+import { useListBatchSelection } from '@/components/foundation';
+import { operationsHistoricalLayeredFields } from './historicalSpecification';
+import { deleteProductsBatch } from '@/services/productBatchDelete';
+import { canBatchDelete } from '@/services/productBatchPermissions';
+import { batchRequestError } from '@/services/productBatchFeedback';
+import OperationsBatchShelfResult from '@/components/OperationsBatchShelfResult.vue';
+import { batchShelfProducts, type BatchShelfResult } from '@/services/operationsBatchShelf';
+const batchOperation = ref<'上架' | '删除'>('上架');
+const batchShelfResultVisible = ref(false);
+const batchShelfResult = ref<BatchShelfResult>({ total: 0, successCount: 0, failureCount: 0, failures: [] });
+import ProductListStatusTag from '@/components/ProductListStatusTag.vue';
+import { initialProductListTab, isAllProductStatus, productCreationColumns } from '@/services/productAllView';
+import WarehouseEntryInformation from '@/components/WarehouseEntryInformation.vue';
+import { useStateActivitySort } from '@/composables/useStateActivitySort';
+import { useSpecTableLayout } from '../shared/useSpecTableLayout';
+import { useCommodityModule } from '@/composables/useCommodityModule';
+const commodity = useCommodityModule();
+
+import { formConfirmationText } from '@/components/foundation/actions/confirmation';
+import { operationConfirmation, dialogButtonProps } from '@/components/foundation/actions/confirmation';
+import { buttonTheme, buttonFunctionFor, cancelButtonProps } from '@/components/foundation/actions/buttonFunctions';
+import { rejectFormSubmission } from '@/utils/submitValidation';
+import { fieldFeedback, useFormFeedback } from '@/utils/formValidation';
+import AdminListToolbar from '@/components/foundation/AdminListToolbar.vue';
+import { stateActivitySortIcon, stateActivityColumns } from '@/services/productStateActivity';
+import { filterFinishedStockItems } from '../shared/finishedStockListFilter';
+import { finishedStockFormIssues } from '../shared/finishedStockFormValidation';
+import { buildFinishedStockTemplateFields } from '../shared/finishedStockTemplateFields';
+import { useFinishedStockPriceEditor } from '../shared/finishedStockPriceEditor';
+import { useFinishedStockSpecRows } from '../shared/finishedStockSpecRows';
+import { buildFinishedOperationsPricePayload } from '../shared/finishedStockPayload';
+import type {
+  FinishedStockToolbarAction,
+  FinishedStockRowAction,
+  StockStatus,
+  StockTab,
+  PublisherType,
+  RowAction,
+  BatchAction,
+  FormSectionKey,
+  SpecMode,
+  LayeredSpecField,
+  BatchFilterField,
+  ConfirmType,
+  TabConfig,
+  FilterState,
+  PaginationState,
+  StockItem,
+  ProductForm,
+  SpecRow,
+  BatchFillForm,
+  CategoryCascaderOption,
+} from '../shared/finishedStockPageModel';
+import { formatProductDateTime as formatDateTime } from '@/utils/formatProductDateTime';
+import type { PrimaryTableCol, TableRowData } from 'tdesign-vue-next';
+import AdminSideMenu from '@/components/AdminSideMenu.vue';
+import AdminTopNav from '@/components/AdminTopNav.vue';
+import { finishedStockActions } from '../shared/finishedStockActions';
+
+import PriceSourceToggle from './components/PriceSourceToggle.vue';
+import SpecPriceInput from './components/SpecPriceInput.vue';
+import FinishedOperationLogs from './components/FinishedOperationLogs.vue';
+import { usePermissionTabs } from '@/composables/usePermissionTabs';
+import { hasPermission } from '@/services/adminPermissions';
+import { getLoginUser } from '@/services/auth';
+import { isValidSpecPriceNumber } from './priceValidation';
+import { copySpecDimensions, orderLayeredRows, editableSalesFields } from './layeredSpecs';
+import { resetProductForm } from './productFormState';
+import {
+  adminFeedback,
+  AdminConfirmDialog,
+  AdminDialog,
+  AdminSectionCard,
+  getSafeErrorMessage,
+  type AdminMediaValue,
+} from '@/components/foundation';
+import { type FinishedMarkupConfigurationRecord } from '@/services/finishedMarkupConfigurations';
+const { getFinishedGuidePriceSetting, listFinishedMarkupConfigurationOptions } = commodity.pricing;
+import {
+  type FinishedProductPriceLevelOption,
+  type FinishedProductPayload,
+  type FinishedSpecDimension,
+  type FinishedProductRecord,
+} from '@/services/finishedProducts';
+const {
+  checkFinishedProductShelf,
+  listFinishedProductPriceLevelOptions,
+  deleteFinishedProduct,
+  listFinishedProducts,
+  getFinishedProductDetail,
+  listFinishedProductFormOptions,
+
+  updateFinishedProduct,
+} = commodity.products;
+import { type ProductCategoryRecord } from '@/services/productCategories';
+import { type FinishedProductTemplateAttribute } from '@/services/finishedProducts';
+const { listFinishedProductTemplateAttributes } = commodity.products;
+import { type ProductAttributeRecord } from '@/services/productAttributes';
+import { type SupplierRecord } from '@/services/suppliers';
+import ProductDetail from './components/ProductDetail.vue';
+import SourceUnavailableOverlay from './components/SourceUnavailableOverlay.vue';
+import FinishedRowWarnings from './components/FinishedRowWarnings.vue';
+import { AdminListLayout, AdminPagination } from '@/components/foundation';
+import { computed, h, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+const tabs: TabConfig[] = [
+  { value: 'all', label: '全部' },
+  { value: 'warehouse', label: '仓库中' },
+  { value: 'selling', label: '已上架' },
+  { value: 'soldOut', label: '已售完' },
+  { value: 'recycle', label: '回收站' },
+];
+const pageSizeOptions = [10, 20, 50];
+const offShelfReasons = ['库存异常', '价格调整', '图片更新', '供应商申请'];
+const productPermissionPrefix = computed(() => `${'admin'}.${commodity.moduleKey}`);
+const sourceBlocked = (row: StockItem) => Boolean(row.sourceUnavailable);
+const activeTab = ref<StockTab>(initialProductListTab(useRoute().query.tab));
+const { descending, tableSort, toggleTimeSort, onTimeSortChange } = useStateActivitySort(activeTab, () => {
+  currentPagination.value.current = 1;
+});
+const finishedScope: Record<StockTab, string> = {
+  all: 'all',
+  warehouse: 'warehouse',
+  selling: 'selling',
+  soldOut: 'sold-out',
+  recycle: 'recycle',
+};
+const hasFinishedAction = (action: string, status = activeTab.value) =>
+  hasPermission(getLoginUser(), `${productPermissionPrefix.value}.${finishedScope[status]}.${action}`);
+const { visibleTabs: finishedTabs, showTabRail: showFinishedTabRail } = usePermissionTabs({
+  tabs,
+  activeTab,
+  canAccess: (tab) =>
+    hasFinishedAction('view', tab.value) &&
+    (tab.value !== 'all' || hasFinishedAction('view', 'warehouse') || hasFinishedAction('view', 'selling')),
+});
+const finishedActionCodes: Record<string, string> = {
+  batchDelete: 'delete',
+  batchShelf: 'batch-shelf',
+  batchOffShelf: 'batch-off-shelf',
+  batchRestore: 'batch-restore',
+  batchPurge: 'batch-purge',
+  clearRecycle: 'clear',
+  shelf: 'shelf',
+  offShelf: 'off-shelf',
+  edit: 'edit',
+  delete: 'delete',
+  detail: 'detail',
+  price: 'price',
+  restore: 'restore',
+  purge: 'purge',
+};
+const route = useRoute();
+const router = useRouter();
+const productFormRoot = ref<HTMLElement>();
+
+const priceFormRoot = ref<HTMLElement>();
+const reasonFormRoot = ref();
+const loading = ref(false);
+const saving = ref(false);
+const selectedKeys = ref<number[]>([]);
+const formPageVisible = ref(false);
+const activeFormSection = ref<FormSectionKey>('description');
+const formAnchorNav = ref<HTMLElement>();
+const formAnchorSlot = ref<HTMLElement>();
+const formAnchorHeight = ref(72);
+const formAnchorStyle = ref({ left: '0px', width: '0px', top: '64px' });
+const updateFormAnchorPosition = () => {
+  const slot = formAnchorSlot.value;
+  if (!slot) return;
+  const rect = slot.getBoundingClientRect();
+  const top = Math.max(0, document.querySelector('.top-nav')?.getBoundingClientRect().bottom ?? 0);
+  formAnchorStyle.value = { left: `${rect.left}px`, width: `${rect.width}px`, top: `${top}px` };
+  formAnchorHeight.value = formAnchorNav.value?.parentElement?.getBoundingClientRect().height ?? 72;
+};
+watch(
+  formAnchorSlot,
+  (slot, _previous, onCleanup) => {
+    if (!slot) return;
+    const observer = new ResizeObserver(updateFormAnchorPosition);
+    observer.observe(slot);
+    if (formAnchorNav.value?.parentElement) observer.observe(formAnchorNav.value.parentElement);
+    window.addEventListener('scroll', updateFormAnchorPosition, { passive: true });
+    window.addEventListener('resize', updateFormAnchorPosition);
+    updateFormAnchorPosition();
+    onCleanup(() => {
+      observer.disconnect();
+      window.removeEventListener('scroll', updateFormAnchorPosition);
+      window.removeEventListener('resize', updateFormAnchorPosition);
+    });
+  },
+  { flush: 'post' },
+);
+const formSections: { key: FormSectionKey; label: string }[] = [
+  { key: 'description', label: '图文描述' },
+  { key: 'base', label: '基础信息' },
+  { key: 'sales', label: '销售信息' },
+];
+const scrollToFormSection = (key: FormSectionKey) => {
+  const section =
+    key !== 'sales'
+      ? document.querySelectorAll('.readonly-product-fields .zdm-admin-section-card')[key === 'description' ? 0 : 1]
+      : document.getElementById(`finished-product-${key}`);
+  if (!section) return;
+  activeFormSection.value = key;
+  updateFormAnchorPosition();
+  const offset = Number.parseFloat(formAnchorStyle.value.top) + formAnchorHeight.value + 16;
+  window.scrollTo({
+    top: Math.max(0, window.scrollY + section.getBoundingClientRect().top - offset),
+    behavior: 'smooth',
+  });
+};
+
+const priceDrawerVisible = ref(false);
+const reasonDialogVisible = ref(false);
+const reasonFeedback = useFormFeedback(reasonDialogVisible);
+const confirmDialogVisible = ref(false);
+const detailDialogVisible = ref(false);
+const imagePreviewVisible = ref(false);
+const detailProduct = ref<StockItem | null>(null);
+const editingProduct = ref<StockItem | null>(null);
+const imagePreviewSrc = ref('');
+const imagePreviewTitle = ref('商品主图');
+const productPreviewType = ref<'image' | 'video'>('image');
+const selectedCategoryId = ref<number>();
+const selectedCategoryPath = ref('');
+
+const confirmedSpecMode = ref<SpecMode>('single');
+const confirmedLayeredFields = ref<LayeredSpecField[]>([]);
+const confirmedSpecDimensions = ref<FinishedSpecDimension[]>([]);
+
+const specRows = ref<SpecRow[]>([]);
+const batchFillFilters = reactive<Record<BatchFilterField, string[]>>({
+  specText: [],
+  material: [],
+  length: [],
+  color: [],
+  size: [],
+});
+const submitAttempted = ref(false);
+const salesSpecificationFeedback = useFormFeedback(formPageVisible);
+
+const productCategories = ref<ProductCategoryRecord[]>([]);
+const productAttributes = ref<ProductAttributeRecord[]>([]);
+const categoryAttributeBindings = ref<FinishedProductTemplateAttribute[]>([]);
+let templateRefresh: Promise<void> | undefined;
+const refreshCategoryAttributeBindings = () => {
+  if (!templateRefresh) {
+    templateRefresh = listFinishedProductTemplateAttributes()
+      .then((bindings) => {
+        categoryAttributeBindings.value = bindings;
+      })
+      .finally(() => {
+        templateRefresh = undefined;
+      });
+  }
+  return templateRefresh;
+};
+const refreshVisibleProductTemplate = () => {
+  if (!formPageVisible.value || document.visibilityState === 'hidden') return;
+  void Promise.all([refreshCategoryAttributeBindings(), refreshPriceConfigurations()]).catch(() => {
+    adminFeedback.error('发布配置刷新失败，请重试');
+  });
+};
+watch([formPageVisible, selectedCategoryId], refreshVisibleProductTemplate, { flush: 'post' });
+const productSuppliers = ref<SupplierRecord[]>([]);
+const markupConfigurations = ref<FinishedMarkupConfigurationRecord[]>([]);
+const enabledPriceLevels = ref<FinishedProductPriceLevelOption[]>([]);
+const productPriceLevels = computed(() => {
+  return [...enabledPriceLevels.value]
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.id - b.id)
+    .map((level) => {
+      const configuration = markupConfigurations.value.find(
+        (item) => item.storeLevelId === level.id && item.status === 'enabled',
+      );
+      return {
+        id: level.id,
+        name: level.name,
+        configurationId: configuration?.id,
+        priceCoefficient: configuration == null ? undefined : Number(configuration.priceCoefficient),
+      };
+    });
+});
+let priceConfigurationRefresh: Promise<void> | undefined;
+const refreshPriceConfigurations = () => {
+  if (!priceConfigurationRefresh)
+    priceConfigurationRefresh = Promise.all([
+      listFinishedMarkupConfigurationOptions(),
+      getFinishedGuidePriceSetting(),
+      listFinishedProductPriceLevelOptions(),
+    ])
+      .then(([configurations, guide, levels]) => {
+        enabledPriceLevels.value = levels;
+        markupConfigurations.value = configurations;
+        guidePriceSettingCoefficient.value = guide?.priceCoefficient;
+        for (const level of productPriceLevels.value) {
+          batchMarkupPrices.value[level.id] ??= { coefficient: '', price: '' };
+        }
+        for (const row of specRows.value) {
+          const defaults = createMarkupEditors();
+          for (const [key, editor] of Object.entries(defaults)) {
+            const id = Number(key);
+            if (!row.markupPrices[id]) {
+              row.markupPrices[id] = editor;
+            }
+          }
+        }
+      })
+      .finally(() => {
+        priceConfigurationRefresh = undefined;
+      });
+  return priceConfigurationRefresh;
+};
+const guidePriceSettingCoefficient = ref<number>();
+const dataItems = ref<StockItem[]>([]);
+const shelfErrors = reactive<Record<number, string>>({});
+const checkingShelf = ref(false);
+const categoryCascaderOptions = computed<CategoryCascaderOption[]>(() => {
+  const enabled = productCategories.value.filter(
+    (category) => category.scope === commodity.scope && category.status !== 'disabled',
+  );
+  const childrenByParent = new Map<number | undefined, ProductCategoryRecord[]>();
+  enabled.forEach((category) => {
+    const parentId = category.parentId ?? undefined;
+    const siblings = childrenByParent.get(parentId) ?? [];
+    siblings.push(category);
+    childrenByParent.set(parentId, siblings);
+  });
+  const build = (parentId?: number, parentPath = ''): CategoryCascaderOption[] =>
+    (childrenByParent.get(parentId) ?? [])
+      .sort((first, second) => (first.sortOrder ?? 0) - (second.sortOrder ?? 0) || first.id - second.id)
+      .map((category) => {
+        const path = parentPath ? `${parentPath} / ${category.name}` : category.name;
+        const children = build(category.id, path);
+        return { label: category.name, value: path, ...(children.length ? { children } : {}) };
+      });
+  return build(undefined);
+});
+
+const defaultFilter = (): FilterState => ({
+  keyword: '',
+  category: '',
+  supplier: '',
+});
+const filters = reactive<Record<StockTab, FilterState>>({
+  all: defaultFilter(),
+  warehouse: defaultFilter(),
+  selling: defaultFilter(),
+  soldOut: defaultFilter(),
+  recycle: defaultFilter(),
+});
+const appliedFilters = reactive<Record<StockTab, FilterState>>({
+  all: defaultFilter(),
+  warehouse: defaultFilter(),
+  selling: defaultFilter(),
+  soldOut: defaultFilter(),
+  recycle: defaultFilter(),
+});
+const paginations = reactive<Record<StockTab, PaginationState>>({
+  all: { current: 1, pageSize: 10 },
+  warehouse: { current: 1, pageSize: 10 },
+  selling: { current: 1, pageSize: 10 },
+  soldOut: { current: 1, pageSize: 10 },
+  recycle: { current: 1, pageSize: 10 },
+});
+const createEmptyProductForm = (): ProductForm => ({
+  supplier: '',
+  name: '',
+  brand: '',
+  model: '',
+  style: '',
+  shape: '',
+  material: '',
+  craftTexture: '',
+  layers: '',
+  functionText: '',
+  waterproof: '',
+  loadBearing: '',
+  origin: '',
+  installDesc: '',
+  detail: '',
+  totalStock: 0,
+  merchantCode: '',
+  shelfNow: 'later',
+});
+const productForm = reactive<ProductForm>(createEmptyProductForm());
+const createEmptyBatchFillForm = (): BatchFillForm => ({
+  cost: '',
+  guideCoefficient: '',
+  guide: '',
+  level1Coefficient: '',
+  level1: '',
+  level2Coefficient: '',
+  level2: '',
+  level3Coefficient: '',
+  level3: '',
+  quantity: null,
+});
+const batchFillForm = reactive<BatchFillForm>(createEmptyBatchFillForm());
+const batchFillSubmitted = ref(false);
+const batchSalesAttributes = ref<Record<string, string>>({});
+const batchMarkupPrices = ref<
+  Record<
+    number,
+    {
+      coefficient: string;
+      price: string;
+    }
+  >
+>({});
+const templateAttributeFields = computed(() =>
+  buildFinishedStockTemplateFields(
+    selectedCategoryId.value,
+    categoryAttributeBindings.value,
+    confirmedSpecDimensions.value,
+    editingProduct.value,
+    productAttributes.value,
+  ),
+);
+const attributeFields = computed(() => templateAttributeFields.value.filter((field) => field.role === 'product'));
+const salesAttributeFields = computed(() => templateAttributeFields.value.filter((field) => field.role === 'sales'));
+const layeredFieldLabels = computed<Record<string, string>>(() => ({
+  ...Object.fromEntries(confirmedSpecDimensions.value.map((dimension) => [dimension.key, dimension.name])),
+  ...Object.fromEntries(salesAttributeFields.value.map((field) => [field.key, field.label])),
+}));
+
+const salesAttributeByKey = (key: LayeredSpecField) => salesAttributeFields.value.find((field) => field.key === key);
+const reasonState = reactive<{
+  product: StockItem | null;
+  isBatch: boolean;
+}>({
+  product: null,
+  isBatch: false,
+});
+const reasonForm = reactive({
+  reason: '',
+  detail: '',
+});
+const confirmState = reactive<{
+  type: ConfirmType;
+  product: StockItem | null;
+  content: string;
+}>({
+  type: 'shelf',
+  product: null,
+  content: '',
+});
+const confirmAction = computed(() => {
+  const actionMap: Record<ConfirmType, string> = {
+    shelf: '上架',
+    delete: '删除',
+    restore: '放回',
+    purge: '彻底删除',
+    batchDelete: '批量删除',
+    batchShelf: '批量上架',
+    batchRestore: '批量放回到仓库',
+    batchPurge: '批量彻底删除',
+    clearRecycle: '清空回收站',
+  };
+  return actionMap[confirmState.type];
+});
+const isFinishedSupplyType = (type: SupplierRecord['supplyTypes'][number]) =>
+  type.status !== 'disabled' &&
+  (type.code === commodity.scope || type.name === commodity.shortLabel || type.name === commodity.label);
+const supplierOptions = computed(() => {
+  return productSuppliers.value
+    .filter((supplier) => supplier.status !== 'disabled' && supplier.supplyTypes.some(isFinishedSupplyType))
+    .map((supplier) => supplier.name);
+});
+const countByStatus = computed<Record<StockTab, number>>(() => ({
+  all: dataItems.value.filter((item) => isAllProductStatus(item.status) && hasFinishedAction('view', item.status))
+    .length,
+  warehouse: dataItems.value.filter((item) => item.status === 'warehouse').length,
+  selling: dataItems.value.filter((item) => item.status === 'selling').length,
+  soldOut: dataItems.value.filter((item) => item.status === 'soldOut').length,
+  recycle: dataItems.value.filter((item) => item.status === 'recycle').length,
+}));
+const normalizeStatus = (status?: string): StockStatus =>
+  status === 'selling' || status === 'soldOut' || status === 'recycle' ? status : 'warehouse';
+const normalizePublisherType = (value?: string): PublisherType => (value === '接口获取' ? '接口获取' : '平台发布');
+const categoryPathById = (categoryId?: number) => {
+  if (!categoryId) return '未分类';
+  const categoryMap = new Map(productCategories.value.map((category) => [category.id, category]));
+  const names: string[] = [];
+  let current = categoryMap.get(categoryId);
+  while (current) {
+    names.unshift(current.name);
+    current = current.parentId ? categoryMap.get(current.parentId) : undefined;
+  }
+  return names.length ? names.join(' / ') : '未分类';
+};
+const supplierNameById = (supplierId?: number) =>
+  productSuppliers.value.find((supplier) => supplier.id === supplierId)?.name ?? '平台自营';
+
+const formatPriceRange = (guidePrice?: number) => {
+  const value = Number(guidePrice ?? 0);
+  return value > 0 ? `￥${value.toFixed(2)}` : '-';
+};
+const toStockItem = (record: FinishedProductRecord): StockItem => {
+  const status = normalizeStatus(record.status);
+  const publisherType = normalizePublisherType(record.publisherType);
+  return {
+    id: record.id,
+    sourceUnavailable: record.sourceUnavailable,
+    sourceStatus: record.sourceStatus,
+    sourceMessage: record.sourceMessage,
+    code: record.sku ?? '',
+    stateOperatorName: record.stateOperatorName,
+    stateOperatedAt: record.stateOperatedAt,
+    warehouseEntryType: record.warehouseEntryType,
+    warehouseEntryReason: record.warehouseEntryReason,
+    warehouseEntryDetail: record.warehouseEntryDetail,
+    createdByName: record.createdByName?.trim() || '-',
+    createdAt: record.createdAt,
+    image: record.mainImageUrl || '',
+    name: record.name,
+    templateVersionId: record.templateVersionId,
+    templateRevision: record.templateRevision,
+    attributeTemplateSnapshot: record.attributeTemplateSnapshot,
+    attributeDisplayOrder: record.attributeDisplayOrder,
+    categoryId: record.categoryId,
+    supplierId: record.supplierId,
+    category: categoryPathById(record.categoryId),
+    stock: status === 'soldOut' ? 0 : (record.totalStock ?? 0),
+    supplier: supplierNameById(record.supplierId),
+    publisherType,
+    isExternalSupplier: Boolean(record.supplierId),
+    guidePrice: record.guidePrice,
+    guidePrices: record.guidePrices,
+    markupPrices: record.markupPrices,
+    mainImageMediaId: record.mainImageMediaId,
+    mainImageMediaIds: record.mainImageMediaIds,
+    mainImageUrls: record.mainImageUrls,
+    videoMediaId: record.videoMediaId,
+    videoUrl: record.videoUrl,
+    detail: record.detail || '',
+    attributes: record.attributes ?? [],
+    variants: record.variants ?? [],
+    specDimensions: record.specDimensions,
+    priceRange: formatPriceRange(record.guidePrice),
+    status,
+  };
+};
+const toProductPayload = (
+  item: StockItem,
+  patch: Partial<StockItem> & { offShelfReason?: string; offShelfDetail?: string } = {},
+): FinishedProductPayload => {
+  const nextItem = { ...item, ...patch };
+  return {
+    templateVersionId: nextItem.templateVersionId,
+    templateRevision: nextItem.templateRevision,
+    categoryId: nextItem.categoryId,
+    supplierId: nextItem.supplierId,
+    name: nextItem.name,
+    sku: nextItem.code,
+    mainImageMediaId: nextItem.mainImageMediaId!,
+    mainImageMediaIds: nextItem.mainImageMediaIds,
+    videoMediaId: nextItem.videoMediaId!,
+    detail: nextItem.detail,
+    totalStock: nextItem.stock,
+    guidePrice: nextItem.guidePrice,
+    guidePrices: nextItem.guidePrices,
+    markupPrices: nextItem.markupPrices,
+    attributes: nextItem.attributes,
+    variants: nextItem.variants,
+    specDimensions: nextItem.specDimensions,
+    offShelfReason: patch.offShelfReason,
+    offShelfDetail: patch.offShelfDetail,
+    operation: nextItem.operation,
+    status: nextItem.status,
+  };
+};
+const loadInventoryData = async () => {
+  if (!finishedTabs.value.length) return;
+  loading.value = true;
+  try {
+    const [options, products, markupResult, guideSetting, bindings] = await Promise.all([
+      listFinishedProductFormOptions(),
+      listFinishedProducts(),
+      listFinishedMarkupConfigurationOptions(),
+      getFinishedGuidePriceSetting(),
+      listFinishedProductTemplateAttributes(),
+    ]);
+    productCategories.value = options.categories;
+    productAttributes.value = options.attributes;
+    categoryAttributeBindings.value = bindings;
+    productSuppliers.value = options.suppliers;
+    markupConfigurations.value = markupResult;
+    guidePriceSettingCoefficient.value = guideSetting?.priceCoefficient;
+    dataItems.value = products.map(toStockItem);
+    selectedKeys.value = [];
+  } catch (error) {
+    adminFeedback.error(error instanceof Error ? error.message : `${commodity.shortLabel}库存加载失败`);
+  } finally {
+    loading.value = false;
+  }
+};
+const categoryFilterVisible = ref(false);
+const currentFilter = computed(() => filters[activeTab.value]);
+const handleCategoryFilterChange = (value: unknown) => {
+  if (typeof value !== 'string' || !value) return;
+  currentFilter.value.category = value;
+  categoryFilterVisible.value = false;
+};
+const currentAppliedFilter = computed(() => appliedFilters[activeTab.value]);
+const currentPagination = computed(() => paginations[activeTab.value]);
+watch(activeTab, (tab) => {
+  paginations[tab].current = 1;
+});
+const selectedKeySet = computed(() => new Set(selectedKeys.value));
+const formPageTitle = '编辑商品';
+
+const totalStock = computed(() => specRows.value.reduce((sum, row) => sum + Number(row.quantity || 0), 0));
+
+const productListPath = computed(() => `/${commodity.moduleKey}`);
+const handleMenuReselect = (event: Event) => {
+  const detail = (
+    event as CustomEvent<{
+      path?: string;
+    }>
+  ).detail;
+  if (detail?.path === productListPath.value) {
+    closeFormPage();
+  }
+};
+onMounted(() => {
+  window.addEventListener('admin-menu-reselect', handleMenuReselect);
+  window.addEventListener('focus', refreshVisibleProductTemplate);
+  document.addEventListener('visibilitychange', refreshVisibleProductTemplate);
+  loadInventoryData();
+});
+onBeforeUnmount(() => {
+  window.removeEventListener('admin-menu-reselect', handleMenuReselect);
+  window.removeEventListener('focus', refreshVisibleProductTemplate);
+  document.removeEventListener('visibilitychange', refreshVisibleProductTemplate);
+});
+const filteredData = computed(() =>
+  filterFinishedStockItems(
+    activeTab.value === 'all'
+      ? dataItems.value.filter((row) => hasFinishedAction('view', row.status))
+      : dataItems.value,
+    activeTab.value,
+    currentAppliedFilter.value,
+    descending.value,
+  ),
+);
+const paginationTotal = computed(() => filteredData.value.length);
+const pageData = computed(() => {
+  const start = (currentPagination.value.current - 1) * currentPagination.value.pageSize;
+  return filteredData.value.slice(start, start + currentPagination.value.pageSize);
+});
+watch(paginationTotal, (total) => {
+  if (activeTab.value === 'all')
+    currentPagination.value.current = Math.min(
+      currentPagination.value.current,
+      Math.max(1, Math.ceil(total / currentPagination.value.pageSize)),
+    );
+});
+const pageAllSelected = computed(
+  () => pageData.value.length > 0 && pageData.value.every((item) => selectedKeySet.value.has(item.id)),
+);
+const pagePartiallySelected = computed(
+  () => pageData.value.some((item) => selectedKeySet.value.has(item.id)) && !pageAllSelected.value,
+);
+const baseBatchButtons = computed(() => {
+  if (activeTab.value === 'all')
+    return hasPermission(getLoginUser(), `${productPermissionPrefix.value}.batch-shelf`)
+      ? [{ action: 'batchShelf' as const, label: '批量上架', icon: 'upload' }]
+      : [];
+  const map: Record<
+    StockStatus,
+    {
+      action: BatchAction;
+      label: string;
+
+      icon: string;
+      className?: string;
+    }[]
+  > = {
+    warehouse: [{ action: 'batchShelf', label: '批量上架', icon: 'upload' }],
+    selling: [{ action: 'batchOffShelf', label: '批量下架', icon: 'download', className: 'brown-button' }],
+    soldOut: [],
+    recycle: [
+      { action: 'batchRestore', label: '批量放回到仓库', icon: 'rollback' },
+      { action: 'batchPurge', label: '批量彻底删除', icon: 'delete', className: 'deep-danger-button' },
+      { action: 'clearRecycle', label: '清空回收站', icon: 'clear' },
+    ],
+  };
+  const actions = [...map[activeTab.value]];
+  return actions.filter((button) =>
+    button.action === 'batchShelf'
+      ? hasPermission(getLoginUser(), `${productPermissionPrefix.value}.batch-shelf`)
+      : hasFinishedAction(
+          finishedActionCodes[button.action],
+          button.action === 'batchPurge' ? 'recycle' : activeTab.value,
+        ),
+  );
+});
+const batchButtons = computed(() =>
+  [
+    ...baseBatchButtons.value,
+    ...(canBatchDelete(activeTab.value, (state, action) => hasFinishedAction(action, state))
+      ? [{ action: 'batchDelete' as const, label: '批量删除', icon: 'delete' }]
+      : []),
+  ].map((button) => ({
+    ...button,
+    batch: ['batchDelete', 'batchShelf', 'batchOffShelf', 'batchRestore', 'batchPurge'].includes(button.action),
+  })),
+);
+const { hasBatchActions, selectionColumns } = useListBatchSelection(batchButtons, selectedKeys, activeTab);
+const managementToolbarActions = computed<FinishedStockToolbarAction[]>(() =>
+  batchButtons.value.map((button) => ({
+    id: button.action,
+    label: button.label,
+
+    icon: button.icon,
+    className: button.className,
+    disabled: button.action !== 'clearRecycle' && !selectedKeys.value.length,
+  })),
+);
+// Fixed pixel widths; update only when the tab action buttons change.
+const operationWidths = {
+  all: 208,
+  warehouse: 190,
+  selling: 208,
+  soldOut: 104,
+  recycle: 208,
+};
+const columns = computed<PrimaryTableCol<TableRowData>[]>(() => {
+  const base: PrimaryTableCol<TableRowData>[] = [
+    { colKey: 'image', title: '商品主图', width: 96 },
+    { colKey: 'product', title: '商品名称/ID', minWidth: 220 },
+    { colKey: 'supplier', title: '供应商', width: 180 },
+    ...(activeTab.value === 'all'
+      ? productCreationColumns(toggleTimeSort)
+      : stateActivityColumns(activeTab.value, toggleTimeSort)),
+  ];
+  if (hasBatchActions.value) {
+    base.unshift({ colKey: 'select', title: 'selectTitle', width: 52, align: 'center' });
+  }
+  if (activeTab.value === 'warehouse' || activeTab.value === 'all') {
+    base.splice(base.findIndex((column) => column.colKey === 'supplier') + 1, 0, {
+      colKey: 'warehouseEntry',
+      title: '入库类型 / 详细说明',
+      minWidth: 240,
+    });
+  }
+  base.push({
+    colKey: 'operation',
+    title: '操作',
+    width: operationWidths[activeTab.value],
+    align: 'left',
+    fixed: 'right',
+  });
+  return selectionColumns(base, 'select');
+});
+const formatReadonlyPrice = (value: unknown) =>
+  value == null || String(value).trim() === '' ? '-' : Number(value).toFixed(2);
+const requiredColumnTitle = (label: string) => () =>
+  h('span', [h('span', { class: 'spec-required-star', style: { color: 'var(--td-error-color)' } }, '*'), label]);
+const baseSpecColumns = computed<PrimaryTableCol<TableRowData>[]>(() => {
+  const priceColumnsBase: PrimaryTableCol<TableRowData>[] = [
+    { colKey: 'cost', title: '成本价', minWidth: 80 },
+    { colKey: 'guide', title: requiredColumnTitle('指导价'), minWidth: 176 },
+    ...productPriceLevels.value.map((item) => ({
+      colKey: `markup-${item.id}`,
+      title: requiredColumnTitle(item.name),
+      minWidth: 176,
+    })),
+    { colKey: 'quantity', title: '数量', minWidth: 80 },
+  ];
+  const createSalesColumn = (field: (typeof salesAttributeFields.value)[number]): PrimaryTableCol<TableRowData> => ({
+    colKey: field.key,
+    title: field.label,
+  });
+  const orderedSpecColumns: PrimaryTableCol<TableRowData>[] =
+    confirmedSpecMode.value === 'single' || !confirmedLayeredFields.value.length
+      ? [{ colKey: 'specText', title: '商品规格', minWidth: 100 }]
+      : confirmedLayeredFields.value.map((key) => {
+          const field = salesAttributeByKey(key);
+          return field ? createSalesColumn(field) : { colKey: key, title: layeredFieldLabels.value[key] || key };
+        });
+  const remainingSalesColumns = salesAttributeFields.value
+    .filter((field) => confirmedSpecMode.value === 'single' || !confirmedLayeredFields.value.includes(field.key))
+    .map(createSalesColumn);
+  return [...orderedSpecColumns, ...priceColumnsBase, ...remainingSalesColumns];
+});
+const { tableElement: specTableElement, contentWidth: specTableContentWidth, fitColumns } = useSpecTableLayout();
+const specColumns = computed(() => fitColumns(baseSpecColumns.value));
+const specRowspanAndColspan = ({
+  rowIndex,
+  col,
+}: {
+  rowIndex: number;
+  col: {
+    colKey?: string;
+  };
+}) => {
+  if (confirmedSpecMode.value !== 'layered') return {};
+  const fieldIndex = confirmedLayeredFields.value.findIndex((field) => field === col.colKey);
+  if (fieldIndex < 0) return {};
+  const parentFields = confirmedLayeredFields.value.slice(0, fieldIndex + 1);
+  const row = specRows.value[rowIndex];
+  if (!row) return {};
+  const sameGroup = (candidate: SpecRow) => parentFields.every((field) => candidate[field] === row[field]);
+  if (rowIndex > 0 && sameGroup(specRows.value[rowIndex - 1])) return { rowspan: 0, colspan: 0 };
+  let rowspan = 1;
+  while (rowIndex + rowspan < specRows.value.length && sameGroup(specRows.value[rowIndex + rowspan])) rowspan += 1;
+  return { rowspan, colspan: 1 };
+};
+const batchEditableSalesFields = computed(() =>
+  editableSalesFields(
+    salesAttributeFields.value,
+    confirmedSpecMode.value === 'layered' ? confirmedLayeredFields.value : [],
+  ),
+);
+const batchFilterFields = computed<BatchFilterField[]>(() =>
+  confirmedSpecMode.value === 'single' ? ['specText'] : confirmedLayeredFields.value,
+);
+const batchFilterOptions = computed(() =>
+  batchFilterFields.value.map((field) => ({
+    field,
+    label: field === 'specText' ? '商品规格' : layeredFieldLabels.value[field],
+    values: Array.from(new Set(specRows.value.map((row) => String(row[field] ?? '')).filter(Boolean))),
+  })),
+);
+const isBatchFilterValueSelected = (field: BatchFilterField, value: string) =>
+  (batchFillFilters[field] ?? []).includes(value);
+const batchFillMatchedRows = computed(() =>
+  specRows.value.filter((row) =>
+    batchFilterFields.value.every((field) => {
+      const selectedValues = batchFillFilters[field] ?? [];
+      return selectedValues.length === 0 || selectedValues.includes(String(row[field] ?? ''));
+    }),
+  ),
+);
+const tabLabel = (tab: TabConfig) => {
+  const count = countByStatus.value[tab.value];
+  return `${tab.label}（${count}）`;
+};
+const rowActions = (row: StockItem) =>
+  finishedStockActions[row.status].filter((action) => hasFinishedAction(action.permission, row.status));
+const managementRowButtons = (row: StockItem): FinishedStockRowAction[] =>
+  rowActions(row).map((action) => ({ id: action.id, label: action.label }));
+const handleManagementRowButton = (action: string, row: StockItem) => {
+  handleRowAction(action as RowAction, row);
+};
+const handleTabChange = () => {
+  selectedKeys.value = [];
+};
+const updateManagementListFilter = (field: 'keyword' | 'supplier', value: string) => {
+  currentFilter.value[field] = value;
+};
+const handleSearch = () => {
+  Object.assign(currentAppliedFilter.value, currentFilter.value);
+  currentPagination.value.current = 1;
+};
+const handleReset = () => {
+  Object.assign(filters[activeTab.value], defaultFilter());
+  handleSearch();
+};
+const toggleRow = (id: number, checked: boolean) => {
+  if (dataItems.value.some((row) => row.id === id && sourceBlocked(row))) return;
+  if (checked) {
+    selectedKeys.value = Array.from(new Set([...selectedKeys.value, id]));
+  } else {
+    selectedKeys.value = selectedKeys.value.filter((item) => item !== id);
+  }
+};
+const toggleCurrentPage = (checked: boolean) => {
+  if (checked) {
+    selectedKeys.value = Array.from(
+      new Set([...selectedKeys.value, ...pageData.value.filter((item) => !sourceBlocked(item)).map((item) => item.id)]),
+    );
+  } else {
+    const currentIds = new Set(pageData.value.map((item) => item.id));
+    selectedKeys.value = selectedKeys.value.filter((id) => !currentIds.has(id));
+  }
+};
+const handleBatchAction = (action: BatchAction) => {
+  if (action !== 'clearRecycle' && selectedKeys.value.length === 0) {
+    adminFeedback.warning('请先选择商品');
+    return;
+  }
+  if (action === 'batchDelete') {
+    openConfirm('batchDelete', null, `是否批量删除所选${commodity.label}？删除成功的商品将进入回收站。`);
+    return;
+  }
+  if (action === 'batchShelf') {
+    openConfirm('batchShelf', null, `是否批量上架所选${commodity.label}？`);
+    return;
+  }
+  if (action === 'batchOffShelf') {
+    openReasonDialog('offShelf', null, true);
+    return;
+  }
+  if (action === 'batchRestore') {
+    openConfirm('batchRestore', null, `是否将所选${commodity.label}放回仓库？`);
+    return;
+  }
+  if (action === 'batchPurge') {
+    openConfirm('batchPurge', null, `是否批量彻底删除所选${commodity.label}？`);
+    return;
+  }
+  openConfirm('clearRecycle', null, '是否清空回收站？');
+};
+const handleRowAction = async (action: RowAction, row: StockItem) => {
+  if (sourceBlocked(row) && !['purge', 'detail'].includes(action)) return;
+  if (action === 'detail') {
+    void openProductDetail(row);
+    return;
+  }
+  if (action === 'edit') {
+    void openProductEditor(row);
+    return;
+  }
+  if (action === 'shelf') {
+    {
+      if (checkingShelf.value) return;
+      checkingShelf.value = true;
+      try {
+        await checkFinishedProductShelf(row.id);
+        delete shelfErrors[row.id];
+      } catch (error) {
+        await loadInventoryData();
+        const latest = dataItems.value.find((item) => item.id === row.id);
+        if (latest && !sourceBlocked(latest)) {
+          adminFeedback.warning(error instanceof Error ? error.message : '当前商品无法上架');
+        }
+        return;
+      } finally {
+        checkingShelf.value = false;
+      }
+    }
+    openConfirm('shelf', row, `是否上架商品“${row.name}”？`);
+    return;
+  }
+  if (action === 'offShelf') {
+    openReasonDialog('offShelf', row, false);
+    return;
+  }
+  if (action === 'restore') {
+    openConfirm('restore', row, `是否放回仓库“${row.name}”？`);
+    return;
+  }
+  if (action === 'delete') {
+    openConfirm('delete', row, `是否删除商品“${row.name}”？`);
+    return;
+  }
+  openConfirm('purge', row, `是否彻底删除商品“${row.name}”？`);
+};
+
+const createDraftId = () => Date.now() + Math.floor(Math.random() * 100000);
+
+const { createMarkupEditors, createEditSpecRows } = useFinishedStockSpecRows(
+  createDraftId,
+  () => confirmedSpecMode.value,
+  () => guidePriceSettingCoefficient.value,
+  () => productPriceLevels.value,
+);
+const openFormPage = (row: StockItem) => {
+  formPageVisible.value = true;
+  editingProduct.value = row || null;
+  if (route.query.form !== 'edit') {
+    router.replace({ path: productListPath.value, query: { form: 'edit' } });
+  }
+  activeFormSection.value = 'description';
+  submitAttempted.value = false;
+  resetProductForm(productForm, createEmptyProductForm());
+  specRows.value = [];
+  confirmedSpecMode.value = 'single';
+  confirmedLayeredFields.value = [];
+  confirmedSpecDimensions.value = [];
+  if (row) {
+    productForm.name = row.name;
+    productForm.merchantCode = row.code;
+    productForm.totalStock = row.stock;
+    productForm.supplier = row.supplier;
+    productForm.shelfNow = row.status === 'selling' ? 'now' : 'later';
+    productForm.detail = row.detail;
+    row.attributes.forEach((attribute) => {
+      productForm[`attribute_${attribute.attributeId}`] = attribute.value;
+    });
+    selectedCategoryId.value = row.categoryId;
+    selectedCategoryPath.value = row.category.replaceAll('/', ' > ');
+    specRows.value = createEditSpecRows(row).map((spec) => ({
+      ...spec,
+      specText: row.variants.find((variant) => variant.id === spec.skuId)?.variantLabel ?? spec.specText,
+    }));
+    confirmedSpecMode.value = row.variants[0]?.displayMode ?? 'single';
+    confirmedSpecDimensions.value = copySpecDimensions(row.specDimensions);
+    if (confirmedSpecMode.value === 'layered') {
+      specRows.value = orderLayeredRows(specRows.value, confirmedSpecDimensions.value);
+    }
+    confirmedLayeredFields.value = operationsHistoricalLayeredFields(row);
+    if (confirmedSpecMode.value === 'layered' && !row.specDimensions?.length) {
+      adminFeedback.warning('此商品缺少历史规格顺序，已保留原规格；如需调整规格，请在供应链端核对。');
+    }
+  }
+};
+const closeFormPage = () => {
+  formPageVisible.value = false;
+  editingProduct.value = null;
+  if (route.path === productListPath.value && Object.keys(route.query).length) {
+    router.replace({ path: productListPath.value });
+  }
+};
+
+const {
+  formatDecimalValue,
+  decimalNumber,
+
+  handleSpecCoefficientChange,
+  handleSpecPriceChange,
+  toggleGuidePriceSource,
+  markGuidePriceManual,
+  toggleSpecPriceSource,
+  markSpecPriceManual,
+  handleMarkupCoefficientChange,
+  handleMarkupPriceChange,
+  handleBatchMarkupChange,
+
+  handleBatchCoefficientChange,
+  handleBatchPriceChange,
+} = useFinishedStockPriceEditor(
+  () => productPriceLevels.value,
+  batchFillForm,
+  batchMarkupPrices,
+  () => guidePriceSettingCoefficient.value,
+);
+
+const operationLogsVisible = ref(false);
+const canViewOperationLogs = computed(() =>
+  hasPermission(getLoginUser(), `${productPermissionPrefix.value}.operation-log.view`),
+);
+const openPriceDrawer = () => {
+  resetBatchFillState();
+  priceDrawerVisible.value = true;
+};
+const closePriceDrawer = () => {
+  priceDrawerVisible.value = false;
+};
+const resetBatchFillState = () => {
+  batchFillSubmitted.value = false;
+  batchSalesAttributes.value = Object.fromEntries(salesAttributeFields.value.map((field) => [field.key, '']));
+  batchMarkupPrices.value = Object.fromEntries(
+    productPriceLevels.value.map((level) => [level.id, { coefficient: '', price: '' }]),
+  );
+  batchFilterFields.value.forEach((field) => {
+    batchFillFilters[field] = [];
+  });
+  Object.assign(batchFillForm, createEmptyBatchFillForm());
+};
+const toggleBatchFilterValue = (field: BatchFilterField, value: string) => {
+  const values = batchFillFilters[field] ?? [];
+  batchFillFilters[field] = values.includes(value) ? values.filter((item) => item !== value) : [...values, value];
+};
+const clearBatchFilterField = (field: BatchFilterField) => {
+  batchFillFilters[field] = [];
+};
+const savePriceDrawer = () => {
+  {
+    batchFillSubmitted.value = true;
+    const priceInputs = [
+      batchFillForm.cost,
+      batchFillForm.guideCoefficient,
+      batchFillForm.guide,
+      ...productPriceLevels.value.flatMap((level) => {
+        const editor = batchMarkupPrices.value[level.id];
+        return [editor.coefficient, editor.price];
+      }),
+    ];
+    if (priceInputs.some((value) => String(value ?? '').trim() && !isValidSpecPriceNumber(value))) {
+      return rejectFormSubmission(priceFormRoot.value);
+    }
+    const matchedIds = new Set(batchFillMatchedRows.value.map((row) => row.id));
+    if (!matchedIds.size) {
+      adminFeedback.warning('当前条件下没有可批量填写的规格');
+      return;
+    }
+    specRows.value = specRows.value.map((row) => {
+      return matchedIds.has(row.id)
+        ? {
+            ...row,
+            ...Object.fromEntries(
+              batchEditableSalesFields.value
+                .filter((field) => batchSalesAttributes.value[field.key]?.trim())
+                .map((field) => [field.key, batchSalesAttributes.value[field.key]]),
+            ),
+            markupPrices: Object.fromEntries(
+              productPriceLevels.value.map((level) => {
+                const original = row.markupPrices[level.id];
+                const input = batchMarkupPrices.value[level.id];
+                const cost = decimalNumber(batchFillForm.cost || row.cost);
+                const editor = { ...original };
+                if (input.coefficient || input.price) {
+                  editor.priceSource = 'manual';
+                  editor.sourceConfigurationId = undefined;
+                }
+                if (input.coefficient) editor.coefficient = input.coefficient;
+                if (input.price) {
+                  editor.price = input.price;
+                  if (!input.coefficient && cost !== null && cost > 0)
+                    editor.coefficient = (Number(input.price) / cost).toFixed(2);
+                } else if ((batchFillForm.cost || input.coefficient) && cost !== null && editor.coefficient) {
+                  editor.price = (cost * Number(editor.coefficient)).toFixed(2);
+                }
+                return [level.id, editor];
+              }),
+            ),
+            cost: batchFillForm.cost || row.cost,
+            guidePriceSource: batchFillForm.guideCoefficient || batchFillForm.guide ? 'manual' : row.guidePriceSource,
+            guideCoefficient:
+              batchFillForm.guideCoefficient ||
+              (batchFillForm.guide && Number(batchFillForm.cost || row.cost) > 0
+                ? (Number(batchFillForm.guide) / Number(batchFillForm.cost || row.cost)).toFixed(2)
+                : row.guideCoefficient),
+            guide:
+              batchFillForm.guide ||
+              ((batchFillForm.cost || batchFillForm.guideCoefficient) &&
+              decimalNumber(batchFillForm.cost || row.cost) !== null &&
+              decimalNumber(batchFillForm.guideCoefficient || row.guideCoefficient) !== null
+                ? (
+                    Number(batchFillForm.cost || row.cost) *
+                    Number(batchFillForm.guideCoefficient || row.guideCoefficient)
+                  ).toFixed(2)
+                : row.guide),
+            level1Coefficient: batchFillForm.level1Coefficient || row.level1Coefficient,
+            level1: batchFillForm.level1 || row.level1,
+            level2Coefficient: batchFillForm.level2Coefficient || row.level2Coefficient,
+            level2: batchFillForm.level2 || row.level2,
+            level3Coefficient: batchFillForm.level3Coefficient || row.level3Coefficient,
+            level3: batchFillForm.level3 || row.level3,
+            quantity: batchFillForm.quantity ?? row.quantity,
+          }
+        : row;
+    });
+    adminFeedback.success(`已批量填充 ${matchedIds.size} 条规格`);
+  }
+  closePriceDrawer();
+};
+
+const validateProductForm = () => {
+  const issues = finishedStockFormIssues({
+    commodityLabel: commodity.shortLabel,
+    client: 'admin',
+    operationsEdit: true,
+    specMode: confirmedSpecMode.value,
+    specDimensionsCount: confirmedSpecDimensions.value.length,
+    layeredFields: confirmedLayeredFields.value,
+    specRows: specRows.value,
+    priceLevelIds: productPriceLevels.value.map((level) => level.id),
+    form: productForm,
+    attributeFields: attributeFields.value,
+    salesAttributeFields: salesAttributeFields.value,
+    categoryId: selectedCategoryId.value,
+    editingProduct: editingProduct.value != null,
+    guidePriceSettingCoefficient: guidePriceSettingCoefficient.value,
+  });
+  salesSpecificationFeedback.clear();
+  if (!issues.length) return issues;
+  const issue = issues.find((item) => item.kind === 'error' && !item.tab);
+  if (issue) {
+    salesSpecificationFeedback.reject(
+      'specifications',
+      [confirmedSpecMode.value, confirmedSpecDimensions.value, specRows.value],
+      issue.message,
+    );
+  }
+
+  return issues;
+};
+const specVariantLabel = (row: SpecRow) =>
+  row.specText ||
+  (confirmedSpecMode.value === 'layered'
+    ? confirmedLayeredFields.value
+    : salesAttributeFields.value.map((field) => field.key)
+  )
+    .map((key) => String(row[key] ?? '').trim())
+    .filter(Boolean)
+    .join(' / ') ||
+  '未命名规格';
+
+const buildOperationsPricePayload = (): Pick<
+  FinishedProductPayload,
+  'name' | 'status' | 'guidePrices' | 'markupPrices'
+> =>
+  buildFinishedOperationsPricePayload({
+    name: editingProduct.value!.name,
+    status: editingProduct.value!.status,
+    specRows: specRows.value,
+    priceLevels: productPriceLevels.value,
+    variantLabel: specVariantLabel,
+  });
+const upsertStockItem = (record: FinishedProductRecord) => {
+  const nextItem = toStockItem(record);
+  const index = dataItems.value.findIndex((item) => item.id === record.id);
+  if (index >= 0) dataItems.value[index] = nextItem;
+  else dataItems.value.unshift(nextItem);
+  return nextItem;
+};
+const rejectProductForm = (issues: ReturnType<typeof finishedStockFormIssues>) => {
+  if (issues.every((issue) => issue.operation)) {
+    adminFeedback.warning(issues[0].message);
+    return;
+  }
+  return rejectFormSubmission(productFormRoot.value, {
+    reveal: (field) => {
+      const key = field.closest('[id^="finished-product-"]')?.id.replace('finished-product-', '');
+      if (key === 'description' || key === 'base' || key === 'sales') activeFormSection.value = key;
+    },
+  });
+};
+const submitProductForm = async () => {
+  if (!editingProduct.value) return;
+  submitAttempted.value = true;
+  const issues = validateProductForm();
+  if (issues.length) return rejectProductForm(issues);
+  saving.value = true;
+  try {
+    upsertStockItem(await updateFinishedProduct(editingProduct.value.id, buildOperationsPricePayload()));
+    formPageVisible.value = false;
+    adminFeedback.actionSuccess({ action: '修改' });
+  } catch (error) {
+    adminFeedback.error(getSafeErrorMessage(error, '商品价格保存失败'));
+  } finally {
+    saving.value = false;
+  }
+};
+const openReasonDialog = (_type: 'offShelf', product: StockItem | null, isBatch: boolean) => {
+  reasonState.product = product;
+  reasonState.isBatch = isBatch;
+  reasonForm.reason = '';
+  reasonForm.detail = '';
+  reasonDialogVisible.value = true;
+};
+const closeReasonDialog = () => {
+  reasonDialogVisible.value = false;
+};
+const submitReason = async () => {
+  if (!reasonForm.reason) {
+    reasonFeedback.reject('reason', reasonForm.reason, '请选择下架原因');
+    return rejectFormSubmission(reasonFormRoot.value);
+  }
+  closeReasonDialog();
+  saving.value = true;
+  try {
+    if (reasonState.isBatch) {
+      await Promise.all(
+        selectedKeys.value.map((id) =>
+          updateProductStatus(id, 'offShelf', reasonForm.reason, reasonForm.detail.trim()),
+        ),
+      );
+      selectedKeys.value = [];
+      adminFeedback.success('已批量下架');
+    } else if (reasonState.product) {
+      await updateProductStatus(reasonState.product.id, 'offShelf', reasonForm.reason, reasonForm.detail.trim());
+      adminFeedback.success('商品已下架');
+    }
+  } catch (error) {
+    adminFeedback.error(error instanceof Error ? error.message : '操作失败');
+  } finally {
+    saving.value = false;
+  }
+};
+const openConfirm = (type: ConfirmType, product: StockItem | null, content: string) => {
+  confirmState.type = type;
+  confirmState.product = product;
+  confirmState.content = content;
+  confirmDialogVisible.value = true;
+};
+const closeConfirmDialog = () => {
+  confirmDialogVisible.value = false;
+};
+const detailAttributeNames = computed(() => {
+  const product = formPageVisible.value ? editingProduct.value : detailProduct.value;
+  return Object.fromEntries(
+    product?.attributeTemplateSnapshot
+      ? product.attributeTemplateSnapshot.map((attribute) => [`attribute_${attribute.attributeId}`, attribute.name])
+      : productAttributes.value.map((attribute) => [`attribute_${attribute.id}`, attribute.name]),
+  );
+});
+const openProductEditor = async (row: StockItem) => {
+  try {
+    await refreshPriceConfigurations();
+    const latest = await getFinishedProductDetail(row.id);
+    if (!latest) {
+      adminFeedback.error('商品不存在，请刷新列表');
+      return;
+    }
+    openFormPage(toStockItem(latest));
+  } catch (error) {
+    adminFeedback.error(getSafeErrorMessage(error, '商品资料加载失败'));
+  }
+};
+const openProductDetail = async (row: StockItem) => {
+  try {
+    const [latest, levels] = await Promise.all([
+      getFinishedProductDetail(row.id),
+      listFinishedProductPriceLevelOptions(),
+    ]);
+    if (!latest) {
+      adminFeedback.error('商品不存在，请刷新列表');
+      return;
+    }
+    if (levels) enabledPriceLevels.value = levels;
+    detailProduct.value = toStockItem(latest);
+    {
+      detailProduct.value.createdAt = formatDateTime(latest.createdAt);
+    }
+    detailDialogVisible.value = true;
+  } catch {
+    adminFeedback.error('商品详情加载失败，请重试');
+  }
+};
+const closeDetailDialog = () => {
+  detailDialogVisible.value = false;
+  detailProduct.value = null;
+};
+const openProductMediaPreview = (media: Pick<AdminMediaValue, 'url'> | undefined, type: 'image' | 'video') => {
+  if (!media?.url) return;
+  productPreviewType.value = type;
+  imagePreviewSrc.value = media.url;
+  imagePreviewTitle.value = type === 'image' ? '商品主图' : '商品视频';
+  imagePreviewVisible.value = true;
+};
+const openImagePreview = (row: StockItem) => {
+  productPreviewType.value = 'image';
+  imagePreviewSrc.value = row.image;
+  imagePreviewTitle.value = `${row.name} · 商品主图`;
+  imagePreviewVisible.value = true;
+};
+const closeImagePreview = () => {
+  imagePreviewVisible.value = false;
+  imagePreviewSrc.value = '';
+};
+const updateProductStatus = async (id: number, status: StockStatus | 'offShelf', reason?: string, detail?: string) => {
+  const item = dataItems.value.find((product) => product.id === id);
+  if (!item) return;
+  const afterStock = status === 'soldOut' ? 0 : item.stock;
+  const updated = await updateFinishedProduct(
+    id,
+    toProductPayload(item, {
+      status: status === 'offShelf' ? 'warehouse' : status,
+      operation: status === 'offShelf' ? 'offShelf' : undefined,
+      stock: afterStock,
+      offShelfReason: status === 'offShelf' ? reason : undefined,
+      offShelfDetail: status === 'offShelf' ? detail : undefined,
+    }),
+  );
+  upsertStockItem(updated);
+};
+const handleConfirm = async () => {
+  if (saving.value) return;
+  const type = confirmState.type;
+  const product = confirmState.product;
+  const selectedCount = selectedKeys.value.length;
+  const recycleCount = dataItems.value.filter((item) => item.status === 'recycle').length;
+  saving.value = true;
+  try {
+    if (type === 'shelf' && product) {
+      await updateProductStatus(product.id, 'selling');
+    } else if (type === 'delete' && product) {
+      await updateProductStatus(product.id, 'recycle');
+    } else if (type === 'restore' && product) {
+      await updateProductStatus(product.id, 'warehouse');
+    } else if (type === 'purge' && product) {
+      await deleteFinishedProduct(product.id);
+      dataItems.value = dataItems.value.filter((item) => item.id !== product.id);
+      if (sourceBlocked(product)) await loadInventoryData();
+    } else if (type === 'batchShelf' || type === 'batchDelete') {
+      const ids = [...selectedKeys.value];
+      batchOperation.value = type === 'batchDelete' ? '删除' : '上架';
+      try {
+        batchShelfResult.value =
+          type === 'batchDelete'
+            ? await deleteProductsBatch(
+                commodity.scope === 'accessory' ? 'accessory-products' : 'finished-products',
+                ids,
+              )
+            : await batchShelfProducts(
+                commodity.scope === 'accessory' ? 'accessory-products' : 'finished-products',
+                ids,
+              );
+      } catch (error) {
+        adminFeedback.error(batchRequestError(error, batchOperation.value));
+        return;
+      }
+      selectedKeys.value = [];
+      ids.forEach((id) => delete shelfErrors[id]);
+      closeConfirmDialog();
+      batchShelfResultVisible.value = true;
+      await loadInventoryData();
+      currentPagination.value.current = Math.min(
+        currentPagination.value.current,
+        Math.max(1, Math.ceil(filteredData.value.length / currentPagination.value.pageSize)),
+      );
+      return;
+    } else if (type === 'batchRestore') {
+      await Promise.all(selectedKeys.value.map((id) => updateProductStatus(id, 'warehouse')));
+      selectedKeys.value = [];
+    } else if (type === 'batchPurge') {
+      const includesInvalid = dataItems.value.some(
+        (item) => selectedKeys.value.includes(item.id) && sourceBlocked(item),
+      );
+      await Promise.all(selectedKeys.value.map((id) => deleteFinishedProduct(id)));
+      const selected = new Set(selectedKeys.value);
+      dataItems.value = dataItems.value.filter((item) => !selected.has(item.id));
+      selectedKeys.value = [];
+      if (includesInvalid) await loadInventoryData();
+    } else if (type === 'clearRecycle') {
+      const recycleIds = dataItems.value.filter((item) => item.status === 'recycle').map((item) => item.id);
+      await Promise.all(recycleIds.map((id) => deleteFinishedProduct(id)));
+      dataItems.value = dataItems.value.filter((item) => item.status !== 'recycle');
+      selectedKeys.value = [];
+      await loadInventoryData();
+    }
+    closeConfirmDialog();
+    if ((type === 'delete' || type === 'purge') && product) {
+      adminFeedback.deleted(product.name);
+    } else if (type === 'batchPurge') {
+      adminFeedback.deleted(`${selectedCount} 个商品`);
+    } else if (type === 'clearRecycle') {
+      adminFeedback.deleted(`${recycleCount} 个回收站商品`);
+    } else {
+      adminFeedback.success('操作已完成');
+    }
+  } catch (error) {
+    if (type === 'shelf') {
+      closeConfirmDialog();
+      await loadInventoryData();
+      adminFeedback.warning(error instanceof Error ? error.message : '当前商品无法上架');
+    } else {
+      adminFeedback.error(error instanceof Error ? error.message : '操作失败');
+    }
+  } finally {
+    saving.value = false;
+  }
+};
+</script>
+
+<style scoped>
+@import url('../shared/index.css');
+</style>

@@ -1,0 +1,559 @@
+<template>
+  <div class="admin-layout">
+    <AdminTopNav />
+
+    <div class="admin-shell">
+      <AdminSideMenu />
+
+      <main class="page">
+        <section class="filter-card">
+          <t-form class="zdm-admin-filter-form zdm-standard-query" label-width="80px" :data="searchForm" colon>
+            <div class="filter-row">
+              <div class="filter-fields">
+                <t-form-item label="供应商名称" name="name">
+                  <t-input v-model="searchForm.name" clearable placeholder="请输入供应商名称" />
+                </t-form-item>
+                <t-form-item label="供货类型" name="supplyTypeId">
+                  <t-select v-model="searchForm.supplyTypeId" filterable clearable placeholder="请选择供货类型">
+                    <t-option v-for="item in supplyTypes" :key="item.id" :label="item.name" :value="item.id" />
+                  </t-select>
+                </t-form-item>
+                <t-form-item class="zdm-status-filter" label="状态" name="status">
+                  <t-select v-model="searchForm.status" clearable placeholder="请选择状态">
+                    <t-option label="启用" value="normal" />
+                    <t-option label="停用" value="disabled" />
+                  </t-select>
+                </t-form-item>
+              </div>
+
+              <div class="filter-actions">
+                <t-button :theme="buttonTheme('search')" @click="handleSearch">
+                  <template #icon><t-icon name="search" /></template>
+                  查询
+                </t-button>
+                <t-button :theme="buttonTheme('reset')" variant="base" @click="handleReset">
+                  <template #icon><t-icon name="refresh" /></template>
+                  重置
+                </t-button>
+              </div>
+            </div>
+          </t-form>
+        </section>
+
+        <section class="table-card">
+          <AdminListToolbar :has-actions="canCreateSupplier"
+            ><div class="toolbar-actions">
+              <t-button v-if="canCreateSupplier" :theme="buttonTheme('create')" @click="openCreateDialog">
+                <template #icon><t-icon name="add" /></template>
+                新增
+              </t-button>
+            </div></AdminListToolbar
+          >
+
+          <t-table row-key="id" :data="pageData" :columns="columns" :loading="loading" hover table-layout="fixed">
+            <template #index="{ rowIndex }">
+              {{ (pagination.current - 1) * pagination.pageSize + rowIndex + 1 }}
+            </template>
+            <template #type="{ row }">
+              <t-space break-line size="small">
+                <t-tag v-for="item in row.supplyTypes" :key="item.id" variant="light">
+                  {{ item.name }}
+                </t-tag>
+              </t-space>
+            </template>
+            <template #phone="{ row }">
+              {{ maskPhone(row.phone) }}
+            </template>
+            <template #status="{ row }">
+              <t-tag :theme="row.status === 'normal' ? 'success' : 'danger'" variant="light">
+                {{ row.status === 'normal' ? '启用' : '停用' }}
+              </t-tag>
+            </template>
+            <template #operation="{ row }">
+              <div class="table-actions">
+                <t-link v-if="canEditSupplier" :theme="buttonTheme('edit')" hover="color" @click="openEditDialog(row)"
+                  >编辑</t-link
+                >
+                <t-link
+                  v-if="canToggleSupplierStatus"
+                  :theme="buttonTheme(row.status === 'normal' ? 'disable' : 'enable')"
+                  hover="color"
+                  @click="openStatusConfirm(row)"
+                >
+                  {{ row.status === 'normal' ? '停用' : '启用' }}
+                </t-link>
+                <t-link
+                  v-if="canDeleteSupplier"
+                  :theme="buttonTheme('delete')"
+                  hover="color"
+                  @click="openDeleteConfirm(row)"
+                >
+                  删除
+                </t-link>
+              </div>
+            </template>
+          </t-table>
+
+          <AdminPagination
+            v-model:current="pagination.current"
+            v-model:page-size="pagination.pageSize"
+            :total="paginationTotal"
+            :page-size-options="pageSizeOptions"
+          />
+        </section>
+      </main>
+    </div>
+
+    <AdminDialog
+      v-model:visible="formDialogVisible"
+      :confirmation="formConfirmation(dialogMode)"
+      confirm-function="submit"
+      dialog-class-name="zdm-admin-dialog zdm-admin-single-form"
+      width="480px"
+      :header="dialogMode === 'create' ? '新增' : '编辑'"
+      @confirm="handleSubmit"
+      @cancel="closeFormDialog"
+      @close="closeFormDialog"
+    >
+      <t-form ref="formRef" :data="formData" :rules="formRules" label-width="100px" colon>
+        <t-form-item label="供应商名称" name="name" required-mark>
+          <t-input v-model="formData.name" clearable placeholder="请输入供应商名称" />
+        </t-form-item>
+        <t-form-item label="供货类型" name="supplyTypeIds" required-mark>
+          <t-select v-model="formData.supplyTypeIds" multiple filterable clearable placeholder="请选择供货类型">
+            <t-option
+              v-for="item in selectableSupplyTypes"
+              :key="item.id"
+              :label="item.status === 'disabled' ? `${item.name}（已停用）` : item.name"
+              :value="item.id"
+              :disabled="item.status === 'disabled'"
+            />
+          </t-select>
+        </t-form-item>
+        <t-form-item label="联系人" name="contact" required-mark>
+          <t-input v-model="formData.contact" clearable placeholder="请输入联系人" />
+        </t-form-item>
+        <t-form-item label="联系电话" name="phone" required-mark>
+          <t-input
+            v-model="formData.phone"
+            clearable
+            placeholder="请输入联系电话"
+            :maxlength="11"
+            @input="handlePhoneInput"
+          />
+        </t-form-item>
+        <t-form-item label="备注" name="remark">
+          <t-textarea v-model="formData.remark" placeholder="请输入备注" :maxlength="100" :autosize="{}" />
+        </t-form-item>
+      </t-form>
+    </AdminDialog>
+
+    <AdminConfirmDialog
+      v-model:visible="confirmDialogVisible"
+      :function="buttonFunctionFor('status', confirmState.type)"
+      :action="confirmState.type === 'delete' ? '删除' : confirmState.type === 'disable' ? '停用' : '启用'"
+      object-type="供应商"
+      :object-name="confirmState.row?.name"
+      @confirm="handleConfirm"
+      @cancel="closeConfirmDialog"
+      @close="closeConfirmDialog"
+    >
+      {{ confirmState.content }}
+    </AdminConfirmDialog>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { formConfirmation } from '@/components/foundation/actions/confirmation';
+import { buttonTheme, buttonFunctionFor } from '@/components/foundation/actions/buttonFunctions';
+import { rejectFormSubmission } from '@/utils/submitValidation';
+import AdminListToolbar from '@/components/foundation/AdminListToolbar.vue';
+import type { FormInstanceFunctions, FormRule, PrimaryTableCol, TableRowData } from 'tdesign-vue-next';
+import AdminSideMenu from '@/components/AdminSideMenu.vue';
+import AdminTopNav from '@/components/AdminTopNav.vue';
+import { adminFeedback, AdminConfirmDialog, AdminDialog, AdminPagination } from '@/components/foundation';
+import { getLoginUser } from '@/services/auth';
+import { hasPermission } from '@/services/adminPermissions';
+import {
+  createSupplier,
+  deleteSupplier,
+  listSupplierSupplyTypes,
+  listSuppliers,
+  updateSupplier,
+  updateSupplierStatus,
+  type SupplierPayload,
+  type SupplierRecord,
+  type SupplierSupplyTypeRecord,
+} from '@/services/suppliers';
+import { computed, onMounted, reactive, ref } from 'vue';
+type SupplierStatus = 'normal' | 'disabled';
+type ConfirmType = 'enable' | 'disable' | 'delete';
+
+interface SupplierItem {
+  id: number;
+  name: string;
+  supplyTypeIds: number[];
+  supplyTypes: SupplierSupplyTypeRecord[];
+  contact: string;
+  phone: string;
+  status: SupplierStatus;
+  createdByName: string;
+  createdByAccountId?: number;
+  createdAt: string;
+  remark?: string;
+}
+
+interface SupplierForm {
+  name: string;
+  supplyTypeIds: number[];
+  contact: string;
+  phone: string;
+  remark: string;
+}
+
+const tableData = ref<SupplierItem[]>([]);
+const supplyTypes = ref<SupplierSupplyTypeRecord[]>([]);
+const loading = ref(false);
+const supplierPermissionPrefix = 'admin.supplier-management';
+const loginUser = computed(() => getLoginUser());
+const canCreateSupplier = computed(() => hasPermission(loginUser.value, `${supplierPermissionPrefix}.create`));
+const canEditSupplier = computed(() => hasPermission(loginUser.value, `${supplierPermissionPrefix}.edit`));
+const canToggleSupplierStatus = computed(() =>
+  hasPermission(loginUser.value, `${supplierPermissionPrefix}.toggle-status`),
+);
+const canDeleteSupplier = computed(() => hasPermission(loginUser.value, `${supplierPermissionPrefix}.delete`));
+const selectableSupplyTypes = computed(() =>
+  supplyTypes.value.filter((item) => item.status === 'enabled' || formData.supplyTypeIds.includes(item.id)),
+);
+
+const columns = computed<PrimaryTableCol<TableRowData>[]>(() => [
+  { colKey: 'index', title: '序号', width: 80, align: 'left' },
+  { colKey: 'name', title: '供应商名称', minWidth: 220, align: 'left' },
+  { colKey: 'type', title: '供货类型', minWidth: 180, align: 'left' },
+  { colKey: 'contact', title: '联系人', width: 120 },
+  { colKey: 'phone', title: '联系电话', width: 150 },
+  { colKey: 'status', title: '状态', width: 100 },
+  { colKey: 'createdByName', title: '创建人', width: 120 },
+  { colKey: 'createdAt', title: '创建时间', width: 180 },
+  {
+    colKey: 'operation',
+    title: '操作',
+    width: 156,
+    align: 'left',
+    fixed: 'right',
+  },
+]);
+const searchForm = reactive({
+  name: '',
+  supplyTypeId: '' as number | '',
+  status: '' as SupplierStatus | '',
+});
+const appliedSearchForm = reactive({ ...searchForm });
+
+const pageSizeOptions = [10, 20, 50];
+const pagination = reactive({
+  current: 1,
+  pageSize: 10,
+});
+
+const formRef = ref<FormInstanceFunctions>();
+const formDialogVisible = ref(false);
+const dialogMode = ref<'create' | 'edit'>('create');
+const editingId = ref<number | null>(null);
+const formData = reactive<SupplierForm>({
+  name: '',
+  supplyTypeIds: [],
+  contact: '',
+  phone: '',
+  remark: '',
+});
+
+const formRules: Record<string, FormRule[]> = {
+  name: [{ required: true, message: '请输入供应商名称', type: 'error' }],
+  supplyTypeIds: [{ required: true, message: '请选择供货类型', type: 'error' }],
+  contact: [{ required: true, message: '请输入联系人', type: 'error' }],
+  phone: [
+    { required: true, message: '请输入联系电话', type: 'error' },
+    { pattern: /^1[3-9]\d{9}$/, message: '请输入合法的11位联系电话', type: 'error' },
+  ],
+  remark: [{ max: 100, message: '备注最多可输入100个字符', type: 'error' }],
+};
+
+const confirmDialogVisible = ref(false);
+const confirmState = reactive<{
+  content: string;
+  type: ConfirmType;
+  row: SupplierItem | null;
+}>({
+  content: '',
+  type: 'disable',
+  row: null,
+});
+
+const filteredData = computed(() => {
+  const name = appliedSearchForm.name.trim();
+  return tableData.value.filter((item) => {
+    const nameMatched = !name || item.name.includes(name);
+    const typeMatched = !appliedSearchForm.supplyTypeId || item.supplyTypeIds.includes(appliedSearchForm.supplyTypeId);
+    const statusMatched = !appliedSearchForm.status || item.status === appliedSearchForm.status;
+    return nameMatched && typeMatched && statusMatched;
+  });
+});
+
+const paginationTotal = computed(() => filteredData.value.length);
+const pageCount = computed(() => Math.max(Math.ceil(paginationTotal.value / pagination.pageSize), 1));
+const pageData = computed(() => {
+  const start = (pagination.current - 1) * pagination.pageSize;
+  return filteredData.value.slice(start, start + pagination.pageSize);
+});
+
+const maskPhone = (phone: string) => phone.replace(/^(\d{3})\d{4}(\d{4})$/, '$1****$2');
+
+const normalizeStatus = (status?: SupplierRecord['status']): SupplierStatus =>
+  status === 'disabled' ? 'disabled' : 'normal';
+
+const toBackendStatus = (status: SupplierStatus): SupplierPayload['status'] =>
+  status === 'disabled' ? 'disabled' : 'enabled';
+
+const formatDateTime = (value?: string) => {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value.replace(/-/g, '/').replace('T', ' ').slice(0, 16);
+
+  const pad = (num: number) => num.toString().padStart(2, '0');
+  return `${date.getFullYear()}/${pad(date.getMonth() + 1)}/${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+};
+
+const toSupplierItem = (record: SupplierRecord): SupplierItem => ({
+  id: record.id,
+  name: record.name,
+  supplyTypeIds: record.supplyTypeIds,
+  supplyTypes: record.supplyTypes,
+  contact: record.contactName ?? '',
+  phone: record.contactPhone ?? '',
+  status: normalizeStatus(record.status),
+  createdByName: record.createdByName || '-',
+  createdByAccountId: record.createdByAccountId,
+  createdAt: formatDateTime(record.createdAt),
+  remark: record.remark ?? '',
+});
+
+const toSupplierPayload = (status: SupplierStatus): SupplierPayload => ({
+  name: formData.name.trim(),
+  supplyTypeIds: [...formData.supplyTypeIds],
+  contactName: formData.contact.trim(),
+  contactPhone: formData.phone.trim(),
+  qualificationStatus: 'approved',
+  status: toBackendStatus(status),
+  remark: formData.remark.trim(),
+});
+
+const loadSuppliers = async () => {
+  loading.value = true;
+  try {
+    const records = await listSuppliers();
+    tableData.value = records.map(toSupplierItem);
+    ensureCurrentPage();
+  } catch (error) {
+    adminFeedback.error(error instanceof Error ? error.message : '供应商列表加载失败');
+  } finally {
+    loading.value = false;
+  }
+};
+
+const loadSupplyTypes = async () => {
+  try {
+    supplyTypes.value = await listSupplierSupplyTypes();
+  } catch (error) {
+    adminFeedback.error(error instanceof Error ? error.message : '供货类型加载失败');
+  }
+};
+
+const handlePhoneInput = (value: string) => {
+  formData.phone = value.replace(/\D/g, '').slice(0, 11);
+};
+
+const resetFormData = () => {
+  formData.name = '';
+  formData.supplyTypeIds = [];
+  formData.contact = '';
+  formData.phone = '';
+  formData.remark = '';
+};
+
+const fillFormData = (row: SupplierItem) => {
+  formData.name = row.name;
+  formData.supplyTypeIds = [...row.supplyTypeIds];
+  formData.contact = row.contact;
+  formData.phone = row.phone;
+  formData.remark = row.remark ?? '';
+};
+
+const ensureCurrentPage = () => {
+  if (pagination.current > pageCount.value) {
+    pagination.current = pageCount.value;
+  }
+};
+
+const handleSearch = () => {
+  Object.assign(appliedSearchForm, searchForm);
+  pagination.current = 1;
+};
+
+const handleReset = () => {
+  searchForm.name = '';
+  searchForm.supplyTypeId = '';
+  searchForm.status = '';
+  pagination.pageSize = 10;
+  handleSearch();
+};
+
+const openCreateDialog = async () => {
+  await loadSupplyTypes();
+  dialogMode.value = 'create';
+  editingId.value = null;
+  resetFormData();
+  formDialogVisible.value = true;
+};
+
+const openEditDialog = async (row: SupplierItem) => {
+  await loadSupplyTypes();
+  dialogMode.value = 'edit';
+  editingId.value = row.id;
+  fillFormData(row);
+  formDialogVisible.value = true;
+};
+
+const closeFormDialog = () => {
+  formDialogVisible.value = false;
+  formRef.value?.clearValidate();
+};
+
+const handleSubmit = async () => {
+  const result = await formRef.value?.validate();
+  if (result !== true) return rejectFormSubmission(formRef.value);
+
+  if (!formData.supplyTypeIds.length) return;
+
+  try {
+    if (dialogMode.value === 'create') {
+      await createSupplier(toSupplierPayload('normal'));
+      await loadSuppliers();
+      pagination.current = 1;
+    } else if (editingId.value) {
+      const current = tableData.value.find((item) => item.id === editingId.value);
+      await updateSupplier(editingId.value, toSupplierPayload(current?.status ?? 'normal'));
+      await loadSuppliers();
+    }
+
+    closeFormDialog();
+    if (dialogMode.value === 'create') {
+      adminFeedback.created(formData.name.trim());
+    } else {
+      adminFeedback.actionSuccess({ action: '修改' });
+    }
+  } catch (error) {
+    adminFeedback.error(error instanceof Error ? error.message : '操作失败');
+  }
+};
+
+const openStatusConfirm = (row: SupplierItem) => {
+  const isNormal = row.status === 'normal';
+  confirmState.type = isNormal ? 'disable' : 'enable';
+  confirmState.row = row;
+  confirmState.content = `是否${isNormal ? '停用' : '启用'}供应商“${row.name}”？`;
+  confirmDialogVisible.value = true;
+};
+
+const openDeleteConfirm = (row: SupplierItem) => {
+  confirmState.type = 'delete';
+  confirmState.row = row;
+  confirmState.content = `是否删除供应商“${row.name}”？`;
+  confirmDialogVisible.value = true;
+};
+
+const closeConfirmDialog = () => {
+  confirmDialogVisible.value = false;
+  confirmState.row = null;
+};
+
+const persistSupplierStatus = async (item: SupplierItem, status: SupplierStatus) => {
+  const updated = await updateSupplierStatus(item.id, toBackendStatus(status));
+  const targetIndex = tableData.value.findIndex((row) => row.id === item.id);
+  if (targetIndex !== -1) {
+    tableData.value.splice(targetIndex, 1, toSupplierItem(updated));
+  }
+};
+
+const handleConfirm = async () => {
+  if (!confirmState.row) return;
+
+  const targetName = confirmState.row.name;
+  try {
+    if (confirmState.type === 'delete') {
+      await deleteSupplier(confirmState.row.id);
+      tableData.value = tableData.value.filter((item) => item.id !== confirmState.row?.id);
+      ensureCurrentPage();
+    } else {
+      await persistSupplierStatus(confirmState.row, confirmState.type === 'enable' ? 'normal' : 'disabled');
+    }
+
+    closeConfirmDialog();
+    if (confirmState.type === 'delete') {
+      adminFeedback.deleted(targetName);
+    } else {
+      adminFeedback.actionSuccess({
+        action: confirmState.type === 'enable' ? '启用' : '停用',
+        target: targetName,
+      });
+    }
+  } catch (error) {
+    adminFeedback.error(error instanceof Error ? error.message : '操作失败');
+  }
+};
+
+onMounted(async () => {
+  await Promise.all([loadSupplyTypes(), loadSuppliers()]);
+});
+</script>
+
+<style scoped>
+.filter-card,
+.table-card {
+  background: var(--td-bg-color-container);
+  padding: var(--td-comp-paddingTB-xxl) var(--td-comp-paddingLR-xxl);
+  border-radius: var(--td-radius-medium);
+}
+
+.table-card {
+  margin-top: var(--td-comp-margin-xxl);
+  padding: var(--td-comp-paddingTB-xxl) var(--td-comp-paddingLR-xxl);
+  border-radius: var(--td-radius-medium);
+}
+
+.table-toolbar {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  margin-bottom: var(--td-comp-margin-xxl);
+}
+
+.toolbar-actions {
+  display: flex;
+  gap: var(--td-comp-margin-s);
+}
+
+.table-actions {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: var(--td-comp-margin-m) var(--td-comp-margin-l);
+}
+
+@media (max-width: 960px) {
+  .page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+</style>

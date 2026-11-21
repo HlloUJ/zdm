@@ -1,0 +1,354 @@
+<template>
+  <div class="admin-layout">
+    <AdminTopNav />
+    <div class="admin-shell">
+      <AdminSideMenu />
+      <main class="page">
+        <section class="filter-card">
+          <t-form class="zdm-admin-filter-form zdm-standard-query" label-width="80px" :data="searchForm" colon>
+            <div class="filter-row">
+              <div class="filter-fields">
+                <t-form-item label="级别名称" name="name"
+                  ><t-input v-model="searchForm.name" clearable placeholder="请输入级别名称"
+                /></t-form-item>
+                <t-form-item label="状态" name="status" class="zdm-status-filter status-filter">
+                  <t-select v-model="searchForm.status" clearable placeholder="请选择状态">
+                    <t-option label="启用" value="normal" /><t-option label="停用" value="disabled" />
+                  </t-select>
+                </t-form-item>
+              </div>
+              <div class="filter-actions">
+                <t-button :theme="buttonTheme('search')" @click="handleSearch"
+                  ><template #icon><t-icon name="search" /></template>查询</t-button
+                >
+                <t-button :theme="buttonTheme('reset')" variant="base" @click="handleReset"
+                  ><template #icon><t-icon name="refresh" /></template>重置</t-button
+                >
+              </div>
+            </div>
+          </t-form>
+        </section>
+        <section class="table-card">
+          <AdminListToolbar :has-actions="canCreate"
+            ><t-button v-if="canCreate" :theme="buttonTheme('create')" @click="openCreate"
+              ><template #icon><t-icon name="add" /></template>新增</t-button
+            ></AdminListToolbar
+          >
+          <t-table
+            row-key="id"
+            :data="pageData"
+            :columns="columns"
+            :loading="loading"
+            :class="{ 'zdm-row-sort-table': canSort }"
+            :drag-sort="canSort ? 'row' : undefined"
+            :drag-sort-options="{
+              animation: 200,
+              filter: 'a, button, input, textarea, select, .t-link, .t-select, .t-checkbox, .t-switch',
+              preventOnFilter: false,
+            }"
+            hover
+            table-layout="fixed"
+            @drag-sort="handleDragSort"
+          >
+            <template #dragTitle><t-icon name="move" title="拖拽排序" /></template>
+            <template #drag><t-icon name="move" title="拖拽排序" /></template>
+            <template #index="{ rowIndex }">{{
+              (pagination.current - 1) * pagination.pageSize + rowIndex + 1
+            }}</template>
+            <template #status="{ row }">
+              <t-tag :theme="row.status === 'normal' ? 'success' : 'danger'" variant="light">{{
+                row.status === 'normal' ? '启用' : '停用'
+              }}</t-tag>
+            </template>
+            <template #priceComplete="{ row }">
+              <t-tag :theme="row.priceComplete ? 'success' : 'warning'" variant="light">
+                {{ row.priceComplete ? '配置完整' : '价格待完善' }}
+              </t-tag>
+            </template>
+            <template #operation="{ row }">
+              <div class="table-actions">
+                <t-link v-if="canEdit" :theme="buttonTheme('edit')" hover="color" @click="openEdit(row)">编辑</t-link>
+                <t-link
+                  v-if="canToggle"
+                  :theme="buttonTheme(row.status === 'normal' ? 'disable' : 'enable')"
+                  hover="color"
+                  @click="openConfirm(row, row.status === 'normal' ? 'disable' : 'enable')"
+                  >{{ row.status === 'normal' ? '停用' : '启用' }}</t-link
+                >
+                <t-link
+                  v-if="canDelete"
+                  :theme="buttonTheme('delete')"
+                  hover="color"
+                  @click="openConfirm(row, 'delete')"
+                  >删除</t-link
+                >
+              </div>
+            </template>
+          </t-table>
+          <AdminPagination
+            v-model:current="pagination.current"
+            v-model:page-size="pagination.pageSize"
+            :total="filteredData.length"
+            :page-size-options="[10, 20, 50]"
+          />
+        </section>
+      </main>
+    </div>
+    <AdminDialog
+      v-model:visible="formVisible"
+      :confirmation="formConfirmation(editingId ? 'edit' : 'create')"
+      confirm-function="submit"
+      dialog-class-name="zdm-admin-dialog zdm-admin-single-form"
+      width="480px"
+      :header="editingId ? '编辑门店级别' : '新增门店级别'"
+      @confirm="submitLevel"
+      @cancel="closeForm"
+      @close="closeForm"
+    >
+      <t-form ref="formRef" :data="formData" :rules="formRules" label-width="100px" colon>
+        <t-form-item label="级别名称" name="name"
+          ><t-input v-model="formData.name" clearable placeholder="请输入级别名称"
+        /></t-form-item>
+        <t-form-item label="备注" name="remark"
+          ><t-textarea v-model="formData.remark" placeholder="请输入备注" :maxlength="100" :autosize="{}"
+        /></t-form-item>
+      </t-form>
+    </AdminDialog>
+    <AdminConfirmDialog
+      v-model:visible="confirmVisible"
+      :function="buttonFunctionFor('status', confirmType)"
+      :action="confirmType === 'delete' ? '删除' : confirmType === 'disable' ? '停用' : '启用'"
+      object-type="门店级别"
+      :object-name="confirmRow?.name"
+      @confirm="submitConfirm"
+      @cancel="confirmVisible = false"
+      @close="confirmVisible = false"
+    />
+  </div>
+</template>
+
+<script setup lang="ts">
+import { formConfirmation } from '@/components/foundation/actions/confirmation';
+import { buttonTheme, buttonFunctionFor } from '@/components/foundation/actions/buttonFunctions';
+import { rejectFormSubmission } from '@/utils/submitValidation';
+import AdminListToolbar from '@/components/foundation/AdminListToolbar.vue';
+import type { FormInstanceFunctions, FormRule, PrimaryTableCol, TableRowData } from 'tdesign-vue-next';
+import { computed, onMounted, reactive, ref } from 'vue';
+import AdminSideMenu from '@/components/AdminSideMenu.vue';
+import AdminTopNav from '@/components/AdminTopNav.vue';
+import { adminFeedback, AdminConfirmDialog, AdminDialog, AdminPagination } from '@/components/foundation';
+import { hasPermission } from '@/services/adminPermissions';
+import { getLoginUser } from '@/services/auth';
+import {
+  createStoreLevel,
+  deleteStoreLevel,
+  listStoreLevels,
+  previewStoreLevelDisable,
+  previewStoreLevelDelete,
+  reorderStoreLevels,
+  updateStoreLevel,
+  updateStoreLevelStatus,
+  type StoreLevelPayload,
+  type StoreLevelRecord,
+} from '@/services/storeLevels';
+
+type LevelStatus = 'normal' | 'disabled';
+type ConfirmType = 'enable' | 'disable' | 'delete';
+type LevelItem = Omit<StoreLevelRecord, 'status' | 'createdAt'> & { status: LevelStatus; createdAt: string };
+const permissionPrefix = 'admin.tenant.store-level-management';
+const loginUser = computed(() => getLoginUser());
+const canCreate = computed(() => hasPermission(loginUser.value, `${permissionPrefix}.create`));
+const canEdit = computed(() => hasPermission(loginUser.value, `${permissionPrefix}.edit`));
+const canSort = computed(() => hasPermission(loginUser.value, `${permissionPrefix}.sort`));
+const canToggle = computed(() => hasPermission(loginUser.value, `${permissionPrefix}.toggle-status`));
+const canDelete = computed(() => hasPermission(loginUser.value, `${permissionPrefix}.delete`));
+const loading = ref(false);
+const tableData = ref<LevelItem[]>([]);
+const searchForm = reactive({ name: '', status: '' });
+const appliedSearchForm = reactive({ ...searchForm });
+const pagination = reactive({ current: 1, pageSize: 10 });
+const columns = computed<PrimaryTableCol<TableRowData>[]>(() => [
+  ...(canSort.value ? [{ colKey: 'drag', title: 'dragTitle', width: 28, align: 'left' as const }] : []),
+  { colKey: 'index', title: '序号', width: 88, align: 'left' },
+  { colKey: 'name', title: '级别名称', minWidth: 220, align: 'left' },
+  { colKey: 'priceComplete', title: '价格状态', width: 130 },
+  { colKey: 'status', title: '状态', width: 120 },
+  { colKey: 'createdByName', title: '创建人', width: 120 },
+  { colKey: 'createdAt', title: '创建时间', width: 180 },
+  {
+    colKey: 'operation',
+    title: '操作',
+    width: 156,
+    align: 'left',
+    fixed: 'right',
+  },
+]);
+const filteredData = computed(() =>
+  tableData.value.filter(
+    (item) =>
+      (!appliedSearchForm.name.trim() || item.name.includes(appliedSearchForm.name.trim())) &&
+      (!appliedSearchForm.status || item.status === appliedSearchForm.status),
+  ),
+);
+const pageData = computed(() =>
+  filteredData.value.slice((pagination.current - 1) * pagination.pageSize, pagination.current * pagination.pageSize),
+);
+const formatDateTime = (value?: string) => {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value.replace(/-/g, '/').replace('T', ' ').slice(0, 16);
+  const pad = (num: number) => num.toString().padStart(2, '0');
+  return `${date.getFullYear()}/${pad(date.getMonth() + 1)}/${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+};
+const toLevelItem = (record: StoreLevelRecord): LevelItem => ({
+  ...record,
+  status: record.status === 'disabled' ? 'disabled' : 'normal',
+  createdByName: record.createdByName ?? '-',
+  createdAt: formatDateTime(record.createdAt),
+  remark: record.remark ?? '',
+});
+const ensureCurrentPage = () => {
+  pagination.current = Math.min(
+    pagination.current,
+    Math.max(Math.ceil(filteredData.value.length / pagination.pageSize), 1),
+  );
+};
+const loadLevels = async () => {
+  loading.value = true;
+  try {
+    tableData.value = (await listStoreLevels()).map(toLevelItem);
+    ensureCurrentPage();
+  } catch (error) {
+    adminFeedback.error(error instanceof Error ? error.message : '门店级别列表加载失败');
+  } finally {
+    loading.value = false;
+  }
+};
+const handleSearch = () => {
+  Object.assign(appliedSearchForm, searchForm);
+  pagination.current = 1;
+};
+const handleReset = () => {
+  Object.assign(searchForm, { name: '', status: '' });
+  pagination.pageSize = 10;
+  handleSearch();
+};
+const formRef = ref<FormInstanceFunctions>();
+const formVisible = ref(false);
+const editingId = ref<number | null>(null);
+const formData = reactive({ name: '', remark: '' });
+const formRules: Record<string, FormRule[]> = {
+  name: [{ required: true, message: '请输入级别名称', type: 'error' }],
+  remark: [{ max: 100, message: '备注最多输入100个汉字', type: 'error' }],
+};
+const openCreate = () => {
+  editingId.value = null;
+  Object.assign(formData, { name: '', remark: '' });
+  formVisible.value = true;
+};
+const openEdit = (row: LevelItem) => {
+  editingId.value = row.id;
+  Object.assign(formData, { name: row.name, remark: row.remark ?? '' });
+  formVisible.value = true;
+};
+const closeForm = () => {
+  formVisible.value = false;
+  formRef.value?.clearValidate();
+};
+const sorting = ref(false);
+const handleDragSort = async (context: { current: LevelItem; target: LevelItem }) => {
+  if (!canSort.value || sorting.value) return;
+  const orderedRows = tableData.value.map((item) => ({ ...item }));
+  const currentIndex = orderedRows.findIndex((item) => item.id === context.current.id);
+  const targetIndex = orderedRows.findIndex((item) => item.id === context.target.id);
+  if (currentIndex < 0 || targetIndex < 0 || currentIndex === targetIndex) return;
+  const [currentRow] = orderedRows.splice(currentIndex, 1);
+  orderedRows.splice(targetIndex, 0, currentRow);
+  sorting.value = true;
+  try {
+    await reorderStoreLevels(orderedRows.map((item) => item.id));
+    await loadLevels();
+    adminFeedback.actionSuccess({ action: '更新排序', target: context.current.name });
+  } catch (error) {
+    adminFeedback.error(error instanceof Error ? error.message : '排序保存失败');
+    await loadLevels();
+  } finally {
+    sorting.value = false;
+  }
+};
+const submitLevel = async () => {
+  if ((await formRef.value?.validate()) !== true) return rejectFormSubmission(formRef.value);
+  const payload: StoreLevelPayload = { name: formData.name.trim(), status: 'enabled', remark: formData.remark.trim() };
+  try {
+    if (editingId.value) await updateStoreLevel(editingId.value, payload);
+    else await createStoreLevel(payload);
+    const target = payload.name;
+    await loadLevels();
+    closeForm();
+    if (editingId.value) adminFeedback.actionSuccess({ action: '修改', target });
+    else adminFeedback.created(target);
+  } catch (error) {
+    adminFeedback.error(error instanceof Error ? error.message : '操作失败');
+  }
+};
+const confirmVisible = ref(false);
+const confirmType = ref<ConfirmType>('disable');
+const confirmRow = ref<LevelItem | null>(null);
+const openConfirm = async (row: LevelItem, type: ConfirmType) => {
+  if (type === 'disable' || type === 'delete') {
+    try {
+      if (type === 'disable') await previewStoreLevelDisable(row.id);
+      else await previewStoreLevelDelete(row.id);
+    } catch (error) {
+      adminFeedback.error(
+        error instanceof Error ? error.message : type === 'disable' ? '停用条件校验失败' : '删除条件校验失败',
+      );
+      return;
+    }
+  }
+  confirmRow.value = row;
+  confirmType.value = type;
+  confirmVisible.value = true;
+};
+const submitConfirm = async () => {
+  if (!confirmRow.value) return;
+  const target = confirmRow.value;
+  const targetName = target.name;
+  const action = confirmType.value === 'delete' ? '删除' : confirmType.value === 'enable' ? '启用' : '停用';
+  try {
+    if (confirmType.value === 'delete') await deleteStoreLevel(target.id);
+    else await updateStoreLevelStatus(target.id, confirmType.value === 'enable' ? 'enabled' : 'disabled');
+    await loadLevels();
+    confirmVisible.value = false;
+    if (confirmType.value === 'delete') adminFeedback.deleted(targetName);
+    else adminFeedback.actionSuccess({ action, target: targetName });
+  } catch (error) {
+    adminFeedback.error(error instanceof Error ? error.message : '操作失败');
+  }
+};
+onMounted(loadLevels);
+</script>
+
+<style scoped>
+.filter-card,
+.table-card {
+  background: var(--td-bg-color-container);
+  padding: var(--td-comp-paddingTB-xxl) var(--td-comp-paddingLR-xxl);
+  border-radius: var(--td-radius-medium);
+}
+.table-card {
+  margin-top: var(--td-comp-margin-xxl);
+  padding: var(--td-comp-paddingTB-xxl) var(--td-comp-paddingLR-xxl);
+  border-radius: var(--td-radius-medium);
+}
+.table-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--td-comp-margin-m) var(--td-comp-margin-l);
+}
+.table-toolbar {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--td-comp-margin-xxl);
+}
+</style>

@@ -1,0 +1,121 @@
+package com.zdm.platform.craft;
+
+import com.zdm.platform.account.CreatorAwareService;
+import com.zdm.platform.media.MediaAsset;
+import com.zdm.platform.media.MediaAssetService;
+import com.zdm.platform.media.MediaCleanupService;
+import com.zdm.platform.media.MediaReferenceService;
+import com.zdm.platform.security.CurrentIdentityProvider;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import java.util.List;
+import java.util.Map;
+
+@Service
+public class CraftService extends CreatorAwareService<CraftMapper, Craft> {
+
+  private final CurrentIdentityProvider identityProvider;
+  private final MediaAssetService mediaAssetService;
+  private final MediaCleanupService mediaCleanupService;
+  private final MediaReferenceService mediaReferenceService;
+
+  public CraftService(
+      CurrentIdentityProvider identityProvider,
+      MediaAssetService mediaAssetService,
+      MediaCleanupService mediaCleanupService,
+      MediaReferenceService mediaReferenceService) {
+    this.identityProvider = identityProvider;
+    this.mediaAssetService = mediaAssetService;
+    this.mediaCleanupService = mediaCleanupService;
+    this.mediaReferenceService = mediaReferenceService;
+  }
+
+  public List<Craft> listCrafts() {
+    return list().stream().map(this::attachMediaUrl).toList();
+  }
+
+  @Transactional
+  public Craft createCraft(Craft craft) {
+    validateImage(craft.getImageMediaId());
+    craft.setId(null);
+    craft.setCreatedByAccountId(identityProvider.require().accountId());
+    save(craft);
+    mediaReferenceService.replace(
+        "FINISHED_STOCK_CRAFT", craft.getId(), Map.of("image", craft.getImageMediaId()));
+    return attachMediaUrl(craft);
+  }
+
+  @Transactional
+  public Craft updateCraft(Long id, Craft payload) {
+    Craft existing = getById(id);
+    if (existing == null) {
+      return null;
+    }
+    validateImage(payload.getImageMediaId());
+
+    payload.setId(id);
+    payload.setCreatedByAccountId(existing.getCreatedByAccountId());
+    updateById(payload);
+    mediaReferenceService.replace(
+        "FINISHED_STOCK_CRAFT", id, Map.of("image", payload.getImageMediaId()));
+    return attachMediaUrl(getById(id));
+  }
+
+  @Transactional
+  public Craft updateStatus(Long id, String status) {
+    Craft existing = getById(id);
+    if (existing == null) {
+      return null;
+    }
+    existing.setStatus(status);
+    updateById(existing);
+    return attachMediaUrl(getById(id));
+  }
+
+  @Transactional
+  public boolean deleteCraft(Long id) {
+    Craft existing = getById(id);
+    if (existing == null) {
+      return false;
+    }
+    boolean removed = removeById(id);
+    if (removed) {
+      mediaReferenceService.removeBusiness("FINISHED_STOCK_CRAFT", id, "成品工艺被删除");
+    }
+    return removed;
+  }
+
+  public boolean cleanupTemporaryMedia(Long mediaId) {
+    mediaAssetService.requireAvailable(mediaId);
+    mediaCleanupService.enqueueAfterCommit(List.of(mediaId), "取消未保存的工艺图片");
+    return true;
+  }
+
+  private void validateImage(Long mediaId) {
+    if (mediaId == null) {
+      throw new IllegalArgumentException("请上传工艺图片");
+    }
+    MediaAsset asset = mediaAssetService.requireAvailable(mediaId);
+    if (!"image".equals(asset.getMediaType())) {
+      throw new IllegalArgumentException("工艺图片格式不正确");
+    }
+  }
+
+  private Craft attachMediaUrl(Craft craft) {
+    if (craft != null) {
+      craft.setImageUrl(mediaAssetService.publicUrl(craft.getImageMediaId()));
+    }
+    return craft;
+  }
+
+  @Override
+  public Craft getById(java.io.Serializable id) {
+    Craft entity = super.getById(id);
+    if (entity != null) {
+      com.zdm.platform.security.DataScope.requireAccess(
+          identityProvider.require(), entity.getCreatedByAccountId());
+    }
+    return entity;
+  }
+
+}

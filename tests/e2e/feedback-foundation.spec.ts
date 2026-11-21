@@ -1,0 +1,1291 @@
+import { productWarehouseUrl } from './product-test-navigation';
+import { expect, test } from '@playwright/test';
+import type { Page } from '@playwright/test';
+
+import { installAdminApiMocks, setMockBusinessClient } from './admin-api-mocks';
+
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem('zdm-admin-token', 'dev-token');
+    window.localStorage.setItem(
+      'zdm-admin-user',
+      JSON.stringify({
+        id: 1,
+        clientCode: window.localStorage.getItem('zdm-e2e-client') ?? 'admin',
+        name: '韩健',
+        phone: '19900009901',
+        roles: ['SUPER_ADMIN'],
+        permissions: ['all'],
+        dataPermission: 'all',
+      }),
+    );
+  });
+  await installAdminApiMocks(page);
+});
+
+async function expectUnifiedConfirmDialog(page: Page, options: { action: string; content: string; danger?: boolean }) {
+  const dialog = page.locator('.zdm-admin-confirm-dialog:visible');
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText(`是否${options.action}`);
+  await expect(dialog).toContainText(options.content);
+
+  const confirmButton = dialog.getByRole('button', { name: `确认${options.action}`, exact: true });
+  await expect(confirmButton).toBeVisible();
+  if (options.danger) await expect(confirmButton).toHaveClass(/t-button--theme-danger/);
+  await expect(dialog).toHaveCSS('width', '480px');
+}
+
+async function selectProductOption(
+  page: Page,
+  productDialog: ReturnType<Page['locator']>,
+  label: string,
+  option: string,
+) {
+  await productDialog.locator('.t-form__item').filter({ hasText: label }).getByRole('textbox').click();
+  await page.locator('.t-popup__content:visible').getByText(option, { exact: true }).click();
+}
+
+async function submitSlabProduct(page: Page) {
+  const productDialog = page.locator('.slab-publish-page');
+  for (const [index, name] of ['main-image.svg', 'scan-image.svg', 'design-image.svg'].entries()) {
+    await productDialog
+      .locator('input[type="file"]')
+      .nth(index)
+      .setInputFiles({
+        name,
+        mimeType: 'image/svg+xml',
+        buffer: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"/>'),
+      });
+  }
+
+  await productDialog.getByRole('link', { name: '基础信息', exact: true }).click();
+  await selectProductOption(page, productDialog, '品种', '潘多拉');
+  await selectProductOption(page, productDialog, '产地', '巴西');
+  await selectProductOption(page, productDialog, '纹理', '细纹');
+  await productDialog.locator('.t-form__item').filter({ hasText: '色系' }).getByRole('textbox').click();
+  await page.locator('.t-cascader__panel:visible').getByText('白色系', { exact: true }).hover();
+  await page.locator('.t-cascader__panel:visible').getByText('奶白', { exact: true }).click();
+  await selectProductOption(page, productDialog, '等级', 'A+');
+  for (const [field, value] of [
+    ['length', '3200'],
+    ['width', '1800'],
+    ['height', '18'],
+  ] as const) {
+    await productDialog.locator(`.t-form-item__${field}`).getByRole('textbox').fill(value);
+  }
+
+  await productDialog.getByRole('link', { name: '销售信息', exact: true }).click();
+  await selectProductOption(page, productDialog, '供应商', '装点猫大板供应商');
+  await productDialog.locator('.t-form__item').filter({ hasText: '库存' }).getByRole('textbox').fill('1');
+  await productDialog
+    .locator('.t-form__item')
+    .filter({ hasText: '大板编号' })
+    .getByRole('textbox')
+    .fill('SLAB-PUBLISH-E2E');
+  const costInput = productDialog.locator('.t-form-item__cost').getByRole('textbox').last();
+  await costInput.fill('100');
+  await costInput.press('Tab');
+  const partnerRows = productDialog.locator('.price-editor__row').filter({ hasNotText: /成本价|指导价/ });
+  for (let index = 0; index < (await partnerRows.count()); index += 1) {
+    const coefficientInput = partnerRows.nth(index).getByRole('textbox').first();
+    await coefficientInput.fill('0.8');
+    await coefficientInput.press('Tab');
+  }
+  await productDialog.getByRole('button', { name: /^确认(?:新增|保存)$/, exact: true }).click();
+}
+
+test('uses the same action-specific confirmation foundation across modules', async ({ page }) => {
+  await page.goto(productWarehouseUrl('/product-attribute'));
+  const attributeRow = page.locator('tbody tr').filter({ hasText: 'E2E 共享属性' });
+  await attributeRow.getByText('删除', { exact: true }).click();
+  await expectUnifiedConfirmDialog(page, {
+    action: '删除',
+    content: '删除属性“E2E 共享属性”将同步删除其下 0 个属性值，删除后不可恢复，是否继续？',
+    danger: true,
+  });
+  await page.getByRole('button', { name: '取消', exact: true }).click();
+
+  await setMockBusinessClient(page, 'supply-chain');
+  await page.goto(productWarehouseUrl('/supplier-management'));
+  const supplierRow = page.locator('tbody tr').filter({ hasText: '装点猫大板供应商' });
+  await supplierRow.getByText('停用', { exact: true }).click();
+  await expectUnifiedConfirmDialog(page, {
+    action: '停用',
+    content: '是否停用供应商“装点猫大板供应商”？',
+  });
+  await page.getByRole('button', { name: '取消', exact: true }).click();
+
+  await page.route('**/api/admin/slab-markup-configurations/options', async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({ code: 0, message: 'ok', data: [] }),
+    });
+  });
+  await setMockBusinessClient(page, 'admin');
+  await page.goto(productWarehouseUrl('/slab-management'));
+  const slabRow = page.getByRole('row', { name: /雪花白大板 06/ });
+  await slabRow.getByText('删除', { exact: true }).click();
+  await expectUnifiedConfirmDialog(page, {
+    action: '删除',
+    content: '删除后大板将进入回收站，是否删除大板“雪花白大板 06”？',
+    danger: true,
+  });
+});
+
+test('shows the product attribute deletion mode returned by the server', async ({ page }) => {
+  await page.route('**/api/admin/product-attributes/1/delete-preview', async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 0,
+        message: 'ok',
+        data: {
+          deletionMode: 'business',
+          attributeValueCount: 2,
+          unfinishedProductCount: 0,
+          soldOutProductCount: 1,
+          templateScopes: [],
+        },
+      }),
+    });
+  });
+
+  await page.goto(productWarehouseUrl('/product-attribute'));
+  const row = page.locator('tbody tr').filter({ hasText: 'E2E 共享属性' });
+  await row.getByText('删除', { exact: true }).click();
+  await expectUnifiedConfirmDialog(page, {
+    action: '删除',
+    content:
+      '属性“E2E 共享属性”仅被已售完商品历史使用。删除后将不再用于新商品和分类模板，但已售完商品仍保留历史属性信息，是否继续？',
+    danger: true,
+  });
+});
+
+test('does not open a deletion dialog when an unfinished product still uses the attribute', async ({ page }) => {
+  const message = '该属性仍被未售完商品使用，不能删除，请先处理关联商品。';
+  await page.route('**/api/admin/product-attributes/1/delete-preview', async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 0,
+        message: 'ok',
+        data: {
+          deletionMode: 'blocked',
+          attributeValueCount: 2,
+          unfinishedProductCount: 1,
+          soldOutProductCount: 0,
+          templateScopes: [],
+          message,
+        },
+      }),
+    });
+  });
+
+  await page.goto(productWarehouseUrl('/product-attribute'));
+  const row = page.locator('tbody tr').filter({ hasText: 'E2E 共享属性' });
+  await row.getByText('删除', { exact: true }).click();
+  await expect(page.getByText(message, { exact: true })).toBeVisible();
+  await expect(page.locator('.zdm-admin-confirm-dialog:visible')).toHaveCount(0);
+});
+
+test('warns immediately instead of opening confirmation when a slab is not ready for shelving', async ({ page }) => {
+  await page.route('**/api/admin/slab-markup-configurations/options', async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({ code: 0, message: 'ok', data: [] }),
+    });
+  });
+  await page.route('**/api/admin/slabs', async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 0,
+        message: 'ok',
+        data: [
+          {
+            id: 30,
+            supplierId: null,
+            varietyId: 25,
+            originId: 5,
+            textureId: 14,
+            colorId: 15,
+            gradeId: 2,
+            name: '接口新建-雅士白大板-待维护销售信息',
+            serialNo: '',
+            warehouse: '平台仓',
+            publisherType: '接口获取',
+            mainImageMediaId: 34,
+            scanImageMediaId: 35,
+            designImageMediaId: 36,
+            createdByName: '外部系统',
+            lengthMm: 2600,
+            widthMm: 1400,
+            thicknessMm: 20,
+            costPrice: null,
+            guidePrice: null,
+            markupPrices: [],
+            status: 'warehouse',
+            createdAt: '2026-08-24T11:11:49',
+          },
+        ],
+      }),
+    });
+  });
+
+  await page.goto(productWarehouseUrl('/slab-management'));
+  const row = page.getByRole('row', { name: /接口新建-雅士白大板-待维护销售信息/ });
+  await row.getByText('上架', { exact: true }).click();
+
+  await expect(page.getByText('请完善大板销售信息后再上架', { exact: true })).toBeVisible();
+  await expect(page.locator('.zdm-admin-confirm-dialog:visible')).toHaveCount(0);
+});
+
+test('moves an imported supply chain slab to recycle and exposes an immutable operation log', async ({ page }) => {
+  await page.route('**/api/admin/slab-markup-configurations/options', async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({ code: 0, message: 'ok', data: [] }),
+    });
+  });
+  const interfaceSlab = {
+    id: 9,
+    supplierId: 1,
+    varietyId: 1,
+    originId: 1,
+    textureId: 1,
+    colorId: 1,
+    gradeId: 1,
+    name: '外部系统大板 09',
+    serialNo: 'SLAB-E2E-009',
+    warehouse: '接口仓',
+    publisherType: '接口获取',
+    lengthMm: 3200,
+    widthMm: 1800,
+    thicknessMm: 18,
+    costPrice: 6800,
+    guidePrice: 9800,
+    status: 'warehouse',
+    sourceStatus: 'warehouse',
+    stateOperatorName: '外部系统',
+    stateOperatedAt: '2026-08-23T01:00:00.000000Z',
+    createdByName: '外部系统',
+    createdAt: '2026-08-23T09:00:00',
+  };
+  await page.route('**/api/admin/slabs', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ code: 0, message: 'ok', data: [interfaceSlab] }),
+    });
+  });
+  let deletionPayload: Record<string, unknown> | undefined;
+  await page.route('**/api/admin/slabs/9/delete', async (route) => {
+    deletionPayload = route.request().postDataJSON() as Record<string, unknown>;
+    interfaceSlab.status = interfaceSlab.sourceStatus = 'recycle';
+    interfaceSlab.stateOperatorName = '韩健';
+    interfaceSlab.stateOperatedAt = '2026-08-23T02:00:00.000000Z';
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ code: 0, message: 'ok', data: true }),
+    });
+  });
+  const operationLogs = [
+    {
+      id: 1,
+      slabId: 9,
+      slabSerialNo: 'SLAB-E2E-009',
+      slabName: '外部系统大板 09',
+      publisherType: '接口获取',
+      operationType: 'DELETE_TO_RECYCLE',
+      operationSummary: '删除至回收站',
+
+      standardReason: '',
+      detailReason: '',
+      operationSource: 'MANUAL',
+      operatorName: '韩健',
+      operatedAt: '2026-08-23T10:00:00',
+    },
+    ...Array.from({ length: 10 }, (_, index) => ({
+      id: index + 2,
+      slabId: index + 100,
+      slabSerialNo: `SLAB-HISTORY-${index + 1}`,
+      slabName: `历史操作大板 ${index + 1}`,
+      publisherType: '平台发布',
+      operationType: index === 0 ? 'PRICE_UPDATE' : 'DELETE_TO_RECYCLE',
+
+      standardReason: '资料调整',
+      detailReason: '',
+      operationSource: 'MANUAL',
+      operatorName: '韩健',
+      operatedAt: '2026-08-22T10:00:00',
+      changeDetails:
+        index === 0
+          ? JSON.stringify({
+              大板名称: {
+                before: '历史操作大板',
+                after: '历史操作大板 1',
+              },
+              品种ID: { before: '潘多拉', after: '雅士白' },
+              产地ID: { before: '巴西', after: '意大利' },
+              纹理ID: { before: '细纹', after: '大花纹' },
+              色系ID: { before: '白色系', after: '灰色系' },
+              等级ID: { before: 'B级（二等品）', after: 'A级（优等品）' },
+              供应商ID: { before: '原供应商', after: '新供应商' },
+              面积: { before: 5.76, after: 5.94 },
+              '1:1主图': {
+                before: { available: false, mediaType: 'image' },
+                after: {
+                  available: true,
+                  mediaType: 'image',
+                  url: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==',
+                },
+              },
+              扫描图: {
+                before: { available: false, mediaType: 'image' },
+                after: {
+                  available: true,
+                  mediaType: 'image',
+                  url: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==',
+                },
+              },
+              设计图: {
+                before: { available: false, mediaType: 'image' },
+                after: {
+                  available: true,
+                  mediaType: 'image',
+                  url: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==',
+                },
+              },
+              商品视频: {
+                before: { available: false, mediaType: 'video' },
+                after: { available: true, mediaType: 'video', url: 'data:video/mp4;base64,AAAA' },
+              },
+              视频封面: {
+                before: { available: false, mediaType: 'image' },
+                after: {
+                  available: true,
+                  mediaType: 'image',
+                  url: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==',
+                },
+              },
+              价格层级: {
+                before: [{ configurationId: 2, priceCoefficient: 1.4, price: 140 }],
+                after: [{ configurationId: 2, priceCoefficient: 1.45, price: 145 }],
+              },
+            })
+          : undefined,
+    })),
+  ];
+  await page.route('**/api/admin/slabs/operation-logs**', async (route) => {
+    const requestUrl = new URL(route.request().url());
+    const keyword = requestUrl.searchParams.get('keyword') || '';
+    const operatorName = requestUrl.searchParams.get('operatorName') || '';
+    const pageNumber = Number(requestUrl.searchParams.get('page') || 1);
+    const pageSize = Number(requestUrl.searchParams.get('pageSize') || 10);
+    const filtered = operationLogs.filter(
+      (item) =>
+        (!keyword || item.slabName.includes(keyword) || item.slabSerialNo.includes(keyword)) &&
+        (!operatorName || item.operatorName.includes(operatorName)),
+    );
+    const records = filtered.slice((pageNumber - 1) * pageSize, pageNumber * pageSize);
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 0,
+        message: 'ok',
+        data: { records, total: filtered.length, page: pageNumber, pageSize },
+      }),
+    });
+  });
+
+  await setMockBusinessClient(page, 'supply-chain');
+  await page.goto(productWarehouseUrl('/supply-chain/slab-management'));
+  const row = page.getByRole('row', { name: /外部系统大板 09/ });
+  await row.getByText('删除', { exact: true }).click();
+  await expectUnifiedConfirmDialog(page, {
+    action: '删除',
+    content: '删除后大板将进入回收站，是否删除大板“外部系统大板 09”？',
+    danger: true,
+  });
+  await page.getByRole('button', { name: '确认删除', exact: true }).click();
+  expect(deletionPayload).toEqual({});
+  await expect(page.locator('.zdm-admin-confirm-dialog:visible')).toHaveCount(0);
+  await expect(page.getByText('已删除“外部系统大板 09”', { exact: true })).toBeVisible();
+  await expect(row).toHaveCount(0);
+  await page.getByText('回收站（1）', { exact: true }).click();
+  await expect(row).toBeVisible();
+  await expect(row).toContainText('韩健');
+  await expect(row).toContainText('2026/08/23 10:00');
+  await page.getByRole('main').getByRole('button', { name: '操作日志', exact: true }).click();
+  const logDrawer = page.locator('.t-drawer').filter({ hasText: '操作日志' });
+  const operationLogRow = logDrawer.getByRole('row', { name: /外部系统大板 09/ });
+  await expect(logDrawer.locator('.t-form__label').filter({ hasText: '创建方式' })).toHaveCount(0);
+  await expect(logDrawer.getByRole('button', { name: '查询', exact: true })).toBeVisible();
+  expect((await logDrawer.locator('.operation-log-keyword-filter').boundingBox())!.width).toBeGreaterThan(200);
+  expect((await logDrawer.locator('.operation-log-date-picker').boundingBox())!.width).toBeGreaterThan(100);
+  await expect(operationLogRow).toContainText('删除至回收站');
+  const priceOperationRow = logDrawer.getByRole('row', { name: /历史操作大板 1/ });
+  await priceOperationRow.getByText('详情', { exact: true }).click();
+  const detailDialog = page.locator('.t-dialog:visible').filter({ hasText: '操作详情' });
+  await expect(detailDialog.locator('.operation-log-diff-item')).toHaveCount(13);
+  await expect(detailDialog.locator('.operation-log-diff-item__field')).toHaveText([
+    '1:1主图',
+    '扫描图',
+    '设计图',
+    '视频',
+    '大板名称',
+    '品种',
+    '产地',
+    '纹理',
+    '色系',
+    '等级',
+    '面积',
+    '供应商',
+    '价格层级',
+  ]);
+  const nameComparison = detailDialog.locator('.operation-log-diff-item').filter({ hasText: '大板名称' });
+  await expect(nameComparison.locator('.operation-log-diff-value--before')).toContainText('历史操作大板');
+  await expect(nameComparison.locator('.operation-log-diff-value--after')).toContainText('历史操作大板 1');
+  await expect(detailDialog.locator('.operation-log-diff-item').filter({ hasText: '品种' })).toContainText('雅士白');
+  await expect(detailDialog.locator('.operation-log-diff-item').filter({ hasText: '产地' })).toContainText('意大利');
+  await expect(detailDialog.locator('.operation-log-diff-item').filter({ hasText: '纹理' })).toContainText('大花纹');
+  await expect(detailDialog.locator('.operation-log-diff-item').filter({ hasText: '色系' })).toContainText('灰色系');
+  await expect(detailDialog.locator('.operation-log-diff-item').filter({ hasText: '等级' })).toContainText(
+    'A级（优等品）',
+  );
+  await expect(detailDialog.locator('.operation-log-diff-item').filter({ hasText: '供应商' })).toContainText(
+    '新供应商',
+  );
+  await expect(detailDialog.locator('.operation-log-diff-item').filter({ hasText: '面积' })).toContainText('5.94');
+  await expect(detailDialog.locator('.operation-log-media-preview--image')).toHaveCount(3);
+  await expect(detailDialog.locator('.operation-log-media-preview--video')).toHaveCount(1);
+  await expect(detailDialog.getByText('媒体文件已清理', { exact: true })).toHaveCount(0);
+  await expect(
+    detailDialog.locator('.operation-log-diff-item').filter({ has: page.locator('.operation-log-media-preview') }),
+  ).toHaveCount(4);
+  await detailDialog.locator('.operation-log-media-preview--image').first().click();
+  const mediaPreviewDialog = page.locator('.t-dialog:visible').filter({ hasText: '1:1主图 - 修改后' });
+  await expect(mediaPreviewDialog.locator('.upload-large-preview')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await detailDialog.locator('.operation-log-media-preview--video').click();
+  const videoPreviewDialog = page.locator('.t-dialog:visible').filter({ hasText: '视频 - 修改后' });
+  await expect(videoPreviewDialog.locator('video.upload-large-preview')).toBeVisible();
+  await page.keyboard.press('Escape');
+  const priceComparison = detailDialog.locator('.operation-log-diff-item').filter({ hasText: '价格层级' });
+  await expect(priceComparison.locator('.operation-log-diff-value--before')).toContainText('价格系数：1.40');
+  await expect(priceComparison.locator('.operation-log-diff-value--before')).toContainText('价格：140.00');
+  await expect(priceComparison.locator('.operation-log-diff-value--after')).toContainText('价格系数：1.45');
+  await expect(priceComparison.locator('.operation-log-diff-value--after')).toContainText('价格：145.00');
+  await expect(detailDialog).not.toContainText('"configurationId"');
+  await detailDialog.getByRole('button', { name: '关闭', exact: true }).click();
+  const operationLogPagination = logDrawer.locator('.zdm-admin-pagination:visible .t-pagination');
+  await expect(operationLogPagination).toBeVisible();
+  await expect(logDrawer.getByRole('row', { name: /历史操作大板 10/ })).toHaveCount(0);
+  await operationLogPagination.locator('.t-pagination__btn-next').click();
+  await expect(logDrawer.getByRole('row', { name: /历史操作大板 10/ })).toBeVisible();
+  const [operatorBox, dateFilterBox, searchButtonBox] = await Promise.all([
+    logDrawer.locator('.operation-log-operator-filter').boundingBox(),
+    logDrawer.locator('.operation-log-date-filter').boundingBox(),
+    logDrawer.getByRole('button', { name: '查询', exact: true }).boundingBox(),
+  ]);
+  expect(searchButtonBox!.y).toBeCloseTo(operatorBox!.y, 0);
+  expect(dateFilterBox!.y - operatorBox!.y - operatorBox!.height).toBeCloseTo(24, 0);
+  await logDrawer.getByPlaceholder('请输入操作人', { exact: true }).fill('不存在的人员');
+  await logDrawer.getByRole('button', { name: '查询', exact: true }).click();
+  await expect(operationLogRow).toHaveCount(0);
+  await logDrawer.getByRole('button', { name: '重置', exact: true }).click();
+  await expect(operationLogRow).toBeVisible();
+});
+
+test('permanently deletes one or multiple slabs from the recycle tab after confirmation', async ({ page }) => {
+  await page.goto(productWarehouseUrl('/slab-management'));
+  await page.getByText('回收站（2）', { exact: true }).click();
+
+  const singleRow = page.getByRole('row', { name: /回收站大板 07/ });
+  await singleRow.getByText('彻底删除', { exact: true }).click();
+  await expectUnifiedConfirmDialog(page, {
+    action: '彻底删除',
+    content: '彻底删除后无法恢复，是否彻底删除大板“回收站大板 07”？',
+    danger: true,
+  });
+  const singleDelete = page.waitForRequest(
+    (request) => request.method() === 'DELETE' && request.url().endsWith('/api/admin/slabs/7'),
+  );
+  await page.getByRole('button', { name: '确认彻底删除', exact: true }).click();
+  await singleDelete;
+  await expect(page.locator('.zdm-admin-confirm-dialog:visible')).toBeHidden();
+  await expect(singleRow).toHaveCount(0);
+
+  const batchRow = page.getByRole('row', { name: /回收站大板 08/ });
+  await batchRow.locator('.t-checkbox').click();
+  await page.getByRole('button', { name: '批量彻底删除', exact: true }).click();
+  await expectUnifiedConfirmDialog(page, {
+    action: '批量彻底删除',
+    content: '彻底删除后无法恢复，是否批量彻底删除所选大板？',
+    danger: true,
+  });
+  const batchDelete = page.waitForRequest(
+    (request) => request.method() === 'DELETE' && request.url().endsWith('/api/admin/slabs/batch-purge'),
+  );
+  await page.getByRole('button', { name: '确认批量彻底删除', exact: true }).click();
+  expect((await batchDelete).postDataJSON()).toEqual([8]);
+  await expect(page.locator('.zdm-admin-confirm-dialog:visible')).toBeHidden();
+  await expect(batchRow).toHaveCount(0);
+});
+
+test('shows recycled slab prices without allowing edits', async ({ page }) => {
+  await page.route('**/api/admin/slab-markup-configurations/options', async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({ code: 0, message: 'ok', data: [] }),
+    });
+  });
+  await page.goto(productWarehouseUrl('/slab-management'));
+  await page.getByText('回收站（2）', { exact: true }).click();
+
+  const recycleRow = page.getByRole('row', { name: /回收站大板 07/ });
+  await recycleRow.getByText('详情', { exact: true }).click();
+  const detailDrawer = page.locator('.t-drawer').filter({ hasText: '大板详情' });
+  await expect(detailDrawer).toBeVisible();
+  await expect(detailDrawer.getByRole('button', { name: /^确认(?:新增|保存|配置权限)$/, exact: true })).toHaveCount(0);
+  await expect(recycleRow.getByText('编辑', { exact: true })).toHaveCount(0);
+  await expect(recycleRow.getByText('价格', { exact: true })).toHaveCount(0);
+});
+
+test('restores the guide price coefficient from the slab independent price', async ({ page }) => {
+  await page.route('**/api/admin/slab-markup-configurations/options', async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 0,
+        message: 'ok',
+        data: [],
+      }),
+    });
+  });
+  await page.route('**/api/admin/slabs', async (route) => {
+    if (route.request().method() !== 'GET') return route.fallback();
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 0,
+        message: 'ok',
+        data: [
+          {
+            id: 32,
+            supplierId: 1,
+            varietyId: 1,
+            name: '宝格丽黑大板',
+            serialNo: 'SLAB-E2E-032',
+            warehouse: '云浮仓',
+            publisherType: '平台发布',
+            lengthMm: 3200,
+            widthMm: 1800,
+            thicknessMm: 18,
+            costPrice: 2000,
+            guidePrice: 100,
+            guidePriceCoefficient: 0.05,
+            markupPrices: [],
+            status: 'warehouse',
+            createdAt: '2026-08-24T16:06:28',
+          },
+        ],
+      }),
+    });
+  });
+
+  await page.route('**/api/admin/slabs/32', (route) =>
+    route.fulfill({
+      json: {
+        code: 0,
+        data: {
+          id: 32,
+          supplierId: 1,
+          varietyId: 1,
+          name: '宝格丽黑大板',
+          serialNo: 'SLAB-E2E-032',
+          warehouse: '云浮仓',
+          publisherType: '平台发布',
+          lengthMm: 3200,
+          widthMm: 1800,
+          thicknessMm: 18,
+          costPrice: 2000,
+          guidePrice: 100,
+          guidePriceCoefficient: 0.05,
+          markupPrices: [],
+          status: 'warehouse',
+          createdAt: '2026-08-24T16:06:28',
+        },
+      },
+    }),
+  );
+
+  await page.goto(productWarehouseUrl('/slab-management'));
+  const slabRow = page.getByRole('row', { name: /宝格丽黑大板/ });
+  await slabRow.getByText('编辑', { exact: true }).click();
+
+  const guideRow = page.locator('.slab-publish-page .price-editor__row').filter({ hasText: '指导价' });
+  const guideInputs = guideRow.getByRole('textbox');
+  await expect(guideInputs.nth(0)).toHaveValue('0.05');
+  await expect(guideInputs.nth(1)).toHaveValue('100.00');
+});
+
+test('shows only assigned slab tabs and operations', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      'zdm-admin-user',
+      JSON.stringify({
+        id: 9,
+        name: '回收站查看员',
+        phone: '15926626949',
+        roles: ['SLAB_RECYCLE_VIEWER'],
+        permissions: ['admin.slab-management.recycle.view', 'admin.slab-management.recycle.detail'],
+        dataPermission: 'all',
+      }),
+    );
+  });
+  await page.route('**/api/admin/slab-markup-configurations/options', async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({ code: 0, message: 'ok', data: [] }),
+    });
+  });
+
+  await page.goto(productWarehouseUrl('/slab-management'));
+  await expect(page.locator('.status-tabs')).toHaveCount(0);
+  await expect(page.getByRole('row', { name: /回收站大板 07/ })).toBeVisible();
+  await expect(page.getByRole('row', { name: /雪花白大板 06/ })).toHaveCount(0);
+  await expect(page.locator('.toolbar-buttons button')).toHaveCount(0);
+  const recycleActions = page.getByRole('row', { name: /回收站大板 07/ }).locator('.table-actions .t-link');
+  expect((await recycleActions.allTextContents()).map((text) => text.trim())).toEqual(['详情']);
+});
+
+test('places clear recycle after batch purge and permanently deletes every recycled slab', async ({ page }) => {
+  await page.goto(productWarehouseUrl('/slab-management'));
+  await page.getByText('回收站（2）', { exact: true }).click();
+
+  expect((await page.locator('.toolbar-buttons button').allTextContents()).map((text) => text.trim())).toEqual([
+    '批量放回到仓库',
+    '批量彻底删除',
+    '清空回收站',
+  ]);
+  await page.getByRole('button', { name: '清空回收站', exact: true }).click();
+  await expectUnifiedConfirmDialog(page, {
+    action: '清空回收站',
+    content: '清空后所有回收站大板将无法恢复，是否清空回收站？',
+    danger: true,
+  });
+
+  const clearRequest = page.waitForRequest(
+    (request) => request.method() === 'DELETE' && request.url().endsWith('/api/admin/slabs/clear-recycle'),
+  );
+  await page.getByRole('button', { name: '确认清空回收站', exact: true }).click();
+  expect((await clearRequest).postData()).toBeNull();
+  await expect(page.getByText('已清空回收站“2 个大板”', { exact: true })).toBeVisible();
+  await expect(page.getByRole('row', { name: /回收站大板/ })).toHaveCount(0);
+});
+
+test('requires an off-shelf reason before batch off-shelving slabs', async ({ page }) => {
+  let slabStatus = 'selling';
+  const latestDetailReason = '盘点数量不一致，需要重新核对仓库中的实际库存数量和对应大板编码后再恢复销售';
+  const offShelfRecords = [
+    {
+      id: 1,
+      slabId: 61,
+      standardReason: '供应商申请',
+      detailReason: '供应商要求暂停销售',
+      offShelvedAt: '2026-08-20T10:00:00',
+      offShelvedByName: '李雷',
+      offShelvedByAccountId: 2,
+    },
+  ];
+  await page.route('**/api/admin/slab-markup-configurations/options', async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({ code: 0, message: 'ok', data: [] }),
+    });
+  });
+  await page.route('**/api/admin/slabs', async (route) => {
+    if (route.request().method() !== 'GET') return route.fallback();
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 0,
+        message: 'ok',
+        data: [
+          {
+            id: 61,
+            supplierId: 1,
+            varietyId: 1,
+            name: '批量下架大板 61',
+            serialNo: 'SLAB-E2E-061',
+            warehouse: '云浮仓',
+            publisherType: '平台发布',
+            lengthMm: 3200,
+            widthMm: 1800,
+            thicknessMm: 18,
+            areaSquareMeter: 5.76,
+            costPrice: 6800,
+            guidePrice: 9800,
+            status: slabStatus,
+            warehouseEntryType: slabStatus === 'warehouse' ? 'offShelf' : null,
+            warehouseEntryReason: slabStatus === 'warehouse' ? offShelfRecords[0]!.standardReason : null,
+            warehouseEntryDetail: slabStatus === 'warehouse' ? offShelfRecords[0]!.detailReason : null,
+            stateOperatorName: offShelfRecords[0]!.offShelvedByName,
+            stateOperatedAt: `${offShelfRecords[0]!.offShelvedAt}Z`,
+            offShelfRecords,
+            createdAt: '2026-07-27T09:00:00',
+          },
+          {
+            id: 62,
+            supplierId: 1,
+            varietyId: 1,
+            name: '已下架大板 62',
+            serialNo: 'SLAB-E2E-062',
+            warehouse: '云浮仓',
+            publisherType: '平台发布',
+            lengthMm: 3000,
+            widthMm: 1600,
+            thicknessMm: 18,
+            areaSquareMeter: 4.8,
+            status: 'warehouse',
+            warehouseEntryType: 'recycleRestore',
+            warehouseEntryReason: null,
+            warehouseEntryDetail: null,
+            stateOperatorName: '王芳',
+            stateOperatedAt: '2026-08-22T10:00:00Z',
+            offShelfRecords: [
+              {
+                id: 3,
+                slabId: 62,
+                standardReason: '价格调整',
+                detailReason: '等待重新定价',
+                offShelvedAt: '2026-08-22T10:00:00',
+                offShelvedByName: '王芳',
+                offShelvedByAccountId: 3,
+              },
+            ],
+            createdAt: '2026-07-28T09:00:00',
+          },
+        ],
+      }),
+    });
+  });
+
+  await page.route('**/api/admin/slabs/61', (route) =>
+    route.fulfill({
+      json: {
+        code: 0,
+        data: {
+          id: 61,
+          supplierId: 1,
+          varietyId: 1,
+          name: '批量下架大板 61',
+          serialNo: 'SLAB-E2E-061',
+          warehouse: '云浮仓',
+          publisherType: '平台发布',
+          lengthMm: 3200,
+          widthMm: 1800,
+          thicknessMm: 18,
+          areaSquareMeter: 5.76,
+          costPrice: 6800,
+          guidePrice: 9800,
+          status: slabStatus,
+          offShelfRecords,
+          createdAt: '2026-07-27T09:00:00',
+        },
+      },
+    }),
+  );
+
+  let statusPayload: unknown;
+  await page.route('**/api/admin/slabs/batch-status', async (route) => {
+    statusPayload = route.request().postDataJSON();
+    slabStatus = 'warehouse';
+    offShelfRecords.unshift({
+      id: 2,
+      slabId: 61,
+      standardReason: '库存异常',
+      detailReason: latestDetailReason,
+      offShelvedAt: '2026-08-23T10:00:00',
+      offShelvedByName: '韩健',
+      offShelvedByAccountId: 1,
+    });
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({ code: 0, message: 'ok', data: true }),
+    });
+  });
+
+  await page.goto(productWarehouseUrl('/slab-management'));
+  await page.getByText('已上架（1）', { exact: true }).click();
+  const row = page.getByRole('row', { name: /批量下架大板 61/ });
+  await row.locator('.t-checkbox').click();
+  await page.getByRole('button', { name: '批量下架', exact: true }).click();
+
+  const dialog = page.locator('.t-dialog:visible').filter({ hasText: '批量下架' });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByText('下架原因', { exact: true })).toBeVisible();
+  await expect(dialog.getByText('请选择下架原因', { exact: true })).toHaveCount(0);
+  await dialog
+    .getByRole('button', {
+      name: /^确认(?:新增|保存|(?:批量)?(?:下架|调整归属)|配置权限|业务开通|添加属性|邀请员工)$/,
+      exact: true,
+    })
+    .click();
+  await expect(dialog.getByText('请选择下架原因', { exact: true })).toBeVisible({ timeout: 10_000 });
+  expect(statusPayload).toBeUndefined();
+
+  await dialog.getByRole('textbox').first().click();
+  await page.locator('.t-popup__content:visible').getByText('库存异常', { exact: true }).click();
+  await dialog.locator('textarea').fill(latestDetailReason);
+  await dialog
+    .getByRole('button', {
+      name: /^确认(?:新增|保存|(?:批量)?(?:下架|调整归属)|配置权限|业务开通|添加属性|邀请员工)$/,
+      exact: true,
+    })
+    .click();
+
+  await expect
+    .poll(() => statusPayload)
+    .toEqual({
+      ids: [61],
+      status: 'warehouse',
+      operation: 'offShelf',
+      reason: '库存异常',
+      detail: latestDetailReason,
+    });
+  await expect(dialog).toBeHidden();
+  await expect(page.getByText('已批量下架“1 个大板”', { exact: true })).toBeVisible();
+
+  await page.getByText('仓库中（2）', { exact: true }).click();
+  const filterCard = page.locator('.list-controls');
+  await expect(filterCard.getByText('入库类型', { exact: true })).toHaveCount(0);
+  await expect(filterCard.getByText('入库人', { exact: true })).toHaveCount(0);
+  await expect(filterCard.getByText('下架时间', { exact: true })).toHaveCount(0);
+  await expect(filterCard.getByText('产地', { exact: true })).toBeVisible();
+  await expect(filterCard.getByText('纹理', { exact: true })).toBeVisible();
+  await expect(filterCard.getByText('色系', { exact: true })).toBeVisible();
+  await expect(filterCard.getByText('等级', { exact: true })).toBeVisible();
+  await expect(filterCard.getByText('供应商', { exact: true })).toBeVisible();
+  expect((await page.locator('.slab-list-layout thead th').allTextContents()).map((text) => text.trim())).toEqual([
+    '',
+    '商品主图',
+    '大板名称/ID/编号',
+    '品种',
+    '产地',
+    '纹理',
+    '色系',
+    '等级',
+    '尺寸',
+    '供应商',
+    '入库类型 / 详细说明',
+    '入库人',
+    '入库时间',
+    '操作',
+  ]);
+  const offShelfRows = page.locator('.slab-list-layout tbody tr');
+  await expect(offShelfRows).toHaveCount(2);
+  await expect(offShelfRows.nth(0)).toContainText('批量下架大板 61');
+  await expect(offShelfRows.nth(1)).toContainText('已下架大板 62');
+
+  const offShelfRow = page.getByRole('row', { name: /批量下架大板 61/ });
+  await expect(offShelfRow).toContainText('库存异常');
+  await expect(offShelfRow).toContainText(latestDetailReason);
+  await expect(offShelfRow).toContainText('韩健');
+  await expect(offShelfRow).not.toContainText('供应商申请');
+  const detailText = offShelfRow.locator('[data-entry-detail]');
+  await detailText.hover();
+  await expect(
+    page.locator('.t-popup__content:visible').getByText(`库存异常；${latestDetailReason}`, { exact: true }),
+  ).toBeVisible();
+  expect((await offShelfRow.locator('.table-actions .t-link').allTextContents()).map((text) => text.trim())).toEqual([
+    '上架',
+    '编辑',
+    '删除',
+  ]);
+  // Read-only detail remains covered from the retained recycle entry.
+  slabStatus = 'recycle';
+  await page.reload();
+  await page.locator('.status-tabs .t-tabs__nav-item').filter({ hasText: '回收站' }).click();
+  await offShelfRow.getByText('详情', { exact: true }).click();
+  const detailDrawer = page.locator('.t-drawer').filter({ hasText: '大板详情' });
+  await expect(detailDrawer).toBeVisible();
+  await expect(detailDrawer).toContainText('批量下架大板 61');
+  await expect(detailDrawer).toContainText('SLAB-E2E-061');
+  await expect(detailDrawer).toContainText('长（mm）3200');
+  await expect(detailDrawer).toContainText('宽（mm）1800');
+  await expect(detailDrawer).toContainText('高（mm）18');
+  await expect(detailDrawer).not.toContainText('云浮仓');
+  await expect(detailDrawer.getByText('图文描述', { exact: true })).toBeVisible();
+  await expect(detailDrawer.getByText('销售信息', { exact: true })).toBeVisible();
+  await expect(detailDrawer.getByText('成本价', { exact: true })).toBeVisible();
+  await expect(detailDrawer.getByText('指导价', { exact: true })).toBeVisible();
+  await expect(detailDrawer.getByText('6800', { exact: true })).toBeVisible();
+  await expect(detailDrawer.getByText('9800', { exact: true })).toBeVisible();
+});
+
+test('opens the file chooser directly, shows a thumbnail, and previews the uploaded image', async ({ page }) => {
+  const previewDataUrl =
+    'data:image/svg+xml;base64,' +
+    Buffer.from(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="80" height="80" fill="#567"/></svg>',
+    ).toString('base64');
+  await page.route('**/api/admin/slabs/images', async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 0,
+        message: 'ok',
+        data: { id: 9001, url: previewDataUrl, mediaType: 'image', mimeType: 'image/svg+xml' },
+      }),
+    });
+  });
+  await setMockBusinessClient(page, 'supply-chain');
+  await page.goto(productWarehouseUrl('/supply-chain/slab-management'));
+  await page.getByRole('button', { name: '发布商品', exact: true }).click();
+
+  const chooserPromise = page.waitForEvent('filechooser');
+  await page.locator('.admin-media-upload .t-upload__image-add').first().click();
+  const chooser = await chooserPromise;
+  await chooser.setFiles({
+    name: 'slab-preview.svg',
+    mimeType: 'image/svg+xml',
+    buffer: Buffer.from(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="80" height="80" fill="#567"/></svg>',
+    ),
+  });
+
+  await expect(page.getByText('已上传“1:1主图”', { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('button', {
+      name: '提交',
+      exact: true,
+    }),
+  ).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '确认新增', exact: true })).toBeVisible();
+  const preview = page.locator('.admin-media-upload[aria-label="1:1主图"] .t-upload__card-image img');
+  await expect(preview).toBeVisible();
+  await expect(preview).toHaveAttribute('src', previewDataUrl);
+  let unexpectedChoosers = 0;
+  page.on('filechooser', () => unexpectedChoosers++);
+  await page
+    .locator('.slab-publish-page .admin-media-upload')
+    .first()
+    .click({ position: { x: 8, y: 80 } });
+  await expect(page.locator('.upload-large-preview[alt="1:1主图"]')).toBeVisible();
+  expect(unexpectedChoosers).toBe(0);
+});
+
+for (const scenario of [
+  { tab: '仓库中（1）', expectedStatus: 'warehouse', expectedTab: /仓库中/ },
+  { tab: '已上架（0）', expectedStatus: 'selling', expectedTab: /已上架/ },
+] as const) {
+  test(`publishes a slab into ${scenario.expectedStatus} from its current tab`, async ({ page }) => {
+    await page.route('**/api/admin/slabs/form-options', async (route) => {
+      await route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({
+          code: 0,
+          message: 'ok',
+          data: {
+            varieties: [{ id: 1, label: '潘多拉', status: 'enabled' }],
+            origins: [{ id: 1, label: '巴西', status: 'enabled' }],
+            textures: [{ id: 1, label: '细纹', status: 'enabled' }],
+            colorCategories: [
+              {
+                id: 1,
+                label: '白色系',
+                status: 'enabled',
+                children: [{ id: 1, label: '奶白', status: 'enabled' }],
+              },
+            ],
+            grades: [{ id: 1, label: 'A+', status: 'enabled' }],
+            suppliers: [{ id: 1, label: '装点猫大板供应商', status: 'enabled' }],
+            storeLevels: [{ id: 99, label: '未配置加价的门店级别', status: 'enabled' }],
+          },
+        }),
+      });
+    });
+    await page.route('**/api/admin/slab-markup-configurations/options', async (route) => {
+      await route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({ code: 0, message: 'ok', data: [] }),
+      });
+    });
+    await page.route('**/api/admin/slabs/images', async (route) => {
+      await route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({
+          code: 0,
+          message: 'ok',
+          data: { id: 9100, url: 'data:image/svg+xml;base64,PHN2Zy8+', mediaType: 'image', mimeType: 'image/svg+xml' },
+        }),
+      });
+    });
+    let submittedStatus = '';
+    await page.route('**/api/admin/slabs', async (route) => {
+      if (route.request().method() !== 'POST') {
+        await route.fallback();
+        return;
+      }
+      const payload = route.request().postDataJSON() as Record<string, unknown>;
+      submittedStatus = String(payload.status);
+      expect(payload).not.toHaveProperty('markupPrices');
+      expect(payload).not.toHaveProperty('guidePrice');
+      expect(payload).not.toHaveProperty('guidePriceCoefficient');
+      expect(payload.costPrice).toBeGreaterThan(0);
+      expect(payload.areaSquareMeter).toBe(
+        Number(((Number(payload.lengthMm) * Number(payload.widthMm)) / 1_000_000).toFixed(2)),
+      );
+      await route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({
+          code: 0,
+          message: 'ok',
+          data: { id: 99, ...payload, sourceStatus: payload.status, status: 'warehouse' },
+        }),
+      });
+    });
+
+    await setMockBusinessClient(page, 'supply-chain');
+    await page.goto(productWarehouseUrl('/supply-chain/slab-management'));
+    await page.getByText(scenario.tab, { exact: true }).click();
+    await page.getByRole('button', { name: '发布商品', exact: true }).click();
+    await expect(page.getByRole('radio', { name: '暂不上架', exact: true })).toBeChecked();
+    if (scenario.expectedStatus === 'selling') {
+      await page.getByRole('link', { name: '销售信息', exact: true }).click();
+      await page.locator('.slab-publish-page .t-radio').filter({ hasText: '立刻上架' }).click();
+    }
+    const createRequest = page.waitForRequest(
+      (request) => request.method() === 'POST' && request.url().endsWith('/api/admin/slabs'),
+    );
+    await submitSlabProduct(page);
+    await createRequest;
+
+    expect(submittedStatus).toBe(scenario.expectedStatus);
+    await expect(page.locator('.status-tabs .t-tabs__nav-item.t-is-active')).toContainText(scenario.expectedTab);
+  });
+}
+
+test('leaves SKU blank for supply chain staff when publishing a product', async ({ page }) => {
+  await page.route('**/api/admin/slab-markup-configurations/options', async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({ code: 0, message: 'ok', data: [] }),
+    });
+  });
+  await setMockBusinessClient(page, 'supply-chain');
+  await page.goto(productWarehouseUrl('/supply-chain/slab-management'));
+  await page.getByRole('button', { name: '发布商品', exact: true }).click();
+  const productDialog = page.locator('.slab-publish-page');
+  await productDialog.getByRole('link', { name: '销售信息', exact: true }).click();
+  await expect(productDialog.locator('.t-form__item').filter({ hasText: '大板编号' }).getByRole('textbox')).toHaveValue(
+    '',
+  );
+});
+
+test('limits supply chain publishing to cost without requiring operations markup configurations', async ({ page }) => {
+  await page.route('**/api/admin/slab-markup-configurations/options', async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({ code: 0, message: 'ok', data: [] }),
+    });
+  });
+  await setMockBusinessClient(page, 'supply-chain');
+  await page.goto(productWarehouseUrl('/supply-chain/slab-management'));
+  await page.getByRole('button', { name: '发布商品', exact: true }).click();
+  const productDialog = page.locator('.slab-publish-page');
+  await productDialog.getByRole('link', { name: '销售信息', exact: true }).click();
+
+  const costInput = productDialog.locator('.t-form-item__cost').getByRole('textbox').last();
+  await costInput.fill('100');
+  await costInput.press('Tab');
+  await expect(costInput).toHaveValue('100.00');
+  await expect(productDialog.locator('.t-form-item__cost').getByRole('textbox')).toHaveCount(1);
+  await expect(productDialog.locator('.price-editor')).toHaveCount(0);
+  await expect(productDialog.locator('.price-editor__row').filter({ hasText: '指导价' })).toHaveCount(0);
+  await expect(productDialog.locator('.price-editor__row').filter({ hasText: '1级' })).toHaveCount(0);
+});
+
+test('filters slab varieties and origins by search text when publishing a product', async ({ page }) => {
+  await setMockBusinessClient(page, 'supply-chain');
+  await page.goto(productWarehouseUrl('/supply-chain/slab-management'));
+  await page.getByRole('button', { name: '发布商品', exact: true }).click();
+  await page.getByRole('link', { name: '基础信息', exact: true }).click();
+
+  const productDialog = page.locator('.slab-publish-page');
+  const varietyInput = productDialog.locator('.t-form__item').filter({ hasText: '品种' }).getByRole('textbox');
+  await varietyInput.fill('潘多');
+  const varietyDropdown = page.locator('.t-select__dropdown:visible');
+  await expect(varietyDropdown.getByText('潘多拉', { exact: true })).toBeVisible();
+  await varietyInput.fill('不存在的品种');
+  await expect(varietyDropdown.getByText('潘多拉', { exact: true })).toHaveCount(0);
+
+  const originInput = productDialog.locator('.t-form__item').filter({ hasText: '产地' }).getByRole('textbox');
+  await originInput.fill('巴');
+  const originDropdown = page.locator('.t-select__dropdown:visible');
+  await expect(originDropdown.getByText('巴西', { exact: true })).toBeVisible();
+  await originInput.fill('不存在的产地');
+  await expect(originDropdown.getByText('巴西', { exact: true })).toHaveCount(0);
+});
+
+test('shows the same object-specific success copy for category, store category, and employee status changes', async ({
+  page,
+}) => {
+  await setMockBusinessClient(page, 'supply-chain');
+  await page.goto(productWarehouseUrl('/supplier-management'));
+  const supplierRow = page.getByRole('row', { name: /装点猫大板供应商/ });
+  await supplierRow.getByText('停用', { exact: true }).click();
+  await page.getByRole('button', { name: '确认停用', exact: true }).click();
+  await expect(page.getByText('已停用“装点猫大板供应商”', { exact: true })).toBeVisible();
+  await supplierRow.getByText('启用', { exact: true }).click();
+  await page.getByRole('button', { name: '确认启用', exact: true }).click();
+  await expect(page.getByText('已启用“装点猫大板供应商”', { exact: true })).toBeVisible();
+
+  await setMockBusinessClient(page, 'admin');
+  await page.goto(productWarehouseUrl('/product-category'));
+  const productCategoryRow = page.getByRole('row', { name: /成品现货 一级分类/ });
+  await productCategoryRow.getByText('停用', { exact: true }).click();
+  await page.getByRole('button', { name: '确认停用', exact: true }).click();
+  const productCategoryFeedback = page.getByText('已停用“成品现货”', { exact: true });
+  await expect(productCategoryFeedback).toBeVisible();
+  const feedbackBox = await productCategoryFeedback.locator('..').boundingBox();
+  expect(feedbackBox?.width).toBeLessThan(320);
+
+  await page.addInitScript(() => {
+    const user = JSON.parse(window.localStorage.getItem('zdm-admin-user') ?? '{}');
+    window.localStorage.setItem(
+      'zdm-admin-user',
+      JSON.stringify({
+        ...user,
+        tenantId: 1,
+        storeId: 1,
+        storeType: 'cityPartner',
+      }),
+    );
+  });
+  await page.goto(productWarehouseUrl('/store-category-management'));
+  await page
+    .getByRole('row', { name: /石材 1级分类/ })
+    .getByRole('button', { name: '展开下级分类' })
+    .click();
+  const storeCategoryRow = page.getByRole('row', { name: /大理石 2级分类/ });
+  await storeCategoryRow.getByText('停用', { exact: true }).click();
+  await page.getByRole('button', { name: '确认停用', exact: true }).click();
+  await expect(page.getByText('已停用“大理石”', { exact: true })).toBeVisible();
+
+  await page.goto(productWarehouseUrl('/employee-management'));
+  const employeeRow = page.getByRole('row', { name: /测试员工/ });
+  await employeeRow.getByText('停用', { exact: true }).click();
+  await page.getByRole('button', { name: '确认停用', exact: true }).click();
+  await expect(page.getByText('已停用“测试员工”', { exact: true })).toBeVisible();
+});
+
+test('shows object-specific success copy in craft, slab variety, attribute, and attribute value modules', async ({
+  page,
+}) => {
+  const cases = [
+    { path: '/finished-stock-craft', target: 'E2E 边工艺' },
+    { path: '/slab-variety', target: '潘多拉' },
+    { path: '/product-attribute', target: 'E2E 共享属性' },
+    { path: '/product-attribute-value', target: 'E2E 共享属性值' },
+  ];
+
+  for (const item of cases) {
+    await page.goto(productWarehouseUrl(item.path));
+    const row = page.locator('tbody tr').filter({ hasText: item.target });
+    await row.getByText('停用', { exact: true }).click();
+    await page.getByRole('button', { name: '确认停用', exact: true }).click();
+    await expect(page.getByText(`已停用“${item.target}”`, { exact: true })).toBeVisible();
+  }
+});
+
+test('shows 已新增加名称 after creating an item', async ({ page }) => {
+  await page.goto(productWarehouseUrl('/product-attribute'));
+  await page.getByRole('main').getByRole('button', { name: '新增', exact: true }).click();
+
+  await page.locator('.t-dialog:visible').getByPlaceholder('请输入属性名称').fill('E2E 新增属性');
+  await page.getByText('文本输入', { exact: true }).click();
+  await page
+    .getByRole('button', {
+      name: /^确认(?:新增|保存|(?:批量)?(?:下架|调整归属)|配置权限|业务开通|添加属性|邀请员工)$/,
+      exact: true,
+    })
+    .click();
+
+  await expect(page.getByText('已新增“E2E 新增属性”', { exact: true })).toBeVisible();
+});
+
+const deletionCases = [
+  { path: '/supplier-management', target: '装点猫大板供应商' },
+  { path: '/role-management', target: '运营管理平台角色' },
+  { path: '/employee-management', target: '测试员工' },
+  { path: '/finished-stock-craft', target: 'E2E 边工艺' },
+  { path: '/slab-variety', target: '潘多拉' },
+  { path: '/product-attribute', target: 'E2E 共享属性', targetPattern: /E2E (?:全局)?共享属性/ },
+  { path: '/product-attribute-value', target: 'E2E 共享属性值', targetPattern: /E2E (?:全局)?共享属性值/ },
+];
+
+test('archives an operating store and warns before permanently deleting an archived store', async ({ page }) => {
+  await page.goto(productWarehouseUrl('/tenant-store-management'));
+  const row = page.locator('tbody tr').filter({ hasText: '杭州体验门店' });
+  await row.getByText('归档', { exact: true }).click();
+  await expect(page.getByText('归档后，该门店的全部员工将无法登录或切换到该门店。', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '取消', exact: true }).click();
+
+  await page.getByRole('main').getByText('已归档', { exact: true }).click();
+  const archivedRow = page.locator('tbody tr').filter({ hasText: '已归档门店' });
+  await expect(archivedRow.getByText('1级', { exact: true })).toBeVisible();
+  await expect(archivedRow.getByText('恢复运营', { exact: true })).toBeVisible();
+  await archivedRow.getByText('彻底删除', { exact: true }).click();
+  await expect(page.getByText('彻底删除后，该门店的经营数据永久不可恢复，请谨慎操作', { exact: true })).toBeVisible();
+});
+
+test('shows the duplicate store name error on the edit form', async ({ page }) => {
+  await page.route('**/api/admin/stores/1', async (route) => {
+    if (route.request().method() !== 'PUT') {
+      await route.fallback();
+      return;
+    }
+    await route.fulfill({
+      status: 400,
+      contentType: 'application/json',
+      body: JSON.stringify({ code: 400, message: '店铺名称已存在', data: null }),
+    });
+  });
+
+  await page.goto(productWarehouseUrl('/tenant-store-management'));
+  const row = page.locator('tbody tr').filter({ hasText: '杭州体验门店' });
+  await row.getByText('编辑', { exact: true }).click();
+  const dialog = page.locator('.t-dialog:visible').filter({ hasText: '编辑' });
+  await dialog
+    .locator('.t-form__item')
+    .filter({ hasText: '门店名称' })
+    .getByPlaceholder('请输入门店名称')
+    .fill('已归档门店');
+  await dialog
+    .getByRole('button', {
+      name: /^确认(?:新增|保存|(?:批量)?(?:下架|调整归属)|配置权限|业务开通|添加属性|邀请员工)$/,
+      exact: true,
+    })
+    .click();
+
+  await expect(dialog.locator('.t-form__item').filter({ hasText: '门店名称' })).toContainText('门店名称已存在');
+  await expect(page.getByText('编辑“已归档门店”失败：门店名称已存在', { exact: true })).toBeVisible();
+  await expect(dialog).toBeVisible();
+});
+
+for (const item of deletionCases) {
+  test(`shows 已删除加名称 after deleting ${item.target}`, async ({ page }) => {
+    if (item.path === '/supplier-management') await setMockBusinessClient(page, 'supply-chain');
+    await page.goto(productWarehouseUrl(item.path));
+    const row = page.locator('tbody tr').filter({ hasText: item.targetPattern ?? item.target });
+    const targetName = item.targetPattern ? await row.locator('td').first().innerText() : item.target;
+    await row.getByText('删除', { exact: true }).click();
+    await page.getByRole('button', { name: '确认删除', exact: true }).click();
+    await expect(page.getByText(`已删除“${targetName}”`, { exact: true })).toBeVisible();
+  });
+}
