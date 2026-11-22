@@ -31,7 +31,7 @@ function checkIsolation(config, identity, stage, historicalMigrations) {
 
 // Use the original columns on both sides so additive schema changes are allowed.
 // Ordered, fixed-width row digests preserve duplicate rows and distinguish NULL from an empty value.
-function snapshotQuery(mysql) {
+function snapshotQueries(mysql, observer) {
   const metadata = mysql(
     'SELECT HEX(c.TABLE_NAME), HEX(c.COLUMN_NAME) FROM information_schema.COLUMNS c ' +
     'JOIN information_schema.TABLES t USING (TABLE_SCHEMA, TABLE_NAME) ' +
@@ -44,14 +44,25 @@ function snapshotQuery(mysql) {
     if (!tables.has(table)) tables.set(table, []);
     tables.get(table).push("COALESCE(SHA2(CAST(" + identifier(column) + " AS BINARY), 256), 'NULL')");
   }
-  const statements = ['SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ', 'START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY'];
+  const transaction = ['SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ', 'START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY'];
+  const before = [...transaction, "SELECT 'observed'"];
+  const after = [...transaction, "SELECT 'observed' FROM " + observer + ' WHERE table_no = 0'];
+  const callback = ['CREATE TABLE ' + observer + ' (table_no INT NOT NULL, row_digest BINARY(32), INDEX(table_no, row_digest))',
+    'INSERT INTO ' + observer + ' VALUES (0, NULL)'];
+  let number = 0;
   for (const [table, columns] of tables) {
-    statements.push("SELECT 'table:" + table + "'",
-      "SELECT SHA2(CONCAT_WS(':', " + columns.join(', ') + '), 256) AS row_digest FROM ' +
-      identifier(table) + ' ORDER BY row_digest');
+    number++;
+    const name = identifier(table);
+    const digest = "SHA2(CONCAT_WS(':', " + columns.join(', ') + '), 256)';
+    const marker = "SELECT 'table:" + table + "'";
+    const count = "SELECT CONCAT('rows:', COUNT(*)) FROM " + name;
+    before.push(marker, count, 'SELECT ' + digest + ' AS row_digest FROM ' + name + ' ORDER BY row_digest');
+    // Flyway takes this observation before application schedulers can legitimately update the restored data.
+    callback.push('INSERT INTO ' + observer + ' SELECT ' + number + ', UNHEX(' + digest + ') FROM ' + name);
+    after.push(marker, count, 'SELECT LOWER(HEX(row_digest)) FROM ' + observer + ' WHERE table_no = ' + number + ' ORDER BY row_digest');
   }
-  statements.push('COMMIT');
-  return statements.join(';\n') + ';\n';
+  const sql = statements => statements.join(';\n') + ';\n';
+  return { before: sql([...before, 'COMMIT']), callback: sql(callback), after: sql([...after, 'COMMIT']) };
 }
 
 function withFile(path, flags, action) {
@@ -63,8 +74,10 @@ function withFile(path, flags, action) {
   }
 }
 
-function captureRows(stage, mysql, name) {
-  withFile(join(stage, 'snapshot.sql'), 'r', query =>
+function captureRows(stage, mysql, sql, name) {
+  const path = join(stage, 'snapshot.sql');
+  writeFileSync(path, sql, { mode: 0o600 });
+  withFile(path, 'r', query =>
     withFile(join(stage, name), 'wx', result => mysql(null, { stdio: [query, result, 'pipe'] })));
 }
 
@@ -136,15 +149,17 @@ export function rehearseMigration(directory, revision, backup, config, run) {
     compose('up', '-d', '--no-deps', '--wait', 'mysql');
     withFile(backup, 'r', fd => mysql(null, { stdio: [fd, 'pipe', 'pipe'] }));
 
-    writeFileSync(join(stage, 'snapshot.sql'), snapshotQuery(mysql), { mode: 0o600 });
-    captureRows(stage, mysql, 'before.rows');
+    const queries = snapshotQueries(mysql, identity + '_rows');
+    captureRows(stage, mysql, queries.before, 'before.rows');
+    const callbacks = join(stage, 'backend/src/main/resources/db/migration');
+    writeFileSync(join(callbacks, 'afterMigrate__zz_' + identity + '.sql'), queries.callback, { flag: 'wx', mode: 0o600 });
     compose('build', 'ledger');
     copyFiles(directory, stage, run, project);
     compose('up', '-d', '--no-deps', 'ledger', 'backend');
     const health = compose('exec', '-T', 'backend', 'curl', '--fail', '--silent', '--show-error', '--max-time', '3',
       '--retry', '100', '--retry-delay', '2', '--retry-all-errors', 'http://127.0.0.1:8080/actuator/health');
     if (JSON.parse(health).status !== 'UP') throw new Error('迁移演练的候选后端未通过健康检查。');
-    captureRows(stage, mysql, 'after.rows');
+    captureRows(stage, mysql, queries.after, 'after.rows');
     verifyFiles(stage, project);
     try {
       run(stage, 'cmp', ['-s', 'before.rows', 'after.rows']);

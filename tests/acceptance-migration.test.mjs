@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -14,7 +14,7 @@ const named = (source, target) => ({ type: 'volume', source, target });
 const rawHex = value => Buffer.from(value).toString('hex').toUpperCase();
 
 // Model the Compose and SQL client boundaries. Real MySQL executes the same queries in the R4 rehearsal.
-function fixture(t, { imageAfter = 'kept.jpg', changeConfig = () => {}, healthy = true, failStart = false, failCleanup = false, changedFile } = {}) {
+function fixture(t, { imageAfter = 'kept.jpg', rowsAfter = 1, changeConfig = () => {}, healthy = true, failStart = false, failCleanup = false, changedFile } = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'zdm-migration-contract-'));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   const backup = join(dir, 'original.sql');
@@ -23,6 +23,7 @@ function fixture(t, { imageAfter = 'kept.jpg', changeConfig = () => {}, healthy 
   let candidateRunning = false;
   let stage;
   function run(cwd, program, args, options) {
+    if (program === 'tar') mkdirSync(join(cwd, 'backend/src/main/resources/db/migration'), { recursive: true });
     if (program === 'git' || program === 'tar' || program === process.execPath) return '';
     if (program === 'cmp') return execFileSync(program, args, { cwd });
     assert.equal(program, 'docker');
@@ -52,6 +53,14 @@ function fixture(t, { imageAfter = 'kept.jpg', changeConfig = () => {}, healthy 
     }
     if (command[0] === 'up') {
       candidateRunning ||= command.includes('backend');
+      if (candidateRunning) {
+        const callbacks = join(stage, 'backend/src/main/resources/db/migration');
+        const [name] = readdirSync(callbacks);
+        assert.match(name, /^afterMigrate__/);
+        const callback = readFileSync(join(callbacks, name), 'utf8');
+        assert.match(callback, /SHA2/);
+        assert.match(callback, /`image`/);
+      }
       if (candidateRunning && failStart) throw Error('candidate startup failed');
       return '';
     }
@@ -77,12 +86,14 @@ function fixture(t, { imageAfter = 'kept.jpg', changeConfig = () => {}, healthy 
     if (query === 'isolated fixture') return '';
     if (/information_schema\.columns/i.test(query)) return rawHex('accounts') + '\t' + rawHex('image');
     if (/information_schema\.tables/i.test(query)) return 'accounts';
-    if (/COUNT\(\*\)/i.test(query)) return '1';
-    assert.match(query, /SHA2/i);
+    if (command.includes('-e') && /COUNT\(\*\)/i.test(query)) return '1';
+    assert.match(query, candidateRunning ? /LOWER\(HEX\(row_digest\)\)/ : /SHA2/i);
     assert.match(query, /`accounts`/);
-    assert.match(query, /`image`/);
+    assert.match(query, /COUNT\(\*\)/);
+    if (!candidateRunning) assert.match(query, /`image`/);
     const value = candidateRunning ? imageAfter : 'kept.jpg';
-    writeFileSync(options.stdio[1], createHash('sha256').update(value).digest('hex') + '\n');
+    writeFileSync(options.stdio[1], 'rows:' + (candidateRunning ? rowsAfter : 1) + '\n' +
+      createHash('sha256').update(value).digest('hex') + '\n');
     return '';
   }
   const rehearse = () => rehearseMigration(dir, 'candidate', backup, { services: { backend: { volumes: [] } } }, run);
@@ -101,6 +112,9 @@ test('migration rehearsal accepts intact original values and rejects changes wit
   const changed = fixture(t, { imageAfter: 'other.jpg' });
   assert.throws(changed.rehearse, /已有数据/);
   changed.checkCleanup();
+  const missingAfterStartup = fixture(t, { rowsAfter: 0 });
+  assert.throws(missingAfterStartup.rehearse, /已有数据/);
+  missingAfterStartup.checkCleanup();
   const unhealthy = fixture(t, { healthy: false });
   assert.throws(unhealthy.rehearse, /健康/);
   unhealthy.checkCleanup();
