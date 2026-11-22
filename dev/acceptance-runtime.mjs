@@ -133,7 +133,7 @@ export function createRuntime(directory, run) {
     const output = openSync(dump + '.partial', 'wx', 0o600);
     try {
       run(directory, 'docker', ['compose', 'exec', '-T', 'mysql', 'sh', '-ec',
-        'export MYSQL_PWD="$MYSQL_PASSWORD"; exec mysqldump --single-transaction --no-tablespaces --set-gtid-purged=OFF -u "$MYSQL_USER" "$MYSQL_DATABASE"',
+        'export MYSQL_PWD="$MYSQL_PASSWORD"; exec mysqldump --single-transaction --hex-blob --no-tablespaces --set-gtid-purged=OFF -u "$MYSQL_USER" "$MYSQL_DATABASE"',
       ], { stdio: ['ignore', output, 'pipe'] });
     } finally {
       closeSync(output);

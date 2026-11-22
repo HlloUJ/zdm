@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { closeSync, mkdtempSync, openSync, rmSync, writeFileSync } from 'node:fs';
+import { closeSync, mkdtempSync, openSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
 function checkIsolation(config, identity, stage, historicalMigrations) {
@@ -54,17 +54,47 @@ function snapshotQuery(mysql) {
   return statements.join(';\n') + ';\n';
 }
 
-function captureRows(stage, mysql, name) {
-  const query = openSync(join(stage, 'snapshot.sql'), 'r');
+function withFile(path, flags, action) {
+  const fd = openSync(path, flags, 0o600);
   try {
-    const result = openSync(join(stage, name), 'wx', 0o600);
-    try {
-      mysql(null, { stdio: [query, result, 'pipe'] });
-    } finally {
-      closeSync(result);
-    }
+    return action(fd);
   } finally {
-    closeSync(query);
+    closeSync(fd);
+  }
+}
+
+function captureRows(stage, mysql, name) {
+  withFile(join(stage, 'snapshot.sql'), 'r', query =>
+    withFile(join(stage, name), 'wx', result => mysql(null, { stdio: [query, result, 'pipe'] })));
+}
+
+const fileStores = [['backend', '/data/zdm/craft-images'], ['ledger', '/data/store-exit-ledger']];
+const inStore = (path, command) => ['sh', '-ec', 'cd "$1"; ' + command, 'snapshot', path];
+
+function copyFiles(directory, stage, run, project) {
+  for (const [service, path] of fileStores) {
+    const source = (args, fd) => run(directory, 'docker', ['compose', 'exec', '-T', service, ...args],
+      { stdio: ['ignore', fd, 'pipe'] });
+    withFile(join(stage, service + '.sha256'), 'wx', fd =>
+      source(inStore(path, 'exec find . -type f -exec sha256sum {} +'), fd));
+    const archive = join(stage, service + '.tar');
+    withFile(archive, 'wx', fd => source(['tar', '-C', path, '-cf', '-', '.'], fd));
+    withFile(archive, 'r', fd =>
+      project(['run', '--rm', '--no-deps', '-T', '--entrypoint', 'tar', service, '-C', path, '-xf', '-'],
+        { stdio: [fd, 'ignore', 'pipe'] }));
+  }
+}
+
+function verifyFiles(stage, project) {
+  for (const [service, path] of fileStores) {
+    const manifest = join(stage, service + '.sha256');
+    if (!statSync(manifest).size) continue;
+    try {
+      withFile(manifest, 'r', fd => project(['exec', '-T', service, ...inStore(path, 'exec sha256sum -c -')],
+        { stdio: [fd, 'ignore', 'pipe'] }));
+    } catch (error) {
+      throw new Error('迁移演练未能确认原文件保持完整：' + service, { cause: error });
+    }
   }
 }
 
@@ -72,15 +102,15 @@ export function rehearseMigration(directory, revision, backup, config, run) {
   const stage = mkdtempSync(join(dirname(backup), 'migration-preflight-'));
   const identity = 'zdm_acceptance_check_' + randomBytes(6).toString('hex');
   const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !/^(COMPOSE_|ZDM_)/.test(key)));
-  const compose = (...args) => run(stage, 'docker', [
+  const project = (args, options = {}) => run(stage, 'docker', [
     'compose', '-p', identity, '--env-file', '.env', '-f', 'docker-compose.yml', '-f', 'preflight.yml', ...args,
-  ], { env });
-  const mysql = (query, options = {}) => run(stage, 'docker', [
-    'compose', '-p', identity, '--env-file', '.env', '-f', 'docker-compose.yml', '-f', 'preflight.yml',
+  ], { env, ...options });
+  const compose = (...args) => project(args);
+  const mysql = (query, options = {}) => project([
     'exec', '-T', 'mysql', 'sh', '-ec',
     'export MYSQL_PWD="$MYSQL_PASSWORD"; exec mysql --quick -N -B -u "$MYSQL_USER" "$MYSQL_DATABASE" "$@"',
     'mysql', ...(query ? ['-e', query] : []),
-  ], { env, ...options });
+  ], options);
 
   let created = false;
   try {
@@ -104,20 +134,18 @@ export function rehearseMigration(directory, revision, backup, config, run) {
     checkIsolation(isolated, identity, stage, historicalMigrations);
     created = true;
     compose('up', '-d', '--no-deps', '--wait', 'mysql');
-    const input = openSync(backup, 'r');
-    try {
-      mysql(null, { stdio: [input, 'pipe', 'pipe'] });
-    } finally {
-      closeSync(input);
-    }
+    withFile(backup, 'r', fd => mysql(null, { stdio: [fd, 'pipe', 'pipe'] }));
 
     writeFileSync(join(stage, 'snapshot.sql'), snapshotQuery(mysql), { mode: 0o600 });
     captureRows(stage, mysql, 'before.rows');
-    compose('up', '-d', '--no-deps', '--build', 'ledger', 'backend');
+    compose('build', 'ledger');
+    copyFiles(directory, stage, run, project);
+    compose('up', '-d', '--no-deps', 'ledger', 'backend');
     const health = compose('exec', '-T', 'backend', 'curl', '--fail', '--silent', '--show-error', '--max-time', '3',
       '--retry', '100', '--retry-delay', '2', '--retry-all-errors', 'http://127.0.0.1:8080/actuator/health');
     if (JSON.parse(health).status !== 'UP') throw new Error('迁移演练的候选后端未通过健康检查。');
     captureRows(stage, mysql, 'after.rows');
+    verifyFiles(stage, project);
     try {
       run(stage, 'cmp', ['-s', 'before.rows', 'after.rows']);
     } catch (error) {

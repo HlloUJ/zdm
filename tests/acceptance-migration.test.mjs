@@ -14,7 +14,7 @@ const named = (source, target) => ({ type: 'volume', source, target });
 const rawHex = value => Buffer.from(value).toString('hex').toUpperCase();
 
 // Model the Compose and SQL client boundaries. Real MySQL executes the same queries in the R4 rehearsal.
-function fixture(t, { imageAfter = 'kept.jpg', changeConfig = () => {}, healthy = true, failStart = false, failCleanup = false } = {}) {
+function fixture(t, { imageAfter = 'kept.jpg', changeConfig = () => {}, healthy = true, failStart = false, failCleanup = false, changedFile } = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'zdm-migration-contract-'));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   const backup = join(dir, 'original.sql');
@@ -26,6 +26,12 @@ function fixture(t, { imageAfter = 'kept.jpg', changeConfig = () => {}, healthy 
     if (program === 'git' || program === 'tar' || program === process.execPath) return '';
     if (program === 'cmp') return execFileSync(program, args, { cwd });
     assert.equal(program, 'docker');
+    if (cwd === dir) {
+      assert.deepEqual(args.slice(0, 3), ['compose', 'exec', '-T']);
+      const data = args.includes('tar') ? 'archive' : 'original checksum';
+      writeFileSync(options.stdio[1], data);
+      return '';
+    }
     stage = cwd;
     const identity = args[2];
     const command = args.slice(args.indexOf('preflight.yml') + 1);
@@ -49,11 +55,22 @@ function fixture(t, { imageAfter = 'kept.jpg', changeConfig = () => {}, healthy 
       if (candidateRunning && failStart) throw Error('candidate startup failed');
       return '';
     }
+    if (command[0] === 'build') return '';
+    if (command[0] === 'run') {
+      assert(command.includes('tar'));
+      assert.equal(readFileSync(options.stdio[0], 'utf8'), 'archive');
+      return '';
+    }
     if (command[0] === 'down') {
       if (failCleanup) throw Error('project still in use');
       return '';
     }
     assert.equal(command[0], 'exec');
+    if (command.includes('cd "$1"; exec sha256sum -c -')) {
+      assert.equal(readFileSync(options.stdio[0], 'utf8'), 'original checksum');
+      if (command[2] === changedFile) throw Error('checksum mismatch');
+      return '';
+    }
     if (command.includes('backend')) return JSON.stringify({ status: healthy ? 'UP' : 'DOWN' });
     assert(command.includes('mysql'));
     const query = command.includes('-e') ? command.at(-1) : readFileSync(options.stdio[0], 'utf8');
@@ -113,4 +130,12 @@ test('an interrupted migration preserves its source and retains the recovery dir
   assert.throws(occupied.rehearse, error => error.message.includes(occupied.stage) && error.cause?.message === 'project still in use');
   assert.equal(existsSync(occupied.stage), true);
   assert.equal(readFileSync(occupied.backup, 'utf8'), 'isolated fixture');
+});
+
+test('changing an original media or ledger file refuses the candidate even when all rows match', t => {
+  for (const service of ['backend', 'ledger']) {
+    const f = fixture(t, { changedFile: service });
+    assert.throws(f.rehearse, error => error.message.includes('原文件') && error.message.includes(service));
+    f.checkCleanup();
+  }
 });
