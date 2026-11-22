@@ -18,7 +18,8 @@
     "verify:delivery": "node dev/quality-entry.mjs delivery",
     "verify:assert-delivery": "node dev/quality-entry.mjs assert-delivery",
     "verify:main": "node dev/quality-entry.mjs main",
-    "verify:merge": "node dev/quality-entry.mjs merge"
+    "verify:merge": "node dev/quality-entry.mjs merge",
+    "task:timing": "node dev/task-timing.mjs"
   },
   "dependencies": {
     "@vant/area-data": "^2.1.0",
