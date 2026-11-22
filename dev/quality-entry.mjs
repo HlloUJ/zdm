@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const bootstrapBase = 'c4832a2b926f5be5911af6bd8dfbd733b829f96f';
+const bootstrapBase = '6323b344be7bf77683ef7a79985588e894139871';
 const contractCommit = '4fa0bf56ff4dcfe16d569a314d47a110a30d7b0e';
 const contractHash = 'c9fe13845d8ac5325a9424100d4006e10560090167d3e70969a38730874500e6';
 const self = fileURLToPath(import.meta.url);
