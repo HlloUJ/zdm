@@ -3,6 +3,7 @@ import { existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, renameSyn
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRuntime } from './acceptance-runtime.mjs';
+import { published } from './quality-entry.mjs';
 
 const mainRef = 'refs/remotes/origin/main';
 
@@ -17,7 +18,7 @@ function run(directory, program, args, options = {}) {
   return result.stdout?.trim() ?? '';
 }
 
-export function acceptance(cwd, command, argument, runtimeFactory = createRuntime) {
+export function acceptance(cwd, command, argument, runtimeFactory = createRuntime, checkDevelopment = directory => published(directory, ['dev'])) {
   const git = (...args) => run(cwd, 'git', args);
   const commonDir = realpathSync(git('rev-parse', '--path-format=absolute', '--git-common-dir'));
   const statePath = join(commonDir, 'zdm-acceptance.json');
@@ -51,6 +52,13 @@ export function acceptance(cwd, command, argument, runtimeFactory = createRuntim
     throw new Error('用法：node dev/acceptance.mjs init <运行目录> [当前验收分支] | publish | verify | sync | status | recover');
   }
   if (command === 'status') return current();
+  let validated;
+  if (command === 'publish') {
+    const taskGit = inRepo(cwd);
+    validated = taskGit('rev-parse', 'HEAD');
+    if (!taskGit('branch','--show-current') || taskGit('branch','--show-current') === 'main') throw Error('请在任务分支发布。');
+    checkDevelopment(cwd);
+  }
   try {
     mkdirSync(lockPath);
   } catch (error) {
@@ -106,6 +114,7 @@ export function acceptance(cwd, command, argument, runtimeFactory = createRuntim
     if (['publish', 'verify'].includes(command) && (!branch || branch === 'main')) {
       throw new Error('请在对应任务的独立分支工作目录中执行。');
     }
+    if (command === 'publish' && revision !== validated) throw Error('开发验证后任务版本发生变化。');
     if (command === 'verify') {
       if (!state.tasks.some((task) => task.branch === branch && task.revision === revision)) {
         throw new Error('当前任务提交与 5274 的待验收版本不同。');

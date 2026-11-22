@@ -6,13 +6,19 @@
   "scripts": {
     "env:init": "node dev/init-env.mjs",
     "dev": "vite --configLoader runner",
-    "build": "vue-tsc --noEmit && vite build --configLoader runner",
-    "test:unit": "vitest run",
-    "test:e2e": "playwright test",
+    "build": "node dev/quality-entry.mjs run build",
+    "test:unit": "node dev/quality-entry.mjs run unit",
+    "test:e2e": "node dev/quality-entry.mjs run e2e",
     "backend:dev": "docker compose up -d --build backend",
     "backend:logs": "docker compose logs --tail=100 backend",
-    "backend:test": "docker compose run --rm --no-deps backend-tools mvn -B --no-transfer-progress test",
-    "test:ledger": "node --test tests/store-exit-ledger.test.mjs"
+    "backend:test": "node dev/quality-entry.mjs run backend",
+    "test:ledger": "node dev/quality-entry.mjs run ledger",
+    "verify:plan": "node dev/quality-entry.mjs plan",
+    "verify:dev": "node dev/quality-entry.mjs dev",
+    "verify:delivery": "node dev/quality-entry.mjs delivery",
+    "verify:assert-delivery": "node dev/quality-entry.mjs assert-delivery",
+    "verify:main": "node dev/quality-entry.mjs main",
+    "verify:merge": "node dev/quality-entry.mjs merge"
   },
   "dependencies": {
     "@vant/area-data": "^2.1.0",
