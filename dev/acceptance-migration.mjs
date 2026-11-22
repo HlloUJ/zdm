@@ -1,9 +1,9 @@
 import { randomBytes } from 'node:crypto';
 import { closeSync, mkdtempSync, openSync, rmSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 
 export function rehearseMigration(directory, revision, backup, config, run) {
-  const stage = mkdtempSync(join(directory, '.private', 'migration-preflight-'));
+  const stage = mkdtempSync(join(dirname(backup), 'migration-preflight-'));
   const identity = 'zdm_acceptance_check_' + randomBytes(6).toString('hex');
   const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !/^(COMPOSE_|ZDM_)/.test(key)));
   const compose = (...args) => run(stage, 'docker', [
@@ -33,8 +33,8 @@ export function rehearseMigration(directory, revision, backup, config, run) {
     writeFileSync(join(stage, 'preflight.yml'), unbound + '\n');
     const isolated = JSON.parse(compose('config', '--format', 'json'));
     if (isolated.name !== identity || isolated.services.backend.ports?.length ||
-        Object.values(isolated.volumes).some((volume) => volume.external ||
-          !volume.name.startsWith(identity + '_'))) {
+        Object.values(isolated.volumes).some((volume) => volume.external || !volume.name.startsWith(identity + '_')) ||
+        Object.values(isolated.networks).some((network) => network.external || !network.name.startsWith(identity + '_'))) {
       throw new Error('迁移演练未能确认使用独立的临时数据库和媒体卷。');
     }
     created = true;
@@ -52,7 +52,7 @@ export function rehearseMigration(directory, revision, backup, config, run) {
     const before = mysql(countQuery);
     compose('up', '-d', '--build', 'backend');
     compose('exec', '-T', 'backend', 'curl', '--fail', '--silent', '--show-error', '--max-time', '3',
-      '--retry', '100', '--retry-delay', '2', '--retry-connrefused', 'http://127.0.0.1:8080/actuator/health');
+      '--retry', '100', '--retry-delay', '2', '--retry-all-errors', 'http://127.0.0.1:8080/actuator/health');
     const after = mysql(countQuery);
     if (before !== after) throw new Error('迁移演练发现已有数据表的记录数变化，暂未更新 5274。');
   } finally {

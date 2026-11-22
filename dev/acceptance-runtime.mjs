@@ -78,7 +78,7 @@ export function createRuntime(directory, run) {
   function probe(url, backend = false) {
     const body = run(directory, 'curl', [
       '--noproxy', '*', '--fail', '--silent', '--show-error', '--max-time', '3',
-      '--retry', '25', '--retry-delay', '2', '--retry-max-time', '55', '--retry-connrefused', url,
+      '--retry', '35', '--retry-delay', '2', '--retry-max-time', '75', '--retry-all-errors', url,
     ]);
     if (backend ? JSON.parse(body).status !== 'UP' : !body.includes('<div id="app">')) {
       throw new Error('5274 健康检查返回意外内容：' + url);
@@ -114,7 +114,8 @@ export function createRuntime(directory, run) {
   }
 
   function recordBackup() {
-    const backups = join(privateDir, 'migration-backups');
+    const gitCommon = git('rev-parse', '--path-format=absolute', '--git-common-dir');
+    const backups = join(gitCommon, 'zdm-acceptance-data');
     mkdirSync(backups, { recursive: true, mode: 0o700 });
     const dump = join(backups, new Date().toISOString().replaceAll(':', '-') + '.sql');
     const output = openSync(dump + '.partial', 'wx', 0o600);

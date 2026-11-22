@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, realpathSync, renameSync, rmdirSync, writeFileSync } from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, renameSync, rmdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRuntime } from './acceptance-runtime.mjs';
@@ -28,12 +28,16 @@ export function acceptance(cwd, command, argument, runtimeFactory = createRuntim
     if (result.status === 0 || result.status === 1) return result.status === 0;
     throw result.error ?? new Error(result.stderr || '无法核对 Git 提交关系。');
   };
-  const inRepo = (directory) => {
+  const inRepo = (directory, runtime = false) => {
     const taskGit = (...args) => run(directory, 'git', args);
     if (realpathSync(taskGit('rev-parse', '--path-format=absolute', '--git-common-dir')) !== commonDir) {
       throw new Error('工作目录属于其他仓库。');
     }
-    if (taskGit('status', '--porcelain')) throw new Error('请先保存当前任务完整的本地 checkpoint。');
+    const status = taskGit('status', '--porcelain');
+    const deps = join(directory, 'node_modules');
+    const managedLink = runtime && status === '?? node_modules' && lstatSync(deps).isSymbolicLink() &&
+      realpathSync(deps).startsWith(join(directory, '.private', 'frontend-dependencies') + '/');
+    if (status && !managedLink) throw new Error('工作目录存在未保存改动：' + directory);
     return taskGit;
   };
   const current = () => JSON.parse(readFileSync(statePath, 'utf8'));
@@ -60,7 +64,7 @@ export function acceptance(cwd, command, argument, runtimeFactory = createRuntim
       if (existsSync(statePath)) throw new Error('5274 已初始化。');
       const [runtimePath, seed] = argument;
       const directory = realpathSync(runtimePath);
-      const runtimeGit = inRepo(directory);
+      const runtimeGit = inRepo(directory, true);
       if (runtimeGit('branch', '--show-current')) throw new Error('5274 运行目录必须采用分离 HEAD。');
       const revision = runtimeGit('rev-parse', 'HEAD');
       const main = resolve(mainRef);
@@ -76,7 +80,7 @@ export function acceptance(cwd, command, argument, runtimeFactory = createRuntim
 
     if (!existsSync(statePath)) throw new Error('5274 尚未初始化。');
     state = current();
-    const runtimeGit = inRepo(state.directory);
+    const runtimeGit = inRepo(state.directory, true);
     if (runtimeGit('branch', '--show-current')) throw new Error('5274 运行目录意外切换到了开发分支。');
     const changedPaths = (from, to) => git('diff', '--no-renames', '--name-only', '-z', from, to).split('\0').filter(Boolean);
     const active = runtimeGit('rev-parse', 'HEAD');

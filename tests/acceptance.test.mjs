@@ -91,7 +91,7 @@ test('conflicts, shared task history, dirty snapshots and failed deploy retain t
   const b = f.task('task-b');
   f.commit(b, 'b.txt', 'B');
   writeFileSync(join(b, 'new-file.txt'), 'unfinished');
-  assert.throws(() => f.command(b, 'publish'), /checkpoint/);
+  assert.throws(() => f.command(b, 'publish'), /未保存改动/);
   rmSync(join(b, 'new-file.txt'));
   f.rejectNext();
   assert.throws(() => f.command(b, 'publish'), /已恢复上一个验收版本/);
