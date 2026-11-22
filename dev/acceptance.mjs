@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRuntime } from './acceptance-runtime.mjs';
 import { published } from './quality-entry.mjs';
+import { contextVariable, measured, observe, observer, ready } from './quality/timing-events.mjs';
 
 const mainRef = 'refs/remotes/origin/main';
 
@@ -18,7 +19,23 @@ function run(directory, program, args, options = {}) {
   return result.stdout?.trim() ?? '';
 }
 
-export function acceptance(cwd, command, argument, runtimeFactory = createRuntime, checkDevelopment = directory => published(directory, ['dev'])) {
+export function acceptance(cwd, command, argument, ...adapters) {
+  const execute = () => runAcceptance(cwd, command, argument, ...adapters);
+  if (!process.env[contextVariable] || !['publish', 'sync', 'verify', 'recover'].includes(command)) return execute();
+  const ctx = observe(() => observer(realpathSync(run(cwd, 'git', ['rev-parse', '--path-format=absolute', '--git-common-dir'])), cwd));
+  const source = ctx && command === 'publish' ? observe(() => ({
+    branch: run(cwd, 'git', ['branch', '--show-current']),
+    revision: run(cwd, 'git', ['rev-parse', 'HEAD']),
+  }), ctx, '5274 publish') : {};
+  return measured(ctx, command === 'publish' ? 'publish' : 'handoff', execute, (state, id) => {
+    if (command !== 'publish') return;
+    const branch = run(cwd, 'git', ['branch', '--show-current']);
+    const task = state.tasks.find(item => item.branch === branch);
+    if (task) ready(ctx, 'ready', task.revision, id);
+  }, source || {});
+}
+
+function runAcceptance(cwd, command, argument, runtimeFactory = createRuntime, checkDevelopment = directory => published(directory, ['dev'])) {
   const git = (...args) => run(cwd, 'git', args);
   const commonDir = realpathSync(git('rev-parse', '--path-format=absolute', '--git-common-dir'));
   const statePath = join(commonDir, 'zdm-acceptance.json');

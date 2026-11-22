@@ -16,7 +16,8 @@ export const checks = {
   quality: {
     family: 'node',
     command: nodeTest('tests/quality*.test.mjs'),
-    inputs: (p) => governance.test(p) || acceptance.test(p) || npmInput.test(p),
+    inputs: (p) => governance.test(p) || acceptance.test(p) || npmInput.test(p) ||
+      p.startsWith('dev/task-timing/') || p === 'dev/task-timing.mjs',
   },
   acceptance: {
     family: 'node',

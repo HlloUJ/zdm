@@ -7,6 +7,7 @@ import { inputReader, fileDigest } from './quality/inputs.mjs';
 import { EvidenceStore, runId } from './quality/store.mjs';
 import { nativeCommands, launch, runCheck } from './quality/commands.mjs';
 import { exportEvidence, loadPriorEvidence, mergeVerified } from './quality/remote.mjs';
+import { event, finish, observe, observer, ready } from './quality/timing-events.mjs';
 
 function verifyReport(store, snap, phase) {
   const report = store.report(phase, snap);
@@ -60,9 +61,19 @@ function validate(snap, phase, options, rawId, args = []) {
     pending: [...selected],
   };
   store.save(report);
+  const timing = observer(snap.common, snap.cwd);
+  const timingRun = 'quality:' + run;
+  const timingFields = { ref: run, revision: snap.head, tree: snap.tree, risk: report.risk, scope: selected, phase };
+  function record(operation) {
+    if (timing) observe(operation, timing, run);
+  }
+  record(() => event(timing, 'start', timingRun, 'validation', { ...timingFields, at: report.startedAt }));
+  let activeCheck;
   const prior = phase === 'main' ? loadPriorEvidence(snap) : null;
   try {
     for (const id of selected) {
+      activeCheck = timingRun + ':' + id;
+      record(() => event(timing, 'start', activeCheck, 'validation', { ...timingFields, check: id }));
       const checkArgs = rawId ? args : [];
       const input = readInput(id, checkArgs);
       const cached = input.reusable && !rawId ? store.cached(input) : null;
@@ -121,6 +132,8 @@ function validate(snap, phase, options, rawId, args = []) {
         }
       }
       if (rawId) process.stdout.write(readFileSync(row.log));
+      record(() => finish(timing, activeCheck, row.status, { ref: run, check: id, sourceRun: row.sourceRun }));
+      activeCheck = null;
       report.results.push(row);
       report.pending.shift();
       store.save(report);
@@ -139,6 +152,9 @@ function validate(snap, phase, options, rawId, args = []) {
     prior?.close();
     report.durationMs = Date.now() - report.startedAt;
     store.save(report);
+    if (activeCheck) record(() => finish(timing, activeCheck, 'failed', { ref: run }));
+    record(() => finish(timing, timingRun, report.status, { ref: run }));
+    if (phase === 'dev' && report.status === 'passed') record(() => ready(timing, 'verified', snap.head, run));
     if (options.exportDir) exportEvidence(snap, store, report, options.exportDir);
   }
   return report;
