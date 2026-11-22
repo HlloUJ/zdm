@@ -19,12 +19,23 @@ npm run dev
 git worktree add -b feature/example ../zdm-example main
 cd ../zdm-example
 npm ci
-npm run env:init -- 5274 8281
+npm run env:init -- 5276 8283
 npm run backend:dev
 npm run dev
 ```
 
 各分支经普通 Git 提交和 PR 合入 main。前端用 Ctrl-C 停止，后端用 `docker compose down` 停止并保留数据。门店退出记录使用与业务库同一作用域的鉴权和独立持久卷。恢复既有数据库时，应由数据所有者配套核对该环境的媒体和独立退出记录。
+
+## 业务任务统一验收（5274）
+
+[5274](http://127.0.0.1:5274/login) 运行最新已同步的 `origin/main` 和仍待验收的业务版本。并行任务继续使用各自的开发分支与工作目录。5274 使用固定验收工作目录和现有验收库、媒体及门店退出记录卷。
+
+- 开发完成和返工复验时，执行者在该任务目录保存完整本地 checkpoint，然后运行 `node "$(git rev-parse --path-format=absolute --git-common-dir)/../dev/acceptance.mjs" publish`。成功后把 5274 链接和任务版本交给用户验收。出现冲突时，5274 继续展示上一次成功的组合。
+- 用户对某项任务发出「任务完成」后，在其任务目录用同一命令将 `publish` 改为 `verify`，核对该任务的验收版本。按普通 Git/PR 流程从该任务分支独立交付。组合版本只在本机验收目录使用。
+- 合并后在主线目录同步远程主线，运行 `node dev/acceptance.mjs sync`。这一步只移除真实进入 `origin/main` 历史的任务版本，其他版本继续参与验收。若交付中因主线同步产生技术合并提交，仍以实际验收提交进入主线历史为准。
+- 主线目录运行 `node dev/acceptance.mjs status` 可查看上次成功的组合。部署中断且留下 `pending` 时，核实旧执行进程已退出后用 `recover` 恢复上次组合；异常退出留下的 `zdm-acceptance.lock` 空目录在确认无执行者后可移除。运行目录和验收库继续保留。
+
+已有 5274 的迁移需将前后端绑定到专用的分离 HEAD 工作目录，同时延用原 Compose 配置的数据库身份和外部持久卷，并在该目录的 `.private/acceptance-runtime.json` 登记底层项目、数据库和卷名。待前端与后端健康后，在主线运行 `node dev/acceptance.mjs init <验收目录> [当前验收分支]`，然后运行 `sync` 完成首次组合。脚本不会重新初始化、删除或切换验收卷。发现已有 Flyway 迁移文件发生变更时暂停预览更新以保护现有库；新增迁移在更新前会保留 SQL 备份，并在隔离副本上启动候选版本，核对已有表记录数。
 
 ## 构建与业务测试
 
