@@ -37,7 +37,7 @@ function fixture(t) {
       }
     },
   });
-  const command = (path, operation, ...args) => acceptance(path, operation, args, runtimeFactory);
+  const command = (path, operation, ...args) => acceptance(path, operation, args, runtimeFactory, () => {});
   command(main, 'init', preview);
   function task(branch, base = 'refs/remotes/origin/main') {
     const path = join(directory, branch);
@@ -45,7 +45,7 @@ function fixture(t) {
     return path;
   }
   return {
-    main, preview, command, git, commit, updateMain, task, rejectNext() { rejectNextVersion = true; },
+    main, preview, command, git, commit, updateMain, task, runtimeFactory, rejectNext() { rejectNextVersion = true; },
   };
 }
 
@@ -97,4 +97,16 @@ test('conflicts, shared task history, dirty snapshots and failed deploy retain t
   assert.throws(() => f.command(b, 'publish'), /已恢复上一个验收版本/);
   assert.deepEqual(f.command(f.main, 'status'), lastGood);
   assert.equal(f.git(f.preview, 'rev-parse', 'HEAD'), lastGood.revision);
+});
+
+
+test('a failed development gate keeps the published revision and does not acquire the preview lock', t => {
+  const f = fixture(t);
+  const a = f.task('business-check');
+  f.commit(a, 'feature.txt', 'candidate');
+  const previous = f.command(f.main, 'status');
+  assert.throws(() => acceptance(a, 'publish', [], f.runtimeFactory, () => { throw Error('development evidence missing'); }), /evidence missing/);
+  assert.deepEqual(f.command(f.main, 'status'), previous);
+  assert.equal(f.git(f.preview,'rev-parse','HEAD'), previous.revision);
+  assert.equal(f.command(a,'publish').tasks.length, 1);
 });

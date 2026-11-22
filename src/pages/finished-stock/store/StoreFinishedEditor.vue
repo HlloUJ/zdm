@@ -306,7 +306,9 @@ function editorColumns(columns: PrimaryTableCol[]): PrimaryTableCol[] {
             '商品售价',
           ]),
       };
-    return column;
+    // TDesign treats a string title matching a cell slot as a header slot, which has no row.
+    const { title } = column;
+    return typeof title === 'string' ? { ...column, title: () => title } : column;
   });
 }
 const readonlyPrice = (value: unknown) => (value == null || value === '—' ? '' : Number(value).toFixed(2));

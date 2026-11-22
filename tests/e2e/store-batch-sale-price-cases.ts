@@ -82,6 +82,9 @@ export function registerStoreBatchSalePriceTests(
     page,
   }) => {
     const { main, drawer, writes, price } = await open(page);
+    const table = main.locator('.spec-table-block');
+    await expect(table.getByRole('columnheader', { name: 'color', exact: true })).toBeVisible();
+    await expect(table.getByRole('columnheader', { name: 'sizeValue', exact: true })).toBeVisible();
     expect(
       await main.getByRole('button', { name: '批量填写', exact: true }).evaluate((button) => {
         const table = button.closest('.spec-table-block')!.querySelector('.t-table')!;
