@@ -24,11 +24,13 @@ npm run backend:dev
 npm run dev
 ```
 
-各分支经普通 Git 提交和 PR 合入 main。前端用 Ctrl-C 停止，后端用 `docker compose down` 停止并保留数据。门店退出记录使用与业务库同一作用域的鉴权和独立持久卷。恢复既有数据库时，应由数据所有者配套核对该环境的媒体和独立退出记录。
+各分支经普通 Git 提交和 PR 合入 main。前端用 Ctrl-C 停止，临时停用后端可用 `docker compose stop` 保留容器。`docker compose down` 会移除容器和其中的可写层。运行 `down` 或任何可能重建容器的命令前，按[任务环境清理流程](docs/task-completion-cleanup.md)核对受影响容器的归属、可写层和挂载，先保全唯一资料。门店退出记录使用与业务库同一作用域的鉴权和独立持久卷。恢复既有数据库时，应由数据所有者配套核对该环境的媒体和独立退出记录。
 
 ## 业务任务统一验收（5274）
 
 [5274](http://127.0.0.1:5274/login) 运行最新已同步的 `origin/main` 和仍待验收的业务版本。并行任务继续使用各自的开发分支与工作目录。5274 使用固定验收工作目录和现有验收库、媒体及门店退出记录卷。
+
+`publish`、`sync` 或 `recover` 涉及容器重建时，执行前先按[任务环境清理流程](docs/task-completion-cleanup.md)核对受影响容器并保全唯一资料。归属或恢复来源待核实时保留原容器。
 
 - 开发完成和返工复验时，执行者在该任务目录保存完整本地 checkpoint，然后运行 `node "$(git rev-parse --path-format=absolute --git-common-dir)/../dev/acceptance.mjs" publish`。成功后把 5274 链接和任务版本交给用户验收。出现冲突时，5274 继续展示上一次成功的组合。
 - 用户对某项任务发出「任务完成」后，在其任务目录用同一命令将 `publish` 改为 `verify`，核对该任务的验收版本。按普通 Git/PR 流程从该任务分支独立交付。组合版本只在本机验收目录使用。
