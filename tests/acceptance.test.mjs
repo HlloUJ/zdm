@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, rmdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -109,4 +109,80 @@ test('a failed development gate keeps the published revision and does not acquir
   assert.deepEqual(f.command(f.main, 'status'), previous);
   assert.equal(f.git(f.preview,'rev-parse','HEAD'), previous.revision);
   assert.equal(f.command(a,'publish').tasks.length, 1);
+});
+
+// Run a second publisher in its own process so it competes for the real Git-common lock.
+function publishInChild(directory, interrupt = false) {
+  const entry = new URL('../dev/acceptance.mjs', import.meta.url).href;
+  const script = [
+    'import { acceptance } from ' + JSON.stringify(entry) + ';',
+    'const runtime = () => ({prepare() {}, check() {}, reload() {' +
+      (interrupt ? 'process.exit(73);' : '') + '}});',
+    "try { acceptance(process.cwd(), 'publish', [], runtime, () => {}); }",
+    'catch (error) { console.error(error.message); process.exitCode = 1; }',
+  ].join('\n');
+  return spawnSync(process.execPath, ['--input-type=module', '-e', script], { cwd: directory, encoding: 'utf8' });
+}
+
+test('competing publishers retry in order and repeated publication keeps the exact revision', t => {
+  const f = fixture(t);
+  const a = f.task('task-a');
+  const b = f.task('task-b');
+  const aHead = f.commit(a, 'a.txt', 'A');
+  const bHead = f.commit(b, 'b.txt', 'B');
+  const previous = f.command(f.main, 'status');
+  const first = acceptance(b, 'publish', [], () => ({
+    ...f.runtimeFactory(),
+    prepare() {
+      const attempt = publishInChild(a);
+      assert.equal(attempt.status, 1);
+      assert.match(attempt.stderr, /5274 正在更新/);
+      assert.deepEqual(f.command(f.main, 'status'), previous);
+    },
+  }), () => {});
+  assert.deepEqual(first.tasks, [{ branch: 'task-b', revision: bHead }]);
+  const both = f.command(a, 'publish');
+  assert.deepEqual(both.tasks, [...first.tasks, { branch: 'task-a', revision: aHead }]);
+  assert.deepEqual(f.command(b, 'publish'), both);
+  assert.equal(readFileSync(join(f.preview, 'b.txt'), 'utf8'), 'B');
+  assert.equal(readFileSync(join(f.preview, 'a.txt'), 'utf8'), 'A');
+});
+
+test('changing a validated head requires fresh development evidence', t => {
+  const f = fixture(t);
+  const a = f.task('task-a');
+  f.commit(a, 'a.txt', 'validated');
+  const previous = f.command(f.main, 'status');
+  assert.throws(() => acceptance(a, 'publish', [], f.runtimeFactory,
+    () => f.commit(a, 'a.txt', 'new revision')), /开发验证后任务版本发生变化/);
+  assert.deepEqual(f.command(f.main, 'status'), previous);
+  assert.equal(f.git(f.preview, 'rev-parse', 'HEAD'), previous.revision);
+  assert.equal(f.command(a, 'publish').tasks[0].revision, f.git(a, 'rev-parse', 'HEAD'));
+});
+
+test('an interrupted switch can only recover a known head and preserves earlier tasks', t => {
+  const f = fixture(t);
+  const a = f.task('task-a');
+  const b = f.task('task-b');
+  f.commit(a, 'a.txt', 'A');
+  const lastGood = f.command(a, 'publish');
+  f.commit(b, 'b.txt', 'B');
+  const interrupted = publishInChild(b, true);
+  assert.equal(interrupted.status, 73, interrupted.stderr);
+  const journal = f.command(f.main, 'status');
+  assert.deepEqual(journal, { ...lastGood, pending: f.git(f.preview, 'rev-parse', 'HEAD') });
+  assert.notEqual(journal.pending, lastGood.revision);
+  assert.throws(() => f.command(f.main, 'recover'), /正在更新/);
+  // The child has exited. Release only this fixture's documented stale lock.
+  rmdirSync(join(f.main, '.git', 'zdm-acceptance.lock'));
+  assert.throws(() => f.command(b, 'publish'), /先核对现场/);
+  f.git(f.preview, 'switch', '--detach', 'main');
+  assert.throws(() => f.command(f.main, 'recover'), /先核对现场/);
+  assert.deepEqual(f.command(f.main, 'status'), journal);
+  f.git(f.preview, 'switch', '--detach', journal.pending);
+  assert.deepEqual(f.command(f.main, 'recover'), lastGood);
+  assert.deepEqual(f.command(f.main, 'recover'), lastGood);
+  assert.equal(f.command(a, 'verify').preview, lastGood.revision);
+  assert.throws(() => f.command(b, 'verify'), /待验收版本不同/);
+  assert.equal(f.command(b, 'publish').tasks.length, 2);
 });
