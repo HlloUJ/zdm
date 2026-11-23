@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileDigest } from './inputs.mjs';
 import { git, inspect, planTree } from './repository.mjs';
+import { bindSummary, readSummary } from './assessment-summary.mjs';
 import { checks } from './policy.mjs';
 
 const workflow = 'verification.yml';
@@ -111,6 +112,7 @@ export function verifyArchivedReport(report, { run, repo, number, head, base, tr
   )
     throw Error('PR 证据的仓库、候选、主线或合并树不一致。');
   if (
+    (expected.summary && report.summaryFingerprint !== expected.summary.fingerprint) ||
     report.planId !== expected.planId ||
     report.policy !== expected.policy ||
     report.risk !== expected.plan.risk ||
@@ -124,6 +126,7 @@ export function verifyArchivedReport(report, { run, repo, number, head, base, tr
     if (
       !Object.hasOwn(checks, id) ||
       !row ||
+      JSON.stringify(row.args || []) !== JSON.stringify(expected.plan.scopes?.[id] || []) ||
       !['passed', 'reused'].includes(row.status) ||
       fileDigest(join(dir, id + '.log')) !== row.logDigest
     )
@@ -131,6 +134,18 @@ export function verifyArchivedReport(report, { run, repo, number, head, base, tr
   }
 }
 
+export function mainPullRequest(snap) {
+  if (process.env.GITHUB_ACTIONS !== 'true' || process.env.GITHUB_EVENT_NAME !== 'push' ||
+      process.env.GITHUB_REF !== 'refs/heads/main' || process.env.GITHUB_SHA !== snap.head) return null;
+  try {
+    const repo=origin(snap.cwd);
+    if (repo!==process.env.GITHUB_REPOSITORY) return null;
+    const parents=git(snap.cwd,['show','-s','--format=%P',snap.head]).trim().split(' ');
+    const prs=JSON.parse(gh(snap.cwd,'api','repos/'+repo+'/commits/'+snap.head+'/pulls'));
+    return prs.find(p=>p.merged_at && p.base.ref==='main' && p.merge_commit_sha===snap.head &&
+      p.head.repo?.full_name===repo && parents.length===2 && parents[0]===snap.base && p.head.sha===parents[1]) || null;
+  } catch { return null; }
+}
 export function loadPriorEvidence(snap) {
   if (
     process.env.GITHUB_ACTIONS !== 'true' ||
@@ -191,6 +206,21 @@ export function loadPriorEvidence(snap) {
     return null;
   }
 }
+export function reviewPullRequest(cwd,number) {
+  const repo=origin(cwd);
+  const pr=JSON.parse(gh(cwd,'pr','view',number,'--repo',repo,'--json','number,headRefOid,baseRefOid,baseRefName,body,isCrossRepository,state,statusCheckRollup'));
+  const base=git(cwd,['rev-parse','refs/remotes/origin/main']).trim();
+  const head=git(cwd,['rev-parse','HEAD']).trim();
+  if(pr.isCrossRepository || pr.baseRefName!=='main' || pr.state!=='OPEN' || pr.headRefOid!==head || pr.baseRefOid!==base)
+    throw Error('请更新当前工作树的目标主线与准确 PR 候选后接收复核');
+  const tree=git(cwd,['merge-tree','--write-tree',base,head]).trim();
+  const raw={...planTree(cwd,base,base,tree),cwd,base,head,tree,from:base};
+  const snap=bindSummary(raw,readSummary(pr.body,{base,candidate:head,policy:raw.policy}));
+  const successful=pr.statusCheckRollup.some(c=>c.name===gate && c.conclusion==='SUCCESS');
+  const evidence=successful ? prEvidence(cwd,repo,pr.number,head,base,tree,snap) : null;
+  evidence?.close();
+  return {number:pr.number,head,snap,verification:evidence?'PR CI':'已发布规则按远端组合复算'};
+}
 export function mergeVerified(cwd, args, verifyLocal) {
   if (args.length !== 1 || !/^\d+$/.test(args[0]))
     throw Error('用法：npm run verify:merge -- <PR 编号>');
@@ -205,7 +235,7 @@ export function mergeVerified(cwd, args, verifyLocal) {
       '--repo',
       repo,
       '--json',
-      'baseRefName,headRefOid,isCrossRepository,state,isDraft,statusCheckRollup',
+      'body,baseRefName,headRefOid,isCrossRepository,state,isDraft,statusCheckRollup',
     ),
   );
   if (
@@ -233,6 +263,9 @@ export function mergeVerified(cwd, args, verifyLocal) {
   const remoteGate = checksList.some(
     (item) => item.name === gate && item.status === 'COMPLETED' && item.conclusion === 'SUCCESS',
   );
+  const expected = planTree(cwd, remote, remote, tree);
+  const summary=readSummary(pr.body,{base:remote,candidate:pr.headRefOid,policy:expected.policy});
+  const bound=bindSummary(expected,summary);
   let evidence;
   if (remoteGate)
     evidence = prEvidence(
@@ -242,10 +275,14 @@ export function mergeVerified(cwd, args, verifyLocal) {
       pr.headRefOid,
       remote,
       tree,
-      planTree(cwd, remote, remote, tree),
+      bound,
     );
   if (evidence) evidence.close();
-  else verifyLocal(inspect(cwd, 'refs/remotes/origin/main', 'assert-delivery'));
+  else verifyLocal(bindSummary(inspect(cwd, 'refs/remotes/origin/main', 'assert-delivery'),summary));
+  const current=JSON.parse(gh(cwd,'pr','view',args[0],'--repo',repo,'--json','body,headRefOid,baseRefOid'));
+  if (current.baseRefOid!==remote || current.headRefOid!==pr.headRefOid ||
+      readSummary(current.body,{base:remote,candidate:pr.headRefOid,policy:expected.policy}).fingerprint!==summary.fingerprint)
+    throw Error('正式合并前任务摘要、主线或候选已更新，请重算并验证');
   gh(cwd, 'pr', 'merge', args[0], '--repo', repo, '--merge', '--match-head-commit', pr.headRefOid);
   return { pr: number, head: pr.headRefOid, base: remote, verification: evidence ? 'PR CI' : 'local' };
 }

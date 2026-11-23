@@ -10,7 +10,7 @@ import {
   realpathSync,
 } from 'node:fs';
 import { arch, platform, release } from 'node:os';
-import { dirname, basename, join, relative } from 'node:path';
+import { dirname, basename, join, relative, posix } from 'node:path';
 import { parseEnv } from 'node:util';
 import { checks } from './policy.mjs';
 import { checkedCommand, digest } from './repository.mjs';
@@ -178,13 +178,40 @@ function environment(cwd, family) {
     platform: [platform(), arch(), process.version].join('/'),
   };
 }
+// Other spec files can be excluded when the selected suite has statically resolvable imports.
+function scopedTestFiles(snapshot, id, args) {
+  if (!['e2e','unit'].includes(id) || !args.length) return null;
+  const files=new Set(snapshot.blobs.map(([p])=>p));
+  const visited=new Set(), queue=[...args];
+  if (queue.some(p=>!files.has(p) || !/\.(?:spec|test)\.[jt]sx?$/.test(p))) return null;
+  while(queue.length) {
+    const path=queue.pop();
+    if(visited.has(path)) continue;
+    visited.add(path);
+    const src=readFileSync(join(snapshot.cwd,path),'utf8');
+    if(/\b(?:import|require)\s*\(\s*[^'"]/.test(src)) return null;
+    for(const m of src.matchAll(/(?:\bfrom\s*|\bimport\s*|\b(?:require|import)\s*\(\s*)['"]([^'"]+)['"]/g)) {
+      const spec=m[1];
+      if(!spec.startsWith('.') && !spec.startsWith('@/')) continue;
+      const base=spec.startsWith('@/') ? 'src/'+spec.slice(2) : posix.join(posix.dirname(path),spec);
+      const resolved=[base,...['.ts','.tsx','.js','.vue','/index.ts','/index.js'].map(e=>base+e)].find(p=>files.has(p));
+      if(!resolved) return null;
+      if(/\.(?:[jt]sx?|vue)$/.test(resolved)) queue.push(resolved);
+    }
+  }
+  return visited;
+}
 export function inputReader(snapshot) {
   const contexts = new Map();
   return (id, args = []) => {
     const check = checks[id];
     if (!contexts.has(check.family)) contexts.set(check.family, environment(snapshot.cwd, check.family));
     const env = contexts.get(check.family);
-    const paths = snapshot.blobs.filter(([path]) => check.inputs(path) || !knownDomain(path));
+    const scoped=scopedTestFiles(snapshot,id,args);
+    const paths = snapshot.blobs.filter(([path]) => {
+      if (scoped && /\.(?:spec|test)\.[jt]sx?$/.test(path)) return scoped.has(path);
+      return check.inputs(path) || !knownDomain(path);
+    });
     let source = digest(JSON.stringify(paths));
     if (id === 'diff' || id === 'docs') source = digest(JSON.stringify([snapshot.from, snapshot.tree]));
     const fingerprint = digest(JSON.stringify([id, args, snapshot.policy, source, env.identity]));

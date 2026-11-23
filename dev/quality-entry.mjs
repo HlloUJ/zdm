@@ -8,6 +8,9 @@ import { fileURLToPath } from 'node:url';
 const bootstrapBase = '6323b344be7bf77683ef7a79985588e894139871';
 const contractCommit = '4fa0bf56ff4dcfe16d569a314d47a110a30d7b0e';
 const contractHash = 'c9fe13845d8ac5325a9424100d4006e10560090167d3e70969a38730874500e6';
+// While V1.2 is under acceptance, every normal entry still runs the last approved V1.1 implementation.
+const priorQuality = '78401d2697dcfd52d1566b3364dd9937605504a3';
+const releasePath = 'dev/quality/release.mjs';
 const self = fileURLToPath(import.meta.url);
 const git = (cwd, args) => execFileSync('git', args, { cwd, stdio: ['ignore', 'pipe', 'pipe'] });
 function node(cwd, file, args, env = process.env) {
@@ -48,6 +51,7 @@ export function published(cwd, args, authority) {
       'dev/quality-entry.mjs',
       'dev/quality',
       'tests/quality-contract.test.mjs',
+      'tests/quality-assessment-contract.test.mjs',
     ])
       .toString()
       .split('\0')
@@ -74,7 +78,7 @@ export function published(cwd, args, authority) {
     }
     for (const file of files) {
       if (
-        !/^(dev\/quality(?:-entry)?\.mjs|dev\/quality\/[\w-]+\.mjs|tests\/quality-contract\.test\.mjs)$/.test(
+        !/^(dev\/quality(?:-entry)?\.mjs|dev\/quality\/[\w-]+\.mjs|tests\/quality(?:-assessment)?-contract\.test\.mjs)$/.test(
           file,
         )
       )
@@ -93,6 +97,7 @@ export function published(cwd, args, authority) {
       'dev/quality-entry.mjs',
       'dev/quality',
       'tests/quality-contract.test.mjs',
+      'tests/quality-assessment-contract.test.mjs',
       '.github/workflows/verification.yml',
     ])
       .toString()
@@ -102,10 +107,16 @@ export function published(cwd, args, authority) {
       delete env.NODE_TEST_CONTEXT;
       const tested = spawnSync(
         process.execPath,
-        ['--test', join(path, 'tests/quality-contract.test.mjs')],
+        ['--test', ...files.filter(f=>f.startsWith('tests/')).map(f=>join(path,f))],
         { cwd, env, stdio: ['ignore', 2, 2] },
       );
       if (tested.error || tested.status !== 0) throw Error('已发布基准拒绝新的验证器。');
+    }
+    if (files.includes(releasePath) && git(cwd,['show',target+':'+releasePath]).toString().trim() !== 'export const active = true;') {
+      if (args[0] === 'assess') throw Error('V1.2 尚在验收或已回退，开工和验证沿用已发布标准。');
+      const legacy=join(path,'published-v11.mjs');
+      writeFileSync(legacy,git(cwd,['show',priorQuality+':dev/quality-entry.mjs']));
+      return node(cwd,legacy,['--authority',priorQuality,...args]);
     }
     return node(cwd, join(path, 'dev/quality.mjs'), args);
   } finally {

@@ -5,6 +5,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { acceptance } from '../dev/acceptance.mjs';
+import { updateAssessment } from '../dev/quality/assessment-store.mjs';
+import { fileDigest } from '../dev/quality/inputs.mjs';
+import { EvidenceStore, runId } from '../dev/quality/store.mjs';
 
 function fixture(t) {
   const directory = mkdtempSync(join(tmpdir(), 'zdm-acceptance-'));
@@ -185,4 +188,64 @@ test('an interrupted switch can only recover a known head and preserves earlier 
   assert.equal(f.command(a, 'verify').preview, lastGood.revision);
   assert.throws(() => f.command(b, 'verify'), /待验收版本不同/);
   assert.equal(f.command(b, 'publish').tasks.length, 2);
+});
+
+
+function reviewedPreview(f, workspace) {
+  const common = f.git(workspace, 'rev-parse', '--path-format=absolute', '--git-common-dir');
+  const base = f.git(workspace, 'rev-parse', 'refs/remotes/origin/main');
+  const branch = f.git(workspace, 'branch', '--show-current');
+  const id = 'ref:preview-test';
+  const update = (kind, expected) => updateAssessment({ common, workspace, branch, base }, id, 'start', {
+    kind, expected, event: kind, thread: 'test-thread', name: '验收版本并发复核', source: '用户交办',
+    references: ['统一标准第七节'], before: '原验收版本', after: '已验证的新修订', consumers: ['5274'],
+    data: '无业务写入', behaviors: ['control'], reason: '发布过程中仍需绑定原始验证',
+  });
+  const revision = update('start', 0).revision;
+  const assessments = [{ id, revision }];
+  const tree = f.git(workspace, 'rev-parse', 'HEAD^{tree}');
+  const head = f.git(workspace, 'rev-parse', 'HEAD');
+  const store = new EvidenceStore(common);
+  const run = runId();
+  const log = store.log(run, 'diff');
+  writeFileSync(log, 'verified source tree');
+  const results = [{ id: 'diff', sourceRun: run, log, logDigest: fileDigest(log), status: 'passed' }];
+  const evidence = { tree, base, planId: 'preview-test-plan', assessments, run };
+  store.save({ ...evidence, head, phase: 'dev', standard: 'V1.2', status: 'passed', planned: ['diff'], pending: [], results });
+  return { evidence, log, update };
+}
+
+test('a revision change during the 5274 reload restores the previous healthy publication', t => {
+  const f = fixture(t);
+  const task = f.task('task-publish');
+  f.commit(task, 'interface.txt', 'old');
+  const lastGood = f.command(task, 'publish');
+  f.commit(task, 'interface.txt', 'new');
+  const reviewed = reviewedPreview(f, task);
+  let reloads = 0;
+  const runtime = () => ({
+    prepare() {},
+    reload() {
+      if (++reloads === 1) reviewed.update('resume', 1);
+    },
+    check() {},
+  });
+  assert.throws(() => acceptance(task, 'publish', [], runtime, () => reviewed.evidence), /复核版本已变化[\s\S]*已恢复上一个验收版本/);
+  assert.equal(reloads, 2);
+  assert.deepEqual(f.command(f.main, 'status'), lastGood);
+  assert.equal(f.git(f.preview, 'rev-parse', 'HEAD'), lastGood.revision);
+});
+
+test('a 5274 publication is verifiable against the exact signed development report and original check log', t => {
+  const f = fixture(t);
+  const task = f.task('task-evidence');
+  const head = f.commit(task, 'interface.txt', 'new');
+  const reviewed = reviewedPreview(f, task);
+  const result = acceptance(task, 'publish', [], f.runtimeFactory, () => reviewed.evidence);
+  assert.deepEqual(result.tasks[0].evidence, reviewed.evidence);
+  assert.equal(f.command(task, 'verify').revision, head);
+  writeFileSync(reviewed.log, 'different source tree');
+  assert.throws(() => f.command(task, 'verify'), /原始开发证据不符/);
+  assert.throws(() => acceptance(task, 'publish', [], f.runtimeFactory, () => reviewed.evidence), /原始开发证据不符/);
+  assert.deepEqual(f.command(f.main, 'status'), result);
 });

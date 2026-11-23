@@ -1,5 +1,4 @@
 import { execFileSync } from 'node:child_process';
-import { createRequire } from 'node:module';
 import { existsSync, mkdirSync, readdirSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
 import {
@@ -10,6 +9,7 @@ import {
   eventById,
   finish,
   label,
+  locked,
   numberId,
   read,
   rootFor,
@@ -18,7 +18,7 @@ import {
   writeJson,
 } from '../quality/timing-events.mjs';
 
-const require = createRequire(import.meta.url);
+export { locked } from '../quality/timing-events.mjs';
 export const git = (cwd, ...args) =>
   execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 export const commonFor = (cwd) =>
@@ -72,21 +72,6 @@ export function tasks(root) {
   return numbered(root)
     .filter((id) => existsSync(join(root, id, 'task.json')))
     .map((id) => taskRecord(root, id, activation));
-}
-// SQLite holds only the inter-process write lock. The OS releases it if the writer dies.
-// Numbered task files and immutable event files are the portable source of truth.
-export function locked(root, work) {
-  mkdirSync(root, { recursive: true, mode: 0o700 });
-  const { DatabaseSync } = require('node:sqlite');
-  const db = new DatabaseSync(join(root, 'writer.sqlite'));
-  try {
-    db.exec('PRAGMA busy_timeout=15000; BEGIN IMMEDIATE');
-    const result = work();
-    db.exec('COMMIT');
-    return result;
-  } finally {
-    db.close();
-  }
 }
 export function activate(cwd, receipt, verifyRemote) {
   const common = commonFor(cwd);

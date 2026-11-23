@@ -1,3 +1,4 @@
+import { createRequire } from 'node:module';
 import { createHash, randomUUID } from 'node:crypto';
 import {
   existsSync,
@@ -195,4 +196,21 @@ export function ready(ctx, stage, revision, ref) {
     (stage === 'verified' && round?.stage === 'rework:validation')
   )
     finish(ctx, ctx.round, 'passed', { revision, ref });
+}
+
+const require = createRequire(import.meta.url);
+// SQLite holds only the inter-process write lock. The OS releases it if the writer dies.
+// Numbered task files and immutable event files are the portable source of truth.
+export function locked(root, work) {
+  mkdirSync(root, { recursive: true, mode: 0o700 });
+  const { DatabaseSync } = require('node:sqlite');
+  const db = new DatabaseSync(join(root, 'writer.sqlite'));
+  try {
+    db.exec('PRAGMA busy_timeout=15000; BEGIN IMMEDIATE');
+    const result = work();
+    db.exec('COMMIT');
+    return result;
+  } finally {
+    db.close();
+  }
 }

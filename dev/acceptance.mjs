@@ -1,10 +1,12 @@
+import { EvidenceStore } from './quality/store.mjs';
+import { stateFor } from './quality/assessment-store.mjs';
 import { spawnSync } from 'node:child_process';
 import { existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, renameSync, rmdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRuntime } from './acceptance-runtime.mjs';
 import { published } from './quality-entry.mjs';
-import { contextVariable, measured, observe, observer, ready } from './quality/timing-events.mjs';
+import { contextVariable, locked, measured, observe, observer, ready, rootFor } from './quality/timing-events.mjs';
 
 const mainRef = 'refs/remotes/origin/main';
 
@@ -35,7 +37,20 @@ export function acceptance(cwd, command, argument, ...adapters) {
   }, source || {});
 }
 
-function runAcceptance(cwd, command, argument, runtimeFactory = createRuntime, checkDevelopment = directory => published(directory, ['dev'])) {
+function runAcceptance(cwd, command, argument, runtimeFactory = createRuntime, checkDevelopment = directory => {
+  published(directory, ['dev']);
+  const head=run(directory,'git',['rev-parse','HEAD']);
+  const base=run(directory,'git',['rev-parse','refs/remotes/origin/main']);
+  const common=realpathSync(run(directory,'git',['rev-parse','--path-format=absolute','--git-common-dir']));
+  const report=new EvidenceStore(common).report('dev',{head,base});
+  if (report?.status!=='passed' || report.tree!==run(directory,'git',['rev-parse','HEAD^{tree}']))
+    throw Error('5274 缺少当前源码树的开发验证回执');
+  if (report.standard!=='V1.2') return;
+  const ctx=observer(common,directory);
+  if (!report.assessments?.length || (ctx && ctx.ids.some(id=>!report.assessments.some(t=>t.id===id))))
+    throw Error('5274 缺少当前任务的判级，请按实际时点补评并通知');
+  return { tree: report.tree, base, planId: report.planId, run: report.run, assessments: report.assessments };
+}) {
   const git = (...args) => run(cwd, 'git', args);
   const commonDir = realpathSync(git('rev-parse', '--path-format=absolute', '--git-common-dir'));
   const statePath = join(commonDir, 'zdm-acceptance.json');
@@ -69,12 +84,12 @@ function runAcceptance(cwd, command, argument, runtimeFactory = createRuntime, c
     throw new Error('用法：node dev/acceptance.mjs init <运行目录> [当前验收分支] | publish | verify | sync | status | recover');
   }
   if (command === 'status') return current();
-  let validated;
+  let validated, evidence;
   if (command === 'publish') {
     const taskGit = inRepo(cwd);
     validated = taskGit('rev-parse', 'HEAD');
     if (!taskGit('branch','--show-current') || taskGit('branch','--show-current') === 'main') throw Error('请在任务分支发布。');
-    checkDevelopment(cwd);
+    evidence=checkDevelopment(cwd);
   }
   try {
     mkdirSync(lockPath);
@@ -132,11 +147,44 @@ function runAcceptance(cwd, command, argument, runtimeFactory = createRuntime, c
       throw new Error('请在对应任务的独立分支工作目录中执行。');
     }
     if (command === 'publish' && revision !== validated) throw Error('开发验证后任务版本发生变化。');
+    const checkPublishedEvidence = () => {
+      if (
+        evidence.base !== resolve(mainRef) ||
+        resolve('refs/heads/' + branch) !== revision ||
+        evidence.tree !== git('rev-parse', revision + '^{tree}') ||
+        evidence.assessments.some(task => stateFor(commonDir, task.id)?.history.at(-1)?.revision !== task.revision)
+      ) throw Error('5274 的目标主线、源码树或任务复核版本已变化，请重新验证');
+    };
+    const verifyReceipt = receipt => {
+      const store = new EvidenceStore(commonDir);
+      const proof = /^\d{13}-[\da-f-]+$/.test(receipt.run || '') &&
+        store.read(join(store.root, 'runs', receipt.run + '.json'));
+      if (
+        !proof || proof.run !== receipt.run || proof.status !== 'passed' || proof.phase !== 'dev' ||
+        proof.standard !== 'V1.2' || proof.head !== revision || proof.tree !== receipt.tree ||
+        proof.tree !== git('rev-parse', revision + '^{tree}') || proof.base !== receipt.base ||
+        proof.planId !== receipt.planId || JSON.stringify(proof.assessments) !== JSON.stringify(receipt.assessments) ||
+        !proof.planned?.length || proof.pending?.length ||
+        JSON.stringify(proof.results.map(row => row.id)) !== JSON.stringify(proof.planned) ||
+        ![...proof.results, ...(proof.inherited || [])].every(row => store.intact(row))
+      ) throw Error('5274 已登记的源码树与原始开发证据不符');
+    };
+    const commitPublication = action => {
+      if (!evidence) return action();
+      verifyReceipt(evidence);
+      return locked(rootFor(commonDir), () => {
+        checkPublishedEvidence();
+        return action();
+      });
+    };
+    if (evidence) checkPublishedEvidence();
     if (command === 'verify') {
-      if (!state.tasks.some((task) => task.branch === branch && task.revision === revision)) {
+      const recorded = state.tasks.find(task => task.branch === branch && task.revision === revision);
+      if (!recorded) {
         throw new Error('当前任务提交与 5274 的待验收版本不同。');
       }
       runtimeFactory(state.directory, run).check();
+      if (recorded.evidence) verifyReceipt(recorded.evidence);
       return { branch, revision, preview: state.revision };
     }
 
@@ -154,13 +202,13 @@ function runAcceptance(cwd, command, argument, runtimeFactory = createRuntime, c
           throw new Error('任务分支包含与 ' + task.branch + ' 共用的未合并历史，请先隔离。');
         }
       }
-      const update = { branch, revision };
+      const update = evidence ? {branch,revision,evidence} : {branch,revision};
       tasks = previous ? tasks.map((task) => task.branch === branch ? update : task) : [...tasks, update];
     }
 
     if (main === state.main && JSON.stringify(tasks) === JSON.stringify(state.tasks)) {
       runtimeFactory(state.directory, run).check();
-      return state;
+      return commitPublication(() => state);
     }
     let combined = main;
     for (const task of tasks) {
@@ -183,7 +231,7 @@ function runAcceptance(cwd, command, argument, runtimeFactory = createRuntime, c
       runtimeGit('switch', '--detach', combined);
       runtime.reload(changed);
       runtime.check();
-      save(next);
+      commitPublication(() => save(next));
     } catch (error) {
       try {
         runtimeGit('switch', '--detach', state.revision);
