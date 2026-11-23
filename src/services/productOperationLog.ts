@@ -46,7 +46,7 @@ export const productOperationTypes: Record<string, string> = {
 
 const fixedSummaries: Record<string, string> = {
   CREATE: '发布商品',
-  SELECT: '从商品中心放入本店仓库',
+  SELECT: '从选品中心放入本店仓库',
   UPDATE: '编辑商品',
   PRICE_UPDATE: '编辑商品',
   SHELF: '上架商品',

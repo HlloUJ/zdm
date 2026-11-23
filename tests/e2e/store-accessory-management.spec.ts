@@ -960,9 +960,11 @@ test('selection log displays historical product, store prices and media without 
   });
   await page.goto(productWarehouseUrl('/store/accessory-management'));
   await page.getByRole('main').getByText('操作日志').click();
-  await page.locator('.t-drawer:visible').getByText('详情', { exact: true }).click();
+  const drawer = page.locator('.t-drawer:visible');
+  await expect(drawer.getByText('从选品中心放入本店仓库', { exact: true })).toBeVisible();
+  await drawer.getByText('详情', { exact: true }).click();
   const dialog = page.locator('.t-dialog:visible');
-  await expect(dialog.getByText('从商品中心放入本店仓库', { exact: true })).toBeVisible();
+  await expect(dialog.getByText('从选品中心放入本店仓库', { exact: true })).toBeVisible();
   await expect(dialog.locator('.creation-snapshot-sections')).toBeVisible();
   await expect(dialog.getByText('家具 / 桌椅 / 餐桌', { exact: true })).toBeVisible();
   await expect(dialog.getByText('变更对比', { exact: true })).toHaveCount(0);
