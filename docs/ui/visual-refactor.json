@@ -15924,7 +15924,14 @@
     },
     "src/pages/selection-center/selection-center.css": {
       "content": "3f4a563b93b4ddd8993ea16926d8552b76ddcce74c6b1aea577bad52ac42d695",
-      "designReference": "selection-center-v24"
+      "designReference": "selection-center-v24",
+      "approvedVisualPatches": [
+        {
+          "reason": "003 验收反馈：整份选品清单为空时，白色页面铺满当前窗口。",
+          "before": ".selection-center {\n  min-height: calc(100dvh - 56px);\n}\n",
+          "after": ".selection-center {\n  min-height: calc(100dvh - 56px);\n}\n.selection-center:has(.basket-empty) {\n  min-height: 100dvh;\n}\n"
+        }
+      ]
     }
   },
   "modules": [

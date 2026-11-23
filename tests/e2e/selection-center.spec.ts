@@ -350,6 +350,25 @@ test('identity storage change clears old scope without submitting it to the new 
   await expect(page.locator('.t-alert')).toContainText('当前身份或门店已变更，请重新打开选品中心');
   expect(requests.filter((r) => r.path === '/join-batches')).toHaveLength(0);
 });
+test('an entirely empty basket fills the viewport with its white background', async ({ page }) => {
+  await fixture(page);
+  await page.goto('/store/selection-center?view=basket');
+  const shell = page.locator('#selection-center-app');
+  await expect(page.getByText('选品清单还是空的', { exact: true })).toBeVisible();
+  await expect(shell).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+
+  for (const viewport of [{ width: 1440, height: 900 }, { width: 640, height: 800 }]) {
+    await page.setViewportSize(viewport);
+    await expect.poll(() => shell.evaluate((element) => {
+      const { clientWidth, clientHeight } = document.documentElement;
+      return {
+        bottom: element.getBoundingClientRect().bottom,
+        coversLastPixel: element.contains(document.elementFromPoint(clientWidth / 2, clientHeight - 1)),
+      };
+    })).toEqual({ bottom: viewport.height, coversLastPixel: true });
+  }
+});
+
 test('empty type hides headings and pagination while other type stays in summary', async ({ page }) => {
   await fixture(page, { basket: true });
   await page.goto('/store/selection-center?view=basket');
