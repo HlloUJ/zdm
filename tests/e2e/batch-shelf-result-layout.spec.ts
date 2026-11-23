@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { installAdminApiMocks } from './admin-api-mocks';
+import { clickOpenedDialogConfirmation, waitForOpenedDialog } from './dialog-confirmation';
 
 for (const scenario of ['short', 'long', 'plain', 'narrow'] as const) {
   test(`batch shelf result content sizing: ${scenario}`, async ({ page }) => {
@@ -67,10 +68,11 @@ for (const scenario of ['short', 'long', 'plain', 'narrow'] as const) {
     const main = page.getByRole('main');
     await main.locator('thead .t-checkbox__input').click();
     await main.getByRole('button', { name: '批量上架', exact: true }).click();
-    await page.locator('.t-dialog:visible').getByRole('button', { name: '确认批量上架', exact: true }).click();
+    await clickOpenedDialogConfirmation(page.locator('.t-dialog:visible'), '确认批量上架');
     const dialog = page.locator('.zdm-operation-result-dialog:visible');
     await expect(dialog).toBeVisible();
     // Measure after the native opening animation; do not change its duration or styles.
+    await waitForOpenedDialog(dialog);
     await expect
       .poll(() =>
         dialog.evaluate((element) => element.getBoundingClientRect().width / (element as HTMLElement).offsetWidth),

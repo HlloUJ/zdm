@@ -1,5 +1,6 @@
 import { productWarehouseUrl } from './product-test-navigation';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page, type Request } from '@playwright/test';
+import { clickOpenedDialogConfirmation } from './dialog-confirmation';
 import { installAdminApiMocks } from './admin-api-mocks';
 import { installAdminApiMocks as installAccessoryApiMocks } from './accessory-api-mocks';
 
@@ -352,6 +353,7 @@ for (const surface of surfaces) {
       attributeNames: {},
     };
     let writes = 0;
+    let deleteRequest: Request | undefined;
     await page.route(`**/api/admin/${endpoint}**`, async (route) => {
       const request = route.request();
       const path = new URL(request.url()).pathname;
@@ -364,6 +366,7 @@ for (const surface of surfaces) {
           expect(body.target ?? body.status).toBe('recycle');
           expect(body.operation).toBeUndefined();
         }
+        deleteRequest = request;
         record.status = record.effectiveStatus = 'recycle';
         if (surface.client === 'supply-chain') record.sourceStatus = 'recycle';
         return route.fulfill({ json: { code: 0, data: surface.kind === 'slab' ? true : record } });
@@ -379,10 +382,11 @@ for (const surface of surfaces) {
     await expect(main.locator('.t-tabs__nav-item').filter({ hasText: '已下架' })).toHaveCount(0);
     await main.locator('.t-tabs__nav-item').filter({ hasText: '已上架' }).click();
     await main.locator('tbody tr').filter({ hasText: '直接删除商品' }).getByText('删除', { exact: true }).click();
-    await page
-      .locator('.t-dialog:visible')
-      .getByRole('button', { name: /^确认删除(?:至回收站)?$/, exact: true })
-      .click();
+    const [deleted] = await Promise.all([
+      page.waitForResponse((response) => response.request() === deleteRequest),
+      clickOpenedDialogConfirmation(page.locator('.t-dialog:visible'), /^确认删除(?:至回收站)?$/),
+    ]);
+    expect(deleted.status()).toBe(200);
     await expect(main.locator('tbody tr').filter({ hasText: '直接删除商品' })).toHaveCount(0);
     expect(writes).toBe(1);
     await main.locator('.t-tabs__nav-item').filter({ hasText: '回收站' }).click();
