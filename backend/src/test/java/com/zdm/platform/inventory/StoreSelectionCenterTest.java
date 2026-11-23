@@ -41,13 +41,15 @@ class StoreSelectionCenterTest {
   void setup() throws Exception {
     var datasource = new DriverManagerDataSource(MYSQL.getJdbcUrl(), MYSQL.getUsername(), MYSQL.getPassword());
     jdbc = org.mockito.Mockito.spy(new JdbcTemplate(datasource));
-    for (String table : List.of("store_selection_batch_items", "store_selection_batches", "store_selection_items", "store_finished_products", "store_accessory_products", "finished_products", "accessory_products", "product_categories", "stores")) {
+    for (String table : List.of("store_selection_batch_items", "store_selection_batches", "store_selection_items", "store_finished_products", "store_accessory_products", "finished_products", "accessory_products", "product_categories", "stores", "accounts")) {
       jdbc.execute("DROP TABLE IF EXISTS " + table);
     }
     String migration = Files.readString(Path.of("src/main/resources/db/migration/V173__store_selection_center.sql"));
     for (String sql : migration.split(";")) { if (!sql.isBlank()) { jdbc.execute(sql); } }
     jdbc.execute("CREATE TABLE stores(id BIGINT PRIMARY KEY,tenant_id BIGINT,name VARCHAR(60))");
     jdbc.update("INSERT INTO stores VALUES(10,1,'门店甲'),(20,1,'门店乙')");
+    jdbc.execute("CREATE TABLE accounts(id BIGINT PRIMARY KEY,display_name VARCHAR(80) NOT NULL)");
+    jdbc.update("INSERT INTO accounts VALUES(1,'员工甲'),(2,'员工乙'),(3,'员工丙')");
     jdbc.execute("CREATE TABLE product_categories(id BIGINT,parent_id BIGINT,scope VARCHAR(16),name VARCHAR(60),tenant_id BIGINT,sort_order INT)");
     jdbc.update("INSERT INTO product_categories VALUES(1,NULL,'finished','桌',NULL,0),(2,1,'finished','餐桌',NULL,0),(3,2,'finished','岩板餐桌',NULL,0),(4,3,'finished','白色',NULL,0),(5,NULL,'accessory','桌脚',NULL,0)");
     for (String type : List.of("finished", "accessory")) {
@@ -66,6 +68,13 @@ class StoreSelectionCenterTest {
       Long id = ((List<Long>) i.getArgument(0)).getFirst();
       jdbc.update("INSERT INTO store_finished_products(store_id,finished_product_id,status) VALUES(?,?,'warehouse')", identity.get().storeId(), id);
       var view = mock(StoreFinishedProductService.ProductView.class);when(view.id()).thenReturn(id);return List.of(view);
+    });
+    when(accessory.select(any())).thenAnswer(i -> {
+      Long id = ((List<Long>) i.getArgument(0)).getFirst();
+      jdbc.update("INSERT INTO store_accessory_products(store_id,accessory_product_id,status) VALUES(?,?,'warehouse')", identity.get().storeId(), id);
+      var view = mock(StoreAccessoryProductService.ProductView.class);
+      when(view.id()).thenReturn(id);
+      return List.of(view);
     });
     catalog = new StoreSelectionCatalog(jdbc,scopes,guard,finished,accessory,new ObjectMapper());
     transactions = new DataSourceTransactionManager(datasource);
@@ -280,7 +289,9 @@ class StoreSelectionCenterTest {
     Long selection=catalog.selection(context(),"finished",1,5).records().getFirst().selectionId();
     employee(2,10);assertThat(catalog.counts(context()).get("finished")).isZero();
     assertThatThrownBy(() -> service.remove(context(),selection)).isInstanceOf(IllegalArgumentException.class);
-    service.add(context(),"finished",1L);assertThat(catalog.counts(context()).get("finished")).isEqualTo(1);
+    assertThat(service.add(context(),"finished",1L)).isFalse();
+    assertThat(catalog.counts(context()).get("finished")).isZero();
+    employee(1,10);
     when(guard.hasPermission(StoreSelectionCatalog.FINISHED_PERMISSION)).thenReturn(false);
     assertThat(catalog.products(context(),"",List.of("finished"),List.of(),null,null,1,20).records().getFirst().canAdd()).isFalse();
     var result=service.join(context(),"permission-request-001");assertThat(result.failureCount()).isEqualTo(1);
@@ -315,7 +326,9 @@ class StoreSelectionCenterTest {
   }
 
   @Test void concurrentEmployeesOnlyOneWarehouseWriteAndOtherStoreIndependent() throws Exception {
-    service.add(context(),"finished",1L);employee(2,10);service.add(context(),"finished",1L);
+    // Historical personal entries can predate the store-wide admission check.
+    jdbc.update("INSERT INTO store_selection_items(tenant_id,store_id,account_id,product_type,product_id)"
+        + " VALUES(1,10,1,'finished',1),(1,10,2,'finished',1)");
     try(var executor=Executors.newFixedThreadPool(2)) {
       var a=executor.submit(() -> {employee(1,10);return service.join(context(),"concurrent-request-a1");});
       var b=executor.submit(() -> {employee(2,10);return service.join(context(),"concurrent-request-b2");});
@@ -324,6 +337,104 @@ class StoreSelectionCenterTest {
       assertThat(results.stream().flatMap(r->r.failures().stream()).map(StoreSelectionService.Failure::reason)).containsExactly("该商品已加入门店，请勿重复添加。");
     }
     employee(1,20);service.add(context(),"finished",1L);assertThat(service.join(context(),"another-store-000001").successCount()).isEqualTo(1);
+  }
+
+  @Test void simultaneousPersonalAddsOnlyCreditOneEmployeeAndReleaseForAnother() throws Exception {
+    for (String type : List.of("finished", "accessory")) {
+      var ready = new java.util.concurrent.CountDownLatch(2);
+      var start = new java.util.concurrent.CountDownLatch(1);
+      try (var pool = Executors.newFixedThreadPool(2)) {
+        var attempts = new java.util.ArrayList<java.util.concurrent.Future<Boolean>>();
+        for (long account : List.of(1L, 2L)) {
+          attempts.add(pool.submit(() -> {
+            employee(account,10); ready.countDown(); await(start);
+            return service.add(context(), type, 1L);
+          }));
+        }
+        await(ready); start.countDown();
+        boolean firstWon = attempts.get(0).get(10, java.util.concurrent.TimeUnit.SECONDS);
+        assertThat(attempts.get(1).get(10, java.util.concurrent.TimeUnit.SECONDS)).isEqualTo(!firstWon);
+        long winner = firstWon ? 1 : 2, colleague = firstWon ? 2 : 1;
+        employee(colleague,10);
+        var observed = catalog.products(context(), "", List.of(type), List.of("unadded"), null, null, 1, 20);
+        assertThat(observed.total()).isEqualTo(1);
+        var card = observed.records().getFirst();
+        assertThat(card.selectedByName()).isEqualTo(firstWon ? "员工甲" : "员工乙");
+        assertThat(card.inSelection()).isTrue();
+        assertThat(card.canAdd()).isFalse();
+        assertThat(card.selectionId()).isNull();
+        assertThat(card.addedAt()).isNull();
+        assertThat(catalog.detail(context(),type,1L).product()).isEqualTo(card);
+        assertThat(catalog.counts(context()).get(type)).isZero();
+        employee(winner,10);
+        var mine = catalog.selection(context(),type,1,10).records().getFirst();
+        assertThat(mine.selectedByName()).isNull();
+        assertThat(mine.selectionId()).isNotNull();
+        employee(colleague,20);
+        assertThat(catalog.detail(context(),type,1L).product().inSelection()).isFalse();
+        assertThat(service.add(context(),type,1L)).isTrue();
+        employee(winner,10); service.remove(context(),mine.selectionId());
+        employee(colleague,10);
+        assertThat(service.add(context(),type,1L)).isTrue();
+      }
+    }
+  }
+
+  @Test void historicalCoOwnersRetainPersonalRowsAndEarliestRemainingNameWithoutMultiplyingProducts() {
+    jdbc.update("INSERT INTO store_selection_items(tenant_id,store_id,account_id,product_type,product_id,added_at)"
+        + " VALUES(1,10,2,'finished',1,'2026-01-01'),(1,10,1,'finished',1,'2026-01-01')");
+    employee(1,10);
+    var mine = catalog.detail(context(),"finished",1L).product();
+    assertThat(mine.inSelection()).isTrue();
+    assertThat(mine.selectedByName()).isNull();
+    assertThat(mine.selectionId()).isNotNull();
+    assertThat(catalog.selection(context(),"finished",1,10).total()).isEqualTo(1);
+    employee(3,10);
+    var all = catalog.products(context(),"",List.of(),List.of("unadded"),null,null,1,20);
+    assertThat(all.total()).isEqualTo(2);
+    assertThat(all.records()).extracting(StoreSelectionCatalog.Product::type).containsExactlyInAnyOrder("finished","accessory");
+    assertThat(catalog.detail(context(),"finished",1L).product().selectedByName()).isEqualTo("员工乙");
+    employee(2,10); service.remove(context(),catalog.detail(context(),"finished",1L).product().selectionId());
+    employee(3,10);
+    assertThat(catalog.detail(context(),"finished",1L).product().selectedByName()).isEqualTo("员工甲");
+    assertThat(service.add(context(),"finished",1L)).isFalse();
+    assertThat(catalog.counts(context()).get("finished")).isZero();
+    employee(1,10); service.remove(context(),mine.selectionId());
+    employee(3,10); assertThat(service.add(context(),"finished",1L)).isTrue();
+  }
+
+  @Test void personalTypePaginationAndFullMixedSnapshotUseDifferentTotals() {
+    for (long id = 2; id <= 51; id++) { seed("finished",id,"商品"+id,4,"2026-01-01 00:00:00"); }
+    seed("accessory",2,"配件2",5,"2026-01-01 00:00:00");
+    for (String type : List.of("finished","accessory")) {
+      jdbc.update("INSERT INTO store_selection_items(tenant_id,store_id,account_id,product_type,product_id)"
+          + " SELECT 1,10,1,?,id FROM " + type + "_products", type);
+    }
+    assertThat(catalog.counts(context())).containsExactlyInAnyOrderEntriesOf(Map.of("finished",51L,"accessory",2L));
+    for (int size : List.of(10,20,50)) {
+      int pages = (51 + size - 1) / size;
+      var ids = new java.util.HashSet<Long>();
+      for (int page = 1; page <= pages; page++) {
+        var data = catalog.selection(context(),"finished",page,size);
+        assertThat(data.total()).isEqualTo(51);
+        assertThat(data.records()).hasSize(Math.min(size, 51 - size * (page - 1)));
+        for (var item : data.records()) { assertThat(ids.add(item.id())).isTrue(); }
+      }
+      assertThat(ids).hasSize(51);
+    }
+    var last = catalog.selection(context(),"finished",2,50).records().getFirst();
+    service.remove(context(),last.selectionId());
+    assertThat(catalog.selection(context(),"finished",2,50).records()).isEmpty();
+    assertThat(catalog.selection(context(),"finished",1,50).records()).hasSize(50);
+    assertThat(service.add(context(),"finished",last.id())).isTrue();
+    jdbc.update("UPDATE accessory_products SET total_stock=0 WHERE id=2");
+    var joined = service.join(context(),"mixed-pages-request-01");
+    assertThat(joined.total()).isEqualTo(53);
+    assertThat(joined.successCount()).isEqualTo(52);
+    assertThat(joined.failures()).extracting(StoreSelectionService.Failure::code).containsExactly("SOLD_OUT");
+    assertThat(catalog.counts(context())).containsExactlyInAnyOrderEntriesOf(Map.of("finished",0L,"accessory",1L));
+    employee(2,10); assertThatThrownBy(() -> service.result(context(),joined.id())).isInstanceOf(IllegalArgumentException.class);
+    employee(1,20); assertThatThrownBy(() -> service.result(context(),joined.id())).isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test void sourceFailureRollsBackOnlyThatItemAndMoreThanOneHundredNotTruncated() {

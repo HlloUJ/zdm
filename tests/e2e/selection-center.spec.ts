@@ -5,7 +5,9 @@ async function fixture(
   page: Page,
   options: {
     singlePermission?: boolean;
-    basket?: boolean;
+    basket?: boolean | 'large';
+    catalogCount?: number;
+    racingColleague?: { productId: number; name: string };
     media?: 'image' | 'video' | 'both';
     longNames?: boolean;
     categoryName?: string;
@@ -34,8 +36,9 @@ async function fixture(
       }),
     );
   });
-  const rows: CenterProduct[] = Array.from({ length: 31 }, (_, i) => ({
-    type: i % 2 ? 'accessory' : 'finished',
+  const large = options.basket === 'large';
+  const rows: CenterProduct[] = Array.from({ length: large ? 53 : (options.catalogCount ?? 31) }, (_, i) => ({
+    type: large ? (i < 51 ? 'finished' : 'accessory') : (i % 2 ? 'accessory' : 'finished'),
     id: i + 1,
     name:
       options.longNames && i === 0
@@ -51,12 +54,22 @@ async function fixture(
     soldOut: i === 4,
     addedToStore: i === 6,
     inSelection: false,
+    selectedByName: null,
     canAdd: i !== 4 && i !== 6 && (!options.singlePermission || i % 2 === 0),
     reasons: [],
     selectionId: i + 100,
     addedAt: null,
   }));
-  let selection: CenterProduct[] = options.basket ? rows.slice(0, 12).map((r) => ({ ...r, inSelection: true })) : [];
+  let selection: CenterProduct[] = options.basket ? rows.slice(0, large ? 53 : 12).map((r) => ({ ...r, inSelection: true })) : [];
+  let colleagueSelected = false;
+  function project(row: CenterProduct): CenterProduct {
+    const mine = selection.some((item) => item.id === row.id && item.type === row.type);
+    const colleague = colleagueSelected && options.racingColleague?.productId === row.id ? options.racingColleague.name : null;
+    return {
+      ...row, inSelection: mine || Boolean(colleague), selectedByName: mine ? null : colleague,
+      selectionId: mine ? row.selectionId : null, canAdd: row.canAdd && !colleague,
+    };
+  }
   const requests: { path: string; body: unknown }[] = [];
   await page.route('**/api/admin/store-product-center/**', async (route) => {
     const req = route.request(),
@@ -99,7 +112,7 @@ async function fixture(
             r.name.includes(keyword) &&
             (!url.searchParams.has('categoryId') || r.type === url.searchParams.get('categoryType')),
         )
-        .map((r) => ({ ...r, inSelection: selection.some((s) => s.id === r.id && s.type === r.type) }));
+        .map(project);
       const pageNum = Number(url.searchParams.get('page')),
         size = Number(url.searchParams.get('pageSize'));
       return route.fulfill({
@@ -113,7 +126,7 @@ async function fixture(
     }
     if (path.startsWith('/products/')) {
       const id = Number(path.split('/').pop()),
-        product = { ...rows.find((r) => r.id === id)!, inSelection: selection.some((s) => s.id === id) };
+        product = project(rows.find((r) => r.id === id)!);
       return route.fulfill({
         json: ok({
           product,
@@ -178,6 +191,10 @@ async function fixture(
     }
     if (path === '/selection' && req.method() === 'POST') {
       const body = req.postDataJSON();
+      if (options.racingColleague?.productId === body.productId) {
+        colleagueSelected = true;
+        return route.fulfill({ json: ok(false) });
+      }
       selection.push({ ...rows.find((r) => r.id === body.productId && r.type === body.type)!, inSelection: true });
       return route.fulfill({ json: ok(true) });
     }
@@ -272,14 +289,14 @@ test('dynamic details retain SKU grouping and scroll independently from backgrou
 });
 
 test('whole basket submits across tabs and pages and reports only failed items', async ({ page }) => {
-  const requests = await fixture(page, { basket: true });
+  const requests = await fixture(page, { basket: 'large' });
   await page.goto('/store/selection-center?view=basket');
-  await expect(page.locator('.basket-row')).toHaveCount(5);
-  await page.locator('.zdm-admin-pagination .t-pagination__btn-next').click();
+  await expect(page.locator('.basket-row')).toHaveCount(10);
+  await page.locator('.zdm-admin-pagination .t-pagination__pager').getByText('6', { exact: true }).click();
   await expect(page.locator('.basket-row')).toHaveCount(1);
   await page.getByRole('button', { name: '加入门店', exact: true }).click();
   const dialog = page.locator('.t-dialog:visible');
-  await expect(dialog).toContainText('本次加入 12 件商品，成功 11 件，失败 1 件');
+  await expect(dialog).toContainText('本次加入 53 件商品，成功 52 件，失败 1 件');
   await expect(dialog.locator('tbody tr')).toHaveCount(1);
   await expect(dialog).toContainText('该商品已加入门店，请勿重复添加。');
   expect(requests.find((r) => r.path === '/join-batches')?.body).toMatchObject({ context: '1:2:7' });
@@ -320,7 +337,7 @@ for (const media of ['image', 'video', 'both'] as const) {
 test('identity storage change clears old scope without submitting it to the new store', async ({ page }) => {
   const requests = await fixture(page, { basket: true });
   await page.goto('/store/selection-center?view=basket');
-  await expect(page.locator('.basket-row')).toHaveCount(5);
+  await expect(page.locator('.basket-row')).toHaveCount(6);
   await page.evaluate(() => {
     const user = JSON.parse(localStorage.getItem('zdm-admin-user')!);
     localStorage.setItem('zdm-admin-user', JSON.stringify({ ...user, storeId: 99 }));
@@ -667,12 +684,16 @@ for (const fails of [false, true]) {
   test(`adding from a scrolled catalog updates locally without refresh, failure=${fails}`, async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 700 });
     await fixture(page, { failMutation: fails ? 'add' : undefined });
-    let productReads = 0;
+    const productReads: number[] = [];
     page.on('request', (request) => {
-      if (new URL(request.url()).pathname === '/api/admin/store-product-center/products') productReads++;
+      const url = new URL(request.url());
+      if (url.pathname === '/api/admin/store-product-center/products') productReads.push(Number(url.searchParams.get('page')));
     });
     await page.goto('/store/selection-center');
     await expect(page.locator('.product-card')).toHaveCount(20);
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    await expect(page.locator('.product-card')).toHaveCount(30);
+    expect(productReads).toEqual([1, 2]);
     const card = page.locator('.product-card').nth(10);
     const button = card.getByRole('button', { name: '加入清单', exact: true });
     await button.scrollIntoViewIfNeeded();
@@ -680,7 +701,6 @@ for (const fails of [false, true]) {
     await button.hover();
     let before = await page.evaluate(() => scrollY);
     expect(before).toBeGreaterThan(300);
-    const reads = productReads;
     await page.evaluate(() => {
       (window as any).__mutationLoads = 0;
       new MutationObserver(() => {
@@ -708,7 +728,7 @@ for (const fails of [false, true]) {
       await expect(card.getByText('已加入选品清单')).toBeVisible();
       await expect(page.locator('.header-tools .t-badge')).toContainText('1');
     }
-    expect(productReads).toBe(reads);
+    expect(productReads).toEqual([1, 2]);
     expect(await page.evaluate(() => scrollY)).toBeCloseTo(before, 0);
     expect(await page.evaluate(() => (window as any).__mutationLoads)).toBe(0);
     const actionBox = await button.boundingBox();
@@ -728,7 +748,7 @@ for (const action of ['remove', 'join'] as const) {
         if (new URL(request.url()).pathname === '/api/admin/store-product-center/products') productReads++;
       });
       await page.goto('/store/selection-center?view=basket');
-      await expect(page.locator('.basket-row')).toHaveCount(5);
+      await expect(page.locator('.basket-row')).toHaveCount(6);
       const scroll = page.locator('.selection-scroll');
       await scroll.evaluate((el) => {
         el.scrollTop = 100;
@@ -746,7 +766,7 @@ for (const action of ['remove', 'join'] as const) {
       if (fails) {
         await expect(page.getByText('操作失败测试').first()).toBeVisible();
         await expect(page.locator('.summary-total')).toContainText('12');
-        await expect(page.locator('.basket-row')).toHaveCount(5);
+        await expect(page.locator('.basket-row')).toHaveCount(6);
       } else if (action === 'remove') {
         await expect(page.locator('.summary-total')).toContainText('11');
         await expect(page.locator('.basket-row')).toHaveCount(5);
@@ -925,10 +945,10 @@ test('basket price heading is concise for both product types without changing va
   await page.goto('/store/selection-center?view=basket');
   for (const type of ['成品现货', '配件']) {
     await page.locator('.selection-tabs').getByText(`${type}（6）`, { exact: true }).click();
-    await expect(page.locator('.basket-row')).toHaveCount(5);
+    await expect(page.locator('.basket-row')).toHaveCount(6);
     await expect(page.locator('.basket-columns')).toHaveText('商品信息价格操作');
     await expect(page.locator('.basket-price').first()).toHaveText('¥ 10 – 20');
-    await expect(page.locator('.basket-price')).toHaveCount(5);
+    await expect(page.locator('.basket-price')).toHaveCount(6);
   }
 });
 
@@ -1145,5 +1165,170 @@ for (const type of ['finished', 'accessory'] as const) {
     await page.screenshot({ path: test.info().outputPath('actual-category-top.png'), animations: 'disabled' });
     await panel.locator('.catalog-hover-content').evaluate((el) => (el.scrollTop = el.scrollHeight));
     await page.screenshot({ path: test.info().outputPath('actual-category-bottom.png'), animations: 'disabled' });
+  });
+}
+
+test('personal pagination uses 51 finished items while the badge and summary include both accessories', async ({ page }) => {
+  await fixture(page, { basket: 'large' });
+  await page.setViewportSize({ width: 1440, height: 850 });
+  await page.goto('/store/selection-center?view=basket');
+  const rows = page.locator('.basket-row'), pager = page.locator('.zdm-admin-pagination');
+  await expect(rows).toHaveCount(10);
+  await expect(pager.locator('.t-pagination__select input')).toHaveValue('10 条/页');
+  await expect(pager.locator('.t-pagination__total')).toContainText('51');
+  await expect(page.locator('.summary-total')).toContainText('53');
+  await expect(page.locator('.header-tools .t-badge')).toContainText('53');
+  await expect(pager).toHaveCSS('padding', '16px');
+  const rightInset = await pager.evaluate((container) =>
+    container.getBoundingClientRect().right - container.querySelector('.t-pagination')!.getBoundingClientRect().right);
+  expect(rightInset).toBeCloseTo(16, 0);
+  await expect(pager.locator('..')).toHaveCSS('padding', '0px');
+  await pager.locator('.t-pagination__pager').getByText('6', { exact: true }).click();
+  await expect(rows).toHaveCount(1);
+  const setSize = async (size: number) => {
+    await pager.locator('.t-pagination__select').click();
+    const option = page.locator('.t-select-option:visible').getByText(size + ' 条/页', { exact: true });
+    await option.click();
+    await expect(pager.locator('.t-pagination__select input')).toHaveValue(size + ' 条/页');
+  };
+  await setSize(20);
+  await expect(rows).toHaveCount(20);
+  await pager.locator('.t-pagination__pager').getByText('3', { exact: true }).click();
+  await expect(rows).toHaveCount(11);
+  await page.getByText('配件（2）', { exact: true }).click();
+  await expect(rows).toHaveCount(2);
+  await expect(pager.locator('.t-pagination__total')).toContainText('2');
+  await page.getByText('成品现货（51）', { exact: true }).click();
+  await expect(rows).toHaveCount(20);
+  await setSize(50);
+  await expect(rows).toHaveCount(50);
+  await page.setViewportSize({ width: 1120, height: 850 });
+  await expect(pager.locator('.t-pagination')).toHaveCSS('display', 'grid');
+  const list = await page.locator('.selection-panel').boundingBox();
+  const side = await page.locator('.basket-summary').boundingBox();
+  expect(list!.x + list!.width).toBeLessThanOrEqual(side!.x);
+  const inside = await pager.evaluate((el) => {
+    const bounds = el.getBoundingClientRect();
+    return [...el.querySelectorAll('.t-pagination__btn, .t-pagination__select')].every((child) => {
+      const rect = child.getBoundingClientRect();
+      return rect.left >= bounds.left && rect.right <= bounds.right;
+    });
+  });
+  expect(inside).toBe(true);
+  await pager.locator('.t-pagination__btn-next').click();
+  await expect(rows).toHaveCount(1);
+  await rows.getByText('移除', { exact: true }).click();
+  await expect(rows).toHaveCount(50);
+  await expect(pager.locator('.t-pagination__total')).toContainText('50');
+  await expect(page.locator('.summary-total')).toContainText('52');
+});
+
+test('catalog appends 20, 40 and 41 items, coalesces bottom events and retries the failed batch', async ({ page }) => {
+  await fixture(page, { catalogCount: 42 }); // One already belongs to the store.
+  await page.setViewportSize({ width: 1240, height: 650 });
+  const reads: number[] = [];
+  let release!: () => void;
+  const firstAttempt = new Promise<void>((resolve) => { release = resolve; });
+  await page.route('**/api/admin/store-product-center/products?**', async (route) => {
+    const number = Number(new URL(route.request().url()).searchParams.get('page'));
+    reads.push(number);
+    expect(new URL(route.request().url()).searchParams.get('pageSize')).toBe('20');
+    if (number === 2 && reads.filter((page) => page === 2).length === 1) {
+      await firstAttempt;
+      return route.fulfill({ status: 503, json: { code: 503, message: '本批商品加载失败' } });
+    }
+    return route.fallback();
+  });
+  await page.goto('/store/selection-center');
+  const cards = page.locator('.product-card');
+  await expect(cards).toHaveCount(20);
+  await expect(page.locator('.t-pagination')).toHaveCount(0);
+  const bottom = () => page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  await bottom();
+  await expect.poll(() => reads).toEqual([1, 2]);
+  await bottom();
+  await bottom();
+  release();
+  await expect(page.getByRole('alert')).toContainText('本批商品加载失败');
+  await expect(cards).toHaveCount(20);
+  await page.getByRole('alert').getByRole('button', { name: '重试' }).click();
+  await expect(cards).toHaveCount(40);
+  await bottom();
+  await expect(cards).toHaveCount(41);
+  await bottom();
+  await cards.nth(32).scrollIntoViewIfNeeded();
+  const before = await page.evaluate(() => scrollY);
+  await cards.nth(32).click();
+  await expect(page.locator('.t-drawer--open')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.t-drawer--open')).toHaveCount(0);
+  await expect(cards).toHaveCount(41);
+  expect(await page.evaluate(() => scrollY)).toBe(before);
+  expect(reads).toEqual([1, 2, 2, 3]);
+});
+
+for (const change of ['search', 'type', 'store'] as const) {
+  test(`a late catalog batch cannot overwrite a new ${change}`, async ({ page }) => {
+    await fixture(page, { catalogCount: 42 });
+    await page.setViewportSize({ width: 1240, height: 650 });
+    let release!: () => void;
+    const delayed = new Promise<void>((resolve) => { release = resolve; });
+    await page.route('**/api/admin/store-product-center/products?**', async (route) => {
+      const params = new URL(route.request().url()).searchParams;
+      if (params.get('context') === '1:99:7') {
+        return route.fulfill({ json: ok({ records: [], total: 0, page: 1, pageSize: 20 }) });
+      }
+      if (params.get('page') === '2') await delayed;
+      return route.fallback();
+    });
+    await page.goto('/store/selection-center');
+    const cards = page.locator('.product-card');
+    await expect(cards).toHaveCount(20);
+    const old = page.waitForRequest((req) => req.url().includes('/products?') && new URL(req.url()).searchParams.get('page') === '2');
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    const oldRequest = await old;
+    if (change === 'store') {
+      await page.route('**/api/admin/store-product-center/context', (route) => route.fulfill({
+        json: ok({ key: '1:99:7', storeName: '门店乙', maintain: { finished: true, accessory: true } }),
+      }));
+      await page.evaluate(() => {
+        const user = JSON.parse(localStorage.getItem('zdm-admin-user')!);
+        localStorage.setItem('zdm-admin-user', JSON.stringify({ ...user, storeId: 99 }));
+        window.dispatchEvent(new StorageEvent('storage', { key: 'zdm-admin-user' }));
+      });
+      await expect(page.getByText('门店乙', { exact: true })).toBeVisible();
+      await expect(page.getByText('暂无符合条件的商品')).toBeVisible();
+    } else if (change === 'search') {
+      await page.getByPlaceholder('请输入商品名称').fill('岩板');
+      await page.getByPlaceholder('请输入商品名称').press('Enter');
+    } else {
+      await page.getByRole('button', { name: '配件', exact: true }).click();
+    }
+    release();
+    await (await oldRequest.response())?.finished();
+    await expect(cards).toHaveCount(change === 'store' ? 0 : 20);
+    await expect(page.locator('.product-card').filter({ hasText: '金属桌脚' })).toHaveCount(0);
+    await expect.poll(() => page.evaluate(() => scrollY)).toBe(0);
+  });
+}
+
+for (const entry of ['card', 'detail'] as const) {
+  test(`a concurrent colleague selection updates the ${entry} without crediting the current employee`, async ({ page }) => {
+    const id = entry === 'card' ? 1 : 2;
+    const writes = await fixture(page, { racingColleague: { productId: id, name: '林梅' } });
+    await page.goto('/store/selection-center');
+    const card = page.locator('.product-card').nth(id - 1), drawer = page.locator('.t-drawer--open');
+    if (entry === 'detail') await card.click();
+    await (entry === 'detail' ? drawer : card).getByRole('button', { name: '加入清单', exact: true }).click();
+    if (entry === 'card') await card.click();
+    await expect(drawer.getByText('已加入选品清单·林梅', { exact: true })).toBeVisible();
+    await expect(drawer.getByRole('button', { name: '加入清单', exact: true })).toHaveCount(0);
+    await page.keyboard.press('Escape');
+    await expect(card.getByText('已加入选品清单·林梅', { exact: true })).toBeVisible();
+    await expect(card.getByRole('button', { name: '加入清单', exact: true })).toBeDisabled();
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.getByRole('button', { name: '选品清单' }).click();
+    await expect(page.getByText('选品清单还是空的')).toBeVisible();
+    expect(writes.filter((r) => r.path === '/selection')).toHaveLength(1);
   });
 }

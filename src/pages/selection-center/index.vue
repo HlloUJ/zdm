@@ -16,6 +16,7 @@ import {
   centerDetail,
   categoryTree,
   centerPrice,
+  selectionLabel,
 } from '@/services/storeSelectionCenter';
 import type {
   ProductType,
@@ -55,16 +56,20 @@ const products = ref<CenterProduct[]>([]),
   basketItems = ref<CenterProduct[]>([]);
 const browseTotal = ref(0),
   basketTotal = ref(0);
-const browsePage = ref(1),
-  browsePageSize = ref(20),
-  basketPage = ref(1),
-  basketPageSize = ref(5);
+const browseBatchSize = 20;
+const browseEnd = ref<HTMLElement | null>(null);
+const moreProducts = ref(true),
+  browseBusy = ref(false),
+  browseError = ref('');
+const basketPage = ref(1),
+  basketPageSize = ref(10);
 const pagedProducts = computed(() => products.value),
   pagedBasketItems = computed(() => basketItems.value);
 const activeBasketItems = computed(() => basketItems.value);
 const detail = ref<CenterDetail | null>(null);
-const loading = ref(false),
-  error = ref(''),
+const initializing = ref(false);
+const loading = computed(() => initializing.value || (view.value === 'browse' && browseBusy.value && !products.value.length));
+const error = ref(''),
   submitting = ref(false),
   adding = ref<string[]>([]);
 const pendingRequest = ref<string | null>(null),
@@ -96,57 +101,99 @@ function mutationFailed(e: unknown) {
   if (e instanceof ApiError && (e.status === 401 || e.status === 403)) fail(e);
   else adminFeedback.error(getSafeErrorMessage(e, '操作失败，请重试'));
 }
-function clearData() {
+let scopeVersion = 0;
+let contextSequence = 0, detailSequence = 0, basketSequence = 0, browseSequence = 0;
+let nextBrowsePage = 1;
+let retryRefresh = false;
+function clearBrowse() {
   ++browseSequence;
+  ++detailSequence;
+  detail.value = null;
+  nextBrowsePage = 1;
+  moreProducts.value = true;
+  browseBusy.value = false;
+  browseError.value = '';
+  browseTotal.value = 0;
+  products.value = [];
+}
+function clearData() {
+  ++scopeVersion;
+  clearBrowse();
   ++basketSequence;
   result.value = null;
   resultVisible.value = false;
   pendingRequest.value = null;
-  browseTotal.value = 0;
   basketTotal.value = 0;
+  basketPage.value = 1;
+  adding.value = [];
+  submitting.value = false;
   categoryOpen.value = false;
-  products.value = [];
   basketItems.value = [];
-  detail.value = null;
   counts.value = { finished: 0, accessory: 0 };
   categoryTrees.value = { finished: [], accessory: [] };
   context.value = null;
 }
-let browseSequence = 0,
-  basketSequence = 0;
-async function loadBrowse() {
-  if (!context.value) return;
-  const seq = ++browseSequence;
-  loading.value = true;
-  error.value = '';
+function resetBrowse() {
+  clearBrowse();
+  window.scrollTo(0, 0);
+  return loadBrowse();
+}
+async function loadBrowse(refresh = false) {
+  const owner = context.value?.key;
+  if (!owner || view.value !== 'browse' || browseBusy.value || (!refresh && !moreProducts.value)) return;
+  const seq = browseSequence;
+  browseBusy.value = true;
+  browseError.value = '';
+  retryRefresh = refresh;
+  // A same-store focus refresh keeps the displayed list in place until its loaded pages are ready.
+  const first = refresh ? 1 : nextBrowsePage;
+  const last = refresh ? Math.max(1, nextBrowsePage - 1) : first;
+  const rows = first === 1 ? [] : [...products.value];
+  const seen = new Set(rows.map(keyOf));
   try {
-    const data = await centerProducts(context.value.key, {
-      keyword: applied.value.trim(),
-      types: selectedTypes.value,
-      states: selectedStates.value,
-      categoryType: selectedCategory.value?.type,
-      categoryId: selectedCategory.value?.id,
-      page: browsePage.value,
-      pageSize: browsePageSize.value,
-    });
-    if (seq !== browseSequence) return;
-    products.value = data.records;
-    browseTotal.value = data.total;
-    const max = Math.max(1, Math.ceil(data.total / browsePageSize.value));
-    if (browsePage.value > max) {
-      browsePage.value = max;
-      await loadBrowse();
+    for (let page = first; page <= last; page++) {
+      const data = await centerProducts(owner, {
+        keyword: applied.value.trim(),
+        types: selectedTypes.value,
+        states: selectedStates.value,
+        categoryType: selectedCategory.value?.type,
+        categoryId: selectedCategory.value?.id,
+        page,
+        pageSize: browseBatchSize,
+      });
+      if (seq !== browseSequence) return;
+      for (const row of data.records) {
+        const key = keyOf(row);
+        if (!seen.has(key)) {
+          rows.push(row);
+          seen.add(key);
+        }
+      }
+      const hasMore = data.records.length === browseBatchSize && page * browseBatchSize < data.total;
+      if (page === last || !hasMore) {
+        products.value = rows;
+        browseTotal.value = data.total;
+        nextBrowsePage = page + 1;
+        moreProducts.value = hasMore;
+        break;
+      }
     }
   } catch (e) {
-    if (seq === browseSequence) {
-      products.value = [];
-      browseTotal.value = 0;
-      fail(e);
-    }
+    if (seq !== browseSequence) return;
+    if (e instanceof ApiError && (e.status === 401 || e.status === 403)) fail(e);
+    else browseError.value = getSafeErrorMessage(e, '加载失败，请重试');
   } finally {
-    if (seq === browseSequence) loading.value = false;
+    if (seq === browseSequence) browseBusy.value = false;
   }
 }
+watch(browseEnd, (element, _, onCleanup) => {
+  if (!element) return;
+  const observer = new IntersectionObserver((entries) => {
+    if (element === browseEnd.value && entries.some((entry) => entry.isIntersecting) && !detail.value) void loadBrowse();
+  });
+  observer.observe(element);
+  onCleanup(() => observer.disconnect());
+}, { flush: 'post' });
 async function loadBasket(preserveOnError = false) {
   if (!context.value) return;
   const seq = ++basketSequence;
@@ -194,17 +241,10 @@ function queryCategory(node: CategoryNode) {
 }
 function search() {
   applied.value = query.value.trim();
-  browsePage.value = 1;
-  void loadBrowse();
+  void resetBrowse();
 }
 async function changeView(value: string) {
   await router.replace({ path: route.path, query: { view: value } });
-  window.scrollTo(0, 0);
-}
-function changeBrowsePage(info: PageInfo) {
-  browsePage.value = info.pageSize === browsePageSize.value ? info.current : 1;
-  browsePageSize.value = info.pageSize;
-  void loadBrowse();
   window.scrollTo(0, 0);
 }
 function changeBasketPage(info: PageInfo) {
@@ -212,65 +252,74 @@ function changeBasketPage(info: PageInfo) {
   basketPageSize.value = info.pageSize;
   void loadBasket();
 }
+function updateProduct(product: CenterProduct, changes: Partial<CenterProduct>) {
+  const key = keyOf(product);
+  const card = products.value.find((item) => keyOf(item) === key);
+  if (card) Object.assign(card, changes);
+  if (detail.value && keyOf(detail.value.product) === key) Object.assign(detail.value.product, changes);
+}
 async function openDetail(p: CenterProduct) {
   if (!context.value) return;
+  const seq = ++detailSequence;
   try {
-    const owner = context.value.key;
-    const response = await centerDetail(owner, p.type, p.id);
-    if (context.value?.key === owner) detail.value = response;
+    const response = await centerDetail(context.value.key, p.type, p.id);
+    if (seq !== detailSequence) return;
+    updateProduct(p, response.product);
+    detail.value = response;
   } catch (e) {
-    fail(e);
+    if (seq === detailSequence) fail(e);
   }
 }
 async function add(p: CenterProduct) {
   if (!context.value || !p.canAdd || p.inSelection || adding.value.includes(keyOf(p))) return;
+  const owner = context.value.key, version = scopeVersion;
   adding.value.push(keyOf(p));
-  const owner = context.value.key;
   try {
-    await addCenterSelection(owner, p.type, p.id);
-    if (context.value?.key !== owner) return;
-    const markSelected = (item: CenterProduct) => {
-      if (keyOf(item) === keyOf(p)) item.inSelection = true;
-    };
-    products.value.forEach(markSelected);
-    if (detail.value) markSelected(detail.value.product);
-    counts.value[p.type] += 1;
+    const mine = await addCenterSelection(owner, p.type, p.id);
+    if (version !== scopeVersion) return;
+    if (mine) {
+      updateProduct(p, { inSelection: true, selectedByName: null });
+    } else {
+      const latest = await centerDetail(owner, p.type, p.id);
+      if (version !== scopeVersion) return;
+      updateProduct(p, latest.product);
+    }
     await loadBasket(true);
   } catch (e) {
-    mutationFailed(e);
+    if (version === scopeVersion) mutationFailed(e);
   } finally {
-    adding.value = adding.value.filter((k) => k !== keyOf(p));
+    if (version === scopeVersion) adding.value = adding.value.filter((k) => k !== keyOf(p));
   }
 }
 async function remove(id: number | null) {
   if (!context.value || id == null) return;
-  const owner = context.value.key;
+  const owner = context.value.key, version = scopeVersion;
   const removed = basketItems.value.find((item) => item.selectionId === id);
   try {
     await removeCenterSelection(owner, id);
-    if (context.value?.key !== owner) return;
+    if (version !== scopeVersion) return;
     if (removed) {
-      basketItems.value = basketItems.value.filter((item) => item.selectionId !== id);
-      basketTotal.value = Math.max(0, basketTotal.value - 1);
+      if (basketTab.value === removed.type) {
+        basketItems.value = basketItems.value.filter((item) => item.selectionId !== id);
+        basketTotal.value = Math.max(0, basketTotal.value - 1);
+      }
       counts.value[removed.type] = Math.max(0, counts.value[removed.type] - 1);
-      for (const item of products.value) if (keyOf(item) === keyOf(removed)) item.inSelection = false;
-      if (detail.value && keyOf(detail.value.product) === keyOf(removed)) detail.value.product.inSelection = false;
     }
     await loadBasket(true);
   } catch (e) {
-    mutationFailed(e);
+    if (version === scopeVersion) mutationFailed(e);
   }
 }
 const pendingKey = () => `zdm-selection-join:${context.value?.key}`;
 async function submit() {
   if (!context.value || submitting.value || (!count.value && !pendingRequest.value)) return;
   submitting.value = true;
-  const owner = context.value.key;
+  const owner = context.value.key, version = scopeVersion;
   pendingRequest.value ||= crypto.randomUUID();
   localStorage.setItem(pendingKey(), pendingRequest.value);
   try {
-    const data = await joinCenterSelection(context.value.key, pendingRequest.value);
-    if (context.value?.key !== owner) return;
+    const data = await joinCenterSelection(owner, pendingRequest.value);
+    if (version !== scopeVersion) return;
     result.value = data;
     if (data.status === 'completed') {
       localStorage.removeItem(pendingKey());
@@ -284,16 +333,17 @@ async function submit() {
     } else adminFeedback.warning('本次加入仍在处理中，请重试以查询并继续本次处理');
     await loadBasket(true);
   } catch (e) {
-    mutationFailed(e);
+    if (version === scopeVersion) mutationFailed(e);
   } finally {
-    submitting.value = false;
+    if (version === scopeVersion) submitting.value = false;
   }
 }
 watch([selectedTypes, selectedStates, selectedCategory], () => {
-  browsePage.value = 1;
-  void loadBrowse();
+  void resetBrowse();
 });
-watch(basketTab, () => {
+watch(basketTab, (type) => {
+  basketItems.value = [];
+  basketTotal.value = counts.value[type];
   basketPage.value = 1;
   void loadBasket();
 });
@@ -301,7 +351,8 @@ watch(view, () => {
   detail.value = null;
   categoryOpen.value = false;
   void loadBasket();
-  if (view.value === 'browse') void loadBrowse();
+  if (view.value === 'browse') void resetBrowse();
+  else clearBrowse();
 });
 const chromeRef = ref<HTMLElement | null>(null),
   compactChrome = ref(false),
@@ -356,69 +407,52 @@ function resize() {
 function identityKey() {
   try {
     const user = JSON.parse(localStorage.getItem('zdm-admin-user') || 'null');
-    return JSON.stringify(user ? [user.id, user.tenantId, user.storeId, user.identityId] : null);
+    return user ? [user.tenantId, user.storeId, user.id, user.identityId].join(':') : '';
   } catch {
     return '';
   }
 }
-const initialIdentity = identityKey();
-async function onFocus() {
-  if (initialIdentity !== identityKey()) {
+let activeIdentity = '';
+async function syncContext() {
+  const seq = ++contextSequence;
+  const identity = identityKey();
+  const changed = identity !== activeIdentity || !context.value;
+  if (changed) {
     clearData();
-    error.value = '当前身份或门店已变更，请重新打开选品中心';
-    return;
+    activeIdentity = identity;
+    window.scrollTo(0, 0);
+    initializing.value = true;
   }
-  if (!context.value) return;
-  const owner = context.value.key;
+  error.value = '';
   try {
-    const latest = await centerContext();
-    if (owner !== latest.key) {
+    const current = await centerContext();
+    if (seq !== contextSequence || identity !== identityKey()) return;
+    if (!identity || current.key !== identity.slice(0, identity.lastIndexOf(':'))) {
       clearData();
       error.value = '当前身份或门店已变更，请重新打开选品中心';
       return;
     }
-    context.value = latest;
-    await Promise.all([loadBrowse(), loadBasket()]);
+    if (changed) {
+      const rows = await centerCategories(current.key);
+      if (seq !== contextSequence || identity !== identityKey()) return;
+      categoryTrees.value = { finished: categoryTree(rows, 'finished'), accessory: categoryTree(rows, 'accessory') };
+    }
+    context.value = current;
+    pendingRequest.value = localStorage.getItem(pendingKey());
+    await Promise.all([loadBrowse(!changed), loadBasket()]);
   } catch (e) {
-    fail(e);
+    if (seq === contextSequence) fail(e);
+  } finally {
+    if (seq === contextSequence) initializing.value = false;
   }
 }
 function onStorage(event: StorageEvent) {
-  if (event.key === 'zdm-admin-user' || event.key === 'zdm-admin-token' || event.key === null) void onFocus();
-}
-async function initialize() {
-  if (initialIdentity !== identityKey()) {
-    clearData();
-    loading.value = false;
-    error.value = '当前身份或门店已变更，请重新打开选品中心';
-    return;
-  }
-  loading.value = true;
-  try {
-    const current = await centerContext();
-    if (initialIdentity !== identityKey()) {
-      await onFocus();
-      return;
-    }
-    context.value = current;
-    const rows = await centerCategories(current.key);
-    if (context.value?.key !== current.key || initialIdentity !== identityKey()) {
-      await onFocus();
-      return;
-    }
-    categoryTrees.value = { finished: categoryTree(rows, 'finished'), accessory: categoryTree(rows, 'accessory') };
-    pendingRequest.value = localStorage.getItem(pendingKey());
-    await Promise.all([loadBrowse(), loadBasket()]);
-  } catch (e) {
-    fail(e);
-  } finally {
-    loading.value = false;
-  }
+  if (event.key === 'zdm-admin-user' || event.key === 'zdm-admin-token' || event.key === null) void syncContext();
 }
 onMounted(() => {
-  void initialize();
+  void syncContext();
   measureChrome();
-  window.addEventListener('focus', onFocus);
+  window.addEventListener('focus', syncContext);
   window.addEventListener('storage', onStorage);
   window.addEventListener('scroll', updateCompactChrome, { passive: true });
   window.addEventListener('resize', resize);
@@ -426,9 +460,9 @@ onMounted(() => {
   if (chromeRef.value) chromeObserver.observe(chromeRef.value);
 });
 onBeforeUnmount(() => {
-  ++browseSequence;
-  ++basketSequence;
-  window.removeEventListener('focus', onFocus);
+  ++contextSequence;
+  clearData();
+  window.removeEventListener('focus', syncContext);
   window.removeEventListener('storage', onStorage);
   window.removeEventListener('scroll', updateCompactChrome);
   window.removeEventListener('resize', resize);
@@ -622,7 +656,7 @@ onBeforeUnmount(() => {
     <main class="platform-width platform-body">
       <t-alert v-if="error" theme="error"
         >{{ error }}
-        <t-button :theme="buttonTheme('search')" variant="text" @click="context ? onFocus() : initialize()"
+        <t-button :theme="buttonTheme('search')" variant="text" @click="syncContext"
           >重试</t-button
         ></t-alert
       >
@@ -648,7 +682,7 @@ onBeforeUnmount(() => {
               <div class="image-tags">
                 <t-tag v-if="!canMaintain(p)" theme="default" variant="light">{{ permissionLabel(p) }}</t-tag>
                 <t-tag v-if="p.inSelection && !p.addedToStore" theme="success" variant="light"
-                  ><template #icon><t-icon name="check-circle" /></template>已加入选品清单</t-tag
+                  ><template #icon><t-icon name="check-circle" /></template>{{ selectionLabel(p) }}</t-tag
                 >
                 <t-tag v-if="p.addedToStore" theme="primary" variant="light"
                   ><template #icon><t-icon name="shop" /></template>已加入门店</t-tag
@@ -670,16 +704,13 @@ onBeforeUnmount(() => {
             </div>
           </t-card>
         </div>
-        <t-empty v-if="!browseTotal && !loading && !error" description="暂无符合条件的商品" />
-        <div class="selection-pagination admin-layout">
-          <AdminPagination
-            :total="browseTotal"
-            :current="browsePage"
-            :page-size="browsePageSize"
-            :page-size-options="[10, 20, 40]"
-            @change="changeBrowsePage"
-          />
+        <t-empty v-if="!browseTotal && !loading && !error && !browseError" description="暂无符合条件的商品" />
+        <div v-if="browseError" role="alert">
+          {{ browseError }}
+          <t-button :theme="buttonTheme('search')" variant="text" @click="loadBrowse(retryRefresh)">重试</t-button>
         </div>
+        <t-loading v-else-if="browseBusy && products.length" size="small" />
+        <div v-else-if="products.length && moreProducts && !detail" ref="browseEnd" aria-hidden="true"></div>
       </template>
       <template v-else>
         <div v-if="count" class="selection-layout">
@@ -727,7 +758,6 @@ onBeforeUnmount(() => {
                 :total="basketTotal"
                 :current="basketPage"
                 :page-size="basketPageSize"
-                :page-size-options="[5, 10, 20]"
                 @change="changeBasketPage"
               />
             </div>

@@ -113,6 +113,7 @@ async function selectionCenterFixture(
     soldOut: false,
     addedToStore: false,
     inSelection: false,
+    selectedByName: null,
     canAdd: true,
     reasons: [],
     selectionId: 191 + index,
@@ -1140,7 +1141,7 @@ test('store list header checkbox selects and clears only the current page', asyn
   await expect(checked).toHaveCount(0);
 });
 
-test('selection center paginates browse and basket and submits selected items from every page', async ({ page }) => {
+test('selection center appends catalog pages and submits personal selections from every basket page', async ({ page }) => {
   await storeLogin(page);
   await page.route('**/api/admin/store-finished-products**', (route) => route.fulfill({ json: ok([]) }));
   const fixture = await selectionCenterFixture(page, { count: 30 });
@@ -1148,24 +1149,25 @@ test('selection center paginates browse and basket and submits selected items fr
   const center = await openSelectionCenter(page);
   await expect(center.locator('.product-card')).toHaveCount(20);
   await expect(center.locator('thead .t-checkbox')).toHaveCount(0);
-  for (let index = 0; index < 6; index++) {
+  for (let index = 0; index < 10; index++) {
     const add = center.locator('.product-card').nth(index).getByRole('button', { name: '加入清单', exact: true });
     await add.click();
     await expect(add).toBeDisabled();
   }
-  await center.locator('.t-pagination__btn-next').click();
-  await expect(center.locator('.product-card')).toHaveCount(10);
-  await center.locator('.product-card').first().getByRole('button', { name: '加入清单', exact: true }).click();
-  await center.locator('.t-pagination__btn-prev').click();
+  await expect(center.locator('.t-pagination')).toHaveCount(0);
+  await center.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  await expect(center.locator('.product-card')).toHaveCount(30);
+  await center.locator('.product-card').nth(20).getByRole('button', { name: '加入清单', exact: true }).click();
   await expect(
     center.locator('.product-card').first().getByRole('button', { name: '加入清单', exact: true }),
   ).toBeDisabled();
+  await center.evaluate(() => window.scrollTo(0, 0));
   await center.getByRole('button', { name: '选品清单', exact: false }).click();
-  await expect(center.locator('.basket-row')).toHaveCount(5);
+  await expect(center.locator('.basket-row')).toHaveCount(10);
   await center.locator('.t-pagination__btn-next').click();
-  await expect(center.locator('.basket-row')).toHaveCount(2);
+  await expect(center.locator('.basket-row')).toHaveCount(1);
   await center.getByRole('button', { name: '加入门店', exact: true }).click();
-  await expect.poll(() => fixture.joined()).toEqual([91, 92, 93, 94, 95, 96, 111]);
+  await expect.poll(() => fixture.joined()).toEqual([91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 111]);
   await expect(center.locator('.basket-row')).toHaveCount(0);
   await expect(center.locator('.t-pagination')).toHaveCount(0);
 });
