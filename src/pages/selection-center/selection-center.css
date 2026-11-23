@@ -948,3 +948,13 @@
 .media-thumbnails > .t-tag {
   justify-content: center;
 }
+
+.selection-center .basket-product {
+  position: relative;
+}
+.selection-center .detail-read-indicator {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}

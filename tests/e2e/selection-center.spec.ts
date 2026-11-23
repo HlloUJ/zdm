@@ -1358,6 +1358,8 @@ test('a detail read started before the first add keeps the confirmed selection',
   await card.click();
   await requested;
   try {
+    await expect(card.getByRole('status', { name: '正在读取商品详情' })).toBeVisible();
+    await expect(page.locator('.t-drawer--open')).toHaveCount(0);
     await add.click();
     await expect(page.locator('.header-tools .t-badge')).toContainText('1');
     await expect(add).toBeDisabled();

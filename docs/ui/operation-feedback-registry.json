@@ -1128,7 +1128,7 @@
       }
     },
     "src/pages/selection-center/components/SelectionDetail.vue": {
-      "script": "4f39e6689af4cdda064693e9ac5b53521ccd091f651c4019cef7208b96f0e643",
+      "script": "80657e4dee7afb433e5c5cb3132a6e21f2f5a1971c32c8f8e20d059ee74ca41a",
       "actions": {
         "change → mode = 'gallery'; index = i;": "view",
         "change → mode = 'video'": "view",
@@ -1140,7 +1140,7 @@
       }
     },
     "src/pages/selection-center/index.vue": {
-      "script": "25851b99ddc134c32dc104d5903180d413257b473b7189ccc7ef8c7a5259f716",
+      "script": "e51afd968d44eeeed1f1525e8d9932d651e8a49776e20a42b6ce637c563cf1f6",
       "actions": {
         "add → add": "single",
         "change → changeBasketPage": "query",
@@ -3173,7 +3173,7 @@
     },
     "src/pages/selection-center/index.vue": {
       "baseSha256": "ce5f4d26dfd05df3ba12353a7c518e5b9c6189e61c1e1d41b638d2d2e1b824f1",
-      "patchCount": 24,
+      "patchCount": 31,
       "patches": [
         {
           "stage": "before-migrations",
@@ -3288,6 +3288,34 @@
         {
           "before": "        </section>\n      </template>\n    </main>\n    <SelectionDetail :detail=\"detail\" @close=\"detail = null\" @add=\"add\" />\n    <AdminDialog\n      v-model:visible=\"resultVisible\"\n",
           "after": "        </section>\n      </template>\n      </t-loading>\n    </main>\n    <SelectionDetail :detail=\"detail\" :loading=\"detailIndicator\" :adding=\"Boolean(detail && adding.includes(keyOf(detail.product)))\" :adding-indicator=\"Boolean(detail && addingIndicator(keyOf(detail.product)))\" @close=\"closeDetail\" @add=\"add\" />\n    <AdminDialog\n      v-model:visible=\"resultVisible\"\n"
+        },
+        {
+          "before": "const activeBasketItems = computed(() => basketItems.value);\nconst detail = ref<CenterDetail | null>(null);\nconst detailPending = ref(false);\nconst joinRefreshing = ref(false);\nconst detailIndicator = useDelayedLoading(() => detailPending.value);\nconst initializing = ref(false);\nconst basketBusy = ref(false);\n",
+          "after": "const activeBasketItems = computed(() => basketItems.value);\nconst detail = ref<CenterDetail | null>(null);\nconst detailPendingKey = ref<string | null>(null);\nconst joinRefreshing = ref(false);\nconst detailIndicator = useDelayedKeys(() => detailPendingKey.value ? [detailPendingKey.value] : []);\nconst initializing = ref(false);\nconst basketBusy = ref(false);\n"
+        },
+        {
+          "before": "  ++browseSequence;\n  ++detailSequence;\n  detailPending.value = false;\n  detail.value = null;\n  nextBrowsePage = 1;\n",
+          "after": "  ++browseSequence;\n  ++detailSequence;\n  detailPendingKey.value = null;\n  detail.value = null;\n  nextBrowsePage = 1;\n"
+        },
+        {
+          "before": "}\nasync function openDetail(p: CenterProduct) {\n  if (!context.value) return;\n  const seq = ++detailSequence;\n  detailPending.value = true;\n  const confirmed = trackProductRead();\n  try {\n",
+          "after": "}\nasync function openDetail(p: CenterProduct) {\n  if (!context.value || detailPendingKey.value === keyOf(p)) return;\n  const seq = ++detailSequence;\n  detailPendingKey.value = keyOf(p);\n  const confirmed = trackProductRead();\n  try {\n"
+        },
+        {
+          "before": "  } finally {\n    pendingProductReads.delete(confirmed);\n    if (seq === detailSequence) detailPending.value = false;\n  }\n}\nfunction closeDetail() {\n  ++detailSequence;\n  detailPending.value = false;\n  detail.value = null;\n}\n",
+          "after": "  } finally {\n    pendingProductReads.delete(confirmed);\n    if (seq === detailSequence) detailPendingKey.value = null;\n  }\n}\nfunction closeDetail() {\n  ++detailSequence;\n  detailPendingKey.value = null;\n  detail.value = null;\n}\n"
+        },
+        {
+          "before": "          >\n            <div class=\"product-image\">\n              <img :src=\"p.imageUrl || undefined\" :alt=\"p.name\" />\n              <div class=\"image-tags\">\n",
+          "after": "          >\n            <div class=\"product-image\">\n              <t-loading v-if=\"detailIndicator(keyOf(p))\" class=\"detail-read-indicator\" size=\"small\" role=\"status\" aria-label=\"正在读取商品详情\" />\n              <img :src=\"p.imageUrl || undefined\" :alt=\"p.name\" />\n              <div class=\"image-tags\">\n"
+        },
+        {
+          "before": "              >\n                <div class=\"basket-product\">\n                  <img :src=\"p.imageUrl || undefined\" :alt=\"p.name\" />\n                  <div>\n",
+          "after": "              >\n                <div class=\"basket-product\">\n                  <t-loading v-if=\"detailIndicator(keyOf(p))\" class=\"detail-read-indicator\" size=\"small\" role=\"status\" aria-label=\"正在读取商品详情\" />\n                  <img :src=\"p.imageUrl || undefined\" :alt=\"p.name\" />\n                  <div>\n"
+        },
+        {
+          "before": "      </t-loading>\n    </main>\n    <SelectionDetail :detail=\"detail\" :loading=\"detailIndicator\" :adding=\"Boolean(detail && adding.includes(keyOf(detail.product)))\" :adding-indicator=\"Boolean(detail && addingIndicator(keyOf(detail.product)))\" @close=\"closeDetail\" @add=\"add\" />\n    <AdminDialog\n      v-model:visible=\"resultVisible\"\n",
+          "after": "      </t-loading>\n    </main>\n    <SelectionDetail :detail=\"detail\" :adding=\"Boolean(detail && adding.includes(keyOf(detail.product)))\" :adding-indicator=\"Boolean(detail && addingIndicator(keyOf(detail.product)))\" @close=\"closeDetail\" @add=\"add\" />\n    <AdminDialog\n      v-model:visible=\"resultVisible\"\n"
         }
       ]
     },
@@ -4759,7 +4787,7 @@
     },
     "src/pages/selection-center/components/SelectionDetail.vue": {
       "baseSha256": "4213738cabdb948ef2298146f177527df645a75e5ab7388931cd89a8a9c76ebf",
-      "patchCount": 3,
+      "patchCount": 5,
       "patches": [
         {
           "before": "import { selectionSalesModel, selectionAttributes } from '../selectionDetailModel';\nimport HistoricalRichText from '@/pages/finished-stock/management/components/HistoricalRichText.vue';\nconst props = defineProps<{ detail: CenterDetail | null }>();\nconst emit = defineEmits<{ close: []; add: [product: CenterProduct] }>();\nconst mode = ref<'video' | 'gallery'>('gallery');\n",
@@ -4772,6 +4800,14 @@
         {
           "before": "            v-if=\"!detail.product.soldOut && !detail.product.addedToStore && !detail.product.inSelection\"\n            :theme=\"buttonTheme('select-product')\"\n            :disabled=\"!detail.product.canAdd\"\n            @click=\"emit('add', detail.product)\"\n            >加入清单</t-button\n",
           "after": "            v-if=\"!detail.product.soldOut && !detail.product.addedToStore && !detail.product.inSelection\"\n            :theme=\"buttonTheme('select-product')\"\n            data-loading-button\n            :loading=\"addingIndicator\"\n            :disabled=\"!detail.product.canAdd || adding\"\n            @click=\"emit('add', detail.product)\"\n            >加入清单</t-button\n"
+        },
+        {
+          "before": "import { selectionSalesModel, selectionAttributes } from '../selectionDetailModel';\nimport HistoricalRichText from '@/pages/finished-stock/management/components/HistoricalRichText.vue';\nconst props = defineProps<{ detail: CenterDetail | null; loading?: boolean; adding?: boolean; addingIndicator?: boolean }>();\nconst emit = defineEmits<{ close: []; add: [product: CenterProduct] }>();\nconst mode = ref<'video' | 'gallery'>('gallery');\n",
+          "after": "import { selectionSalesModel, selectionAttributes } from '../selectionDetailModel';\nimport HistoricalRichText from '@/pages/finished-stock/management/components/HistoricalRichText.vue';\nconst props = defineProps<{ detail: CenterDetail | null; adding?: boolean; addingIndicator?: boolean }>();\nconst emit = defineEmits<{ close: []; add: [product: CenterProduct] }>();\nconst mode = ref<'video' | 'gallery'>('gallery');\n"
+        },
+        {
+          "before": "  <t-drawer\n    header=\"商品详情\"\n    :visible=\"Boolean(detail) || loading\"\n    size=\"min(1120px, 100%)\"\n    :footer=\"false\"\n    @close=\"emit('close')\"\n  >\n    <t-loading v-if=\"loading\" />\n    <template v-else-if=\"detail\">\n      <div class=\"detail-media-layout\">\n        <aside class=\"media-thumbnails\" aria-label=\"商品媒体缩略图\">\n",
+          "after": "  <t-drawer\n    header=\"商品详情\"\n    :visible=\"Boolean(detail)\"\n    size=\"min(1120px, 100%)\"\n    :footer=\"false\"\n    @close=\"emit('close')\"\n  >\n    <template v-if=\"detail\">\n      <div class=\"detail-media-layout\">\n        <aside class=\"media-thumbnails\" aria-label=\"商品媒体缩略图\">\n"
         }
       ]
     },
@@ -4995,6 +5031,60 @@
       "pages": {
         "src/pages/selection-center/index.vue": {
           "script": "25851b99ddc134c32dc104d5903180d413257b473b7189ccc7ef8c7a5259f716",
+          "actions": {
+            "add → add": "single",
+            "change → changeBasketPage": "query",
+            "choose → queryCategory": "query",
+            "clear → query = ''; search();": "query",
+            "click → add(p)": "single",
+            "click → changeView('basket')": "view",
+            "click → changeView('browse')": "view",
+            "click → clearSelectedCategory": "query",
+            "click → loadBrowse(retryRefresh)": "query",
+            "click → openDetail(p)": "view",
+            "click → remove(p.selectionId)": "single",
+            "click → search": "query",
+            "click → submit": "@perItem",
+            "click → syncContext": "query",
+            "click → toggleState(item.value)": "query",
+            "click → toggleType(item.value)": "query",
+            "close → closeDetail": "view",
+            "enter → search": "query",
+            "keydown → openDetail(p)": "view"
+          }
+        }
+      },
+      "beforeChanges": {
+        "src/pages/selection-center/index.vue": "ce5f4d26dfd05df3ba12353a7c518e5b9c6189e61c1e1d41b638d2d2e1b824f1"
+      }
+    },
+    {
+      "source": "src/pages/selection-center/components/SelectionDetail.vue",
+      "sha256": "88d55b07621742fc597cc459ef7e6622e1d9c54a625f145c9c76a52c57fb959b",
+      "pages": {
+        "src/pages/selection-center/components/SelectionDetail.vue": {
+          "script": "80657e4dee7afb433e5c5cb3132a6e21f2f5a1971c32c8f8e20d059ee74ca41a",
+          "actions": {
+            "change → mode = 'gallery'; index = i;": "view",
+            "change → mode = 'video'": "view",
+            "click → emit('add', detail.product)": "single",
+            "close → emit('close')": "view",
+            "close → mediaPreview = null": "view",
+            "preview → mediaPreview = $event": "view",
+            "update:visible → !$event && (mediaPreview = null)": "view"
+          }
+        }
+      },
+      "beforeChanges": {
+        "src/pages/selection-center/components/SelectionDetail.vue": "4213738cabdb948ef2298146f177527df645a75e5ab7388931cd89a8a9c76ebf"
+      }
+    },
+    {
+      "source": "src/pages/selection-center/index.vue",
+      "sha256": "11e387eca24a77d301133f20bc043d98dba433e4b890ab35273a220abc4461f3",
+      "pages": {
+        "src/pages/selection-center/index.vue": {
+          "script": "e51afd968d44eeeed1f1525e8d9932d651e8a49776e20a42b6ce637c563cf1f6",
           "actions": {
             "add → add": "single",
             "change → changeBasketPage": "query",

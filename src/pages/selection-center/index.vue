@@ -85,9 +85,9 @@ const pagedProducts = computed(() => products.value),
   pagedBasketItems = computed(() => basketItems.value);
 const activeBasketItems = computed(() => basketItems.value);
 const detail = ref<CenterDetail | null>(null);
-const detailPending = ref(false);
+const detailPendingKey = ref<string | null>(null);
 const joinRefreshing = ref(false);
-const detailIndicator = useDelayedLoading(() => detailPending.value);
+const detailIndicator = useDelayedKeys(() => detailPendingKey.value ? [detailPendingKey.value] : []);
 const initializing = ref(false);
 const basketBusy = ref(false);
 const loading = computed(() => initializing.value || (view.value === 'browse' && browseBusy.value && !products.value.length));
@@ -138,7 +138,7 @@ function trackProductRead() {
 function clearBrowse() {
   ++browseSequence;
   ++detailSequence;
-  detailPending.value = false;
+  detailPendingKey.value = null;
   detail.value = null;
   nextBrowsePage = 1;
   moreProducts.value = true;
@@ -301,9 +301,9 @@ function updateProduct(product: CenterProduct, changes: Partial<CenterProduct>) 
   if (detail.value && keyOf(detail.value.product) === key) Object.assign(detail.value.product, changes);
 }
 async function openDetail(p: CenterProduct) {
-  if (!context.value) return;
+  if (!context.value || detailPendingKey.value === keyOf(p)) return;
   const seq = ++detailSequence;
-  detailPending.value = true;
+  detailPendingKey.value = keyOf(p);
   const confirmed = trackProductRead();
   try {
     const response = await centerDetail(context.value.key, p.type, p.id);
@@ -315,12 +315,12 @@ async function openDetail(p: CenterProduct) {
     if (seq === detailSequence) fail(e);
   } finally {
     pendingProductReads.delete(confirmed);
-    if (seq === detailSequence) detailPending.value = false;
+    if (seq === detailSequence) detailPendingKey.value = null;
   }
 }
 function closeDetail() {
   ++detailSequence;
-  detailPending.value = false;
+  detailPendingKey.value = null;
   detail.value = null;
 }
 async function add(p: CenterProduct) {
@@ -740,6 +740,7 @@ const moreIndicator = useDelayedLoading(() => Boolean(browseBusy.value && produc
             @click="openDetail(p)"
           >
             <div class="product-image">
+              <t-loading v-if="detailIndicator(keyOf(p))" class="detail-read-indicator" size="small" role="status" aria-label="正在读取商品详情" />
               <img :src="p.imageUrl || undefined" :alt="p.name" />
               <div class="image-tags">
                 <t-tag v-if="!canMaintain(p)" theme="default" variant="light">{{ permissionLabel(p) }}</t-tag>
@@ -802,6 +803,7 @@ const moreIndicator = useDelayedLoading(() => Boolean(browseBusy.value && produc
                 @keydown.space.prevent.self="openDetail(p)"
               >
                 <div class="basket-product">
+                  <t-loading v-if="detailIndicator(keyOf(p))" class="detail-read-indicator" size="small" role="status" aria-label="正在读取商品详情" />
                   <img :src="p.imageUrl || undefined" :alt="p.name" />
                   <div>
                     <div class="product-name">{{ p.name }}</div>
@@ -859,7 +861,7 @@ const moreIndicator = useDelayedLoading(() => Boolean(browseBusy.value && produc
       </template>
       </t-loading>
     </main>
-    <SelectionDetail :detail="detail" :loading="detailIndicator" :adding="Boolean(detail && adding.includes(keyOf(detail.product)))" :adding-indicator="Boolean(detail && addingIndicator(keyOf(detail.product)))" @close="closeDetail" @add="add" />
+    <SelectionDetail :detail="detail" :adding="Boolean(detail && adding.includes(keyOf(detail.product)))" :adding-indicator="Boolean(detail && addingIndicator(keyOf(detail.product)))" @close="closeDetail" @add="add" />
     <AdminDialog
       v-model:visible="resultVisible"
       header="加入门店结果"
