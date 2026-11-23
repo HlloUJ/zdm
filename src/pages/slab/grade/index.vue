@@ -43,7 +43,7 @@
             row-key="id"
             :data="pageData"
             :columns="columns"
-            :loading="loading"
+            :loading="contentLoading"
             :class="{ 'zdm-row-sort-table': canSort }"
             :drag-sort="canSort ? 'row' : undefined"
             :drag-sort-options="{
@@ -82,7 +82,11 @@
                   hover="color"
                   :disabled="operations.pending(`delete:${row.id}`)"
                     @click="openConfirm(row, 'delete')"
-                  >删除</t-link
+                  ><template #prefix-icon>
+                    <span class="row-loading-slot">
+                      <t-loading v-if="operations.checkingIndicator(`delete:${row.id}`)" size="small" />
+                    </span>
+                  </template>删除</t-link
                 >
               </div>
             </template>
@@ -104,7 +108,8 @@
       dialog-class-name="zdm-admin-dialog zdm-admin-single-form"
       width="480px"
       :header="editingId ? '编辑等级' : '新增等级'"
-      @confirm="submitGrade"
+      :confirm-btn="{ loading: submitGradePending }"
+      @confirm="submitGradeOnce"
       @cancel="closeForm"
       @close="closeForm"
     >
@@ -136,6 +141,8 @@
 </template>
 
 <script setup lang="ts">
+import { useContentRequest } from '@/composables/useContentRequest';
+import { usePendingAction } from '@/composables/usePendingAction';
 import { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';
 import { checkSlabGradeDelete } from '@/services/slabGrades';
 import { useOperationPreflight, requireCondition } from '@/composables/useOperationPreflight';
@@ -175,7 +182,8 @@ const canEdit = computed(() => hasPermission(loginUser.value, `${permissionPrefi
 const canToggle = computed(() => hasPermission(loginUser.value, `${permissionPrefix}.toggle-status`));
 const canDelete = computed(() => hasPermission(loginUser.value, `${permissionPrefix}.delete`));
 
-const loading = ref(false);
+const listRequest = useContentRequest();
+const loading = listRequest.pending;
 const tableData = ref<GradeItem[]>([]);
 const searchForm = reactive({
   code: '',
@@ -232,14 +240,17 @@ const ensureCurrentPage = () => {
   if (pagination.current > maxPage) pagination.current = maxPage;
 };
 const loadGrades = async () => {
-  loading.value = true;
+  const request = listRequest.start();
   try {
-    tableData.value = (await listSlabGrades()).map(toGradeItem);
+    const records = (await listSlabGrades()).map(toGradeItem);
+    if (!request.current()) return;
+    tableData.value = records;
     ensureCurrentPage();
   } catch (error) {
+    if (!request.current()) return;
     adminFeedback.error(error instanceof Error ? error.message : '等级列表加载失败');
   } finally {
-    loading.value = false;
+    request.finish();
   }
 };
 const handleSearch = () => {
@@ -313,8 +324,8 @@ const submitGrade = async () => {
     if (editingId.value) await updateSlabGrade(editingId.value, payload);
     else await createSlabGrade(payload);
     const target = `${payload.code} ${payload.name}`;
-    await loadGrades();
     closeForm();
+    await loadGrades();
     if (editingId.value) adminFeedback.actionSuccess({ action: '修改', target });
     else adminFeedback.created(target);
   } catch (error) {
@@ -352,9 +363,9 @@ const submitConfirm = async () => {
         if (!deleted) throw new Error('等级未删除，请刷新后重试');
       } else await updateSlabGradeStatus(target.id, operationType === 'enable' ? 'enabled' : 'disabled');
       if (!current()) return;
+      confirmVisible.value = false;
       await loadGrades();
       if (!current()) return;
-      confirmVisible.value = false;
       if (operationType === 'delete') adminFeedback.deleted(targetName);
       else adminFeedback.actionSuccess({ action, target: targetName });
     } catch (error) {
@@ -365,6 +376,10 @@ const submitConfirm = async () => {
 };
 
 onMounted(loadGrades);
+
+const contentLoading = listRequest.indicator;
+
+const { pending: submitGradePending, run: submitGradeOnce } = usePendingAction(submitGrade);
 </script>
 
 <style scoped>

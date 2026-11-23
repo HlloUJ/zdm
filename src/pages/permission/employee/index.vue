@@ -61,7 +61,7 @@
                 </div>
               </t-form>
               <AdminListToolbar :has-actions="canCreateEmployee"
-                ><t-button :theme="buttonTheme('create')" :loading="inviteCreating" @click="openInviteDialog">
+                ><t-button data-loading-button :theme="buttonTheme('create')" :disabled="inviteCreating" :loading="inviteIndicator" @click="openInviteDialog">
                   <template #icon><t-icon name="add" /></template>
                   邀请员工
                 </t-button></AdminListToolbar
@@ -69,7 +69,7 @@
             </div>
           </template>
           <template #table>
-            <t-table row-key="id" :data="pageData" :columns="columns" :loading="loading" hover table-layout="fixed">
+            <t-table row-key="id" :data="pageData" :columns="columns" :loading="contentLoading" hover table-layout="fixed">
               <template #index="{ rowIndex }">
                 {{ (pagination.current - 1) * pagination.pageSize + rowIndex + 1 }}
               </template>
@@ -186,9 +186,9 @@
       header="编辑资料"
       width="480px"
       placement="center"
-      :confirm-btn="dialogButtonProps('submit', formConfirmation('edit'))"
+      :confirm-btn="handleProfileSubmitButton"
       :cancel-btn="cancelButtonProps('取消')"
-      @confirm="handleProfileSubmit"
+      @confirm="handleProfileSubmitOnce"
       @cancel="closeProfileDialog"
       @close="closeProfileDialog"
     >
@@ -213,9 +213,9 @@
       header="配置权限"
       width="560px"
       placement="center"
-      :confirm-btn="dialogButtonProps('permissions', operationConfirmation('配置权限'))"
+      :confirm-btn="handlePermissionSubmitButton"
       :cancel-btn="cancelButtonProps('取消')"
-      @confirm="handlePermissionSubmit"
+      @confirm="handlePermissionSubmitOnce"
       @cancel="closePermissionDialog"
       @close="closePermissionDialog"
     >
@@ -256,6 +256,10 @@
 </template>
 
 <script setup lang="ts">
+import { useContentRequest } from '@/composables/useContentRequest';
+import { useDialogLoading } from '@/composables/useDialogLoading';
+import { usePendingAction } from '@/composables/usePendingAction';
+import { useDelayedLoading } from '@/composables/useDelayedLoading';
 import { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';
 import { useOperationPreflight } from '@/composables/useOperationPreflight';
 import {
@@ -406,7 +410,8 @@ const expandRolePermissions = (roleIds: string[]) => {
 };
 
 const employees = ref<EmployeeItem[]>([]);
-const loading = ref(false);
+const listRequest = useContentRequest();
+const loading = listRequest.pending;
 
 const makeEmptyFilter = (): EmployeeFilter => ({
   name: '',
@@ -579,7 +584,7 @@ const toEmployeePayload = (employee: EmployeeItem): EmployeePayload => ({
 });
 
 const loadPermissionCenter = async () => {
-  loading.value = true;
+  const request = listRequest.start();
   try {
     const [roles, records] = await Promise.all([
       !isPlatformSupplyChain.value &&
@@ -592,12 +597,14 @@ const loadPermissionCenter = async () => {
         : Promise.resolve<RoleRecord[]>([]),
       listEmployees(managedClient.value),
     ]);
+    if (!request.current()) return;
     operationRoles.value = roles.filter((role) => role.status === 'enabled');
     employees.value = sortByCreatedAtDesc(records).map(toEmployeeItem);
   } catch (error) {
+    if (!request.current()) return;
     adminFeedback.error(error instanceof Error ? error.message : '员工列表加载失败');
   } finally {
-    loading.value = false;
+    request.finish();
   }
 };
 
@@ -890,6 +897,14 @@ onMounted(() => {
     managedClient.value = managementTabs.value[0]?.value === 'supply-chain' ? 'supply-chain' : 'admin';
   void loadPermissionCenter();
 });
+
+const inviteIndicator = useDelayedLoading(() => Boolean(inviteCreating.value));
+const contentLoading = listRequest.indicator;
+
+const { pending: handleProfileSubmitPending, run: handleProfileSubmitOnce } = usePendingAction(handleProfileSubmit);
+const handleProfileSubmitButton = useDialogLoading(() => profileDialogVisible.value, () => dialogButtonProps('submit', formConfirmation('edit'), { loading: handleProfileSubmitPending.value }));
+const { pending: handlePermissionSubmitPending, run: handlePermissionSubmitOnce } = usePendingAction(handlePermissionSubmit);
+const handlePermissionSubmitButton = useDialogLoading(() => permissionDialogVisible.value, () => dialogButtonProps('permissions', operationConfirmation('配置权限'), { loading: handlePermissionSubmitPending.value }));
 </script>
 
 <style scoped>

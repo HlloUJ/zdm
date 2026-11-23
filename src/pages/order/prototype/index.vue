@@ -4,6 +4,7 @@
     <div class="admin-shell">
       <AdminSideMenu />
       <main class="page" :class="{ 'sales-order-page': page === 'sales' && !selected }">
+        <t-loading :loading="reading.indicator.value || checkingScope">
         <div v-if="scopeVerified">
           <template v-if="selected">
             <AdminDetailPage :title="selected.id" :items="detailItems">
@@ -283,6 +284,7 @@
             ><t-button :theme="buttonTheme('search')" @click="runScopedRead(() => {})">重新核验</t-button></template
           >
         </t-empty>
+        </t-loading>
       </main>
     </div>
     <OrderEditor
@@ -291,7 +293,8 @@
       :order="editingOrder"
       :state="state"
       :editing="editing"
-      @save="saveEditor"
+      :saving="editorSaving"
+      @save="saveEditorOnce"
     />
     <OrderActionDialog
       v-if="scopeVerified && actionOrder"
@@ -366,6 +369,9 @@
   </div>
 </template>
 <script setup lang="ts">
+import { useDelayedLoading } from '@/composables/useDelayedLoading';
+import { useContentRequest } from '@/composables/useContentRequest';
+import { usePendingAction } from '@/composables/usePendingAction';
 import { useOperationPreflight } from '@/composables/useOperationPreflight';
 import { ApiFieldError, OperationBlockedError } from '@/services/http';
 import { orderConfirmationBlock, requireOrderField } from './model';
@@ -447,6 +453,10 @@ import {
   type Status,
 } from './model';
 const operations = useOperationPreflight();
+const reading = useContentRequest();
+const scopeReads = ref(0);
+const checkingScope = useDelayedLoading(() => scopeReads.value > 0);
+operations.onInvalidate(reading.cancel);
 const route = useRoute(),
   user = computed(() => getLoginUser());
 const context = computed<Context>(() => ({
@@ -481,6 +491,7 @@ function clearDeletedCache(event: Event) {
 }
 async function runScopedRead(read: () => void) {
   const captured = key.value;
+  scopeReads.value++;
   try {
     await requireCurrentStoreScope();
     if (captured !== key.value) return;
@@ -491,6 +502,8 @@ async function runScopedRead(read: () => void) {
       scopeError.value = error instanceof Error ? error.message : '门店状态暂时无法核验';
       adminFeedback.error(scopeError.value);
     }
+  } finally {
+    scopeReads.value--;
   }
 }
 const state = ref<State>(createState(context.value));
@@ -730,25 +743,28 @@ function findOrder(id: string) {
   return o;
 }
 async function openAction(id: string, o?: Order, rid = '') {
-  if (id === 'confirm' && o) {
-    await operations.check(`confirm:${o.id}`, async () => {
-      await requireCurrentStoreScope();
-      demand(getUserFunctionAudience(user.value) === 'store' && can(id, o), '没有操作权限');
-      const reason = orderConfirmationBlock(state.value, findOrder(o.id));
-      if (reason) throw new OperationBlockedError(reason);
-    }, () => {
-      action.value = id;
-      recordId.value = rid;
-      actionOrderId.value = o.id;
-      actionVisible.value = true;
-    });
-    return;
-  }
-  operations.select(`${id}:${o?.id ?? ''}`);
+  if (id === 'confirm' && o && operations.pending(`confirm:${o.id}`)) return;
+  const request = reading.start();
   const openingScope = key.value;
   try {
+    if (id === 'confirm' && o) {
+      await operations.check(`confirm:${o.id}`, async () => {
+        await requireCurrentStoreScope();
+        demand(getUserFunctionAudience(user.value) === 'store' && can(id, o), '没有操作权限');
+        const reason = orderConfirmationBlock(state.value, findOrder(o.id));
+        if (reason) throw new OperationBlockedError(reason);
+      }, () => {
+        if (!request.current()) return;
+        action.value = id;
+        recordId.value = rid;
+        actionOrderId.value = o.id;
+        actionVisible.value = true;
+      });
+      return;
+    }
+    operations.select(`${id}:${o?.id ?? ''}`);
     await requireCurrentStoreScope();
-    if (openingScope !== key.value) return;
+    if (!request.current() || openingScope !== key.value) return;
     demand(getUserFunctionAudience(user.value) === 'store', '仅门店端可访问订单原型');
     if (id === 'ship' || id === 'receive') demand(canTask(id), '没有操作权限');
     else demand(can(id, o), '没有操作权限');
@@ -778,7 +794,7 @@ async function openAction(id: string, o?: Order, rid = '') {
       (id === 'correct-payment' && o.payments.find((entry) => entry.id === rid)?.kind === 'receipt')
     ) {
       const options = await listStorePaymentNameOptions();
-      if (actionScope !== key.value) return;
+      if (!request.current() || actionScope !== key.value) return;
       paymentNameOptions.value = options;
     }
     action.value = id;
@@ -786,9 +802,12 @@ async function openAction(id: string, o?: Order, rid = '') {
     actionOrderId.value = o.id;
     actionVisible.value = true;
   } catch (e) {
-    if (openingScope === key.value) adminFeedback.error(e instanceof Error ? e.message : '操作失败');
+    if (request.current() && openingScope === key.value) adminFeedback.error(e instanceof Error ? e.message : '操作失败');
+  } finally {
+    request.finish();
   }
 }
+const { pending: editorSaving, run: saveEditorOnce } = usePendingAction(saveEditor);
 async function saveEditor(o: Order, reason: string) {
   const savingScope = key.value;
   try {

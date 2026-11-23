@@ -76,7 +76,7 @@
             </t-button></AdminListToolbar
           >
 
-          <t-table row-key="id" :data="pageData" :columns="columns" :loading="loading" hover table-layout="fixed">
+          <t-table row-key="id" :data="pageData" :columns="columns" :loading="contentLoading" hover table-layout="fixed">
             <template #index="{ rowIndex }">
               {{ (pagination.current - 1) * pagination.pageSize + rowIndex + 1 }}
             </template>
@@ -133,9 +133,9 @@
       width="480px"
       placement="center"
       :close-on-overlay-click="true"
-      :confirm-btn="dialogButtonProps('submit', formConfirmation(dialogMode))"
+      :confirm-btn="handleSubmitButton"
       :cancel-btn="cancelButtonProps('取消')"
-      @confirm="handleSubmit"
+      @confirm="handleSubmitOnce"
       @cancel="closeFormDialog"
       @close="closeFormDialog"
     >
@@ -222,6 +222,9 @@
 </template>
 
 <script setup lang="ts">
+import { useContentRequest } from '@/composables/useContentRequest';
+import { useDialogLoading } from '@/composables/useDialogLoading';
+import { usePendingAction } from '@/composables/usePendingAction';
 import { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';
 import { useOperationPreflight } from '@/composables/useOperationPreflight';
 import DecimalInput from '@/components/DecimalInput.vue';
@@ -291,7 +294,8 @@ const pageSizeOptions = [10, 20, 50];
 const craftPermissionPrefix = 'admin.product-data-center.finished-stock-craft';
 
 const tableData = ref<CraftItem[]>([]);
-const loading = ref(false);
+const listRequest = useContentRequest();
+const loading = listRequest.pending;
 const loginUser = computed(() => getLoginUser());
 const canCreateCraft = computed(() => hasPermission(loginUser.value, `${craftPermissionPrefix}.create`));
 const canEditCraft = computed(() => hasPermission(loginUser.value, `${craftPermissionPrefix}.edit`));
@@ -432,15 +436,17 @@ const toCraftPayload = (status: CraftStatus, imageMediaId?: number): CraftPayloa
 });
 
 const loadCrafts = async () => {
-  loading.value = true;
+  const request = listRequest.start();
   try {
     const records = await listCrafts();
+    if (!request.current()) return;
     tableData.value = sortByCreatedAtDesc(records).map(toCraftItem);
     ensureCurrentPage();
   } catch (error) {
+    if (!request.current()) return;
     adminFeedback.error(error instanceof Error ? error.message : '工艺列表加载失败');
   } finally {
-    loading.value = false;
+    request.finish();
   }
 };
 
@@ -544,16 +550,17 @@ const handleSubmit = async () => {
   }
   if (result !== true || duplicateName) return rejectFormSubmission(formRef.value);
 
+  let refresh = false;
   try {
     const imageMediaId = formData.image?.mediaId;
     if (dialogMode.value === 'create') {
       await createCraft(toCraftPayload('normal', imageMediaId));
-      await loadCrafts();
+      refresh = true;
       pagination.current = 1;
     } else if (editingId.value) {
       const current = tableData.value.find((item) => item.id === editingId.value);
       await updateCraft(editingId.value, toCraftPayload(current?.status ?? 'normal', imageMediaId));
-      await loadCrafts();
+      refresh = true;
     }
 
     pendingUploadedMediaIds.clear();
@@ -563,6 +570,7 @@ const handleSubmit = async () => {
     } else {
       adminFeedback.actionSuccess({ action: '修改', target: normalizedName });
     }
+    if (refresh) void loadCrafts();
   } catch (error) {
     adminFeedback.error(error instanceof Error ? error.message : '操作失败');
   }
@@ -643,6 +651,11 @@ const handleConfirm = async () => {
 };
 
 onMounted(loadCrafts);
+
+const contentLoading = listRequest.indicator;
+
+const { pending: handleSubmitPending, run: handleSubmitOnce } = usePendingAction(handleSubmit);
+const handleSubmitButton = useDialogLoading(() => formDialogVisible.value, () => dialogButtonProps('submit', formConfirmation(dialogMode.value), { loading: handleSubmitPending.value }));
 </script>
 
 <style scoped>

@@ -38,7 +38,7 @@
             </div>
           </template>
           <template #table>
-            <t-table row-key="id" :data="pageData" :columns="columns" :loading="loading" hover table-layout="fixed">
+            <t-table row-key="id" :data="pageData" :columns="columns" :loading="contentLoading" hover table-layout="fixed">
               <template #valueType="{ row }">{{ valueTypeLabel(row.valueType) }}</template>
               <template #status="{ row }"
                 ><t-tag :theme="row.status === 'enabled' ? 'success' : 'danger'" variant="light">{{
@@ -59,7 +59,11 @@
                     hover="color"
                     :disabled="operations.pending(`delete:${row.id}`)"
                     @click="openDeleteConfirm(row)"
-                    >删除</t-link
+                    ><template #prefix-icon>
+                      <span class="row-loading-slot">
+                        <t-loading v-if="operations.checkingIndicator(`delete:${row.id}`)" size="small" />
+                      </span>
+                    </template>删除</t-link
                   ><span v-if="!canToggleAttributeStatus && !canDeleteAttribute" class="table-action-placeholder"
                     >-</span
                   >
@@ -87,7 +91,8 @@
       placement="center"
       :prevent-scroll-through="false"
       dialog-class-name="attribute-create-dialog zdm-admin-dialog zdm-admin-single-form"
-      @confirm="submit"
+      :confirm-btn="{ loading: submitPending }"
+      @confirm="submitOnce"
       @close="closeCreateDialog"
       @opened="restorePageScroll"
       @closed="restorePageScroll"
@@ -121,6 +126,8 @@
 </template>
 
 <script setup lang="ts">
+import { useContentRequest } from '@/composables/useContentRequest';
+import { usePendingAction } from '@/composables/usePendingAction';
 import { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';
 import { OperationBlockedError } from '@/services/http';
 import { useOperationPreflight } from '@/composables/useOperationPreflight';
@@ -209,7 +216,8 @@ const sourceDescription = computed(
     })[activeScope.value],
 );
 const data = ref<Attribute[]>([]);
-const loading = ref(false);
+const listRequest = useContentRequest();
+const loading = listRequest.pending;
 const searchForm = reactive({ keyword: '' });
 const applied = reactive({ ...searchForm });
 const pageSizeOptions = [10, 20, 50];
@@ -273,15 +281,17 @@ const toAttribute = (record: ProductAttributeRecord): Attribute => ({
   createdAt: formatDateTime(record.createdAt),
 });
 const loadAttributes = async () => {
-  loading.value = true;
+  const request = listRequest.start();
   try {
     const records = await listProductAttributes();
+    if (!request.current()) return;
     data.value = records.map(toAttribute);
     ensureCurrentPage();
   } catch (error) {
+    if (!request.current()) return;
     adminFeedback.error(error instanceof Error ? error.message : '属性列表加载失败');
   } finally {
-    loading.value = false;
+    request.finish();
   }
 };
 const search = () => {
@@ -332,11 +342,11 @@ const submit = async () => {
       attributeRole: 'basic',
       status: 'enabled',
     });
-    await loadAttributes();
     pagination.current = 1;
     dialogVisible.value = false;
     formRef.value?.clearValidate();
     adminFeedback.created(name);
+    void loadAttributes();
   } catch (error) {
     adminFeedback.error(error instanceof Error ? error.message : '操作失败');
   }
@@ -435,6 +445,10 @@ operations.onInvalidate(() => {
   confirmDialogVisible.value = false;
   confirmTarget.value = null;
 });
+
+const contentLoading = listRequest.indicator;
+
+const { pending: submitPending, run: submitOnce } = usePendingAction(submit);
 </script>
 
 <style scoped>

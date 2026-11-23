@@ -39,7 +39,7 @@
               ><template #icon><t-icon name="add" /></template>新增</t-button
             ></AdminListToolbar
           >
-          <t-table row-key="id" :data="pageData" :columns="columns" :loading="loading" hover table-layout="fixed">
+          <t-table row-key="id" :data="pageData" :columns="columns" :loading="contentLoading || preparation.indicator.value" hover table-layout="fixed">
             <template #index="{ rowIndex }">{{
               (pagination.current - 1) * pagination.pageSize + rowIndex + 1
             }}</template>
@@ -67,7 +67,11 @@
                   hover="color"
                   :disabled="operations.pending(`delete:${row.id}`)"
                     @click="openConfirm(row, 'delete')"
-                  >删除</t-link
+                  ><template #prefix-icon>
+                    <span class="row-loading-slot">
+                      <t-loading v-if="operations.checkingIndicator(`delete:${row.id}`)" size="small" />
+                    </span>
+                  </template>删除</t-link
                 >
               </div>
             </template>
@@ -89,7 +93,8 @@
       dialog-class-name="zdm-admin-dialog zdm-admin-single-form"
       width="480px"
       :header="editingId ? '编辑纹理' : '新增纹理'"
-      @confirm="submitTexture"
+      :confirm-btn="{ loading: submitTexturePending }"
+      @confirm="submitTextureOnce"
       @cancel="formVisible = false"
       @close="formVisible = false"
     >
@@ -118,11 +123,16 @@
           ><template #icon><t-icon name="add" /></template>新增别名</t-button
         >
       </div>
-      <t-table row-key="id" :data="aliases" :columns="aliasColumns" table-layout="fixed">
+      <t-table row-key="id" :data="aliases" :loading="aliasList.indicator.value" :columns="aliasColumns" table-layout="fixed">
         <template #operation="{ row }">
           <div class="table-actions">
             <t-link :theme="buttonTheme('edit')" hover="color" @click="openAliasForm(row)">编辑</t-link>
-            <t-link :theme="buttonTheme('delete')" hover="color" @click="removeAlias(row)">删除</t-link>
+            <t-link :theme="buttonTheme('delete')" hover="color" @click="removeAlias(row)" :disabled="operations.pending(`remove-alias:${row.id}`)">
+              <template #prefix-icon>
+                <span class="row-loading-slot">
+                  <t-loading v-if="operations.indicator(`remove-alias:${row.id}`)" size="small" />
+                </span>
+              </template>删除</t-link>
           </div>
         </template>
       </t-table>
@@ -135,7 +145,8 @@
       dialog-class-name="zdm-admin-dialog zdm-admin-single-form"
       width="480px"
       :header="editingAliasId ? '编辑别名' : '新增别名'"
-      @confirm="submitAlias"
+      :confirm-btn="{ loading: submitAliasPending }"
+      @confirm="submitAliasOnce"
       @cancel="aliasFormVisible = false"
       @close="aliasFormVisible = false"
     >
@@ -165,6 +176,8 @@
 </template>
 
 <script setup lang="ts">
+import { useContentRequest } from '@/composables/useContentRequest';
+import { usePendingAction } from '@/composables/usePendingAction';
 import { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';
 import { checkSlabTextureDelete } from '@/services/slabTextures';
 import { useOperationPreflight, requireCondition } from '@/composables/useOperationPreflight';
@@ -197,6 +210,8 @@ import {
 type TextureItem = Omit<SlabTextureRecord, 'status'> & { status: 'normal' | 'disabled'; aliasCount: number };
 type ConfirmType = 'enable' | 'disable' | 'delete';
 const operations = useOperationPreflight();
+const preparation = useContentRequest();
+operations.onInvalidate(preparation.cancel);
 const prefix = 'admin.product-data-center.slab-texture';
 const user = computed(() => getLoginUser());
 const canCreate = computed(() => hasPermission(user.value, `${prefix}.create`));
@@ -204,7 +219,8 @@ const canEdit = computed(() => hasPermission(user.value, `${prefix}.edit`));
 const canToggle = computed(() => hasPermission(user.value, `${prefix}.toggle-status`));
 const canDelete = computed(() => hasPermission(user.value, `${prefix}.delete`));
 const canManageAliases = computed(() => hasPermission(user.value, `${prefix}.manage-aliases`));
-const loading = ref(false);
+const listRequest = useContentRequest();
+const loading = listRequest.pending;
 const tableData = ref<TextureItem[]>([]);
 const aliasesByTexture = reactive<Record<number, SlabTextureAliasRecord[]>>({});
 const searchForm = reactive({ name: '', alias: '', status: '' });
@@ -243,10 +259,11 @@ const pageData = computed(() =>
 );
 const formatDate = (value?: string) => (value ? value.replace(/-/g, '/').replace('T', ' ').slice(0, 16) : '-');
 const loadData = async () => {
-  loading.value = true;
+  const request = listRequest.start();
   try {
     const records = sortByCreatedAtDesc(await listSlabTextures());
     const aliasLists = await Promise.all(records.map((item) => listSlabTextureAliases(item.id)));
+    if (!request.current()) return;
     records.forEach((item, index) => {
       aliasesByTexture[item.id] = aliasLists[index];
     });
@@ -258,9 +275,10 @@ const loadData = async () => {
       aliasCount: aliasesByTexture[item.id].length,
     }));
   } catch (error) {
+    if (!request.current()) return;
     adminFeedback.error(error instanceof Error ? error.message : '纹理列表加载失败');
   } finally {
-    loading.value = false;
+    request.finish();
   }
 };
 const handleSearch = () => {
@@ -312,10 +330,29 @@ const submitTexture = async () => {
 const aliasesVisible = ref(false);
 const activeTexture = ref<TextureItem | null>(null);
 const aliases = ref<SlabTextureAliasRecord[]>([]);
+const aliasList = useContentRequest();
+async function refreshAliases(textureId: number) {
+  const request = aliasList.start();
+  try {
+    const records = await listSlabTextureAliases(textureId);
+    if (request.current() && activeTexture.value?.id === textureId) aliases.value = records;
+  } catch (error) {
+    if (request.current()) adminFeedback.error(error instanceof Error ? error.message : '别名列表加载失败');
+  } finally {
+    request.finish();
+  }
+}
 const openAliases = async (row: TextureItem) => {
-  activeTexture.value = row;
-  aliases.value = await listSlabTextureAliases(row.id);
-  aliasesVisible.value = true;
+  const request = preparation.start();
+  try {
+    const records = await listSlabTextureAliases(row.id);
+    if (!request.current()) return;
+    activeTexture.value = row;
+    aliases.value = records;
+    aliasesVisible.value = true;
+  } finally {
+    request.finish();
+  }
 };
 const aliasFormRef = ref<FormInstanceFunctions>();
 const aliasFormVisible = ref(false);
@@ -340,22 +377,28 @@ const submitAlias = async () => {
       adminFeedback.created(name);
     }
     aliasFormVisible.value = false;
-    aliases.value = await listSlabTextureAliases(activeTexture.value.id);
+    await refreshAliases(activeTexture.value.id);
     await loadData();
   } catch (error) {
     adminFeedback.error(error instanceof Error ? error.message : '别名提交失败');
   }
 };
 const removeAlias = async (row: SlabTextureAliasRecord) => {
-  if (!activeTexture.value) return;
-  try {
-    await deleteSlabTextureAlias(activeTexture.value.id, row.id);
+  const textureId = activeTexture.value?.id;
+  if (!textureId) return;
+  const key = `remove-alias:${row.id}`;
+  await operations.execute(key, async (current) => {
+    try {
+      await deleteSlabTextureAlias(textureId, row.id);
+    } catch (error) {
+      if (current()) adminFeedback.error(error instanceof Error ? error.message : '删除失败');
+      return;
+    }
+    if (!current()) return;
     adminFeedback.deleted(row.name);
-    aliases.value = await listSlabTextureAliases(activeTexture.value.id);
-    await loadData();
-  } catch (error) {
-    adminFeedback.error(error instanceof Error ? error.message : '删除失败');
-  }
+    if (activeTexture.value?.id === textureId) void refreshAliases(textureId);
+    void loadData();
+  });
 };
 
 const confirmVisible = ref(false);
@@ -402,6 +445,11 @@ const submitConfirm = async () => {
 };
 
 onMounted(loadData);
+
+const contentLoading = listRequest.indicator;
+
+const { pending: submitTexturePending, run: submitTextureOnce } = usePendingAction(submitTexture);
+const { pending: submitAliasPending, run: submitAliasOnce } = usePendingAction(submitAlias);
 </script>
 
 <style scoped>

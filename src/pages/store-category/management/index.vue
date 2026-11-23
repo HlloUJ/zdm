@@ -50,7 +50,7 @@
               row-key="key"
               :data="displayRows"
               :columns="columns"
-              :loading="loading || sorting"
+              :loading="tableIndicator"
               :drag-sort="canSortCategory && !hasSearch && !sorting ? 'row' : undefined"
               :drag-sort-options="categoryDragOptions"
               hover
@@ -125,7 +125,11 @@
                     :theme="buttonTheme('delete')"
                     :disabled="operations.pending(`delete:${row.node.id}`)"
                     @click="openDeleteDialog(row.node)"
-                    >删除</t-link
+                    ><template #prefix-icon>
+                      <span class="row-loading-slot">
+                        <t-loading v-if="operations.checkingIndicator(`delete:${row.node.id}`)" size="small" />
+                      </span>
+                    </template>删除</t-link
                   >
                   <span v-if="!hasVisibleRowAction(row)">-</span>
                 </div>
@@ -145,6 +149,7 @@
       :header="formMode === 'create' ? `新增${formLevel}级分类` : '编辑分类'"
       width="480px"
       placement="center"
+      :confirm-btn="{ loading: formSubmitting && !priceRemovalVisible }"
       @confirm="handleSubmit"
       @close="closeFormDialog"
     >
@@ -169,6 +174,7 @@
       function="create"
       action="新增"
       title="新增下级分类"
+      :loading="formSubmitting"
       @confirm="handleSubmit(true)"
     >
       新增后，“{{
@@ -194,6 +200,7 @@
       :action="statusTarget?.status === 'enabled' ? '停用' : '启用'"
       object-type="分类"
       :object-name="statusTarget?.name"
+      :loading="operations.pending(`status:${statusTarget?.id}`)"
       @confirm="handleStatusConfirm"
       @close="closeStatusConfirm"
     >
@@ -203,6 +210,7 @@
 </template>
 
 <script setup lang="ts">
+import { useDelayedLoading } from '@/composables/useDelayedLoading';
 import { OperationBlockedError } from '@/services/http';
 import { checkStoreCategoryDelete } from '@/services/storeCategories';
 import { useOperationPreflight, requireCondition } from '@/composables/useOperationPreflight';
@@ -526,15 +534,15 @@ const priceRemovalVisible = ref(false);
 const formSubmitting = ref(false);
 const handleSubmit = async (confirmPriceRemoval = false) => {
   if (formSubmitting.value) return;
-  const result = await formRef.value?.validate();
-  if (result !== true) return rejectFormSubmission(formRef.value);
-  const name = formData.name.trim();
-  if (categoryNameExists()) {
-    formRef.value?.setValidateMessage({ name: [{ type: 'error', message: '同级分类名称不能重复' }] });
-    return rejectFormSubmission(formRef.value);
-  }
   formSubmitting.value = true;
   try {
+    const result = await formRef.value?.validate();
+    if (result !== true) return rejectFormSubmission(formRef.value);
+    const name = formData.name.trim();
+    if (categoryNameExists()) {
+      formRef.value?.setValidateMessage({ name: [{ type: 'error', message: '同级分类名称不能重复' }] });
+      return rejectFormSubmission(formRef.value);
+    }
     if (formMode.value === 'create') {
       if (
         formData.parentId &&
@@ -574,13 +582,6 @@ const handleSubmit = async (confirmPriceRemoval = false) => {
   }
 };
 
-const applyStatusChange = async (node: CategoryNode) => {
-  const status = node.status === 'enabled' ? 'disabled' : 'enabled';
-  await updateStoreCategoryStatus(node.id, activeScope.value, status);
-  adminFeedback.actionSuccess({ action: status === 'enabled' ? '启用' : '停用', target: node.name });
-  await loadCategories();
-};
-
 const openStatusConfirm = (node: CategoryNode) => {
   operations.select(`status:${node.id}`);
   statusTarget.value = node;
@@ -593,12 +594,20 @@ const closeStatusConfirm = () => {
 };
 
 const handleStatusConfirm = async () => {
-  try {
-    if (statusTarget.value) await applyStatusChange(statusTarget.value);
-    closeStatusConfirm();
-  } catch (error) {
-    showError(error, '分类状态更新失败');
-  }
+  const target = statusTarget.value;
+  if (!target) return;
+  await operations.execute(`status:${target.id}`, async (current) => {
+    try {
+      const status = target.status === 'enabled' ? 'disabled' : 'enabled';
+      await updateStoreCategoryStatus(target.id, activeScope.value, status);
+      if (!current()) return;
+      closeStatusConfirm();
+      adminFeedback.actionSuccess({ action: status === 'enabled' ? '启用' : '停用', target: target.name });
+      await loadCategories();
+    } catch (error) {
+      if (current()) showError(error, '分类状态更新失败');
+    }
+  });
 };
 
 let dragDestination: { row: CategoryRow; after: boolean } | null = null;
@@ -680,9 +689,8 @@ const handleDeleteConfirm = async () => {
       if (!current()) return;
       deleteVisible.value = false;
       deleteTarget.value = null;
-      await loadCategories();
-      if (!current()) return;
       adminFeedback.deleted(target.name);
+      void loadCategories();
     } catch (error) {
       if (!current()) return;
       showError(error, '分类删除失败');
@@ -709,6 +717,8 @@ operations.onInvalidate(() => {
   deleteVisible.value = false;
   deleteTarget.value = null;
 });
+
+const tableIndicator = useDelayedLoading(() => Boolean(loading.value || sorting.value));
 </script>
 
 <style scoped>

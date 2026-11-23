@@ -8,7 +8,7 @@
         .filter(Boolean)
         .join(' ')
     "
-    :confirm-btn="dialogButtonProps(confirmFunction, confirmation, confirmBtn)"
+    :confirm-btn="confirmButton"
     :cancel-btn="cancelButtonProps(cancelBtn)"
     placement="center"
     :prevent-scroll-through="false"
@@ -21,6 +21,7 @@
   </t-dialog>
 </template>
 <script setup lang="ts">
+import { useDialogLoading } from '@/composables/useDialogLoading';
 import { dialogButtonProps, type Confirmation, type ConfirmationButtonOptions } from '../actions/confirmation';
 import { ref } from 'vue';
 import { cancelButtonProps, type ButtonFunction } from '../actions/buttonFunctions';
@@ -29,7 +30,7 @@ import { formElement } from '@/utils/submitValidation';
 const formRef = ref<FormInstanceFunctions>();
 defineExpose({ getFormElement: () => formElement(formRef.value) });
 defineOptions({ inheritAttrs: false });
-withDefaults(
+const props = withDefaults(
   defineProps<{
     visible: boolean;
     header: string;
@@ -50,5 +51,10 @@ withDefaults(
     formLayout: 'single-column',
   },
 );
+const confirmButton = useDialogLoading(
+  () => props.visible,
+  () => dialogButtonProps(props.confirmFunction, props.confirmation, props.confirmBtn),
+);
+
 const emit = defineEmits<{ 'update:visible': [value: boolean] }>();
 </script>

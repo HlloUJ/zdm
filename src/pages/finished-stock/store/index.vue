@@ -11,7 +11,7 @@
           @cancel="closeEdit"
           @saved="finishEdit"
         />
-        <t-loading v-else-if="editingId" :loading="loading" />
+        <t-loading v-else-if="editingId" :loading="contentLoading" />
         <AdminListLayout v-else-if="tabs.length" class="finished-list-layout">
           <template #toolbar>
             <div class="list-controls">
@@ -121,7 +121,7 @@
                   :columns="columns"
                   :sort="tableSort"
                   :sort-icon="stateActivitySortIcon"
-                  :loading="loading"
+                  :loading="contentLoading || availabilityIndicator"
                   :row-attributes="
                     ({ row }: { row: StoreFinishedProduct }) =>
                       row.sourceUnavailable
@@ -180,7 +180,11 @@
                         hover="color"
                         :disabled="operations.pending(`${action.id}:${row.id}`)"
                         @click="handleStoreRowButton(action.id, row)"
-                        >{{ action.label }}</t-link
+                        ><template #prefix-icon>
+                          <span class="row-loading-slot">
+                            <t-loading v-if="operations.checkingIndicator(`${action.id}:${row.id}`)" size="small" />
+                          </span>
+                        </template>{{ action.label }}</t-link
                       >
                     </div>
                   </template>
@@ -238,8 +242,9 @@
       </main>
     </div>
 
-    <t-drawer v-model:visible="detailVisible" header="商品详情" size="min(1200px, 100%)" :footer="false">
-      <StoreProductDetail v-if="current" :product="current" />
+    <t-drawer :visible="detailVisible || detailIndicator" @close="closeProductDetail" header="商品详情" size="min(1200px, 100%)" :footer="false">
+      <t-loading v-if="detailIndicator" />
+      <StoreProductDetail v-else-if="current" :product="current" />
     </t-drawer>
 
     <AdminDialog
@@ -248,7 +253,8 @@
       confirm-function="off-shelf"
       :header="pendingOffShelf?.batch ? '下架' : '下架商品'"
       :width="pendingOffShelf?.batch ? '520px' : '500px'"
-      @confirm="confirmOffShelf"
+      :confirm-btn="{ loading: confirmOffShelfPending }"
+      @confirm="confirmOffShelfOnce"
       @cancel="offShelfVisible = false"
       @close="offShelfVisible = false"
     >
@@ -361,6 +367,9 @@
 </template>
 
 <script setup lang="ts">
+import { useContentRequest } from '@/composables/useContentRequest';
+import { usePendingAction } from '@/composables/usePendingAction';
+import { useDelayedLoading } from '@/composables/useDelayedLoading';
 import { OperationBlockedError } from '@/services/http';
 import { useOperationPreflight, requireCondition } from '@/composables/useOperationPreflight';
 import { useListBatchSelection } from '@/components/foundation';
@@ -694,7 +703,9 @@ const handleStoreRowButton = async (action: string, row: StoreFinishedProduct) =
     }, () => prepareAction('shelf', row));
     return;
   }
-  if (!['detail', 'purge'].includes(action) && !(await refreshAvailability([row.id]))) return;
+  const currentAction = operations.capture();
+  if (!['detail', 'purge'].includes(action) && !(await refreshAvailability([row.id], false, currentAction))) return;
+  if (!currentAction()) return;
   if (action === 'detail') void openDetail(row);
   else if (action === 'edit') void router.push({ name: commodity.storeEditRoute, params: { id: row.id } });
   else prepareAction(action === 'offShelf' ? 'off-shelf' : (action as ActionKind), row);
@@ -755,7 +766,11 @@ function resetFilter() {
   filter.category = undefined;
   searchList();
 }
+const availabilityReads = ref(0);
+const availabilityIndicator = useDelayedLoading(() => availabilityReads.value > 0);
 async function refreshAvailability(ids: number[], allowBlocked = false, isCurrent: () => boolean = () => true, preflight = false) {
+  const listWait = !preflight && !confirm.value && !offShelfVisible.value;
+  if (listWait) availabilityReads.value++;
   try {
     const latest = await listStoreFinishedProducts();
     if (!isCurrent()) return false;
@@ -772,6 +787,8 @@ async function refreshAvailability(ids: number[], allowBlocked = false, isCurren
     if (preflight) throw error;
     if (isCurrent()) adminFeedback.error(getSafeErrorMessage(error, '商品状态核验失败，请重试'));
     return false;
+  } finally {
+    if (listWait) availabilityReads.value--;
   }
 }
 async function previewRowImage(row: StoreFinishedProduct) {
@@ -797,20 +814,26 @@ function openPool() {
   const href = router.resolve({ path: '/store/selection-center', query: { view: 'browse' } }).href;
   window.open(href, '_blank', 'noopener');
 }
-async function loadCurrent(row: StoreFinishedProduct) {
+const detailRequest = useContentRequest();
+const detailIndicator = detailRequest.indicator;
+async function openDetail(row: StoreFinishedProduct) {
+  const request = detailRequest.start();
   try {
-    current.value = await getStoreFinishedProduct(row.id);
-    const latest = current.value;
+    const latest = await getStoreFinishedProduct(row.id);
+    if (!request.current()) return;
+    current.value = latest;
     rows.value = rows.value.map((item) => (item.id === latest.id ? latest : item));
     if (latest.sourceUnavailable) selected.value = selected.value.filter((id) => id !== latest.id);
-    return true;
+    detailVisible.value = true;
   } catch (error) {
-    adminFeedback.error(getSafeErrorMessage(error, '商品详情加载失败'));
-    return false;
+    if (request.current()) adminFeedback.error(getSafeErrorMessage(error, '商品详情加载失败'));
+  } finally {
+    request.finish();
   }
 }
-async function openDetail(row: StoreFinishedProduct) {
-  if (await loadCurrent(row)) detailVisible.value = true;
+function closeProductDetail() {
+  detailRequest.cancel();
+  detailVisible.value = false;
 }
 function closeEdit() {
   return router.push({ name: commodity.storeListRoute });
@@ -1026,6 +1049,10 @@ onMounted(() => {
 });
 onBeforeUnmount(() => window.removeEventListener('focus', refreshOnSelectionReturn));
 operations.onInvalidate(() => { confirm.value = null; });
+
+const contentLoading = useDelayedLoading(() => Boolean(loading.value));
+
+const { pending: confirmOffShelfPending, run: confirmOffShelfOnce } = usePendingAction(confirmOffShelf);
 </script>
 <style scoped>
 @import url('./index.css');

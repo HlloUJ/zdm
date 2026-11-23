@@ -38,7 +38,7 @@
             row-key="id"
             :data="pageData"
             :columns="columns"
-            :loading="loading"
+            :loading="contentLoading"
             :class="{ 'zdm-row-sort-table': canSort }"
             :drag-sort="canSort ? 'row' : undefined"
             :drag-sort-options="{
@@ -81,7 +81,11 @@
                   hover="color"
                   :disabled="operations.pending(`delete:${row.id}`)"
                     @click="openConfirm(row, 'delete')"
-                  >删除</t-link
+                  ><template #prefix-icon>
+                    <span class="row-loading-slot">
+                      <t-loading v-if="operations.checkingIndicator(`delete:${row.id}`)" size="small" />
+                    </span>
+                  </template>删除</t-link
                 >
               </div>
             </template>
@@ -102,7 +106,8 @@
       dialog-class-name="zdm-admin-dialog zdm-admin-single-form"
       width="480px"
       :header="editingId ? '编辑门店级别' : '新增门店级别'"
-      @confirm="submitLevel"
+      :confirm-btn="{ loading: submitLevelPending }"
+      @confirm="submitLevelOnce"
       @cancel="closeForm"
       @close="closeForm"
     >
@@ -130,6 +135,8 @@
 </template>
 
 <script setup lang="ts">
+import { useContentRequest } from '@/composables/useContentRequest';
+import { usePendingAction } from '@/composables/usePendingAction';
 import { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';
 import { useOperationPreflight, requireCondition } from '@/composables/useOperationPreflight';
 import { formConfirmation } from '@/components/foundation/actions/confirmation';
@@ -167,7 +174,8 @@ const canEdit = computed(() => hasPermission(loginUser.value, `${permissionPrefi
 const canSort = computed(() => hasPermission(loginUser.value, `${permissionPrefix}.sort`));
 const canToggle = computed(() => hasPermission(loginUser.value, `${permissionPrefix}.toggle-status`));
 const canDelete = computed(() => hasPermission(loginUser.value, `${permissionPrefix}.delete`));
-const loading = ref(false);
+const listRequest = useContentRequest();
+const loading = listRequest.pending;
 const tableData = ref<LevelItem[]>([]);
 const searchForm = reactive({ name: '', status: '' });
 const appliedSearchForm = reactive({ ...searchForm });
@@ -219,14 +227,17 @@ const ensureCurrentPage = () => {
   );
 };
 const loadLevels = async () => {
-  loading.value = true;
+  const request = listRequest.start();
   try {
-    tableData.value = (await listStoreLevels()).map(toLevelItem);
+    const records = (await listStoreLevels()).map(toLevelItem);
+    if (!request.current()) return;
+    tableData.value = records;
     ensureCurrentPage();
   } catch (error) {
+    if (!request.current()) return;
     adminFeedback.error(error instanceof Error ? error.message : '门店级别列表加载失败');
   } finally {
-    loading.value = false;
+    request.finish();
   }
 };
 const handleSearch = () => {
@@ -288,8 +299,8 @@ const submitLevel = async () => {
     if (editingId.value) await updateStoreLevel(editingId.value, payload);
     else await createStoreLevel(payload);
     const target = payload.name;
-    await loadLevels();
     closeForm();
+    await loadLevels();
     if (editingId.value) adminFeedback.actionSuccess({ action: '修改', target });
     else adminFeedback.created(target);
   } catch (error) {
@@ -323,9 +334,9 @@ const submitConfirm = async () => {
         if (!deleted) throw new Error('门店级别未删除，请刷新后重试');
       } else await updateStoreLevelStatus(target.id, operationType === 'enable' ? 'enabled' : 'disabled');
       if (!current()) return;
+      confirmVisible.value = false;
       await loadLevels();
       if (!current()) return;
-      confirmVisible.value = false;
       if (operationType === 'delete') adminFeedback.deleted(targetName);
       else adminFeedback.actionSuccess({ action, target: targetName });
     } catch (error) {
@@ -339,6 +350,10 @@ operations.onInvalidate(() => {
   confirmVisible.value = false;
   confirmRow.value = null;
 });
+
+const contentLoading = listRequest.indicator;
+
+const { pending: submitLevelPending, run: submitLevelOnce } = usePendingAction(submitLevel);
 </script>
 
 <style scoped>

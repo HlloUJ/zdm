@@ -50,7 +50,7 @@
         <slot :name="section.key" />
       </AdminSectionCard>
       <AdminSectionCard class="form-submit-bar">
-        <t-button :theme="buttonTheme('submit')" :loading="loading" @click="emit('confirm')">
+        <t-button data-loading-button :theme="buttonTheme('submit')" :disabled="loading" :loading="submitIndicator" @click="emit('confirm')">
           <template #icon><t-icon name="check" /></template>
           {{ formConfirmationText(mode === 'edit' ? 'edit' : 'create') }}
         </t-button>
@@ -86,6 +86,7 @@
 </template>
 
 <script setup lang="ts">
+import { useDelayedLoading } from '@/composables/useDelayedLoading';
 import { formConfirmationText } from '@/components/foundation/actions/confirmation';
 import { dialogButtonProps } from '@/components/foundation/actions/confirmation';
 import { buttonTheme, cancelButtonProps } from '@/components/foundation/actions/buttonFunctions';
@@ -163,6 +164,8 @@ const scrollToSection = async (key: string) => {
 };
 const formRoot = ref<HTMLElement>();
 defineExpose({ scrollToSection, getFormElement: () => formRoot.value });
+
+const submitIndicator = useDelayedLoading(() => Boolean(props.loading));
 </script>
 
 <style scoped>

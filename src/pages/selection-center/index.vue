@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useDelayedKeys } from '@/composables/useDelayedKeys';
+import { useDelayedLoading } from '@/composables/useDelayedLoading';
 import { useOperationPreflight } from '@/composables/useOperationPreflight';
 import { buttonTheme } from '@/components/foundation/actions/buttonFunctions';
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
@@ -83,7 +85,11 @@ const pagedProducts = computed(() => products.value),
   pagedBasketItems = computed(() => basketItems.value);
 const activeBasketItems = computed(() => basketItems.value);
 const detail = ref<CenterDetail | null>(null);
+const detailPending = ref(false);
+const joinRefreshing = ref(false);
+const detailIndicator = useDelayedLoading(() => detailPending.value);
 const initializing = ref(false);
+const basketBusy = ref(false);
 const loading = computed(() => initializing.value || (view.value === 'browse' && browseBusy.value && !products.value.length));
 const error = ref(''),
   submitting = ref(false),
@@ -132,6 +138,7 @@ function trackProductRead() {
 function clearBrowse() {
   ++browseSequence;
   ++detailSequence;
+  detailPending.value = false;
   detail.value = null;
   nextBrowsePage = 1;
   moreProducts.value = true;
@@ -151,6 +158,8 @@ function clearData() {
   basketTotal.value = 0;
   basketPage.value = 1;
   adding.value = [];
+  basketBusy.value = false;
+  joinRefreshing.value = false;
   submitting.value = false;
   categoryOpen.value = false;
   basketItems.value = [];
@@ -227,6 +236,7 @@ watch(browseEnd, (element, _, onCleanup) => {
 async function loadBasket(preserveOnError = false) {
   if (!context.value) return;
   const seq = ++basketSequence;
+  basketBusy.value = true;
   error.value = '';
   try {
     const data = await centerSelection(context.value.key, basketTab.value, basketPage.value, basketPageSize.value);
@@ -248,6 +258,8 @@ async function loadBasket(preserveOnError = false) {
       if (preserveOnError) mutationFailed(e);
       else fail(e);
     }
+  } finally {
+    if (seq === basketSequence) basketBusy.value = false;
   }
 }
 function toggleType(value: string) {
@@ -291,6 +303,7 @@ function updateProduct(product: CenterProduct, changes: Partial<CenterProduct>) 
 async function openDetail(p: CenterProduct) {
   if (!context.value) return;
   const seq = ++detailSequence;
+  detailPending.value = true;
   const confirmed = trackProductRead();
   try {
     const response = await centerDetail(context.value.key, p.type, p.id);
@@ -302,7 +315,13 @@ async function openDetail(p: CenterProduct) {
     if (seq === detailSequence) fail(e);
   } finally {
     pendingProductReads.delete(confirmed);
+    if (seq === detailSequence) detailPending.value = false;
   }
+}
+function closeDetail() {
+  ++detailSequence;
+  detailPending.value = false;
+  detail.value = null;
 }
 async function add(p: CenterProduct) {
   if (!context.value || !p.canAdd || p.inSelection || adding.value.includes(keyOf(p))) return;
@@ -318,7 +337,7 @@ async function add(p: CenterProduct) {
     for (const read of pendingProductReads) {
       read.set(keyOf(p), { inSelection: changes.inSelection, selectedByName: changes.selectedByName });
     }
-    await loadBasket(true);
+    void loadBasket(true);
   } catch (e) {
     if (version === scopeVersion) mutationFailed(e);
   } finally {
@@ -339,7 +358,7 @@ async function removeItem(id: number | null) {
       }
       counts.value[removed.type] = Math.max(0, counts.value[removed.type] - 1);
     }
-    await loadBasket(true);
+    void loadBasket(true);
   } catch (e) {
     if (version === scopeVersion) mutationFailed(e);
   }
@@ -365,11 +384,15 @@ async function submit() {
         JSON.stringify({ context: context.value.key, time: Date.now() }),
       );
     } else adminFeedback.warning('本次加入仍在处理中，请重试以查询并继续本次处理');
+    joinRefreshing.value = true;
     await loadBasket(true);
   } catch (e) {
     if (version === scopeVersion) mutationFailed(e);
   } finally {
-    if (version === scopeVersion) submitting.value = false;
+    if (version === scopeVersion) {
+      submitting.value = false;
+      joinRefreshing.value = false;
+    }
   }
 }
 watch([selectedTypes, selectedStates, selectedCategory], () => {
@@ -502,6 +525,11 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', resize);
   chromeObserver?.disconnect();
 });
+
+const addingIndicator = useDelayedKeys(() => [...adding.value]);
+const contentLoading = useDelayedLoading(() => loading.value || (view.value === 'basket' && basketBusy.value));
+const submitIndicator = useDelayedLoading(() => submitting.value && !joinRefreshing.value);
+const moreIndicator = useDelayedLoading(() => Boolean(browseBusy.value && products.value.length));
 </script>
 
 <template>
@@ -694,7 +722,7 @@ onBeforeUnmount(() => {
           >重试</t-button
         ></t-alert
       >
-      <t-loading :loading="loading" fullscreen size="small" />
+      <t-loading class="selection-content" :loading="contentLoading" size="small">
       <template v-if="view === 'browse'">
         <div class="product-grid">
           <t-card
@@ -729,6 +757,8 @@ onBeforeUnmount(() => {
               <div class="card-actions">
                 <t-button
                   variant="base"
+                  data-loading-button
+                  :loading="addingIndicator(keyOf(p))"
                   :disabled="!p.canAdd || p.inSelection || adding.includes(keyOf(p))"
                   :theme="buttonTheme('select-product')"
                   @click.stop="add(p)"
@@ -743,8 +773,8 @@ onBeforeUnmount(() => {
           {{ browseError }}
           <t-button :theme="buttonTheme('search')" variant="text" @click="loadBrowse(retryRefresh)">重试</t-button>
         </div>
-        <t-loading v-else-if="browseBusy && products.length" size="small" />
-        <div v-else-if="products.length && moreProducts && !detail" ref="browseEnd" aria-hidden="true"></div>
+        <t-loading v-else-if="moreIndicator" size="small" />
+        <div v-else-if="!browseBusy && products.length && moreProducts && !detail" ref="browseEnd" aria-hidden="true"></div>
       </template>
       <template v-else>
         <div v-if="count" class="selection-layout">
@@ -782,7 +812,7 @@ onBeforeUnmount(() => {
                   </div>
                 </div>
                 <div class="basket-price">¥ {{ centerPrice(p) }}</div>
-                <t-link hover="color" :theme="buttonTheme('remove')" :disabled="operations.pending(`remove:${context?.key}:${p.selectionId}`)" @click.stop="remove(p.selectionId)">移除</t-link>
+                <t-link hover="color" :theme="buttonTheme('remove')" :disabled="operations.pending(`remove:${context?.key}:${p.selectionId}`)" @click.stop="remove(p.selectionId)"><template #prefix-icon><span class="row-loading-slot"><t-loading v-if="operations.indicator(`remove:${context?.key}:${p.selectionId}`)" size="small" /></span></template>移除</t-link>
               </div>
 
               <t-empty v-if="!activeBasketItems.length" description="尚未选择该类型商品" />
@@ -807,9 +837,9 @@ onBeforeUnmount(() => {
                 <span>待加入商品</span><strong>{{ count }} <small>件</small></strong>
               </div>
               <p class="secondary summary-description">加入门店后，商品将分别进入成品现货管理、配件管理的仓库。</p>
-              <t-button
+              <t-button data-loading-button
                 block
-                :loading="submitting"
+                :loading="submitIndicator"
                 :disabled="(!count && !pendingRequest) || submitting"
                 :theme="buttonTheme('select-product')"
                 @click="submit"
@@ -827,8 +857,9 @@ onBeforeUnmount(() => {
           <t-button :theme="buttonTheme('back')" @click="changeView('browse')">继续选品</t-button>
         </section>
       </template>
+      </t-loading>
     </main>
-    <SelectionDetail :detail="detail" @close="detail = null" @add="add" />
+    <SelectionDetail :detail="detail" :loading="detailIndicator" :adding="Boolean(detail && adding.includes(keyOf(detail.product)))" :adding-indicator="Boolean(detail && addingIndicator(keyOf(detail.product)))" @close="closeDetail" @add="add" />
     <AdminDialog
       v-model:visible="resultVisible"
       header="加入门店结果"

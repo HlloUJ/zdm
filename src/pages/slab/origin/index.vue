@@ -43,7 +43,7 @@
             </t-button></AdminListToolbar
           >
 
-          <t-table row-key="id" :data="pageData" :columns="columns" :loading="loading" hover table-layout="fixed">
+          <t-table row-key="id" :data="pageData" :columns="columns" :loading="contentLoading" hover table-layout="fixed">
             <template #index="{ rowIndex }">
               {{ (pagination.current - 1) * pagination.pageSize + rowIndex + 1 }}
             </template>
@@ -71,7 +71,11 @@
                   hover="color"
                   :disabled="operations.pending(`delete:${row.id}`)"
                     @click="openDeleteConfirm(row)"
-                >
+                ><template #prefix-icon>
+                  <span class="row-loading-slot">
+                    <t-loading v-if="operations.checkingIndicator(`delete:${row.id}`)" size="small" />
+                  </span>
+                </template>
                   删除
                 </t-link>
               </div>
@@ -94,9 +98,9 @@
       :header="dialogMode === 'create' ? '新增产地' : '编辑产地'"
       width="480px"
       placement="center"
-      :confirm-btn="dialogButtonProps('submit', formConfirmation(dialogMode))"
+      :confirm-btn="handleSubmitButton"
       :cancel-btn="cancelButtonProps('取消')"
-      @confirm="handleSubmit"
+      @confirm="handleSubmitOnce"
       @cancel="closeFormDialog"
       @close="closeFormDialog"
     >
@@ -127,6 +131,9 @@
 </template>
 
 <script setup lang="ts">
+import { useContentRequest } from '@/composables/useContentRequest';
+import { useDialogLoading } from '@/composables/useDialogLoading';
+import { usePendingAction } from '@/composables/usePendingAction';
 import { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';
 import { checkSlabOriginDelete } from '@/services/slabOrigins';
 import { useOperationPreflight, requireCondition } from '@/composables/useOperationPreflight';
@@ -168,7 +175,8 @@ interface OriginItem {
 
 const operations = useOperationPreflight();
 const tableData = ref<OriginItem[]>([]);
-const loading = ref(false);
+const listRequest = useContentRequest();
+const loading = listRequest.pending;
 const permissionPrefix = 'admin.product-data-center.slab-origin';
 const loginUser = computed(() => getLoginUser());
 const canCreateOrigin = computed(() => hasPermission(loginUser.value, `${permissionPrefix}.create`));
@@ -257,14 +265,17 @@ const ensureCurrentPage = () => {
   if (pagination.current > maxPage) pagination.current = maxPage;
 };
 const loadOrigins = async () => {
-  loading.value = true;
+  const request = listRequest.start();
   try {
-    tableData.value = sortByCreatedAtDesc(await listSlabOrigins()).map(toOriginItem);
+    const records = sortByCreatedAtDesc(await listSlabOrigins()).map(toOriginItem);
+    if (!request.current()) return;
+    tableData.value = records;
     ensureCurrentPage();
   } catch (error) {
+    if (!request.current()) return;
     adminFeedback.error(error instanceof Error ? error.message : '产地列表加载失败');
   } finally {
-    loading.value = false;
+    request.finish();
   }
 };
 const handleSearch = () => {
@@ -304,8 +315,8 @@ const handleSubmit = async () => {
       await updateSlabOrigin(editingId.value, toPayload(current?.status ?? 'normal'));
     }
     const target = formData.name.trim();
-    await loadOrigins();
     closeFormDialog();
+    await loadOrigins();
     if (dialogMode.value === 'create') adminFeedback.created(target);
     else adminFeedback.actionSuccess({ action: '修改', target });
   } catch (error) {
@@ -364,6 +375,11 @@ const handleConfirm = async () => {
 };
 
 onMounted(loadOrigins);
+
+const contentLoading = listRequest.indicator;
+
+const { pending: handleSubmitPending, run: handleSubmitOnce } = usePendingAction(handleSubmit);
+const handleSubmitButton = useDialogLoading(() => formDialogVisible.value, () => dialogButtonProps('submit', formConfirmation(dialogMode.value), { loading: handleSubmitPending.value }));
 </script>
 
 <style scoped>

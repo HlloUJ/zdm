@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils';
 import { defineComponent, h, nextTick, ref } from 'vue';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import AdminConfirmDialog from './AdminConfirmDialog.vue';
 import AdminDialog from './AdminDialog.vue';
 import { operationConfirmation } from './actions/confirmation';
@@ -16,6 +16,7 @@ const Dialog = defineComponent({
     () =>
       h('section', slots.default?.()),
 });
+afterEach(() => vi.useRealTimers());
 const global = { stubs: { 't-dialog': Dialog } };
 describe('confirmation color integration', () => {
   for (const [action, fn, theme] of [
@@ -25,6 +26,7 @@ describe('confirmation color integration', () => {
     ['彻底删除', 'purge', 'danger'],
   ] as const) {
     it(`${action} keeps its function color through both dialog adapters`, async () => {
+      vi.useFakeTimers();
       const loading = ref(false);
       const Host = {
         render: () => h(AdminConfirmDialog, { visible: true, action, function: fn, loading: loading.value }),
@@ -37,10 +39,13 @@ describe('confirmation color integration', () => {
       expect(wrapper.findComponent(AdminConfirmDialog).emitted('confirm')).toHaveLength(1);
       loading.value = true;
       await nextTick();
+      expect(dialog.props('confirmBtn')).toMatchObject({ loading: false, disabled: true });
+      await vi.advanceTimersByTimeAsync(200);
       expect(dialog.props('confirmBtn')).toMatchObject({ content: `确认${action}`, theme, loading: true });
     });
   }
-  it('a submission caption does not override the actual action or original button behavior', () => {
+  it('a submission caption does not override the actual action or original button behavior', async () => {
+    vi.useFakeTimers();
     const Host = {
       render: () =>
         h(AdminDialog, {
@@ -54,6 +59,7 @@ describe('confirmation color integration', () => {
     };
     const wrapper = mount(Host, { global });
     const dialog = wrapper.findComponent(Dialog);
+    await vi.advanceTimersByTimeAsync(200);
     expect(dialog.props('confirmBtn')).toMatchObject({
       content: '确认下架',
       loading: true,

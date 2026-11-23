@@ -51,7 +51,7 @@
               </t-button>
             </div></AdminListToolbar
           >
-          <t-table row-key="id" :data="pageData" :columns="columns" :loading="loading" hover table-layout="fixed">
+          <t-table row-key="id" :data="pageData" :columns="columns" :loading="contentLoading || preparation.indicator.value" hover table-layout="fixed">
             <template #index="{ rowIndex }">
               {{ (pagination.current - 1) * pagination.pageSize + rowIndex + 1 }}
             </template>
@@ -77,7 +77,11 @@
                   hover="color"
                   :disabled="operations.pending(`delete:${row.id}`)"
                     @click="openColorConfirm(row, 'delete')"
-                >
+                ><template #prefix-icon>
+                  <span class="row-loading-slot">
+                    <t-loading v-if="operations.checkingIndicator(`delete:${row.id}`)" size="small" />
+                  </span>
+                </template>
                   删除
                 </t-link>
               </div>
@@ -100,7 +104,8 @@
       dialog-class-name="zdm-admin-dialog zdm-admin-single-form"
       width="480px"
       :header="editingId ? '编辑色系' : '新增色系'"
-      @confirm="submitColor"
+      :confirm-btn="{ loading: submitColorPending }"
+      @confirm="submitColorOnce"
       @cancel="closeColorForm"
       @close="closeColorForm"
     >
@@ -135,12 +140,12 @@
           <template #icon><t-icon name="add" /></template>新增色系分类
         </t-button>
       </div>
-      <t-table row-key="id" :data="categories" :columns="categoryColumns" table-layout="fixed">
+      <t-table row-key="id" :data="categories" :loading="categoryList.indicator.value" :columns="categoryColumns" table-layout="fixed">
         <template #operation="{ row }">
           <div class="table-actions">
             <t-link :theme="buttonTheme('edit')" hover="color" @click="openCategoryForm(row)">编辑</t-link>
             <t-link :theme="buttonTheme('delete')" hover="color" :disabled="operations.pending(`category-delete:${row.id}`)"
-                    @click="openCategoryDelete(row)">删除</t-link>
+                    @click="openCategoryDelete(row)"><template #prefix-icon><span class="row-loading-slot"><t-loading v-if="operations.checkingIndicator(`category-delete:${row.id}`)" size="small" /></span></template>删除</t-link>
           </div>
         </template>
       </t-table>
@@ -153,7 +158,8 @@
       dialog-class-name="zdm-admin-dialog zdm-admin-single-form"
       width="480px"
       :header="editingCategoryId ? '编辑色系分类' : '新增色系分类'"
-      @confirm="submitCategory"
+      :confirm-btn="{ loading: submitCategoryPending }"
+      @confirm="submitCategoryOnce"
       @cancel="closeCategoryForm"
       @close="closeCategoryForm"
     >
@@ -196,6 +202,8 @@
 </template>
 
 <script setup lang="ts">
+import { useContentRequest } from '@/composables/useContentRequest';
+import { usePendingAction } from '@/composables/usePendingAction';
 import { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';
 import { checkSlabColorCategoryDelete } from '@/services/slabColors';
 import { checkSlabColorDelete } from '@/services/slabColors';
@@ -233,6 +241,8 @@ type ConfirmType = 'enable' | 'disable' | 'delete';
 type ColorItem = Omit<SlabColorRecord, 'status' | 'createdAt'> & { status: ColorStatus; createdAt: string };
 
 const operations = useOperationPreflight();
+const preparation = useContentRequest();
+operations.onInvalidate(preparation.cancel);
 const permissionPrefix = 'admin.product-data-center.slab-color';
 const loginUser = computed(() => getLoginUser());
 const canCreate = computed(() => hasPermission(loginUser.value, `${permissionPrefix}.create`));
@@ -243,7 +253,8 @@ const canDelete = computed(() => hasPermission(loginUser.value, `${permissionPre
 
 const tableData = ref<ColorItem[]>([]);
 const categories = ref<SlabColorCategoryRecord[]>([]);
-const loading = ref(false);
+const listRequest = useContentRequest();
+const loading = listRequest.pending;
 const searchForm = reactive<{ name: string; categoryId: number | ''; status: string }>({
   name: '',
   categoryId: '',
@@ -308,25 +319,34 @@ const ensureCurrentPage = () => {
   if (pagination.current > maxPage) pagination.current = maxPage;
 };
 const loadColors = async () => {
-  loading.value = true;
+  const request = listRequest.start();
   try {
-    tableData.value = sortByCreatedAtDesc(await listSlabColors()).map(toColorItem);
+    const records = sortByCreatedAtDesc(await listSlabColors()).map(toColorItem);
+    if (!request.current()) return;
+    tableData.value = records;
     ensureCurrentPage();
   } catch (error) {
+    if (!request.current()) return;
     adminFeedback.error(error instanceof Error ? error.message : '色系列表加载失败');
   } finally {
-    loading.value = false;
+    request.finish();
   }
 };
+const categoryList = useContentRequest();
 const loadCategories = async () => {
+  const request = categoryList.start();
   try {
-    categories.value = sortByCreatedAtDesc(await listSlabColorCategories()).map((item) => ({
+    const result = sortByCreatedAtDesc(await listSlabColorCategories()).map((item) => ({
       ...item,
       createdByName: item.createdByName ?? '-',
       createdAt: formatDateTime(item.createdAt),
     }));
+    if (request.current()) categories.value = result;
   } catch (error) {
+    if (!request.current()) return;
     adminFeedback.error(error instanceof Error ? error.message : '色系分类加载失败');
+  } finally {
+    request.finish();
   }
 };
 const handleSearch = () => {
@@ -353,16 +373,28 @@ const formRules: Record<string, FormRule[]> = {
   remark: [{ max: 100, message: '备注最多输入100个汉字', type: 'error' }],
 };
 const openCreate = async () => {
-  await loadCategories();
-  editingId.value = null;
-  Object.assign(formData, { name: '', categoryId: null, remark: '' });
-  formVisible.value = true;
+  const request = preparation.start();
+  try {
+    await loadCategories();
+    if (!request.current()) return;
+    editingId.value = null;
+    Object.assign(formData, { name: '', categoryId: null, remark: '' });
+    formVisible.value = true;
+  } finally {
+    request.finish();
+  }
 };
 const openEdit = async (row: ColorItem) => {
-  await loadCategories();
-  editingId.value = row.id;
-  Object.assign(formData, { name: row.name, categoryId: row.categoryId, remark: row.remark ?? '' });
-  formVisible.value = true;
+  const request = preparation.start();
+  try {
+    await loadCategories();
+    if (!request.current()) return;
+    editingId.value = row.id;
+    Object.assign(formData, { name: row.name, categoryId: row.categoryId, remark: row.remark ?? '' });
+    formVisible.value = true;
+  } finally {
+    request.finish();
+  }
 };
 const closeColorForm = () => {
   formVisible.value = false;
@@ -380,8 +412,8 @@ const submitColor = async () => {
     if (editingId.value) await updateSlabColor(editingId.value, payload);
     else await createSlabColor(payload);
     const target = payload.name;
-    await loadColors();
     closeColorForm();
+    await loadColors();
     if (editingId.value) adminFeedback.actionSuccess({ action: '修改', target });
     else adminFeedback.created(target);
   } catch (error) {
@@ -418,9 +450,9 @@ const submitColorConfirm = async () => {
         if (!deleted) throw new Error('色系未删除，请刷新后重试');
       } else await updateSlabColorStatus(target.id, operationType === 'enable' ? 'enabled' : 'disabled');
       if (!current()) return;
+      colorConfirmVisible.value = false;
       await loadColors();
       if (!current()) return;
-      colorConfirmVisible.value = false;
       if (operationType === 'delete') adminFeedback.deleted(target.name);
       else adminFeedback.actionSuccess({ action, target: target.name });
     } catch (error) {
@@ -432,8 +464,14 @@ const submitColorConfirm = async () => {
 
 const categoryManagementVisible = ref(false);
 const openCategoryManagement = async () => {
-  await loadCategories();
-  categoryManagementVisible.value = true;
+  const request = preparation.start();
+  try {
+    await loadCategories();
+    if (!request.current()) return;
+    categoryManagementVisible.value = true;
+  } finally {
+    request.finish();
+  }
 };
 const categoryFormRef = ref<FormInstanceFunctions>();
 const categoryFormVisible = ref(false);
@@ -458,10 +496,10 @@ const submitCategory = async () => {
   try {
     if (editingCategoryId.value) await updateSlabColorCategory(editingCategoryId.value, payload);
     else await createSlabColorCategory(payload);
-    await loadCategories();
     closeCategoryForm();
     if (editingCategoryId.value) adminFeedback.actionSuccess({ action: '修改', target: payload.name });
     else adminFeedback.created(payload.name);
+    void loadCategories();
   } catch (error) {
     adminFeedback.error(error instanceof Error ? error.message : '操作失败');
   }
@@ -482,10 +520,9 @@ const submitCategoryDelete = async () => {
     try {
       await deleteSlabColorCategory(target.id);
       if (!current()) return;
-      await loadCategories();
-      if (!current()) return;
       categoryDeleteVisible.value = false;
       adminFeedback.deleted(target.name);
+      void loadCategories();
     } catch (error) {
       if (!current()) return;
       adminFeedback.error(getSafeErrorMessage(error, '操作失败'));
@@ -496,6 +533,11 @@ const submitCategoryDelete = async () => {
 onMounted(async () => {
   await Promise.all([loadColors(), loadCategories()]);
 });
+
+const contentLoading = listRequest.indicator;
+
+const { pending: submitColorPending, run: submitColorOnce } = usePendingAction(submitColor);
+const { pending: submitCategoryPending, run: submitCategoryOnce } = usePendingAction(submitCategory);
 </script>
 
 <style scoped>

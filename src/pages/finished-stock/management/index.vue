@@ -166,7 +166,7 @@
                     :columns="columns"
                     :sort="tableSort"
                     :sort-icon="stateActivitySortIcon"
-                    :loading="loading"
+                    :loading="contentLoading || preparation.indicator.value"
                     hover
                     table-layout="fixed"
                     @sort-change="onTimeSortChange"
@@ -227,7 +227,11 @@
                           hover="color"
                           :disabled="operations.pending(`${action.id}:${row.id}`)"
                           @click="handleManagementRowButton(action.id, row)"
-                          >{{ action.label }}</t-link
+                          ><template #prefix-icon>
+                            <span class="row-loading-slot">
+                              <t-loading v-if="operations.checkingIndicator(`${action.id}:${row.id}`)" size="small" />
+                            </span>
+                          </template>{{ action.label }}</t-link
                         >
                       </div>
                     </template>
@@ -463,7 +467,7 @@
             </AdminSectionCard>
 
             <AdminSectionCard class="form-submit-bar">
-              <t-button :theme="buttonTheme('submit')" :loading="saving" @click="submitProductForm">
+              <t-button data-loading-button :theme="buttonTheme('submit')" :disabled="saving" :loading="saveIndicator" @click="submitProductForm">
                 <template #icon><t-icon name="check" /></template>
                 {{ formConfirmationText('edit') }}
               </t-button>
@@ -591,9 +595,9 @@
       header="下架"
       width="520px"
       placement="center"
-      :confirm-btn="dialogButtonProps('off-shelf', operationConfirmation('下架', reasonState.isBatch))"
+      :confirm-btn="submitReasonButton"
       :cancel-btn="cancelButtonProps('取消')"
-      @confirm="submitReason"
+      @confirm="submitReasonOnce"
       @cancel="closeReasonDialog"
       @close="closeReasonDialog"
     >
@@ -613,7 +617,7 @@
       </t-form>
     </t-dialog>
     <t-drawer
-      v-model:visible="detailDialogVisible"
+      :visible="detailDialogVisible || detailIndicator"
       header="商品详情"
       :close-btn="true"
       size="min(1240px, 100%)"
@@ -621,8 +625,9 @@
       :footer="false"
       @close="closeDetailDialog"
     >
+      <t-loading v-if="detailIndicator" />
       <ProductDetail
-        v-if="detailProduct"
+        v-else-if="detailProduct"
         :product="detailProduct"
         :attribute-names="detailAttributeNames"
         :operations="true"
@@ -679,6 +684,10 @@
 </template>
 
 <script setup lang="ts">
+import { useContentRequest } from '@/composables/useContentRequest';
+import { useDialogLoading } from '@/composables/useDialogLoading';
+import { usePendingAction } from '@/composables/usePendingAction';
+import { useDelayedLoading } from '@/composables/useDelayedLoading';
 import { useOperationPreflight, requireCondition } from '@/composables/useOperationPreflight';
 import { useListBatchSelection } from '@/components/foundation';
 import { operationsHistoricalLayeredFields } from './historicalSpecification';
@@ -798,6 +807,8 @@ const productPermissionPrefix = computed(() => `admin.${commodity.moduleKey}`);
 const sourceBlocked = (row: StockItem) => Boolean(row.sourceUnavailable);
 const activeTab = ref<StockTab>(initialProductListTab(useRoute().query.tab));
 const operations = useOperationPreflight(() => activeTab.value);
+const preparation = useContentRequest();
+operations.onInvalidate(preparation.cancel);
 
 const { descending, tableSort, toggleTimeSort, onTimeSortChange } = useStateActivitySort(activeTab, () => {
   currentPagination.value.current = 1;
@@ -1925,7 +1936,6 @@ const submitReason = async () => {
     reasonFeedback.reject('reason', reasonForm.reason, '请选择下架原因');
     return rejectFormSubmission(reasonFormRoot.value);
   }
-  closeReasonDialog();
   saving.value = true;
   try {
     if (reasonState.isBatch) {
@@ -1943,6 +1953,7 @@ const submitReason = async () => {
   } catch (error) {
     adminFeedback.error(error instanceof Error ? error.message : '操作失败');
   } finally {
+    closeReasonDialog();
     saving.value = false;
   }
 };
@@ -1964,24 +1975,33 @@ const detailAttributeNames = computed(() => {
   );
 });
 const openProductEditor = async (row: StockItem) => {
+  const request = preparation.start();
   try {
     await refreshPriceConfigurations();
     const latest = await getFinishedProductDetail(row.id);
+    if (!request.current()) return;
     if (!latest) {
       adminFeedback.error('商品不存在，请刷新列表');
       return;
     }
     openFormPage(toStockItem(latest));
   } catch (error) {
+    if (!request.current()) return;
     adminFeedback.error(getSafeErrorMessage(error, '商品资料加载失败'));
+  } finally {
+    request.finish();
   }
 };
+const detailRequest = useContentRequest();
+const detailIndicator = detailRequest.indicator;
 const openProductDetail = async (row: StockItem) => {
+  const request = detailRequest.start();
   try {
     const [latest, levels] = await Promise.all([
       getFinishedProductDetail(row.id),
       listFinishedProductPriceLevelOptions(),
     ]);
+    if (!request.current()) return;
     if (!latest) {
       adminFeedback.error('商品不存在，请刷新列表');
       return;
@@ -1993,10 +2013,13 @@ const openProductDetail = async (row: StockItem) => {
     }
     detailDialogVisible.value = true;
   } catch {
-    adminFeedback.error('商品详情加载失败，请重试');
+    if (request.current()) adminFeedback.error('商品详情加载失败，请重试');
+  } finally {
+    request.finish();
   }
 };
 const closeDetailDialog = () => {
+  detailRequest.cancel();
   detailDialogVisible.value = false;
   detailProduct.value = null;
 };
@@ -2039,6 +2062,7 @@ const handleConfirm = async () => {
   const product = confirmState.product;
   const selectedCount = selectedKeys.value.length;
   const recycleCount = dataItems.value.filter((item) => item.status === 'recycle').length;
+  let refreshList = false;
   saving.value = true;
   try {
     if (type === 'shelf' && product) {
@@ -2050,7 +2074,7 @@ const handleConfirm = async () => {
     } else if (type === 'purge' && product) {
       await deleteFinishedProduct(product.id);
       dataItems.value = dataItems.value.filter((item) => item.id !== product.id);
-      if (sourceBlocked(product)) await loadInventoryData();
+      if (sourceBlocked(product)) refreshList = true;
     } else if (type === 'batchShelf' || type === 'batchDelete') {
       const ids = [...selectedKeys.value];
       batchOperation.value = type === 'batchDelete' ? '删除' : '上架';
@@ -2090,13 +2114,13 @@ const handleConfirm = async () => {
       const selected = new Set(selectedKeys.value);
       dataItems.value = dataItems.value.filter((item) => !selected.has(item.id));
       selectedKeys.value = [];
-      if (includesInvalid) await loadInventoryData();
+      if (includesInvalid) refreshList = true;
     } else if (type === 'clearRecycle') {
       const recycleIds = dataItems.value.filter((item) => item.status === 'recycle').map((item) => item.id);
       await Promise.all(recycleIds.map((id) => deleteFinishedProduct(id)));
       dataItems.value = dataItems.value.filter((item) => item.status !== 'recycle');
       selectedKeys.value = [];
-      await loadInventoryData();
+      refreshList = true;
     }
     closeConfirmDialog();
     if ((type === 'delete' || type === 'purge') && product) {
@@ -2108,6 +2132,7 @@ const handleConfirm = async () => {
     } else {
       adminFeedback.success('操作已完成');
     }
+    if (refreshList) await loadInventoryData();
   } catch (error) {
     if (type === 'shelf') {
       closeConfirmDialog();
@@ -2121,6 +2146,12 @@ const handleConfirm = async () => {
   }
 };
 operations.onInvalidate(closeConfirmDialog);
+
+const contentLoading = useDelayedLoading(() => Boolean(loading.value));
+const saveIndicator = useDelayedLoading(() => Boolean(saving.value));
+
+const { pending: submitReasonPending, run: submitReasonOnce } = usePendingAction(submitReason);
+const submitReasonButton = useDialogLoading(() => reasonDialogVisible.value, () => dialogButtonProps('off-shelf', operationConfirmation('下架', reasonState.isBatch), { loading: submitReasonPending.value }));
 </script>
 
 <style scoped>

@@ -36,10 +36,10 @@
                         @keydown="handlePriceCoefficientKeydown"
                       />
                     </t-form-item>
-                    <t-button
+                    <t-button data-loading-button
                       v-if="canEditGuide"
                       :theme="buttonTheme('save')"
-                      :loading="guideSaving"
+                      :disabled="guideSaving" :loading="guideIndicator"
                       @click="saveGuidePriceSetting"
                     >
                       {{ formConfirmationText('edit') }}
@@ -76,7 +76,7 @@
               row-key="id"
               :data="pageData"
               :columns="columns"
-              :loading="loading"
+              :loading="contentLoading"
               :class="{ 'zdm-row-sort-table': canSort }"
               :drag-sort="canSort ? 'row' : undefined"
               :drag-sort-options="{
@@ -114,7 +114,11 @@
                   </t-link>
                   <t-link v-if="canDelete" :theme="buttonTheme('delete')" hover="color" :disabled="operations.pending(`delete:${row.id}`)"
                     @click="openConfirm(row)"
-                    >删除</t-link
+                    ><template #prefix-icon>
+                      <span class="row-loading-slot">
+                        <t-loading v-if="operations.checkingIndicator(`delete:${row.id}`)" size="small" />
+                      </span>
+                    </template>删除</t-link
                   >
                 </div>
               </template>
@@ -139,7 +143,8 @@
       dialog-class-name="zdm-admin-dialog zdm-admin-single-form"
       :header="editingId ? '编辑' : '新增'"
       width="480px"
-      @confirm="submitForm"
+      :confirm-btn="{ loading: submitFormPending }"
+      @confirm="submitFormOnce"
       @cancel="closeForm"
       @close="closeForm"
     >
@@ -197,7 +202,8 @@
       :action="statusConfirmRow?.status === 'enabled' ? '停用' : '启用'"
       :object-type="`${commodityLabel}价格配置`"
       :object-name="statusConfirmRow?.name"
-      @confirm="submitStatusConfirm"
+      :loading="submitStatusConfirmPending"
+      @confirm="submitStatusConfirmOnce"
       @cancel="statusConfirmVisible = false"
       @close="statusConfirmVisible = false"
     />
@@ -205,6 +211,9 @@
 </template>
 
 <script setup lang="ts">
+import { useContentRequest } from '@/composables/useContentRequest';
+import { usePendingAction } from '@/composables/usePendingAction';
+import { useDelayedLoading } from '@/composables/useDelayedLoading';
 import { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';
 import { OperationBlockedError } from '@/services/http';
 import { useOperationPreflight, requireCondition } from '@/composables/useOperationPreflight';
@@ -276,7 +285,8 @@ const canEditGuide = computed(() => hasPermission(loginUser.value, `${activePref
 const canDelete = computed(() => hasPermission(loginUser.value, `${activePrefix.value}.delete`));
 const canToggleStatus = computed(() => hasPermission(loginUser.value, `${activePrefix.value}.toggle-status`));
 
-const loading = ref(false);
+const listRequest = useContentRequest();
+const loading = listRequest.pending;
 const guideSaving = ref(false);
 type PriceCoefficientValue = string | number | undefined;
 type PriceCoefficientChangeContext = { type?: string };
@@ -359,7 +369,7 @@ const formatNumber = (value: number, digits = 4) =>
   Number(value).toLocaleString('zh-CN', { maximumFractionDigits: digits, minimumFractionDigits: 0 });
 const formatDateTime = (value?: string) => (value ? value.replace(/-/g, '/').replace('T', ' ').slice(0, 16) : '-');
 const loadData = async () => {
-  loading.value = true;
+  const request = listRequest.start();
   try {
     const [rows, guideSetting, levels] =
       activeType.value !== 'slab'
@@ -373,6 +383,7 @@ const loadData = async () => {
             getSlabGuidePriceSetting(),
             listStoreLevelPricingOptions(),
           ]);
+    if (!request.current()) return;
     tableData.value = rows.map((item) => ({
       ...item,
       createdByName: item.createdByName ?? '-',
@@ -383,9 +394,10 @@ const loadData = async () => {
       guideSetting?.priceCoefficient == null ? undefined : formatPriceCoefficientInput(guideSetting.priceCoefficient);
     guideFormRef.value?.clearValidate();
   } catch (error) {
+    if (!request.current()) return;
     adminFeedback.error(error instanceof Error ? error.message : '加价配置加载失败');
   } finally {
-    loading.value = false;
+    request.finish();
   }
 };
 const saveGuidePriceSetting = async () => {
@@ -506,8 +518,8 @@ const submitForm = async () => {
       else await createSlabMarkupConfiguration(payload);
     }
     const wasEditing = Boolean(editingId.value);
-    await loadData();
     closeForm();
+    await loadData();
     if (wasEditing) adminFeedback.actionSuccess({ action: '修改', target: name });
     else adminFeedback.created(name);
   } catch (error) {
@@ -536,9 +548,9 @@ const submitConfirm = async () => {
       if (activeType.value !== 'slab') await commodityPricing.value.deleteFinishedMarkupConfiguration(row.id);
       else await deleteSlabMarkupConfiguration(row.id);
       if (!current()) return;
+      confirmVisible.value = false;
       await loadData();
       if (!current()) return;
-      confirmVisible.value = false;
       adminFeedback.deleted(row.name);
     } catch (error) {
       if (!current()) return;
@@ -561,8 +573,8 @@ const submitStatusConfirm = async () => {
     if (activeType.value !== 'slab')
       await commodityPricing.value.updateFinishedMarkupConfigurationStatus(row.id, status);
     else await updateSlabMarkupConfigurationStatus(row.id, status);
-    await loadData();
     statusConfirmVisible.value = false;
+    await loadData();
     adminFeedback.actionSuccess({ action: status === 'enabled' ? '启用' : '停用', target: row.name });
   } catch (error) {
     adminFeedback.error(error instanceof Error ? error.message : '状态更新失败');
@@ -578,6 +590,12 @@ operations.onInvalidate(() => {
   confirmVisible.value = false;
   confirmRow.value = null;
 });
+
+const guideIndicator = useDelayedLoading(() => Boolean(guideSaving.value));
+const contentLoading = listRequest.indicator;
+
+const { pending: submitFormPending, run: submitFormOnce } = usePendingAction(submitForm);
+const { pending: submitStatusConfirmPending, run: submitStatusConfirmOnce } = usePendingAction(submitStatusConfirm);
 </script>
 
 <style scoped>

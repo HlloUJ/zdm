@@ -1,3 +1,4 @@
+import { useContentRequest } from '@/composables/useContentRequest';
 import { reactive, ref } from 'vue';
 import { adminFeedback } from '@/components/foundation';
 import { listSlabOperationLogs, type SlabOperationLogRecord } from '@/services/slabs';
@@ -6,7 +7,8 @@ import type { OperationLogFilterState } from './slabPageModel';
 /** List and detail state shared by the two slab clients; presentation stays with each client. */
 export function useSlabOperationLogs() {
   const operationLogDrawerVisible = ref(false);
-  const operationLogLoading = ref(false);
+  const requestState = useContentRequest();
+  const operationLogLoading = requestState.pending;
   const operationLogs = ref<SlabOperationLogRecord[]>([]);
   const operationLogTotal = ref(0);
   const operationLogDetailVisible = ref(false);
@@ -27,7 +29,7 @@ export function useSlabOperationLogs() {
     void loadOperationLogs();
   };
   const loadOperationLogs = async () => {
-    operationLogLoading.value = true;
+    const request = requestState.start();
     try {
       const [startDate, endDate] = appliedOperationLogFilter.dateRange;
       const result = await listSlabOperationLogs({
@@ -39,12 +41,14 @@ export function useSlabOperationLogs() {
         page: operationLogPagination.current,
         pageSize: operationLogPagination.pageSize,
       });
+      if (!request.current()) return;
       operationLogs.value = result.records;
       operationLogTotal.value = result.total;
     } catch (error) {
+      if (!request.current()) return;
       adminFeedback.actionError({ action: '加载操作日志', error, fallback: '请稍后重试' });
     } finally {
-      operationLogLoading.value = false;
+      request.finish();
     }
   };
   const openOperationLogDrawer = async () => {

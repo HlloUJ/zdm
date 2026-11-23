@@ -378,3 +378,42 @@ p {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Reserve the native indicator's space before it appears. Existing icons already occupy it. */
+.t-button[data-loading-button]:has(> .t-button__text:not(:empty)):not(:has(> .t-icon, > .t-loading))::before {
+  content: '';
+  flex: none;
+  width: var(--loading-icon-size, var(--td-font-size-body-large));
+  margin-inline-end: 8px;
+}
+.t-button.t-size-s[data-loading-button] {
+  --loading-icon-size: var(--td-font-size-body-medium);
+}
+.t-button.t-size-l[data-loading-button] {
+  --loading-icon-size: var(--td-font-size-title-large);
+}
+
+.row-loading-slot {
+  display: inline-flex;
+  width: 1em;
+  justify-content: center;
+}
+
+/* Native disabled buttons still block activation during the quiet interval. */
+.t-button[data-awaiting-feedback] {
+  --td-brand-color-disabled: var(--td-brand-color);
+  --td-error-color-disabled: var(--td-error-color);
+  --td-success-color-disabled: var(--td-success-color);
+  --td-warning-color-disabled: var(--td-warning-color);
+  --td-bg-color-component-disabled: var(--td-bg-color-component);
+}
+.t-button[data-awaiting-feedback]:hover {
+  --td-brand-color-disabled: var(--td-brand-color-hover);
+  --td-error-color-disabled: var(--td-error-color-hover);
+  --td-success-color-disabled: var(--td-success-color-hover);
+  --td-warning-color-disabled: var(--td-warning-color-hover);
+  --td-bg-color-component-disabled: var(--td-bg-color-component-hover);
+}
+.t-button[data-awaiting-feedback].t-button--variant-base.t-button--theme-default {
+  color: var(--td-text-color-primary);
+}

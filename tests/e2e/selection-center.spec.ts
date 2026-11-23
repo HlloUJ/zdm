@@ -541,7 +541,7 @@ for (const width of [1440, 1024, 640]) {
   });
 }
 
-test('page loading stays centered above content and disappears after the request', async ({ page }) => {
+test('loading stays centered inside the product area and disappears after the request', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await fixture(page);
   let release: () => void = () => {};
@@ -553,34 +553,21 @@ test('page loading stays centered above content and disappears after the request
     await route.fallback();
   });
   await page.goto('/store/selection-center');
-  const loading = page.locator('.t-loading__fullscreen');
+  const area = page.locator('main .selection-content');
+  const loading = area.locator(':scope > .t-loading--full');
   await expect(loading).toBeVisible();
-  const box = await loading.boundingBox();
-  expect(box!.x).toBe(0);
-  expect(box!.y).toBe(0);
-  const viewport = await page.evaluate(() => ({
-    // The root border box excludes the stable classic-scrollbar gutter on Linux.
-    width: document.documentElement.getBoundingClientRect().width,
-    height: document.documentElement.getBoundingClientRect().height,
-  }));
-  console.log(
-    'GEOMETRY',
-    await page.evaluate(() => ({
-      inner: innerWidth,
-      client: document.documentElement.clientWidth,
-      rect: document.documentElement.getBoundingClientRect().width,
-      body: document.body.getBoundingClientRect().width,
-      gutter: getComputedStyle(document.documentElement).scrollbarGutter,
-      overflow: getComputedStyle(document.documentElement).overflow,
-    })),
-  );
-  expect(box!.width).toBe(viewport.width);
-  expect(box!.height).toBe(viewport.height);
-  const icon = loading.locator('.t-loading__gradient-conic');
-  const iconBox = await icon.boundingBox();
-  expect(iconBox!.x + iconBox!.width / 2).toBeCloseTo(viewport.width / 2, 0);
-  expect(iconBox!.y + iconBox!.height / 2).toBeCloseTo(viewport.height / 2, 0);
-  expect(await loading.evaluate((el) => Number(getComputedStyle(el).zIndex))).toBeGreaterThan(1500);
+  await expect(page.locator('.t-loading__fullscreen')).toHaveCount(0);
+  const box = (await area.boundingBox())!;
+  const overlay = (await loading.boundingBox())!;
+  const search = (await page.getByRole('button', { name: '搜索', exact: true }).boundingBox())!;
+  expect(box.y).toBeGreaterThanOrEqual(search.y + search.height);
+  expect(box.height).toBeGreaterThan(0);
+  for (const axis of ['x', 'y', 'width', 'height'] as const) {
+    expect(overlay[axis]).toBeCloseTo(box[axis], 0);
+  }
+  const icon = (await loading.locator('.t-loading__gradient-conic').boundingBox())!;
+  expect(icon.x + icon.width / 2).toBeCloseTo(box.x + box.width / 2, 0);
+  expect(icon.y + icon.height / 2).toBeCloseTo(box.y + box.height / 2, 0);
   release();
   await expect(loading).toBeHidden();
   await expect(page.locator('.product-card')).toHaveCount(20);

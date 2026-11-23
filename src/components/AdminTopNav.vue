@@ -37,7 +37,7 @@
           <span class="brand-context-label identity-lines">
             <span class="identity-title-row">
               <span class="identity-name" :title="currentIdentityLabel">{{ currentIdentityLabel }}</span>
-              <t-loading v-if="switchingIdentity" size="small" />
+              <t-loading v-if="identityIndicator" size="small" />
               <t-icon
                 v-else
                 name="chevron-down"
@@ -91,7 +91,7 @@
           <span class="user-role">{{ roleText }}</span>
         </div>
       </div>
-      <t-button variant="text" :theme="buttonTheme('logout')" :loading="loggingOut" @click="handleLogout">
+      <t-button data-loading-button variant="text" :theme="buttonTheme('logout')" :disabled="loggingOut" :loading="logoutIndicator" @click="handleLogout">
         <template #icon><t-icon name="logout" /></template>
         退出登录
       </t-button>
@@ -100,6 +100,7 @@
 </template>
 
 <script setup lang="ts">
+import { useDelayedLoading } from '@/composables/useDelayedLoading';
 import IdentityContextIcon from '@/components/IdentityContextIcon.vue';
 import { buttonTheme } from '@/components/foundation/actions/buttonFunctions';
 import { adminFeedback } from '@/components/foundation';
@@ -209,6 +210,9 @@ onMounted(async () => {
     identityContexts.value = [];
   }
 });
+
+const logoutIndicator = useDelayedLoading(() => Boolean(loggingOut.value));
+const identityIndicator = useDelayedLoading(() => Boolean(switchingIdentity.value));
 </script>
 
 <style scoped>

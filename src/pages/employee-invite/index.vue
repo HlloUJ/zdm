@@ -2,8 +2,7 @@
   <main class="invite-wrapper">
     <section class="invite-container" aria-label="员工注册">
       <div v-if="loading" class="state-panel">
-        <t-loading size="small" text="" />
-        <span>正在打开邀请链接</span>
+        <t-loading v-if="inviteIndicator" size="small" text="正在打开邀请链接" />
       </div>
 
       <div v-else-if="pageError" class="state-panel">
@@ -61,12 +60,12 @@
               placeholder="请输入验证码"
               @update:model-value="normalizeVerifyCode"
             />
-            <t-button
+            <t-button data-loading-button
               :theme="buttonTheme('verification-code')"
               size="large"
               variant="outline"
               :disabled="countDown > 0 || requestingCode"
-              :loading="requestingCode"
+              :loading="codeIndicator"
               @click="sendCode"
             >
               {{ countDown > 0 ? `${countDown}s` : '获取验证码' }}
@@ -74,7 +73,7 @@
           </t-form-item>
 
           <t-form-item class="btn-container">
-            <t-button :theme="buttonTheme('next')" block size="large" type="submit" :loading="submitting"
+            <t-button data-loading-button :theme="buttonTheme('next')" block size="large" type="submit" :disabled="submitting" :loading="submitIndicator"
               >下一步</t-button
             >
           </t-form-item>
@@ -105,7 +104,7 @@
               <t-button :theme="buttonTheme('previous')" size="large" variant="outline" @click="step = 1"
                 >上一步</t-button
               >
-              <t-button :theme="buttonTheme('submit')" size="large" type="submit" :loading="submitting">{{
+              <t-button data-loading-button :theme="buttonTheme('submit')" size="large" type="submit" :disabled="submitting" :loading="submitIndicator">{{
                 confirmationText(operationConfirmation('提交注册'))
               }}</t-button>
             </div>
@@ -117,6 +116,7 @@
 </template>
 
 <script setup lang="ts">
+import { useDelayedLoading } from '@/composables/useDelayedLoading';
 import { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';
 import { useOperationPreflight } from '@/composables/useOperationPreflight';
 import { confirmationText, operationConfirmation } from '@/components/foundation/actions/confirmation';
@@ -309,6 +309,10 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(stopCounter);
+
+const codeIndicator = useDelayedLoading(() => Boolean(requestingCode.value));
+const submitIndicator = useDelayedLoading(() => Boolean(submitting.value));
+const inviteIndicator = useDelayedLoading(() => loading.value);
 </script>
 
 <style scoped>

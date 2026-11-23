@@ -6,7 +6,7 @@ import type { CenterDetail, CenterProduct } from '@/services/storeSelectionCente
 import { centerPrice, selectionLabel } from '@/services/storeSelectionCenter';
 import { selectionSalesModel, selectionAttributes } from '../selectionDetailModel';
 import HistoricalRichText from '@/pages/finished-stock/management/components/HistoricalRichText.vue';
-const props = defineProps<{ detail: CenterDetail | null }>();
+const props = defineProps<{ detail: CenterDetail | null; loading?: boolean; adding?: boolean; addingIndicator?: boolean }>();
 const emit = defineEmits<{ close: []; add: [product: CenterProduct] }>();
 const mode = ref<'video' | 'gallery'>('gallery');
 const index = ref(0);
@@ -55,12 +55,13 @@ onBeforeUnmount(unlock);
 <template>
   <t-drawer
     header="商品详情"
-    :visible="Boolean(detail)"
+    :visible="Boolean(detail) || loading"
     size="min(1120px, 100%)"
     :footer="false"
     @close="emit('close')"
   >
-    <template v-if="detail">
+    <t-loading v-if="loading" />
+    <template v-else-if="detail">
       <div class="detail-media-layout">
         <aside class="media-thumbnails" aria-label="商品媒体缩略图">
           <t-check-tag v-if="video" :checked="mode === 'video'" aria-label="播放商品视频" @change="mode = 'video'">
@@ -113,7 +114,9 @@ onBeforeUnmount(unlock);
           <t-button
             v-if="!detail.product.soldOut && !detail.product.addedToStore && !detail.product.inSelection"
             :theme="buttonTheme('select-product')"
-            :disabled="!detail.product.canAdd"
+            data-loading-button
+            :loading="addingIndicator"
+            :disabled="!detail.product.canAdd || adding"
             @click="emit('add', detail.product)"
             >加入清单</t-button
           >
