@@ -53,3 +53,6 @@ export const sortStoreCategories = (scope: StoreCategoryScope, parentId: number 
   });
 export const deleteStoreCategory = (id: number, scope: StoreCategoryScope) =>
   request<boolean>(`${base}/${id}?scope=${scope}`, { method: 'DELETE' });
+
+export const checkStoreCategoryDelete = (id: number, scope: StoreCategoryScope) =>
+  request<boolean>(`/admin/store-categories/${id}/delete-check?scope=${scope}`);

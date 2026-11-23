@@ -99,7 +99,7 @@ public class MediaAssetService extends ServiceImpl<MediaAssetMapper, MediaAsset>
     }
     MediaAsset asset = baseMapper.selectByIdForUpdate(mediaId);
     if (asset == null || "deleted".equals(asset.getStatus())) {
-      throw new IllegalArgumentException("媒体资源不存在");
+      throw new com.zdm.platform.common.OperationBlockedException("媒体资源不存在");
     }
     return asset;
   }

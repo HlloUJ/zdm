@@ -115,12 +115,26 @@ public class TemplateVersionService {
     return version;
   }
 
+  public void checkCategoryOperation(long categoryId, String operation) {
+    String action = switch (operation) {
+      case "create" -> "创建草稿";
+      case "copy" -> "复制草稿";
+      case "publish" -> "发布";
+      default -> throw new IllegalArgumentException("不支持的模板操作");
+    };
+    requireEnabledCategory(authorize(categoryId, "create"), action);
+  }
+
+  private void requireEnabledCategory(ProductCategory category, String action) {
+    if (!"enabled".equals(category.getStatus())) {
+      throw new com.zdm.platform.common.OperationBlockedException("分类已停用，不能" + action);
+    }
+  }
+
   @Transactional
   public TemplateVersion create(long categoryId) {
     ProductCategory category = authorize(categoryId, "create");
-    if (!"enabled".equals(category.getStatus())) {
-      throw new IllegalArgumentException("分类已停用，不能创建草稿");
-    }
+    requireEnabledCategory(category, "创建草稿");
     // Lock the category to serialize numbering and one-draft-per-category creation.
     jdbc.queryForObject("SELECT id FROM product_categories WHERE id = ? FOR UPDATE", Long.class, categoryId);
     if (java.util.Objects.requireNonNull(jdbc.queryForObject("SELECT COUNT(*) FROM category_template_versions WHERE category_id = ? AND state = 'draft'",
@@ -145,9 +159,7 @@ public class TemplateVersionService {
       throw new IllegalArgumentException("仅已发布版本可以复制");
     }
     ProductCategory category = categories.getById(source.categoryId());
-    if (!"enabled".equals(category.getStatus())) {
-      throw new IllegalArgumentException("分类已停用，不能复制草稿");
-    }
+    requireEnabledCategory(category, "复制草稿");
     jdbc.queryForObject("SELECT id FROM product_categories WHERE id = ? FOR UPDATE", Long.class, source.categoryId());
     List<TemplateVersion> drafts = jdbc.query("SELECT version.*, (SELECT display_name FROM accounts WHERE accounts.id=version.created_by_account_id) AS current_creator_name FROM category_template_versions version WHERE category_id = ? AND state = 'draft' FOR UPDATE",
         this::map, source.categoryId());
@@ -182,9 +194,7 @@ public class TemplateVersionService {
   public TemplateVersion publish(long id, int revision) {
     TemplateVersion version = writable(id, "create", revision);
     ProductCategory category = categories.getById(version.categoryId());
-    if (!"enabled".equals(category.getStatus())) {
-      throw new IllegalArgumentException("分类已停用，不能发布");
-    }
+    requireEnabledCategory(category, "发布");
     ArrayNode content = normalizeAttributes(version, version.content(), true);
     jdbc.queryForObject("SELECT id FROM product_categories WHERE id = ? FOR UPDATE", Long.class, version.categoryId());
     List<TemplateVersion> published = jdbc.query("SELECT version.*, (SELECT display_name FROM accounts WHERE accounts.id=version.created_by_account_id) AS current_creator_name FROM category_template_versions version WHERE category_id = ? AND state = 'published' ORDER BY version_no DESC LIMIT 1",

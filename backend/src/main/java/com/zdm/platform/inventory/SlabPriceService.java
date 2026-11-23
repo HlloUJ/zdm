@@ -1,5 +1,7 @@
 package com.zdm.platform.inventory;
 
+import com.zdm.platform.common.OperationBlockedException;
+
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.zdm.platform.common.StoreLevelPricingDirectory;
 import com.zdm.platform.security.CurrentIdentity;
@@ -68,7 +70,7 @@ public class SlabPriceService {
     List<SlabPrice> prices = listPrices(slabId);
     Set<Long> pricedLevels = prices.stream().map(SlabPrice::getStoreLevelId).collect(Collectors.toSet());
     if (prices.isEmpty() || storeLevelDirectory.listOperationalPricingLevels().stream().anyMatch(level -> !pricedLevels.contains(level.id()))) {
-      throw new IllegalArgumentException("请完善全部大板价格");
+      throw new OperationBlockedException("请完善全部大板价格");
     }
   }
 

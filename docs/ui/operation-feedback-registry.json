@@ -1,0 +1,1853 @@
+{
+  "version": 1,
+  "policies": {
+    "perItem": {
+      "type": "batch-partial",
+      "preflight": "selection-only",
+      "strategy": "逐件执行，返回成功数和失败对象、原因"
+    },
+    "transaction": {
+      "type": "batch-atomic",
+      "preflight": "existing",
+      "strategy": "保留服务端事务及整体复核"
+    },
+    "concurrent": {
+      "type": "batch-partial",
+      "preflight": "selection-only",
+      "strategy": "多个独立请求，保留原 Promise.all 的失败及选择处理"
+    },
+    "serialStop": {
+      "type": "batch-partial",
+      "preflight": "selection-only",
+      "strategy": "按选择顺序逐项，遇错停止，剩余选择保留"
+    },
+    "productConfirm": {
+      "type": "dispatch",
+      "branches": {
+        "shelf": "single",
+        "delete": "single",
+        "restore": "single",
+        "purge": "single",
+        "batchShelf": "@perItem",
+        "batchDelete": "@perItem",
+        "batchRestore": "@concurrent",
+        "batchPurge": "@concurrent",
+        "clearRecycle": "@concurrent"
+      }
+    },
+    "slabConfirm": {
+      "type": "dispatch",
+      "branches": {
+        "shelf": "single",
+        "delete": "single",
+        "restore": "single",
+        "purge": "single",
+        "batchShelf": "@perItem",
+        "batchDelete": "@perItem",
+        "batchRestore": "@transaction",
+        "batchPurge": "@transaction",
+        "clearRecycle": "@transaction",
+        "price": "form"
+      }
+    },
+    "storeConfirm": {
+      "type": "dispatch",
+      "branches": {
+        "shelf": "single",
+        "delete": "single",
+        "restore": "single",
+        "purge": "single",
+        "batch-shelf": "@perItem",
+        "batch-delete": "@perItem",
+        "batch-restore": "@concurrent",
+        "batch-purge": "@concurrent",
+        "clear": "@transaction"
+      }
+    },
+    "productToolbar": {
+      "type": "dispatch",
+      "branches": {
+        "publish": "form",
+        "batchShelf": "@perItem",
+        "batchDelete": "@perItem",
+        "batchOffShelf": "form",
+        "batchRestore": "@concurrent",
+        "batchPurge": "@concurrent",
+        "clearRecycle": "@concurrent"
+      }
+    },
+    "slabToolbar": {
+      "type": "dispatch",
+      "branches": {
+        "publish": "form",
+        "batchShelf": "@perItem",
+        "batchDelete": "@perItem",
+        "batchOffShelf": "form",
+        "batchRestore": "@transaction",
+        "batchPurge": "@transaction",
+        "clearRecycle": "@transaction"
+      }
+    },
+    "stockRow": {
+      "type": "dispatch",
+      "branches": {
+        "detail": "view",
+        "edit": "form",
+        "shelf": "single",
+        "offShelf": "form",
+        "restore": "single",
+        "delete": "single",
+        "purge": "single"
+      }
+    },
+    "storeToolbar": {
+      "type": "dispatch",
+      "branches": {
+        "select": "view",
+        "batch": "@storeConfirm",
+        "batch-delete": "@perItem",
+        "batch-purge": "@concurrent",
+        "clear": "@transaction"
+      }
+    },
+    "reason": {
+      "type": "dispatch",
+      "branches": {
+        "single": "form",
+        "batch": "@concurrent"
+      }
+    },
+    "slabReason": {
+      "type": "dispatch",
+      "branches": {
+        "offShelf": "form",
+        "deleteExternal": "form",
+        "batchOffShelf": "@transaction"
+      }
+    },
+    "customerToolbar": {
+      "type": "dispatch",
+      "branches": {
+        "create": "form",
+        "assign": "form",
+        "archive": "@transaction",
+        "restore": "@transaction",
+        "purge": "@transaction"
+      }
+    },
+    "customerConfirm": {
+      "type": "dispatch",
+      "branches": {
+        "deleteFollowup": "single",
+        "single": "single",
+        "batch": "@transaction"
+      }
+    },
+    "order": {
+      "type": "dispatch",
+      "branches": {
+        "detail": "view",
+        "create": "form",
+        "edit": "form",
+        "copy": "form",
+        "confirm": "single",
+        "receipt": "form",
+        "refund": "form",
+        "correct-payment": "form",
+        "void-payment": "form",
+        "plan": "form",
+        "supply": "form",
+        "ship": "form",
+        "receive": "form",
+        "correct-shipment": "form",
+        "cancel": "form",
+        "terms": "form",
+        "revoke-plan": "form"
+      }
+    },
+    "forwardConfirm": {
+      "type": "dispatch",
+      "branches": {
+        "risk": "single",
+        "form": "form",
+        "result": "view",
+        "batchPartial": "@perItem",
+        "batchAtomic": "@transaction"
+      }
+    },
+    "forwardToolbar": {
+      "type": "dispatch",
+      "branches": {
+        "create": "form",
+        "view": "view",
+        "query": "query",
+        "single": "single",
+        "batchPartial": "@perItem",
+        "batchAtomic": "@transaction"
+      }
+    },
+    "sourceReason": {
+      "type": "dispatch",
+      "branches": {
+        "single": "form",
+        "batch": "@serialStop"
+      }
+    }
+  },
+  "pages": {
+    "src/App.vue": {
+      "script": "6c9b55ae88f5a4b0563c8727739a4f2ce2f38d2375471982531fa890024fef40",
+      "actions": {}
+    },
+    "src/components/AdminSideMenu.vue": {
+      "script": "fc06458b2c5b6881ba27ac90c9812b3695ff362ec6640da6782d37823d39c947",
+      "actions": {
+        "change → handleMenuChange": "view",
+        "click → handleSideNavClick": "view",
+        "expand → handleMenuExpand": "view",
+        "scroll → rememberScroll": "view"
+      }
+    },
+    "src/components/AdminTopNav.vue": {
+      "script": "4f7f948322cd18ba78651daf51d1d6ba4ee6c42ce1a41e0b3a98f1961ba12d76",
+      "actions": {
+        "change → handleIdentityChange": "single",
+        "click → handleLogout": "single",
+        "keydown → identityPointerFocus = false": "view",
+        "keyup → identityPointerFocus = false": "view",
+        "pointerdown → identityPointerFocus = true": "view"
+      }
+    },
+    "src/components/DecimalInput.vue": {
+      "script": "435a352b9d57a532b4598278202ebfbbf4e9f3e41228710720b6bf40da73e290",
+      "actions": {
+        "beforeinput → handleBeforeInput": "form",
+        "blur → handleBlur": "form",
+        "change → handleChange": "view",
+        "compositionend → handleCompositionEnd": "form",
+        "compositionstart → handleCompositionStart": "form",
+        "focus → handleFocus": "view",
+        "focusin → handleNativeFocus": "view",
+        "input → handleInput": "form",
+        "keydown → handleDecimalKeydown": "view",
+        "numeric-validate → touched = true": "form",
+        "paste → handlePaste": "form",
+        "select → rememberSelection": "view"
+      }
+    },
+    "src/components/IdentityContextIcon.vue": {
+      "script": "40a63666e808bbe4f721c954f91b86db7a087b316daf52c52f03317ecc1b265e",
+      "actions": {}
+    },
+    "src/components/OperationsBatchShelfResult.vue": {
+      "script": "bfce1b5ee6b49904ec5dccf98854d62f2a77addd6404660960acd44adc1bef8a",
+      "actions": {
+        "close → emit('update:visible', false)": "view",
+        "confirm → emit('update:visible', false)": "view",
+        "update:visible → emit('update:visible', $event)": "view"
+      }
+    },
+    "src/components/ProductListStatusTag.vue": {
+      "script": "693ea1dfbe86b172e1cd060937204db7962528cd6d57eb77fda6597a62ec4187",
+      "actions": {}
+    },
+    "src/components/ProductRichEditor.vue": {
+      "script": "e45d14e1d212543aad8f6cf9c2ddd5f14db748cf3e74a17683aaaf7d3a2ac9c9",
+      "actions": {}
+    },
+    "src/components/WarehouseEntryInformation.vue": {
+      "script": "6babc7f472cef7be0ae9dc042f903806ce5641da6c2b1617b5df8aa8ebc7d7e3",
+      "actions": {}
+    },
+    "src/components/customer/CustomerFollowupAttachments.vue": {
+      "script": "cbe034066111230145c2062d446e2399a59cf7cede4e52c82e9cd4cddeff0178",
+      "actions": {
+        "cancel → replacementIndex = undefined": "view",
+        "change → replaceSelected": "view",
+        "click → chooseReplacement(file, $event.e)": "form",
+        "click → preview(file)": "view",
+        "click → remove(file)": "single",
+        "keydown → chooseReplacement(file)": "form",
+        "keydown → preview(file)": "view",
+        "keydown → remove(file)": "single"
+      }
+    },
+    "src/components/foundation/AdminConfirmDialog.vue": {
+      "script": "f4569d46904dd3856601d0420d5d3f79d1952e55867bcc2e977f9f584383e25c",
+      "actions": {
+        "cancel → emit('cancel')": "view",
+        "close → emit('close')": "view",
+        "closed → emit('closed')": "view",
+        "confirm → emit('confirm')": "@forwardConfirm",
+        "opened → emit('opened')": "view",
+        "update:visible → emit('update:visible', $event)": "view"
+      }
+    },
+    "src/components/foundation/AdminDialog.vue": {
+      "script": "b59b6c10ee7c73e0c039b50a59064419c0ee954559b29ed7f5c2b95d08fd8c43",
+      "actions": {
+        "cancel → emit('cancel')": "view",
+        "close → emit('close')": "view",
+        "closed → emit('closed')": "view",
+        "confirm → emit('confirm')": "@forwardConfirm",
+        "opened → emit('opened')": "view",
+        "update:visible → emit('update:visible', $event)": "view"
+      }
+    },
+    "src/components/foundation/AdminListLayout.vue": {
+      "script": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "actions": {}
+    },
+    "src/components/foundation/AdminListToolbar.vue": {
+      "script": "1db3e33fcadfbd254ce73177a4cd22b40678fb7d0ec0b1228dc64870dabe3077",
+      "actions": {}
+    },
+    "src/components/foundation/AdminMediaUpload.vue": {
+      "script": "cd0f1ee35642fe97b4270be4067fc4234891c606a39723a263516ee0f312ebf0",
+      "actions": {
+        "change → files = $event": "form",
+        "click → previewFilled": "view",
+        "fail → uploadFailed": "form",
+        "keydown → previewKey": "view",
+        "preview → preview": "view",
+        "remove → remove": "single",
+        "success → uploaded": "view"
+      }
+    },
+    "src/components/foundation/AdminPageFrame.vue": {
+      "script": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "actions": {}
+    },
+    "src/components/foundation/AdminPageHeader.vue": {
+      "script": "9e2a59b32ac84bcaec91f5ee7db5d7d6a006aba59c19116fbf71fd19899ad92d",
+      "actions": {}
+    },
+    "src/components/foundation/AdminPagination.vue": {
+      "script": "9e3f3cd2470bcf7a8d6f96b08c6f0a12d570cc5543ee8223f8fc353740ed401f",
+      "actions": {
+        "change → handleChange": "view"
+      }
+    },
+    "src/components/foundation/AdminPaginationBar.vue": {
+      "script": "ceb20a07be4a8d0c5efb2a4baacf614fc6bd9612d7f644e721e1a9433e3cbc21",
+      "actions": {}
+    },
+    "src/components/foundation/AdminPhoneInput.vue": {
+      "script": "5b889ffb780f1924dd80237d38e50f09dfee3393a012f3f05a00bb71d7d4b647",
+      "actions": {
+        "beforeinput → beforeInput": "form",
+        "change → change": "form",
+        "paste → paste": "form"
+      }
+    },
+    "src/components/foundation/AdminSectionCard.vue": {
+      "script": "ce822b710ce1c0c7ac850f1ff73ae6e4455518668a6ecbc373a39e710a655fe0",
+      "actions": {}
+    },
+    "src/components/foundation/official/AdminDetailPage.vue": {
+      "script": "f2f35d3840087add3539093ca33659fa20866b707aca0b27fd81b23b5c75265e",
+      "actions": {}
+    },
+    "src/components/foundation/official/AdminFormDialog.vue": {
+      "script": "a49175b3ca63f00b0a39cf01373912c95d00aa9530696770188c1f824a8cddc4",
+      "actions": {
+        "update:visible → emit('update:visible', $event)": "view"
+      }
+    },
+    "src/components/foundation/official/AdminListPage.vue": {
+      "script": "42b76d19dbec8dea9131bfac2c6b6fcf9814f9828fdebab30aeb5430683196c4",
+      "actions": {
+        "change → emit('tabChange', $event)": "view",
+        "change → setFilter(field.key, $event)": "query",
+        "click → emit('action', action.id)": "@forwardToolbar",
+        "click → emit('reset')": "query",
+        "click → emit('search')": "query",
+        "page-change → emit('pageChange', $event)": "query",
+        "reset → emit('reset')": "query",
+        "select-change → emit('selectChange', $event)": "view",
+        "submit → emit('search')": "query"
+      }
+    },
+    "src/components/foundation/official/AdminOfficialMediaUpload.vue": {
+      "script": "0198c2df45e62e957a7086f1bb80e9795c1a76f08e8ff47894c54cf944ab4a80",
+      "actions": {
+        "click → previewName": "view",
+        "preview → emit('preview', modelValue)": "view",
+        "remove → emit('update:modelValue', undefined)": "view"
+      }
+    },
+    "src/components/permission/PermissionAssignmentMatrix.vue": {
+      "script": "bdcb7d1bb9049688ee9b6597e8bb932453a4f98de94c83600d2e2b5834f1e59b",
+      "actions": {
+        "change → toggleModule(activeModule, $event)": "form",
+        "change → togglePermission(row, action.value, $event)": "form",
+        "change → toggleRow(row, $event)": "form",
+        "click → activeModuleValue = module.value": "view",
+        "click → clearAllNodes": "form",
+        "click → selectAllNodes": "form"
+      }
+    },
+    "src/components/product-logs/ProductLogFieldValue.vue": {
+      "script": "fa0db74eeac64f6e1a71a50d6f3ad39cdd7b5d7a16460d7d7cb4b14992df6ba2",
+      "actions": {
+        "click → emit('preview', media)": "view"
+      }
+    },
+    "src/components/product-logs/ProductOperationLogTemplate.vue": {
+      "script": "4d79ffaf83f9dbbca8f9ebb0f4f9a2c2e0e62a7cbd3874a9860299482031df47",
+      "actions": {
+        "change → emit('filter-change', 'dateRange', Array.isArray($event) ? $event : [])": "query",
+        "change → emit('filter-change', 'keyword', $event)": "query",
+        "change → emit('filter-change', 'operationType', String($event || ''))": "query",
+        "change → emit('filter-change', 'operatorName', $event)": "query",
+        "change → emit('page-change', $event)": "view",
+        "click → emit('open-detail', row.id)": "view",
+        "click → emit('reset')": "query",
+        "click → emit('search')": "query",
+        "confirm → emit('update:detailVisible', false)": "view",
+        "update:visible → emit('update:detailVisible', $event)": "view",
+        "update:visible → emit('update:visible', $event)": "view"
+      }
+    },
+    "src/pages/craft/finished-stock/index.vue": {
+      "script": "b9797a595bdba31f99d40034ea04e466336d8132ea6f5861357acd5616627960",
+      "actions": {
+        "cancel → closeConfirmDialog": "view",
+        "cancel → closeFormDialog": "view",
+        "click → handleReset": "query",
+        "click → handleSearch": "query",
+        "click → openCreateDialog": "form",
+        "click → openDeleteConfirm(row)": "single",
+        "click → openEditDialog(row)": "form",
+        "click → openImagePreview(row)": "view",
+        "click → openStatusConfirm(row)": "single",
+        "close → closeConfirmDialog": "view",
+        "close → closeFormDialog": "view",
+        "close → imagePreviewVisible = false": "view",
+        "confirm → handleConfirm": "single",
+        "confirm → handleSubmit": "form",
+        "preview → openFormImagePreview": "form",
+        "removed → releasePendingCraftMedia": "form",
+        "update:model-value → handleFormWidthInput": "view",
+        "update:model-value → handleWidthSearchInput('widthEnd', $event)": "view",
+        "update:model-value → handleWidthSearchInput('widthStart', $event)": "view",
+        "uploaded → formRef?.clearValidate(['image'])": "form"
+      }
+    },
+    "src/pages/customer/index.vue": {
+      "script": "e2136a9fe4a5bfd1ea51dfa6b94329eb123707cacb4f42ce703410202cbf715e",
+      "actions": {
+        "action → handleToolbarAction": "@customerToolbar",
+        "cancel → detailVisible = false": "view",
+        "click → openDetail(row.id)": "view",
+        "click → openFollowup(record)": "form",
+        "click → openFollowup(undefined, row)": "form",
+        "click → openProfile(row)": "form",
+        "click → prepareAction('archive', [row.id], false)": "single",
+        "click → prepareAction('purge', [row.id], false)": "single",
+        "click → prepareAction('restore', [row.id], false)": "single",
+        "click → prepareFollowupDelete(record.id)": "single",
+        "click → previewAttachment(record, attachment)": "view",
+        "close → imageVisible = false": "view",
+        "closed → cleanupUploads": "view",
+        "confirm → confirmOperation": "@customerConfirm",
+        "confirm → submitAction": "@customerConfirm",
+        "confirm → submitFollowup": "form",
+        "confirm → submitProfile": "form",
+        "keydown → openFollowup(record)": "form",
+        "keydown → prepareFollowupDelete(record.id)": "single",
+        "page-change → changePage": "query",
+        "preview → previewUpload": "view",
+        "reset → reset": "query",
+        "search → search": "query",
+        "select-change → selectRows": "view",
+        "tab-change → switchTab": "query"
+      }
+    },
+    "src/pages/dashboard/index.vue": {
+      "script": "65eef6a820cddb76b8d472674aa017be3d2e254c3db656d62a82e179062562da",
+      "actions": {}
+    },
+    "src/pages/employee-invite/index.vue": {
+      "script": "797ae988dce43fde6e88115ba8fe9e2deb7c96ec1397d270bae86b2b6727814c",
+      "actions": {
+        "click → sendCode": "single",
+        "click → step = 1": "view",
+        "submit → handlePhoneSubmit": "form",
+        "submit → handleProfileSubmit": "form",
+        "update:model-value → normalizePhone": "form",
+        "update:model-value → normalizeVerifyCode": "form"
+      }
+    },
+    "src/pages/finished-stock/management/components/FinishedAttributeChanges.vue": {
+      "script": "c951b161d5752cf5591e60d81a862c006ef4591bc0fcc03335f87e2474741375",
+      "actions": {}
+    },
+    "src/pages/finished-stock/management/components/FinishedCreationSnapshot.vue": {
+      "script": "e6d209380bf8660fb4394825ae7cfc269f599d00e4e50e5661ad3654786019c4",
+      "actions": {
+        "click → asset.resource && emit('preview', asset.resource)": "view",
+        "preview → emit('preview', $event)": "view"
+      }
+    },
+    "src/pages/finished-stock/management/components/FinishedEditChanges.vue": {
+      "script": "7a2b915f708a017be45459b1d35d76a459c6a8e5d89258533b52c15e97ae9860",
+      "actions": {
+        "preview → emit('preview', $event)": "view",
+        "resize → measureSalesScroll": "view",
+        "scroll → row.field === '销售规格' && syncSalesScroll($event)": "view"
+      }
+    },
+    "src/pages/finished-stock/management/components/FinishedLogValue.vue": {
+      "script": "02a31a2a4506773308070a923157b755d4805728904cc4eae9d6dde5212fb0a5",
+      "actions": {}
+    },
+    "src/pages/finished-stock/management/components/FinishedOperationLogs.vue": {
+      "script": "a7517c9d6c04747c10fb29d1b90d135f04b5a8fbe32841b154e8373b69d7579b",
+      "actions": {
+        "cancel → preview = null": "view",
+        "close → preview = null": "view",
+        "filter-change → updateFilter": "query",
+        "open-detail → showDetail": "view",
+        "page-change → changePage": "query",
+        "preview → preview = $event": "view",
+        "reset → reset": "query",
+        "search → search": "query",
+        "update:visible → !$event && (preview = null)": "view"
+      }
+    },
+    "src/pages/finished-stock/management/components/FinishedRowWarnings.vue": {
+      "script": "3b134d3e700d26a2e6126171b485ac46ca036480de5b0d025300a9b923ec0f3f",
+      "actions": {
+        "close → emit('close', item.id)": "view"
+      }
+    },
+    "src/pages/finished-stock/management/components/FinishedSalesLogTable.vue": {
+      "script": "d07f0065a6ce197884494028eedaf2251cb237c1f1eebdd98c7aa68640905209",
+      "actions": {}
+    },
+    "src/pages/finished-stock/management/components/HistoricalRichText.vue": {
+      "script": "bcfb8681a78665048a25cbfc6fa7fc27c8a9c09e7f4ada665d8a86daba0f7d9d",
+      "actions": {
+        "click → openPreview": "view"
+      }
+    },
+    "src/pages/finished-stock/management/components/PriceSourceToggle.vue": {
+      "script": "006d54384c9b845fda647a542a1169075b6e1d527070468cf925636caf0129b2",
+      "actions": {
+        "cancel → confirmVisible = false": "view",
+        "click → toggle": "view",
+        "confirm → confirmToggle": "form"
+      }
+    },
+    "src/pages/finished-stock/management/components/ProductDetail.vue": {
+      "script": "e5de7fd41b761e855065700c1514cb08547891bdebf69a9378768aaf8a176643",
+      "actions": {
+        "click → emit('preview', { url }, 'image')": "view",
+        "click → emit('preview', { url: product.videoUrl }, 'video')": "view",
+        "preview → previewDescription": "view"
+      }
+    },
+    "src/pages/finished-stock/management/components/SalesLogFullscreen.vue": {
+      "script": "c412d62601c91880ad2f99ec5177704d266fb3ffbc34059aec8883199f08896a",
+      "actions": {
+        "click → toggle": "view"
+      }
+    },
+    "src/pages/finished-stock/management/components/SourceUnavailableOverlay.vue": {
+      "script": "c3db61b2a2906745247b73abd0f67e281a0e1203692fd6cfbf5e67e660d15f39",
+      "actions": {}
+    },
+    "src/pages/finished-stock/management/components/SpecPriceInput.vue": {
+      "script": "eb32e4c53d66a8039027c63ac690b803456d2800d120508054fcec8e88b01702",
+      "actions": {
+        "blur → handleBlur": "form",
+        "change → handleChange": "view",
+        "focus → handleFocus": "view"
+      }
+    },
+    "src/pages/finished-stock/management/index.vue": {
+      "script": "da707185adeef40d1d1e1ba58aaa225f17a2acf4d430d4979d64795829497956",
+      "actions": {
+        "blur → formatDecimalValue(row, 'level1')": "form",
+        "blur → formatDecimalValue(row, 'level1Coefficient')": "form",
+        "blur → formatDecimalValue(row, 'level2')": "form",
+        "blur → formatDecimalValue(row, 'level2Coefficient')": "form",
+        "blur → formatDecimalValue(row, 'level3')": "form",
+        "blur → formatDecimalValue(row, 'level3Coefficient')": "form",
+        "cancel → closeConfirmDialog": "view",
+        "cancel → closeReasonDialog": "view",
+        "change → (checked: boolean) => toggleRow(row.id, checked)": "view",
+        "change → activeTab = String($event) as StockTab; handleTabChange();": "view",
+        "change → clearBatchFilterField(filter.field)": "query",
+        "change → handleBatchCoefficientChange('guideCoefficient', 'guide', $event)": "view",
+        "change → handleBatchMarkupChange(configuration.id, 'coefficient', $event)": "view",
+        "change → handleBatchMarkupChange(configuration.id, 'price', $event)": "view",
+        "change → handleBatchPriceChange('guide', 'guideCoefficient', $event)": "view",
+        "change → handleCategoryFilterChange": "query",
+        "change → handleMarkupCoefficientChange(row, configuration.id, $event)": "view",
+        "change → handleMarkupPriceChange(row, configuration.id, $event)": "view",
+        "change → handleSpecCoefficientChange(row, 'guideCoefficient', 'guide', $event)": "view",
+        "change → handleSpecCoefficientChange(row, 'level1Coefficient', 'level1', $event)": "view",
+        "change → handleSpecCoefficientChange(row, 'level2Coefficient', 'level2', $event)": "view",
+        "change → handleSpecCoefficientChange(row, 'level3Coefficient', 'level3', $event)": "view",
+        "change → handleSpecPriceChange(row, 'guide', 'guideCoefficient', $event)": "view",
+        "change → handleSpecPriceChange(row, 'level1', 'level1Coefficient', $event)": "view",
+        "change → handleSpecPriceChange(row, 'level2', 'level2Coefficient', $event)": "view",
+        "change → handleSpecPriceChange(row, 'level3', 'level3Coefficient', $event)": "view",
+        "change → toggleBatchFilterValue(filter.field, value)": "query",
+        "change → toggleCurrentPage": "form",
+        "change → updateManagementListFilter('keyword', String($event || ''))": "query",
+        "change → updateManagementListFilter('supplier', String($event || ''))": "query",
+        "clear → currentFilter.category = ''": "view",
+        "click → closeFormPage": "view",
+        "click → closePriceDrawer": "view",
+        "click → handleBatchAction(action.id as BatchAction)": "@productToolbar",
+        "click → handleManagementRowButton(action.id, row)": "@stockRow",
+        "click → handleReset()": "query",
+        "click → handleRowAction('detail', row)": "view",
+        "click → handleRowAction('purge', row)": "single",
+        "click → handleSearch()": "query",
+        "click → openImagePreview(row)": "view",
+        "click → openPriceDrawer": "view",
+        "click → operationLogsVisible = true": "view",
+        "click → savePriceDrawer": "form",
+        "click → scrollToFormSection(section.key)": "view",
+        "click → submitProductForm": "form",
+        "close → (id) => delete shelfErrors[id]": "view",
+        "close → closeConfirmDialog": "view",
+        "close → closeDetailDialog": "view",
+        "close → closeImagePreview": "view",
+        "close → closePriceDrawer": "view",
+        "close → closeReasonDialog": "view",
+        "commit → markGuidePriceManual(row)": "form",
+        "commit → markSpecPriceManual(row, configuration.id)": "form",
+        "confirm → handleConfirm": "@productConfirm",
+        "confirm → submitReason": "@reason",
+        "enter → handleSearch()": "query",
+        "popup-visible-change → categoryFilterVisible = $event": "view",
+        "preview → openProductMediaPreview": "view",
+        "sort-change → onTimeSortChange": "query",
+        "toggle → toggleGuidePriceSource(row)": "form",
+        "toggle → toggleSpecPriceSource(row, configuration.id)": "form",
+        "update:current → currentPagination.current = $event": "query",
+        "update:page-size → currentPagination.pageSize = $event": "query"
+      }
+    },
+    "src/pages/finished-stock/shared/StoreFinishedStockDetailAdapter.vue": {
+      "script": "c8bda91da708510d6e8a0d308179443c5853810366ed3521bcfd207eaeeec5ee",
+      "actions": {
+        "close → preview = null": "view",
+        "preview → (media, type) => (preview = { url: media.url, kind: type })": "view",
+        "update:visible → !$event && (preview = null)": "view"
+      }
+    },
+    "src/pages/finished-stock/store/StoreFinishedEditor.vue": {
+      "script": "bc4a163df9ec258487504e54dc442cfe26a62b92e03c9183a0e603c5fc53f867",
+      "actions": {
+        "change → batchFilters[filter.key] = []": "query",
+        "change → changeCategory": "form",
+        "change → editDraftCoefficient(drafts[row.skuId], $event, sku(row.skuId).costPrice)": "view",
+        "change → editDraftPrice(drafts[row.skuId], $event, sku(row.skuId).costPrice)": "view",
+        "change → toggleBatchValue(filter.key, value)": "query",
+        "click → applyBatchSalePrice": "form",
+        "click → batchVisible = false": "view",
+        "click → emit('cancel')": "view",
+        "click → openBatchSalePrice": "form",
+        "click → save": "form",
+        "click → scrollToFormSection(section.key)": "view",
+        "toggle → toggleSource(row.skuId)": "view"
+      }
+    },
+    "src/pages/finished-stock/store/index.vue": {
+      "script": "11666a54f3206386f73f3994a2a007c2bba3d79ba01a0e115c3f0451b53ed57b",
+      "actions": {
+        "cancel → closeEdit": "view",
+        "cancel → confirm = null": "view",
+        "cancel → offShelfVisible = false": "view",
+        "change → (checked: boolean) => toggleRow(row.id, checked)": "view",
+        "change → activeTab = String($event) as StoreFinishedTab; resetSelection();": "view",
+        "change → changeListCategory": "form",
+        "change → togglePage": "form",
+        "clear → filter.category = undefined": "view",
+        "click → handleStoreRowButton(action.id, row)": "@stockRow",
+        "click → handleStoreToolbarAction(action.id)": "@storeToolbar",
+        "click → openDetail(row)": "view",
+        "click → openLogs": "view",
+        "click → prepareAction('purge', row)": "single",
+        "click → previewRowImage(row)": "view",
+        "click → resetFilter": "query",
+        "click → searchList": "query",
+        "close → closeRowWarning": "view",
+        "close → confirm = null": "view",
+        "close → imagePreview = null": "view",
+        "close → logVideoPreview = null": "view",
+        "close → offShelfVisible = false": "view",
+        "confirm → confirmOffShelf": "@reason",
+        "confirm → logVideoPreview = null": "view",
+        "confirm → runConfirmed": "@storeConfirm",
+        "filter-change → updateLogFilter": "query",
+        "open-detail → openLogDetail": "view",
+        "page-change → changeLogPage": "query",
+        "popup-visible-change → listCategoryVisible = $event": "view",
+        "preview → previewLogMedia": "view",
+        "reset → resetLogFilter": "query",
+        "saved → finishEdit": "view",
+        "search → searchLogs": "query",
+        "sort-change → onTimeSortChange": "query",
+        "update:current → page = $event": "query",
+        "update:page-size → pageSize = $event": "query",
+        "update:visible → !$event && (confirm = null)": "view",
+        "update:visible → !$event && (imagePreview = null)": "view",
+        "update:visible → !$event && (logVideoPreview = null)": "view"
+      }
+    },
+    "src/pages/finished-stock/store/price-configuration.vue": {
+      "script": "fd5e584c26fee33be39d4a362a3a5ea88f37d5bb9c36f2c52cbeda5856ff91aa",
+      "actions": {
+        "blur → validateCoefficient(row.id)": "form",
+        "cancel → createVisible = false": "view",
+        "cancel → discountConfirmVisible = false": "view",
+        "cancel → formVisible = false": "view",
+        "change → (checked: boolean) => selectCategory(checked)": "view",
+        "change → (checked: boolean) => selectCategory(checked, row.id)": "view",
+        "change → (value: string | number | undefined, context: { type?: string }) => changeCoefficient(row.id, value, context)": "view",
+        "change → batchError = ''": "view",
+        "change → selectMenu": "form",
+        "click → confirmDiscountAction(row.rule, 'delete')": "single",
+        "click → confirmDiscountAction(row.rule, 'status')": "single",
+        "click → editDiscount(row.rule)": "form",
+        "click → openBatch": "form",
+        "click → openCreateDiscount": "form",
+        "click → queryCategories": "query",
+        "click → resetCategories": "query",
+        "click → savePrices": "@transaction",
+        "click → toggleExpanded(row.id)": "view",
+        "close → createVisible = false": "view",
+        "close → discountConfirmVisible = false": "view",
+        "close → formVisible = false": "view",
+        "confirm → applyDiscountAction": "single",
+        "confirm → save": "form",
+        "confirm → saveDiscount": "form",
+        "enter → queryCategories": "query",
+        "keydown → handleCoefficientKeydown": "view",
+        "submit → queryCategories": "query"
+      }
+    },
+    "src/pages/finished-stock/supply-chain/index.vue": {
+      "script": "17b0cc4d4e2cc13b2ea073a8f17c7bb88b8bd97bf01cd8285d679dea6eb1969d",
+      "actions": {
+        "blur → formatDecimalValue(row, 'level1')": "form",
+        "blur → formatDecimalValue(row, 'level1Coefficient')": "form",
+        "blur → formatDecimalValue(row, 'level2')": "form",
+        "blur → formatDecimalValue(row, 'level2Coefficient')": "form",
+        "blur → formatDecimalValue(row, 'level3')": "form",
+        "blur → formatDecimalValue(row, 'level3Coefficient')": "form",
+        "blur → normalizeBatchAttribute(field)": "form",
+        "blur → normalizeSpecAttribute(group, value)": "form",
+        "blur → productForm[field.key] = normalizeAttribute(field, productForm[field.key])": "form",
+        "blur → row[field.key] = normalizeAttribute(field, row[field.key], row)": "form",
+        "cancel → closeCategoryDialog": "view",
+        "cancel → closeConfirmDialog": "view",
+        "cancel → closeReasonDialog": "view",
+        "cancel → specModeConfirmVisible = false": "view",
+        "change → (checked: boolean) => toggleRow(row.id, checked)": "view",
+        "change → activeTab = String($event) as StockTab; handleTabChange();": "view",
+        "change → clearBatchFilterField(filter.field)": "query",
+        "change → handleBatchCostChange": "view",
+        "change → handleCategoryFilterChange": "query",
+        "change → handleSpecCoefficientChange(row, 'guideCoefficient', 'guide', $event)": "view",
+        "change → handleSpecCoefficientChange(row, 'level1Coefficient', 'level1', $event)": "view",
+        "change → handleSpecCoefficientChange(row, 'level2Coefficient', 'level2', $event)": "view",
+        "change → handleSpecCoefficientChange(row, 'level3Coefficient', 'level3', $event)": "view",
+        "change → handleSpecCostChange(row, $event)": "view",
+        "change → handleSpecPriceChange(row, 'guide', 'guideCoefficient', $event)": "view",
+        "change → handleSpecPriceChange(row, 'level1', 'level1Coefficient', $event)": "view",
+        "change → handleSpecPriceChange(row, 'level2', 'level2Coefficient', $event)": "view",
+        "change → handleSpecPriceChange(row, 'level3', 'level3Coefficient', $event)": "view",
+        "change → requestSpecModeChange": "view",
+        "change → toggleBatchFilterValue(filter.field, value)": "query",
+        "change → toggleCurrentPage": "form",
+        "change → updateManagementListFilter('keyword', String($event || ''))": "query",
+        "change → updateManagementListFilter('supplier', String($event || ''))": "query",
+        "change → value.value = String($event ?? '')": "view",
+        "clear → currentFilter.category = ''": "view",
+        "click → addSingleSpec": "form",
+        "click → addSpecValue(group.name)": "form",
+        "click → closeFormPage": "view",
+        "click → closePriceDrawer": "view",
+        "click → closeSpecDialog": "view",
+        "click → confirmCreateSpec": "form",
+        "click → deleteSpec(row.id)": "form",
+        "click → handleBatchAction(action.id as BatchAction)": "@productToolbar",
+        "click → handleManagementRowButton(action.id, row)": "@stockRow",
+        "click → handleReset()": "query",
+        "click → handleRowAction('detail', row)": "view",
+        "click → handleRowAction('purge', row)": "single",
+        "click → handleSearch()": "query",
+        "click → openCategoryDialog": "form",
+        "click → openImagePreview(row)": "view",
+        "click → openPriceDrawer": "view",
+        "click → openSpecDialog": "form",
+        "click → openSpecDialog(true)": "form",
+        "click → operationLogsVisible = true": "view",
+        "click → removeSingleSpec(index)": "form",
+        "click → removeSpecValue(group.name, index)": "form",
+        "click → resetSpecDialog": "form",
+        "click → savePriceDrawer": "form",
+        "click → scrollToFormSection(section.key)": "view",
+        "click → selectCategory(columnIndex, item.id)": "form",
+        "click → submitProductForm": "form",
+        "click → toggleSpecGroup(group)": "form",
+        "close → (id) => delete shelfErrors[id]": "view",
+        "close → closeCategoryDialog": "view",
+        "close → closeConfirmDialog": "view",
+        "close → closeDetailDialog": "view",
+        "close → closeImagePreview": "view",
+        "close → closePriceDrawer": "view",
+        "close → closeReasonDialog": "view",
+        "close → closeSpecDialog": "view",
+        "close → specModeConfirmVisible = false": "view",
+        "confirm → confirmCategory": "form",
+        "confirm → confirmCategorySwitchWarning": "form",
+        "confirm → confirmSpecModeChange": "form",
+        "confirm → handleConfirm": "@productConfirm",
+        "confirm → submitReason": "@sourceReason",
+        "dragend → draggedSpecField = null": "view",
+        "dragend → draggedSpecValue = null": "view",
+        "dragover → ": "view",
+        "dragstart → startSpecGroupDrag($event, group.field)": "view",
+        "dragstart → startSpecValueDrag($event, group.field, value.id)": "view",
+        "drop → dropSpecGroup(group.field)": "form",
+        "drop → dropSpecValue($event, group, value.id)": "form",
+        "enter → handleSearch()": "query",
+        "popup-visible-change → categoryFilterVisible = $event": "view",
+        "preview → openProductMediaPreview": "view",
+        "preview → openProductMediaPreview($event, 'image')": "view",
+        "preview → openProductMediaPreview($event, 'video')": "view",
+        "removed → releasePendingProductMedia": "form",
+        "sort-change → onTimeSortChange": "query",
+        "update:current → currentPagination.current = $event": "query",
+        "update:page-size → currentPagination.pageSize = $event": "query",
+        "uploading → detailMediaUploading = $event": "form"
+      }
+    },
+    "src/pages/login/index.vue": {
+      "script": "62bb6a61fa55d8ae8c3779550ebee563db5463bae2bb6e3dfa733d5cbdbfd1d8",
+      "actions": {
+        "click → sendCode": "single",
+        "submit → onSubmit": "form",
+        "update:model-value → normalizeVerifyCode": "form"
+      }
+    },
+    "src/pages/order/prototype/OrderActionDialog.vue": {
+      "script": "bcf86bb347ab9d4db36190407c46d715bc57fb84dbe6a8aab664814928302f7f",
+      "actions": {
+        "change → selectPaymentName": "form",
+        "confirm → submit": "@order"
+      }
+    },
+    "src/pages/order/prototype/OrderEditor.vue": {
+      "script": "77127c3192d047db7e0ea5006d12361baafea47fd49e36936dd6621e3ec9296c",
+      "actions": {
+        "change → changeLine(row, 'billingQuantity', Number($event))": "form",
+        "change → changeLine(row, 'price', Number($event))": "form",
+        "change → changeLine(row, 'quantity', Number($event))": "form",
+        "change → draft.customerId = ''": "view",
+        "change → selectCustomer(String($event))": "form",
+        "click → add": "form",
+        "click → lookup": "query",
+        "click → remove(row.sku)": "single",
+        "confirm → save": "form"
+      }
+    },
+    "src/pages/order/prototype/SalesOrderList.vue": {
+      "script": "f5709e70a1c062796a24fdba6fc4425abc7f8a064bc74e558e1b8e8321fa21ac",
+      "actions": {
+        "change → changeDates": "form",
+        "change → emit('pageChange', $event)": "view",
+        "click → (option: { value?: string | number }) => emit('action', String(option.value), order)": "@order",
+        "click → copyNumber(order.id)": "view",
+        "click → emit('action', 'detail', order)": "view",
+        "click → emit('action', 'plan', order)": "form",
+        "click → emit('action', action.id)": "@order",
+        "click → previewProduct(order, row)": "view",
+        "click → toggleExpansion(order.id)": "view",
+        "close → previewVisible = false": "view",
+        "keydown → previewProduct(order, row)": "view",
+        "keydown → toggleExpansion(order.id)": "view",
+        "page-change → emit('pageChange', $event)": "query",
+        "reset → emit('reset')": "query",
+        "search → emit('search')": "query",
+        "tab-change → emit('tabChange', $event)": "query",
+        "update:filter-values → emit('update:filterValues', $event)": "query"
+      }
+    },
+    "src/pages/order/prototype/index.vue": {
+      "script": "e927170cdd1d01cfbbadc6e9d7936f9c286c43d5d0222f5207755f17b4731274",
+      "actions": {
+        "action → openAction": "@order",
+        "action → openSetting()": "form",
+        "click → deletingSetting = row; deleteSettingVisible = true;": "single",
+        "click → loadSettings": "query",
+        "click → openAction('correct-payment', selected!, row.id)": "form",
+        "click → openAction('correct-shipment', selected!, row.id)": "form",
+        "click → openAction('receive', findOrder(row.orderId), row.id)": "form",
+        "click → openAction('revoke-plan', selected!, row.id)": "form",
+        "click → openAction('ship', findOrder(row.orderId), row.id)": "form",
+        "click → openAction('void-payment', selected!, row.id)": "form",
+        "click → openAction(a.id, selected!)": "@order",
+        "click → openSetting(row)": "form",
+        "click → openToggleSetting(row)": "single",
+        "click → proofUrl = row.proof.url": "view",
+        "click → runScopedRead(() => { logDetail = row; })": "view",
+        "click → runScopedRead(() => { selectedId = ''; })": "view",
+        "click → runScopedRead(() => {})": "view",
+        "confirm → addSetting": "form",
+        "confirm → confirmToggleSetting": "single",
+        "confirm → deleteSetting": "single",
+        "confirm → logDetail = null": "view",
+        "expand-change → updateOrderExpansion": "view",
+        "page-change → changePage": "query",
+        "page-change → updateListPagination(detailPagination, $event)": "query",
+        "page-change → updateListPagination(fulfillmentPagination, $event)": "query",
+        "page-change → updateListPagination(settingsPagination, $event)": "query",
+        "reset → reset": "query",
+        "save → saveEditor": "form",
+        "search → search": "query",
+        "tab-change → switchTab": "query",
+        "update:visible → !$event && (logDetail = null)": "view",
+        "update:visible → !$event && (proofUrl = '')": "view"
+      }
+    },
+    "src/pages/permission/employee/index.vue": {
+      "script": "811da5cf62f6b7a482978854501cf0ec9d3c3ef315a634a3a42d6568e4dd39b5",
+      "actions": {
+        "cancel → closeConfirmDialog": "view",
+        "cancel → closePermissionDialog": "view",
+        "cancel → closeProfileDialog": "view",
+        "change → handleManagedClientChange": "view",
+        "click → closeInviteDialog": "view",
+        "click → copyInviteLink": "view",
+        "click → handleReset": "query",
+        "click → handleSearch": "query",
+        "click → openDeleteConfirm(row)": "single",
+        "click → openInviteDialog": "form",
+        "click → openPermissionDialog(row)": "form",
+        "click → openProfileDialog(row)": "form",
+        "click → openStatusConfirm(row)": "single",
+        "close → closeConfirmDialog": "view",
+        "close → closeInviteDialog": "view",
+        "close → closePermissionDialog": "view",
+        "close → closeProfileDialog": "view",
+        "confirm → handleConfirmSubmit": "single",
+        "confirm → handlePermissionSubmit": "form",
+        "confirm → handleProfileSubmit": "form",
+        "focus → selectInviteLink": "view",
+        "update:model-value → handleFilterPhoneChange": "view"
+      }
+    },
+    "src/pages/permission/terminal-function/index.vue": {
+      "script": "025b48dfb7525c107e514d560626351a3e22dbf61d65a569829152cea88634c0",
+      "actions": {
+        "change → handleTerminalChange": "view",
+        "click → resetAllocation": "form",
+        "click → saveAllocation": "form"
+      }
+    },
+    "src/pages/product/attribute-value/index.vue": {
+      "script": "05388618b99f0b92d9f5bcd55d64473837eb4dec3f66e5d75e4eb7d8c51dcd1e",
+      "actions": {
+        "cancel → closeConfirmDialog": "view",
+        "change → handlePaginationChange": "view",
+        "click → openCreate": "form",
+        "click → openDeleteConfirm(row)": "single",
+        "click → openStatusConfirm(row)": "single",
+        "click → reset": "query",
+        "click → search": "query",
+        "close → closeConfirmDialog": "view",
+        "close → closeFormDialog": "view",
+        "confirm → handleConfirm": "single",
+        "confirm → submit": "form"
+      }
+    },
+    "src/pages/product/attribute/index.vue": {
+      "script": "8af5f2d7f80d7afac423f8cd500932f3bdda2bec3c37759ba362e8f92cbb8588",
+      "actions": {
+        "cancel → closeConfirmDialog": "view",
+        "change → handlePaginationChange": "view",
+        "click → openCreate": "form",
+        "click → openDeleteConfirm(row)": "single",
+        "click → openStatusConfirm(row)": "single",
+        "click → reset": "query",
+        "click → search": "query",
+        "close → closeConfirmDialog": "view",
+        "close → closeCreateDialog": "view",
+        "closed → restorePageScroll": "view",
+        "confirm → handleConfirm": "single",
+        "confirm → submit": "form",
+        "opened → restorePageScroll": "view"
+      }
+    },
+    "src/pages/product/category-attribute-template/index.vue": {
+      "script": "35b3b91750f0d0c66d3afba3f4195677f6c3df63b4d32640d6db8761e236c63c",
+      "actions": {
+        "active → selectCategory": "query",
+        "cancel → !busy && (discardTarget = undefined)": "view",
+        "cancel → copyTarget = undefined": "view",
+        "cancel → removeTarget = undefined": "view",
+        "change → changeAddPage": "form",
+        "change → changeAttributePage": "form",
+        "change → changeAttributeRole(row)": "form",
+        "change → changeValuePage": "form",
+        "change → switchScope": "view",
+        "change → toggleSpecification(row, Boolean($event))": "form",
+        "click → createDraft()": "single",
+        "click → discardTarget = selected": "single",
+        "click → exitEdit": "view",
+        "click → historyVisible = true": "view",
+        "click → navigate(() => choose(draft!))": "view",
+        "click → notifySpecificationLimit(row)": "view",
+        "click → openAdd": "form",
+        "click → openValues(row)": "form",
+        "click → prepareCopy(row)": "single",
+        "click → preparePublish": "single",
+        "click → removeTarget = row": "view",
+        "click → viewHistoryVersion(row)": "view",
+        "close → !busy && (discardTarget = undefined)": "view",
+        "close → copyTarget = undefined": "view",
+        "close → removeTarget = undefined": "view",
+        "confirm → addAttributes": "form",
+        "confirm → applyValues": "form",
+        "confirm → copyVersion(copyTarget!)": "single",
+        "confirm → discardDraft": "single",
+        "confirm → publish": "single",
+        "confirm → removeAttribute": "form",
+        "drag-sort → sortAttributes": "single",
+        "keydown → toggleSpecification(row, !row.skuFlag)": "form",
+        "select-change → selectAddAttributes": "view",
+        "select-change → selectValues": "view"
+      }
+    },
+    "src/pages/product/category/index.vue": {
+      "script": "bf1ff88d8b11dad806af0d92496ed06d415c80b0218f190003f959c0a0b14912",
+      "actions": {
+        "click → handleReset": "query",
+        "click → handleSearch": "query",
+        "click → openCreateDialog()": "form",
+        "click → openCreateDialog(row)": "form",
+        "click → openDeleteDialog(row.node)": "single",
+        "click → openEditDialog(row)": "form",
+        "click → openStatusConfirm(row.node)": "single",
+        "click → toggleExpanded(row.node)": "view",
+        "close → closeDeleteDialog": "view",
+        "close → closeFormDialog": "view",
+        "close → closeStatusConfirm": "view",
+        "close → tipVisible = false": "view",
+        "closed → restorePageScroll": "view",
+        "confirm → handleDeleteConfirm": "single",
+        "confirm → handleStatusConfirm": "single",
+        "confirm → handleSubmit": "form",
+        "drag-sort → handleCategoryDragSort": "single",
+        "opened → restorePageScroll": "view"
+      }
+    },
+    "src/pages/product/markup-configuration/index.vue": {
+      "script": "56bcb0c9bca89f3f45f9974fdbaf61887a9c6324634a3d4517397774b0e81db1",
+      "actions": {
+        "cancel → closeForm": "view",
+        "cancel → confirmVisible = false": "view",
+        "cancel → statusConfirmVisible = false": "view",
+        "change → handleFormCoefficientChange": "form",
+        "change → handleGuideCoefficientChange": "view",
+        "click → handleReset": "query",
+        "click → handleSearch": "query",
+        "click → openConfirm(row)": "single",
+        "click → openCreate": "form",
+        "click → openEdit(row)": "form",
+        "click → openStatusConfirm(row)": "single",
+        "click → saveGuidePriceSetting": "form",
+        "close → closeForm": "view",
+        "close → confirmVisible = false": "view",
+        "close → statusConfirmVisible = false": "view",
+        "confirm → submitConfirm": "single",
+        "confirm → submitForm": "form",
+        "confirm → submitStatusConfirm": "single",
+        "drag-sort → handleDragSort": "single",
+        "keydown → handlePriceCoefficientKeydown": "view"
+      }
+    },
+    "src/pages/role/management/index.vue": {
+      "script": "047f71906902de4b64e53fb7904bebdb064da5e553685539c2882ef82739d96a",
+      "actions": {
+        "cancel → closeDeleteDialog": "view",
+        "cancel → closeFormDialog": "view",
+        "cancel → closePermissionDialog": "view",
+        "click → openCreateDialog": "form",
+        "click → openDeleteConfirm(row)": "single",
+        "click → openEditDialog(row)": "form",
+        "click → openPermissionDialog(row)": "form",
+        "close → closeDeleteDialog": "view",
+        "close → closeFormDialog": "view",
+        "close → closePermissionDialog": "view",
+        "confirm → handleDeleteConfirm": "single",
+        "confirm → handlePermissionSave": "form",
+        "confirm → handleSubmit": "form"
+      }
+    },
+    "src/pages/selection-center/components/CategoryChoiceSpacing.vue": {
+      "script": "3215931d5a5d6b7a312973268b4dd8fb0956f8c5e34e23fc9610dd20fec92825",
+      "actions": {
+        "click → emit('choose', node)": "view"
+      }
+    },
+    "src/pages/selection-center/components/CategoryFlatGroupSpacing.vue": {
+      "script": "ecc903bb90444d85931d81ad3b9104f60a2ae31e6dd4a4014dbcb8a3f764169e",
+      "actions": {
+        "choose → emit('choose', $event)": "view"
+      }
+    },
+    "src/pages/selection-center/components/CategoryFlatGroupSpacingDeep.vue": {
+      "script": "542804d40d62f4150572547a246503b998042e9ae0e88bb866a6ef8ae569cb6e",
+      "actions": {
+        "choose → emit('choose', $event)": "view"
+      }
+    },
+    "src/pages/selection-center/components/FilterGlyph.vue": {
+      "script": "0aa08016f00b64cd85bf56cf8765d0bd49ff98103a0d8fbb47154d813f7e5754",
+      "actions": {}
+    },
+    "src/pages/selection-center/components/SelectionCategoryPanel.vue": {
+      "script": "1fe1c0bbe4d73d7396163271c92230beb75e2db0d8f8a1ead106652f1993fe98",
+      "actions": {
+        "choose → emit('choose', { ...$event, type: partition.type })": "view",
+        "click → activeType = partition.type": "view",
+        "focus → activeType = partition.type": "view",
+        "mouseenter → activeType = partition.type": "view"
+      }
+    },
+    "src/pages/selection-center/components/SelectionDetail.vue": {
+      "script": "0433f791415a6de6b37f1b4a50fd76727467eea4903faaa9dc3f0431fbff0db0",
+      "actions": {
+        "change → mode = 'gallery'; index = i;": "view",
+        "change → mode = 'video'": "view",
+        "click → emit('add', detail.product)": "single",
+        "close → emit('close')": "view",
+        "close → mediaPreview = null": "view",
+        "preview → mediaPreview = $event": "view",
+        "update:visible → !$event && (mediaPreview = null)": "view"
+      }
+    },
+    "src/pages/selection-center/index.vue": {
+      "script": "5b19c3f2b6483596518ee10403985228566329725b267c4e335ee897798cc329",
+      "actions": {
+        "add → add": "single",
+        "change → changeBasketPage": "form",
+        "change → changeBrowsePage": "form",
+        "choose → queryCategory": "query",
+        "clear → query = ''; search();": "query",
+        "click → add(p)": "single",
+        "click → changeView('basket')": "view",
+        "click → changeView('browse')": "view",
+        "click → clearSelectedCategory": "query",
+        "click → context ? onFocus() : initialize()": "query",
+        "click → openDetail(p)": "view",
+        "click → remove(p.selectionId)": "single",
+        "click → search": "query",
+        "click → submit": "@perItem",
+        "click → toggleState(item.value)": "query",
+        "click → toggleType(item.value)": "query",
+        "close → detail = null": "view",
+        "enter → search": "query",
+        "keydown → openDetail(p)": "view"
+      }
+    },
+    "src/pages/slab/color/index.vue": {
+      "script": "9f7dfb43a0ea2db05dd1f16dc2cca4ee30b3acc605d6b527484e009b22d93d2d",
+      "actions": {
+        "cancel → categoryDeleteVisible = false": "view",
+        "cancel → closeCategoryForm": "view",
+        "cancel → closeColorForm": "view",
+        "cancel → colorConfirmVisible = false": "view",
+        "click → handleReset": "query",
+        "click → handleSearch": "query",
+        "click → openCategoryDelete(row)": "single",
+        "click → openCategoryForm()": "form",
+        "click → openCategoryForm(row)": "form",
+        "click → openCategoryManagement": "view",
+        "click → openColorConfirm(row, 'delete')": "single",
+        "click → openColorConfirm(row, row.status === 'normal' ? 'disable' : 'enable')": "single",
+        "click → openCreate": "form",
+        "click → openEdit(row)": "form",
+        "close → categoryDeleteVisible = false": "view",
+        "close → categoryManagementVisible = false": "view",
+        "close → closeCategoryForm": "view",
+        "close → closeColorForm": "view",
+        "close → colorConfirmVisible = false": "view",
+        "confirm → categoryManagementVisible = false": "view",
+        "confirm → submitCategory": "form",
+        "confirm → submitCategoryDelete": "single",
+        "confirm → submitColor": "form",
+        "confirm → submitColorConfirm": "single"
+      }
+    },
+    "src/pages/slab/grade/index.vue": {
+      "script": "18d117fda57200e43cdea11a9df700228516ff441db5c6a36766cd14a261c69d",
+      "actions": {
+        "cancel → closeForm": "view",
+        "cancel → confirmVisible = false": "view",
+        "click → handleReset": "query",
+        "click → handleSearch": "query",
+        "click → openConfirm(row, 'delete')": "single",
+        "click → openConfirm(row, row.status === 'normal' ? 'disable' : 'enable')": "single",
+        "click → openCreate": "form",
+        "click → openEdit(row)": "form",
+        "close → closeForm": "view",
+        "close → confirmVisible = false": "view",
+        "confirm → submitConfirm": "single",
+        "confirm → submitGrade": "form",
+        "drag-sort → handleDragSort": "single"
+      }
+    },
+    "src/pages/slab/management/components/SlabProductFormLayout.vue": {
+      "script": "902f39be22f3a37fceafdc2d61f864abc5b4dba9286737770da6e53e5544f50d",
+      "actions": {
+        "cancel → emit('close')": "view",
+        "click → emit('close')": "view",
+        "click → emit('confirm')": "form",
+        "click → scrollToSection(section.key)": "view",
+        "close → emit('close')": "view",
+        "confirm → emit('confirm')": "form"
+      }
+    },
+    "src/pages/slab/management/components/SlabRowWarnings.vue": {
+      "script": "3b134d3e700d26a2e6126171b485ac46ca036480de5b0d025300a9b923ec0f3f",
+      "actions": {
+        "close → emit('close', item.id)": "view"
+      }
+    },
+    "src/pages/slab/management/index.vue": {
+      "script": "771684da9a5e50dde855eabef66e89b45119147af167efbce2fdb2804d688ce3",
+      "actions": {
+        "blur → handleMeasurementBlur('height')": "form",
+        "blur → handleMeasurementBlur('length')": "form",
+        "blur → handleMeasurementBlur('tolerance')": "form",
+        "blur → handleMeasurementBlur('width')": "form",
+        "blur → handleMeasurementBlur(item.key)": "form",
+        "cancel → closeConfirmDialog": "view",
+        "cancel → closeReasonDialog": "view",
+        "change → (checked: boolean) => toggleRow(row.id, checked)": "view",
+        "change → clearProductFieldError('colorId')": "view",
+        "change → clearProductFieldError('gradeId')": "view",
+        "change → clearProductFieldError('origin')": "view",
+        "change → clearProductFieldError('textureId')": "view",
+        "change → clearProductFieldError('variety')": "view",
+        "change → clearSalesFieldError('sku')": "view",
+        "change → clearSalesFieldError('supplier')": "view",
+        "change → handleBatchPriceChange(index)": "view",
+        "change → handleBatchRatioChange(index)": "view",
+        "change → handleCostChange": "view",
+        "change → handleGuidePriceChange": "view",
+        "change → handleGuideRatioChange": "view",
+        "change → handleMeasurementChange('height')": "view",
+        "change → handleMeasurementChange('length')": "view",
+        "change → handleMeasurementChange('tolerance')": "view",
+        "change → handleMeasurementChange('width')": "view",
+        "change → handleMeasurementChange(item.key)": "view",
+        "change → handlePartnerPriceChange(item.id)": "view",
+        "change → handlePartnerRatioChange(item.id)": "view",
+        "change → handleStockChange": "view",
+        "change → handleTabChange": "view",
+        "change → toggleCurrentPage": "form",
+        "click → !sourceBlocked(row) && openTableImage(row)": "view",
+        "click → closePriceDrawer": "view",
+        "click → handleBatchAction(button.action)": "@slabToolbar",
+        "click → handleReset": "query",
+        "click → handleRowAction('detail', row)": "view",
+        "click → handleRowAction('purge', row)": "single",
+        "click → handleRowAction(action.action, row)": "@stockRow",
+        "click → handleSearch": "query",
+        "click → openMediaPreview(media)": "view",
+        "click → openOffShelfHistory(row)": "view",
+        "click → openOperationLogDrawer": "view",
+        "click → row.afterMedia && openOperationLogMediaPreview(row.afterMedia, row.field)": "view",
+        "click → saveBatchPrice": "form",
+        "close → (id) => delete shelfErrors[id]": "view",
+        "close → closeConfirmDialog": "view",
+        "close → closeDetailDrawer": "view",
+        "close → closeOffShelfHistory": "view",
+        "close → closePriceDrawer": "view",
+        "close → closeProductDialog": "view",
+        "close → closeReasonDialog": "view",
+        "close → uploadPreviewDialogVisible = false": "form",
+        "commit → markDrawerPriceManual(row)": "form",
+        "commit → markProductPriceManual(item.id)": "form",
+        "confirm → closeOffShelfHistory": "view",
+        "confirm → handleConfirmSubmit": "@slabConfirm",
+        "confirm → handleProductSubmit": "form",
+        "confirm → handleReasonSubmit": "@slabReason",
+        "filter-change → updateOperationLogFilter": "query",
+        "keydown → !sourceBlocked(row) && openTableImage(row)": "view",
+        "keydown → handleStockKeydown": "view",
+        "open-detail → openOperationLogDetailById": "view",
+        "page-change → changeOperationLogPage": "query",
+        "preview → openOperationLogMediaPreview( { ...$event, mediaType: $event.mediaType === 'video' ? 'video' : 'image' }, `${row.field} - ${side.label}`, )": "view",
+        "preview → openUploadPreview(item)": "view",
+        "removed → releasePendingUpload": "form",
+        "reset → handleOperationLogReset": "query",
+        "search → handleOperationLogSearch": "query",
+        "sort-change → onTimeSortChange": "query",
+        "toggle → toggleDrawerPriceSource(row)": "view",
+        "toggle → toggleProductPriceSource(item.id)": "view",
+        "update:model-value → row.ratio = $event": "view",
+        "uploaded → uploadErrors[item.key] = false": "form"
+      }
+    },
+    "src/pages/slab/origin/index.vue": {
+      "script": "9324c9b65464e1940279bcfea17f91ca2aaa88eef60cc679286de17f4c1b8143",
+      "actions": {
+        "cancel → closeConfirmDialog": "view",
+        "cancel → closeFormDialog": "view",
+        "click → handleReset": "query",
+        "click → handleSearch": "query",
+        "click → openCreateDialog": "form",
+        "click → openDeleteConfirm(row)": "single",
+        "click → openEditDialog(row)": "form",
+        "click → openStatusConfirm(row)": "single",
+        "close → closeConfirmDialog": "view",
+        "close → closeFormDialog": "view",
+        "confirm → handleConfirm": "single",
+        "confirm → handleSubmit": "form"
+      }
+    },
+    "src/pages/slab/supply-chain/index.vue": {
+      "script": "10657199da9e1e6c7a8d74dd87c18b97636cfe89e5843f1c6ef3a4e5eab51bbe",
+      "actions": {
+        "blur → handleMeasurementBlur('height')": "form",
+        "blur → handleMeasurementBlur('length')": "form",
+        "blur → handleMeasurementBlur('tolerance')": "form",
+        "blur → handleMeasurementBlur('width')": "form",
+        "blur → handleMeasurementBlur(item.key)": "form",
+        "cancel → closeConfirmDialog": "view",
+        "cancel → closeReasonDialog": "view",
+        "change → (checked: boolean) => toggleRow(row.id, checked)": "view",
+        "change → clearProductFieldError('colorId')": "view",
+        "change → clearProductFieldError('gradeId')": "view",
+        "change → clearProductFieldError('origin')": "view",
+        "change → clearProductFieldError('textureId')": "view",
+        "change → clearProductFieldError('variety')": "view",
+        "change → clearSalesFieldError('sku')": "view",
+        "change → clearSalesFieldError('supplier')": "view",
+        "change → handleCostChange": "view",
+        "change → handleMeasurementChange('height')": "view",
+        "change → handleMeasurementChange('length')": "view",
+        "change → handleMeasurementChange('tolerance')": "view",
+        "change → handleMeasurementChange('width')": "view",
+        "change → handleMeasurementChange(item.key)": "view",
+        "change → handleStockChange": "view",
+        "change → handleTabChange": "view",
+        "change → toggleCurrentPage": "form",
+        "click → !sourceBlocked(row) && openTableImage(row)": "view",
+        "click → closePriceDrawer": "view",
+        "click → handleBatchAction(button.action)": "@slabToolbar",
+        "click → handleReset": "query",
+        "click → handleRowAction('detail', row)": "view",
+        "click → handleRowAction('purge', row)": "single",
+        "click → handleRowAction(action.action, row)": "@stockRow",
+        "click → handleSearch": "query",
+        "click → openMediaPreview(media)": "view",
+        "click → openOffShelfHistory(row)": "view",
+        "click → openOperationLogDrawer": "view",
+        "click → row.afterMedia && openOperationLogMediaPreview(row.afterMedia, row.field)": "view",
+        "click → saveBatchPrice": "form",
+        "close → (id) => delete shelfErrors[id]": "view",
+        "close → closeConfirmDialog": "view",
+        "close → closeDetailDrawer": "view",
+        "close → closeOffShelfHistory": "view",
+        "close → closePriceDrawer": "view",
+        "close → closeProductDialog": "view",
+        "close → closeReasonDialog": "view",
+        "close → uploadPreviewDialogVisible = false": "form",
+        "confirm → closeOffShelfHistory": "view",
+        "confirm → handleConfirmSubmit": "@slabConfirm",
+        "confirm → handleProductSubmit": "form",
+        "confirm → handleReasonSubmit": "@slabReason",
+        "filter-change → updateOperationLogFilter": "query",
+        "keydown → !sourceBlocked(row) && openTableImage(row)": "view",
+        "keydown → handleStockKeydown": "view",
+        "open-detail → openOperationLogDetailById": "view",
+        "page-change → changeOperationLogPage": "query",
+        "preview → openOperationLogMediaPreview( { ...$event, mediaType: $event.mediaType === 'video' ? 'video' : 'image' }, `${row.field} - ${side.label}`, )": "view",
+        "preview → openUploadPreview(item)": "view",
+        "removed → releasePendingUpload": "form",
+        "reset → handleOperationLogReset": "query",
+        "search → handleOperationLogSearch": "query",
+        "sort-change → onTimeSortChange": "query",
+        "uploaded → uploadErrors[item.key] = false": "form"
+      }
+    },
+    "src/pages/slab/texture/index.vue": {
+      "script": "16ed2172b8874dbe0e20d899b39ece660013e49f98c0cd5bcdb21484e9a836c0",
+      "actions": {
+        "cancel → aliasFormVisible = false": "view",
+        "cancel → confirmVisible = false": "view",
+        "cancel → formVisible = false": "view",
+        "click → handleReset": "query",
+        "click → handleSearch": "query",
+        "click → openAliasForm()": "form",
+        "click → openAliasForm(row)": "form",
+        "click → openAliases(row)": "view",
+        "click → openConfirm(row, 'delete')": "single",
+        "click → openConfirm(row, row.status === 'normal' ? 'disable' : 'enable')": "single",
+        "click → openCreate": "form",
+        "click → openEdit(row)": "form",
+        "click → removeAlias(row)": "form",
+        "close → aliasFormVisible = false": "view",
+        "close → aliasesVisible = false": "view",
+        "close → confirmVisible = false": "view",
+        "close → formVisible = false": "view",
+        "confirm → aliasesVisible = false": "view",
+        "confirm → submitAlias": "form",
+        "confirm → submitConfirm": "single",
+        "confirm → submitTexture": "form"
+      }
+    },
+    "src/pages/slab/variety/index.vue": {
+      "script": "8e3c2bd9183260567ccd2cb92edfd0b47bd0af4c7a0ea1597cd0e25542a7eb45",
+      "actions": {
+        "cancel → closeConfirmDialog": "view",
+        "cancel → closeFormDialog": "view",
+        "change → handlePaginationChange": "view",
+        "click → handleReset": "query",
+        "click → handleSearch": "query",
+        "click → openCreateDialog": "form",
+        "click → openDeleteConfirm(row)": "single",
+        "click → openEditDialog(row)": "form",
+        "click → openStatusConfirm(row)": "single",
+        "close → closeConfirmDialog": "view",
+        "close → closeFormDialog": "view",
+        "confirm → handleConfirm": "single",
+        "confirm → handleSubmit": "form"
+      }
+    },
+    "src/pages/store-category/management/index.vue": {
+      "script": "1d893a68a7252d370150b9c706b99d5497bc898249f87723728d9b1dafd4183a",
+      "actions": {
+        "click → handleReset": "query",
+        "click → handleSearch": "query",
+        "click → openCreateDialog()": "form",
+        "click → openCreateDialog(row.node)": "form",
+        "click → openDeleteDialog(row.node)": "single",
+        "click → openEditDialog(row.node)": "form",
+        "click → openStatusConfirm(row.node)": "single",
+        "click → toggleNode(row.node)": "view",
+        "close → closeFormDialog": "view",
+        "close → closeStatusConfirm": "view",
+        "close → tipVisible = false": "view",
+        "confirm → handleDeleteConfirm": "single",
+        "confirm → handleStatusConfirm": "single",
+        "confirm → handleSubmit": "form",
+        "confirm → handleSubmit(true)": "form",
+        "drag-sort → handleCategoryDragSort": "single"
+      }
+    },
+    "src/pages/store-level/management/index.vue": {
+      "script": "adc4f6e4c6081f8eab306178721fad74df0e638959c8c0a3c576d6d0f4e2072c",
+      "actions": {
+        "cancel → closeForm": "view",
+        "cancel → confirmVisible = false": "view",
+        "click → handleReset": "query",
+        "click → handleSearch": "query",
+        "click → openConfirm(row, 'delete')": "single",
+        "click → openConfirm(row, row.status === 'normal' ? 'disable' : 'enable')": "single",
+        "click → openCreate": "form",
+        "click → openEdit(row)": "form",
+        "close → closeForm": "view",
+        "close → confirmVisible = false": "view",
+        "confirm → submitConfirm": "single",
+        "confirm → submitLevel": "form",
+        "drag-sort → handleDragSort": "single"
+      }
+    },
+    "src/pages/supplier/management/index.vue": {
+      "script": "c6fc11b30a3405b7a0cc29a2e0e2ca93244056589fe0f666649f724a823334aa",
+      "actions": {
+        "cancel → closeConfirmDialog": "view",
+        "cancel → closeFormDialog": "view",
+        "click → handleReset": "query",
+        "click → handleSearch": "query",
+        "click → openCreateDialog": "form",
+        "click → openDeleteConfirm(row)": "single",
+        "click → openEditDialog(row)": "form",
+        "click → openStatusConfirm(row)": "single",
+        "close → closeConfirmDialog": "view",
+        "close → closeFormDialog": "view",
+        "confirm → handleConfirm": "single",
+        "confirm → handleSubmit": "form",
+        "input → handlePhoneInput": "form"
+      }
+    },
+    "src/pages/supplier/supply-type/index.vue": {
+      "script": "7f80775eb80312fa2914ad8f884b015eb00047e814a3b7dae21418aba6863fd1",
+      "actions": {
+        "cancel → closeStatusDialog": "view",
+        "cancel → deleting = undefined": "view",
+        "click → handleReset": "query",
+        "click → openDelete(row)": "single",
+        "click → openForm()": "form",
+        "click → openForm(row)": "form",
+        "click → openStatusDialog(row)": "single",
+        "close → closeStatusDialog": "view",
+        "close → deleting = undefined": "view",
+        "confirm → confirmStatusChange": "single",
+        "confirm → remove": "single",
+        "confirm → save": "form",
+        "submit → handleSearch": "query"
+      }
+    },
+    "src/pages/tenant/management/index.vue": {
+      "script": "1426437507b893017a009aad084f08bcd5d0717ab9543e0fb4ffbc62a66d92ce",
+      "actions": {
+        "cancel → closeBusinessDialog": "view",
+        "cancel → closeConfirmDialog": "view",
+        "cancel → closeFormDialog": "view",
+        "cancel → closePurgeDialog": "view",
+        "click → handleReset": "query",
+        "click → handleSearch": "query",
+        "click → openBusinessDialog(row)": "form",
+        "click → openCreateDialog": "form",
+        "click → openEditDialog(row)": "form",
+        "click → openPurgeDialog(row)": "single",
+        "click → openStatusConfirm(row)": "single",
+        "click → toggleBusiness(item.value)": "view",
+        "close → closeBusinessDialog": "view",
+        "close → closeConfirmDialog": "view",
+        "close → closeFormDialog": "view",
+        "close → closePurgeDialog": "view",
+        "confirm → handleBusinessSubmit": "form",
+        "confirm → handleConfirm": "single",
+        "confirm → handlePurge": "single",
+        "confirm → handleSubmit": "form",
+        "input → handlePhoneInput": "form"
+      }
+    },
+    "src/pages/tenant/store/index.vue": {
+      "script": "5fde987b979f78e7cf77ee1d8442bf6eeb16686a020bee230bbe0abd585d5534",
+      "actions": {
+        "cancel → closeConfirmDialog": "view",
+        "cancel → closeFormDialog": "view",
+        "cancel → closeLevelDialog": "view",
+        "change → handleTenantChange": "view",
+        "click → handleReset": "query",
+        "click → handleSearch": "query",
+        "click → openArchiveConfirm(row)": "single",
+        "click → openCreateDialog": "form",
+        "click → openDeleteConfirm(row)": "single",
+        "click → openEditDialog(row)": "form",
+        "click → openLevelDialog(row)": "form",
+        "click → openRestoreConfirm(row)": "single",
+        "close → closeConfirmDialog": "view",
+        "close → closeFormDialog": "view",
+        "close → closeLevelDialog": "view",
+        "confirm → handleConfirm": "single",
+        "confirm → handleLevelSubmit": "form",
+        "confirm → handleSubmit": "form",
+        "popup-visible-change → handleShopTypePopupVisibleChange": "view"
+      }
+    }
+  },
+  "dependencies": {
+    "backend/src/main/java/com/zdm/platform/catalog/ProductCategoryController.java": "b144dd3b95ff3f1023138b682af14ca6941b367c86b4ef76f1da07a8d29f0048",
+    "backend/src/main/java/com/zdm/platform/catalog/ProductCategoryService.java": "bf69ad6f2bac4234ac2b4871895f647a39f35885b8f6885cea53c6d330fd105c",
+    "backend/src/main/java/com/zdm/platform/catalog/TemplateVersionController.java": "ee21af75f14285339b3ec8ac9ad06e46c4c6c891e61e8f2b1c3ab83622575be4",
+    "backend/src/main/java/com/zdm/platform/catalog/TemplateVersionService.java": "0c410125cbc3cdae6f455eaf01fe77a46167a41551a310ebd92543a798b8b88f",
+    "backend/src/main/java/com/zdm/platform/common/FieldValidationException.java": "a4b25092f349932cbbc85b0512c02d8b9affc6269a23ca06dc077d14eec26f1a",
+    "backend/src/main/java/com/zdm/platform/common/GlobalExceptionHandler.java": "2d6bebe5dc5521874c1fe03b4f3f159087cec5818666e1a353660da281983d99",
+    "backend/src/main/java/com/zdm/platform/common/OperationBlockedException.java": "df4d8aa778d6fd95b305b016eefb9174d60030e583727175d52ceb4c3cf80e0b",
+    "backend/src/main/java/com/zdm/platform/inventory/AccessoryLifecycleService.java": "dddd9bceef01cd88bd7d328518421c12dc27a86b42cf56cd78f7d6630e9387fe",
+    "backend/src/main/java/com/zdm/platform/inventory/AccessoryMarkupConfigurationController.java": "8a5fccaacb086d081ae2d02bc6316422c3f6a392921c790e081ad2ee086cfc68",
+    "backend/src/main/java/com/zdm/platform/inventory/AccessoryMarkupConfigurationService.java": "626083eee41839b7894abe31ee145b9151d3bd4c4ffdd6a8afa00af4c1bb3788",
+    "backend/src/main/java/com/zdm/platform/inventory/AccessoryProductController.java": "4918034150c553457042ddb0b443ecdbe75df6111ced1396f1596e301cec6d6c",
+    "backend/src/main/java/com/zdm/platform/inventory/AccessoryProductPriceService.java": "6bc1a75dc4fa6a59f76a7c79349c1b53a5d76436ff26fd039ffa7bf8eb74b19d",
+    "backend/src/main/java/com/zdm/platform/inventory/AccessoryProductService.java": "c140a5aa399e7211baecbf948124c6d583fcd04c19f13948f47bc4148b21b89c",
+    "backend/src/main/java/com/zdm/platform/inventory/FinishedMarkupConfigurationController.java": "acf1a96e1820e6861ff28c0eae30539760e7511b45520519046752bcccf388dc",
+    "backend/src/main/java/com/zdm/platform/inventory/FinishedMarkupConfigurationService.java": "d41b8096e0833ad1ff717a3756edeaded9a310907521ac5aca26b3ca9dedc487",
+    "backend/src/main/java/com/zdm/platform/inventory/FinishedProductController.java": "9c1d4c500dcc48e6f1386ee0eac1bc0be6e052d43f9245df87239c9e920ca0d3",
+    "backend/src/main/java/com/zdm/platform/inventory/FinishedProductPriceService.java": "3332be635cd64a45f2fec27630222da2ebf579386924435b257969678533ef85",
+    "backend/src/main/java/com/zdm/platform/inventory/FinishedProductService.java": "99fa89dc87b3516ec1b977870f27299d6bc2f1c5908a5af09c060967e4b7fe22",
+    "backend/src/main/java/com/zdm/platform/inventory/ProductLifecycleService.java": "b72c2e718185b71f05767d4f77efc81b3614cc7b4b8b80ede15a73df4bf2fbd1",
+    "backend/src/main/java/com/zdm/platform/inventory/SlabColorController.java": "f576f83c530efea43504ce5bb27350907216f04db427b1e5582e658e7c938feb",
+    "backend/src/main/java/com/zdm/platform/inventory/SlabColorMapper.java": "aa9b751447de9bfd1a15016ece8f4f23dcf3e2a8a5a8ac90f6bac30ea2f91bcd",
+    "backend/src/main/java/com/zdm/platform/inventory/SlabColorService.java": "3e7bf2e582490194ee28f60ae62ccb6c895e1f12b68561bedafbfa1dced29ce2",
+    "backend/src/main/java/com/zdm/platform/inventory/SlabGradeController.java": "6f22d3c619129671829a64534bef07d7b15f265035247f365531ed9fb9b36c5d",
+    "backend/src/main/java/com/zdm/platform/inventory/SlabGradeMapper.java": "fb48836f63f7fead46cfebe362e5ae00e59d6446621358703b38f67a3fb79154",
+    "backend/src/main/java/com/zdm/platform/inventory/SlabGradeService.java": "ebbb588f41b473c59fc5c4d22080d11ef236899846746ab538cc229733ce332c",
+    "backend/src/main/java/com/zdm/platform/inventory/SlabInventoryReferenceService.java": "87ae81d2fddcd052a67cd015d111c5bc9b57c4128d4af198d0d476067c9145aa",
+    "backend/src/main/java/com/zdm/platform/inventory/SlabInventoryService.java": "9ec2db03bff3364a8004538dc2d29cc7e2816f57499844ab9556d2d1fffc4dae",
+    "backend/src/main/java/com/zdm/platform/inventory/SlabOriginController.java": "7f002b7825ec4a8d0bf1d1a86dcb3a575ff7f6c3da1db97b7ef8dc55c9e17f51",
+    "backend/src/main/java/com/zdm/platform/inventory/SlabOriginService.java": "480f3482a4a8b4ae9dec486955d9c79fcec5cb6e7971967d3881d3313ec9d5e7",
+    "backend/src/main/java/com/zdm/platform/inventory/SlabPriceService.java": "90e2717f41d53c465a86335c767ed7642b7ff9c4f985cde70c5e6fdadef8083d",
+    "backend/src/main/java/com/zdm/platform/inventory/SlabTextureController.java": "1238c741b7511ff88ba1be41281a0fb0e79b5bf1e1d5bad8f593eeebea398e26",
+    "backend/src/main/java/com/zdm/platform/inventory/SlabTextureMapper.java": "835ca5c3dee95d606101129ab3c56c29e0a83f7dc78ac95e646c5c00211010f6",
+    "backend/src/main/java/com/zdm/platform/inventory/SlabTextureService.java": "dadbedd947529e6d8c08e4cbfef614ee77f04c35c5e1ce05b4e0cc6d1bd65df9",
+    "backend/src/main/java/com/zdm/platform/inventory/SlabVarietyController.java": "74dca4bd39825d052e923341d3d69f9286eb799dda9a3fdbba269f1dca69a505",
+    "backend/src/main/java/com/zdm/platform/inventory/SlabVarietyService.java": "90362ec8d482d2f6c618d56a5cefae09e2a2029e0233beb345b8e7f92ab8d8ec",
+    "backend/src/main/java/com/zdm/platform/inventory/StoreAccessoryProductController.java": "b0e61d817bc76fdc7807fdfea0fb981a2a195fe7423c117b108300f4fe89c794",
+    "backend/src/main/java/com/zdm/platform/inventory/StoreAccessoryProductService.java": "625a31a0bf3cb65ca45a2e79480cad9fea940ac40ccfa57f93fc043408dd3f66",
+    "backend/src/main/java/com/zdm/platform/inventory/StoreAccessorySalePriceService.java": "ca43621e2406bf761a874e3dc69f39699776cc002149455eefbdb66eb317a333",
+    "backend/src/main/java/com/zdm/platform/inventory/StoreFinishedProductController.java": "35c6737449e9ddd4186ec4b8aea602005f2698be77a2ae31e0fa7f13b8648aaa",
+    "backend/src/main/java/com/zdm/platform/inventory/StoreFinishedProductService.java": "01f9abd5c490a0fc4b420e5ed04d42bf174ba10391ae7899106d318ce8670985",
+    "backend/src/main/java/com/zdm/platform/inventory/StoreFinishedSalePriceService.java": "1d98034389addb8578b18cfa71d70cc0ce16e437bfa759804c7d844809872281",
+    "backend/src/main/java/com/zdm/platform/media/MediaAssetService.java": "7d8d2317b155fe20044dd128f16ab28a00a7c7ab06665482428a6e7a9d647b82",
+    "backend/src/main/java/com/zdm/platform/payment/StorePaymentNameService.java": "00714ae86d7be38ac16e999455de262fa51b9f9272ddfb79f48788c4ff275f1a",
+    "backend/src/main/java/com/zdm/platform/store/StoreCategoryController.java": "9173414206b0b2b9162ee664943c9c77b3f7620e64e8cd7d38f9f3a89e7909aa",
+    "backend/src/main/java/com/zdm/platform/store/StoreCategoryService.java": "55ab4442f3c67e27254adb646bcf63a40771114d7c7fafd5a598fa81cac1a993",
+    "backend/src/main/java/com/zdm/platform/store/StoreController.java": "8c26cd07e8bcf4dc1b783cad9d8501c87def0b3bdc795d737c2314c10ff672f3",
+    "backend/src/main/java/com/zdm/platform/store/StoreLevelService.java": "0d87b637ad6bfd42d7dd73fadc6bda3738280a767b1799ee463bb2855832f119",
+    "backend/src/main/java/com/zdm/platform/store/StoreService.java": "d3c0a827b592c365cc00bb6b70090090ff874b8af142aad379c33d164426637b",
+    "backend/src/main/java/com/zdm/platform/supplier/SupplierController.java": "7251cf378eab1deddffc33dceb6d5a11c8a22163ec2aca46762bfce44e40984c",
+    "backend/src/main/java/com/zdm/platform/supplier/SupplierService.java": "08f89a5450ce871c3f0c13ccf3ae4972dc7e73c32f8a82cb0ff06d3da36317eb",
+    "backend/src/main/java/com/zdm/platform/supplier/SupplierSupplyTypeController.java": "e88ae2ac75bc0d45b876358b5379081fffe6f91b91fb9fadb63f02ae981d8ff7",
+    "backend/src/main/java/com/zdm/platform/supplier/SupplierSupplyTypeService.java": "261ca51cc9606026d33de6a051d378a92c53c01c5a1dd7590c50bc756ee15d2d",
+    "src/components/foundation/feedback/adminFeedback.ts": "bc0870d5815faceaaff0454cf3dfd314d2424215e88af4bdd69fd97fdeeab718",
+    "src/composables/useCommodityModule.ts": "1ebe5fe2b88d0d5e629b0ae948bd5212d787c217ae42a2963f3ef86b09b68259",
+    "src/composables/useOperationPreflight.ts": "9f7e8df513f02f0a7b160c9c00b94895c5894ae32d76234110373bbf1b172486",
+    "src/modules/accessory/routes.ts": "65f3669d222a2414d5cb8504146f15b32aa83a4f97f9068f7b947a0158afaacf",
+    "src/pages/order/prototype/model.ts": "4654bbcfe84a5ac3f4a0dba6f63fe418277c4236fc1e1f988f91954d78f77b15",
+    "src/router/index.ts": "c4f572de359d27df385816024f4a6f8c207b90ddd24e40028dcf7fa0992b8751",
+    "src/services/accessoryMarkupConfigurations.ts": "a06cb7cf4f7e652a1e59d668054d52f80fb3c5c5466f68f0965a54e4e991cace",
+    "src/services/accessoryProducts.ts": "fa9e67b2daa51e4f4feb84f06591e93e89d9c7d210e99b393eaee6e83bb6192c",
+    "src/services/finishedMarkupConfigurations.ts": "3d370a6342211b898d24ab0c825a44e79f81727b83dde8bbb26364643be5bc3a",
+    "src/services/finishedProducts.ts": "9ab58035d284b3f1b15a0d106551be8a7f4b5406ea16b72f789a23a3e79d96ce",
+    "src/services/http.ts": "15e4a0caefbba567df9d7467bf4a27e8f8a619da5b5ba4c869430dc1bdd4864c",
+    "src/services/operationsBatchShelf.ts": "ae1b265db98eaef6a2e1ad36062f44a0ce1c3e1447692ae914b8f95ad2bdabf8",
+    "src/services/productAllBatchShelf.ts": "e0a375da8e7ec5e5a5120af9eba54c22c86d38276cfee61d689f5f1275828fd9",
+    "src/services/productBatchDelete.ts": "d9e266a4777681d53ad70c5c68efb5a2694f081db5e386dccd9a36a2a4b6cf75",
+    "src/services/productCategories.ts": "ddc032c2427d3a5fffa0170d177b0d7815a1c05b2c42ec7adfaebf929c5cf5b3",
+    "src/services/slabColors.ts": "ff06c7b43bac424f3887c93b448888d0743f9019b47e0fe4e263d4134e94c3f3",
+    "src/services/slabGrades.ts": "efd7e152cee269ba9f801cee2819e93563bdebc8d6065ccba711fe217e6348eb",
+    "src/services/slabOrigins.ts": "613f4cdf780f7a1dccecdef9f63b587bde3bddf831a2c4e301c2f2f879605363",
+    "src/services/slabTextures.ts": "3baf894387d4465b8a2767751d9e527b2486a273124644963a0469c001ff64cd",
+    "src/services/slabVarieties.ts": "c49e1428c48ebdcb48f7cb5a9354e630911bfe483da3d0623ce886db91c279dc",
+    "src/services/storeAccessoryStock.ts": "932179f6cf999f8a999d9166ce6e31ed1d06cfc552a68615d6cbeab2217b2332",
+    "src/services/storeCategories.ts": "643c969f83d93baffb279930e2e4c885e04b60bb2a06fdcb389dfee231f94906",
+    "src/services/storeFinishedStock.ts": "2725ea1eda160c2f08815326bf954643b2ddb9f4e94eb685685717205dc93dac",
+    "src/services/storeSelectionCenter.ts": "bdfed932e8337ada562572412d8c4c574ff593a94098e7fd45613fe3ee2943d2",
+    "src/services/stores.ts": "42280b785248b1a77de0dba817561493424e9735ce366a3ee2022a50adead3f2",
+    "src/services/suppliers.ts": "f5579765b4b38f877224844aebae45b01fb96f416025ebf2c8f46561fc032d1b",
+    "src/services/templateVersions.ts": "42e913c2dbedd6d4d02f03496d3506a1b90026d5765489690684d3c0baf53114",
+    "src/utils/submitValidation.ts": "9c992f808de42cf274883ec1df1c857d3594fc912056070c335b03f783182d81"
+  },
+  "approvedChanges": {
+    "src/components/AdminTopNav.vue": {
+      "baseSha256": "9677f792262aaf73a7701fa412194f10bc5621bf49976bedb26ae57b6a17f70f",
+      "patchCount": 2
+    },
+    "src/components/foundation/AdminConfirmDialog.vue": {
+      "baseSha256": "9701b819bd50b96ecff87d470f68fdd5bd61658288c8348419cb50cd21cf23a8",
+      "patchCount": 4
+    },
+    "src/pages/craft/finished-stock/index.vue": {
+      "baseSha256": "fee4684dce44b6badbfc8d3c712b61e8365a906ef02e74f8c6cfe7c839cd16a7",
+      "patchCount": 6
+    },
+    "src/pages/customer/index.vue": {
+      "baseSha256": "7ce0147064da82ad5a10a65ab144f82e3af0e9ced32081e6dcfd756bd7903f9b",
+      "patchCount": 1
+    },
+    "src/pages/employee-invite/index.vue": {
+      "baseSha256": "05238abcb631d02b13208614c5856b42d9a49fd91eaeaf8fcccd00a855468e37",
+      "patchCount": 2
+    },
+    "src/pages/finished-stock/management/index.vue": {
+      "baseSha256": "eb08f195b1aa64cd889f68d480b68817e39177546244f73af819fb3cb89e4a34",
+      "patchCount": 12
+    },
+    "src/pages/finished-stock/store/StoreFinishedEditor.vue": {
+      "baseSha256": "cc341a5a4c779bfd5b3ede7011809e763cf5a549996375dbdbf708dbc3e9faa7",
+      "patchCount": 3
+    },
+    "src/pages/finished-stock/store/index.vue": {
+      "baseSha256": "f1f785011a4d1a96737a1b17627dcc8ec77f54e224bfaa60c4f21f79fd6df568",
+      "patchCount": 8
+    },
+    "src/pages/finished-stock/store/price-configuration.vue": {
+      "baseSha256": "9dd641cb880655b2268e4158e0c9ec5416d5b44442915e7bae2507cac0c3e44c",
+      "patchCount": 3
+    },
+    "src/pages/finished-stock/supply-chain/index.vue": {
+      "baseSha256": "e1587ec2d5c209a426f8bfe9c584eb6a421289c0ef3ca40651b955330d06e1da",
+      "patchCount": 7
+    },
+    "src/pages/order/prototype/OrderActionDialog.vue": {
+      "baseSha256": "e537575501e1609102dcc1e87db1c9b1c6a15d1a9fce1451c8e49cb6815e4c92",
+      "patchCount": 5,
+      "patches": [
+        {
+          "stage": "before-migrations",
+          "task": "004",
+          "reason": "按已确认的操作校验与反馈整改方案接入本页登记的操作",
+          "before": "      action === 'cancel' || action === 'void-payment' || action === 'revoke-plan' ? 'archive' : 'save'\n    \"\n    :confirmation=\"operationConfirmation(label)\"\n    @confirm=\"submit\"\n  >\n    <t-alert theme=\"info\" message=\"前端原型：本操作只更新当前浏览器的模拟记录，不写入真实业务。\" />\n",
+          "after": "      action === 'cancel' || action === 'void-payment' || action === 'revoke-plan' ? 'archive' : 'save'\n    \"\n    :confirmation=\"operationConfirmation(label)\"\n    :confirm-btn=\"{ loading: submitting }\"\n    @confirm=\"submit\"\n  >\n    <t-alert theme=\"info\" message=\"前端原型：本操作只更新当前浏览器的模拟记录，不写入真实业务。\" />\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "004",
+          "reason": "按已确认的操作校验与反馈整改方案接入本页登记的操作",
+          "before": "        :show-limit-number=\"true\"\n        placeholder=\"请输入操作原因\"\n    /></t-form-item>\n    <t-form-item v-bind=\"fb.field('operation', error)\" label=\"操作校验\"\n      ><span>{{ error || '以本次填写内容执行，操作前后数据会保留在订单日志中。' }}</span></t-form-item\n    >\n  </AdminFormDialog>\n</template>\n<script setup lang=\"ts\">\nimport DecimalInput from '@/components/DecimalInput.vue';\nimport { validateNumericControls } from '@/utils/numericInputValidation';\nimport { computed, ref, watch } from 'vue';\n",
+          "after": "        :show-limit-number=\"true\"\n        placeholder=\"请输入操作原因\"\n    /></t-form-item>\n    <t-form-item label=\"操作校验\"\n      ><span>以本次填写内容执行，操作前后数据会保留在订单日志中。</span></t-form-item\n    >\n  </AdminFormDialog>\n</template>\n<script setup lang=\"ts\">\nimport { adminFeedback } from '@/components/foundation/feedback/adminFeedback';\nimport { OrderFieldError } from './model';\nimport DecimalInput from '@/components/DecimalInput.vue';\nimport { validateNumericControls } from '@/utils/numericInputValidation';\nimport { computed, ref, watch } from 'vue';\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "004",
+          "reason": "按已确认的操作校验与反馈整改方案接入本页登记的操作",
+          "before": "const visible = defineModel<boolean>('visible', { required: true });\nconst form = ref<ActionForm>(initial());\nconst dialog = ref<InstanceType<typeof AdminFormDialog>>();\nconst fb = useFormFeedback(visible),\n  error = ref('');\nfunction initial(): ActionForm {\n  return {\n    amount: 0,\n",
+          "after": "const visible = defineModel<boolean>('visible', { required: true });\nconst form = ref<ActionForm>(initial());\nconst dialog = ref<InstanceType<typeof AdminFormDialog>>();\nconst fb = useFormFeedback(visible);\nconst submitting = ref(false);\nfunction initial(): ActionForm {\n  return {\n    amount: 0,\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "004",
+          "reason": "按已确认的操作校验与反馈整改方案接入本页登记的操作",
+          "before": "watch(visible, (v) => {\n  if (!v) return;\n  form.value = initial();\n  error.value = '';\n  if (props.action === 'correct-payment') {\n    const p = props.order.payments.find((p) => p.id === props.recordId);\n    if (p) Object.assign(form.value, clone(p));\n",
+          "after": "watch(visible, (v) => {\n  if (!v) return;\n  form.value = initial();\n  if (props.action === 'correct-payment') {\n    const p = props.order.payments.find((p) => p.id === props.recordId);\n    if (p) Object.assign(form.value, clone(p));\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "004",
+          "reason": "按已确认的操作校验与反馈整改方案接入本页登记的操作",
+          "before": "  });\n}\nasync function submit() {\n  if (!(await validateNumericControls(dialog.value))) return;\n  fb.clear();\n  error.value = '';\n  try {\n    await props.execute(clone(form.value));\n    visible.value = false;\n    return;\n  } catch (e) {\n    error.value = e instanceof Error ? e.message : '操作失败';\n    fb.reject('operation', error.value, error.value);\n  }\n  await rejectFormSubmission(dialog.value);\n}\n</script>\n",
+          "after": "  });\n}\nasync function submit() {\n  if (submitting.value) return;\n  submitting.value = true;\n  try {\n    fb.clear();\n    const value = form.value;\n    let invalid = false;\n    const field = (key: keyof ActionForm, valid: unknown, message: string) => {\n      if (valid) return;\n      invalid = true;\n      fb.reject(key, value[key], message);\n    };\n    if (paymentAction.value) {\n      field('amount', value.amount > 0, '请输入大于零的金额');\n      field('method', value.method, '请选择收退款渠道');\n      field('at', value.at, '请选择实际时间');\n      if (paymentKind.value === 'receipt') field('nature', value.nature, '请选择款项名称');\n      else field('reason', value.reason.trim(), '请输入退款原因');\n    }\n    if (['ship', 'receive'].includes(props.action)) {\n      field('quantity', Number.isInteger(value.quantity) && value.quantity > 0, '请输入大于零的整数数量');\n      if (props.action === 'ship') field('at', value.at, '请选择实际发货时间');\n    }\n    if (needsReason.value) field('reason', value.reason.trim(), '请输入操作原因');\n    if (!(await validateNumericControls(dialog.value))) return;\n    if (invalid) { await rejectFormSubmission(dialog.value); return; }\n    await props.execute(clone(value));\n    visible.value = false;\n  } catch (error) {\n    if (error instanceof OrderFieldError) {\n      const field = error.field as keyof ActionForm;\n      fb.reject(field, form.value[field], error.message);\n      await rejectFormSubmission(dialog.value);\n    } else adminFeedback.actionError({ action: props.label, error });\n  } finally {\n    submitting.value = false;\n  }\n}\n</script>\n"
+        }
+      ]
+    },
+    "src/pages/order/prototype/index.vue": {
+      "baseSha256": "b47d4898ac041356022e1fe0c2fe719fd5f13616989e4e3b2df52e1fec742bf3",
+      "patchCount": 5,
+      "patches": [
+        {
+          "stage": "before-migrations",
+          "task": "004",
+          "reason": "按已确认的操作校验与反馈整改方案接入本页登记的操作",
+          "before": "  </div>\n</template>\n<script setup lang=\"ts\">\nimport { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue';\nimport { useRoute } from 'vue-router';\nimport { storeScopeFingerprint } from '@/services/storeCacheCleanup';\n",
+          "after": "  </div>\n</template>\n<script setup lang=\"ts\">\nimport { useOperationPreflight } from '@/composables/useOperationPreflight';\nimport { ApiFieldError, OperationBlockedError } from '@/services/http';\nimport { orderConfirmationBlock, requireOrderField } from './model';\nimport { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue';\nimport { useRoute } from 'vue-router';\nimport { storeScopeFingerprint } from '@/services/storeCacheCleanup';\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "004",
+          "reason": "按已确认的操作校验与反馈整改方案接入本页登记的操作",
+          "before": "  type Log,\n  type Status,\n} from './model';\nconst route = useRoute(),\n  user = computed(() => getLoginUser());\nconst context = computed<Context>(() => ({\n",
+          "after": "  type Log,\n  type Status,\n} from './model';\nconst operations = useOperationPreflight();\nconst route = useRoute(),\n  user = computed(() => getLoginUser());\nconst context = computed<Context>(() => ({\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "004",
+          "reason": "按已确认的操作校验与反馈整改方案接入本页登记的操作",
+          "before": "  return o;\n}\nasync function openAction(id: string, o?: Order, rid = '') {\n  const openingScope = key.value;\n  try {\n    await requireCurrentStoreScope();\n",
+          "after": "  return o;\n}\nasync function openAction(id: string, o?: Order, rid = '') {\n  if (id === 'confirm' && o) {\n    await operations.check(`confirm:${o.id}`, async () => {\n      await requireCurrentStoreScope();\n      demand(getUserFunctionAudience(user.value) === 'store' && can(id, o), '没有操作权限');\n      const reason = orderConfirmationBlock(state.value, findOrder(o.id));\n      if (reason) throw new OperationBlockedError(reason);\n    }, () => {\n      action.value = id;\n      recordId.value = rid;\n      actionOrderId.value = o.id;\n      actionVisible.value = true;\n    });\n    return;\n  }\n  operations.select(`${id}:${o?.id ?? ''}`);\n  const openingScope = key.value;\n  try {\n    await requireCurrentStoreScope();\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "004",
+          "reason": "按已确认的操作校验与反馈整改方案接入本页登记的操作",
+          "before": "      f.nature === existing?.nature &&\n      f.paymentNameId === existing?.paymentNameId;\n    if (kind === 'receipt' && !unchangedHistoricalName) {\n      demand(f.paymentNameId, '请选择款项名称');\n      const actionScope = key.value;\n      const options = await listStorePaymentNameOptions();\n      if (actionScope !== key.value) throw new Error('当前身份已变化，请重新操作');\n      paymentNameOptions.value = options;\n      demand(\n        options.some(\n          (entry) => entry.id === f.paymentNameId && entry.version === f.paymentNameVersion && entry.name === f.nature,\n        ),\n        '款项配置已变化，请重新选择',\n      );\n    }\n    recordPayment(\n",
+          "after": "      f.nature === existing?.nature &&\n      f.paymentNameId === existing?.paymentNameId;\n    if (kind === 'receipt' && !unchangedHistoricalName) {\n      requireOrderField(f.paymentNameId, 'nature', '请选择款项名称');\n      const actionScope = key.value;\n      const options = await listStorePaymentNameOptions();\n      if (actionScope !== key.value) throw new Error('当前身份已变化，请重新操作');\n      paymentNameOptions.value = options;\n      requireOrderField(\n        options.some(\n          (entry) => entry.id === f.paymentNameId && entry.version === f.paymentNameVersion && entry.name === f.nature,\n        ),\n        'nature', '款项配置已变化，请重新选择',\n      );\n    }\n    recordPayment(\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "004",
+          "reason": "按已确认的操作校验与反馈整改方案接入本页登记的操作",
+          "before": "    await loadSettings();\n  } catch (error) {\n    if (scope !== key.value) return;\n    const message = error instanceof Error ? error.message : '保存失败';\n    settingFeedback.reject('name', settingName.value, message);\n    await rejectFormSubmission(settingDialog.value);\n    await loadSettings();\n  } finally {\n    if (scope === key.value) settingsSaving.value = false;\n",
+          "after": "    await loadSettings();\n  } catch (error) {\n    if (scope !== key.value) return;\n    if (error instanceof ApiFieldError && error.field === 'name') {\n      settingFeedback.reject('name', settingName.value, error.message);\n      await rejectFormSubmission(settingDialog.value);\n    } else {\n      adminFeedback.actionError({ action: editing ? '修改' : '新增', error });\n    }\n    await loadSettings();\n  } finally {\n    if (scope === key.value) settingsSaving.value = false;\n"
+        }
+      ]
+    },
+    "src/pages/permission/employee/index.vue": {
+      "baseSha256": "46c56961a34772b9213ae0a8339912aefb65e92a5d333f39bb161addd37d85e0",
+      "patchCount": 6
+    },
+    "src/pages/permission/terminal-function/index.vue": {
+      "baseSha256": "1570f14bffff1dd787de684cfec5cb32bbeaec4f2d5231aa9725a606a94819d3",
+      "patchCount": 4
+    },
+    "src/pages/product/attribute-value/index.vue": {
+      "baseSha256": "5b2fe9b3f9019ed577c60c50ec3fc546b8697276abbf866728e2b1c824cbf6a6",
+      "patchCount": 6
+    },
+    "src/pages/product/attribute/index.vue": {
+      "baseSha256": "0acfd70bf9f3452864fd54b0bfe14e5f055c7051f7e2e8796800e69a22309935",
+      "patchCount": 8
+    },
+    "src/pages/product/category-attribute-template/index.vue": {
+      "baseSha256": "90bcf5cad3bc1de818bece56995c4077e25cfc36536d7876adc72250b06c5e4c",
+      "patchCount": 5
+    },
+    "src/pages/product/category/index.vue": {
+      "baseSha256": "d0c3e9bc240c62acc821fb519b0a41a7b8e3c3f693eb8c564e4b74336713d6ca",
+      "patchCount": 9
+    },
+    "src/pages/product/markup-configuration/index.vue": {
+      "baseSha256": "d69caf8ea2cc461065afd84d0232145b6ef6b919127078c5b2dad73b2b6f297e",
+      "patchCount": 6
+    },
+    "src/pages/role/management/index.vue": {
+      "baseSha256": "bb11f2cdd5000139d47396ea04f251f783c80fb39dfe39a67d9c5325bba6d839",
+      "patchCount": 5
+    },
+    "src/pages/selection-center/index.vue": {
+      "baseSha256": "9e302c7357a86ace68cb78bd430c0fa04824afa982f10b3a0593c0eae1afad8b",
+      "patchCount": 4
+    },
+    "src/pages/slab/color/index.vue": {
+      "baseSha256": "8f6dcf874ece4bec83580d7d96a2ce6dfc653bb3ad8b7cbb122c1b9b704d55f3",
+      "patchCount": 8
+    },
+    "src/pages/slab/grade/index.vue": {
+      "baseSha256": "f0e80d39b6e3a5dcca10ee8bff19bb007495ee6444e057fa3d153aae7a96bd48",
+      "patchCount": 5
+    },
+    "src/pages/slab/management/index.vue": {
+      "baseSha256": "191459ad149f78ebaa6c495a2617ce9c60c105742ee3f70125c032c438d3c29b",
+      "patchCount": 10
+    },
+    "src/pages/slab/origin/index.vue": {
+      "baseSha256": "0b916f1a8ae2108fa636d3d3c538cfc88cfc842ebb93b746168316a3ef61ad31",
+      "patchCount": 7
+    },
+    "src/pages/slab/supply-chain/index.vue": {
+      "baseSha256": "0181b2543f11c694d882f3f565779c2f0b3c3a3332a24d2277acbf6009ce93d6",
+      "patchCount": 10
+    },
+    "src/pages/slab/texture/index.vue": {
+      "baseSha256": "1938ac2fec522c09b00b11e8ab6c880e3aef00f8ac2c72458328e33c30d17d37",
+      "patchCount": 5
+    },
+    "src/pages/slab/variety/index.vue": {
+      "baseSha256": "ca58179a70be3d18174d7f053f26e849987a0af564b7624a6bb56f9481722e11",
+      "patchCount": 7
+    },
+    "src/pages/store-category/management/index.vue": {
+      "baseSha256": "e6db3a2a43404453ba0ed901036e24385ca44997bdc3755c825742efef8e94df",
+      "patchCount": 8
+    },
+    "src/pages/store-level/management/index.vue": {
+      "baseSha256": "b408a34878795a50a654e754fdce53f6dca7f7fc40c568b50288cc1dd1cb53eb",
+      "patchCount": 5
+    },
+    "src/pages/supplier/management/index.vue": {
+      "baseSha256": "1d19b21835c32549d06501143c208108b975f1db74bffd4f997a4c202be36a06",
+      "patchCount": 7
+    },
+    "src/pages/supplier/supply-type/index.vue": {
+      "baseSha256": "879b1e12bf5b8d24b18fa7b5d226fd0025097fa73105fd80a7da7624bb3a3f78",
+      "patchCount": 4
+    },
+    "src/pages/tenant/management/index.vue": {
+      "baseSha256": "a956403dfd1cfaeafeb03541cf5a9b55a2c70944706af36f25923de11e0c3a38",
+      "patchCount": 11
+    },
+    "src/pages/tenant/store/index.vue": {
+      "baseSha256": "ce460c541cca46dd8c013e1fef94ef5f1679f1cd7b8dd61e59e40494eccec00f",
+      "patchCount": 7
+    }
+  }
+}

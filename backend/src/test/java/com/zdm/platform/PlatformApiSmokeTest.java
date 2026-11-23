@@ -932,11 +932,19 @@ class PlatformApiSmokeTest extends SpringContainerTestSupport {
         """);
 
     try {
+      mockMvc.perform(get("/api/admin/suppliers/9220/delete-check")
+              .header("Authorization", "Bearer " + supplyChainToken()))
+          .andExpect(status().isBadRequest())
+          .andExpect(header().string("X-Zdm-Operation-Blocked", "true"));
       mockMvc.perform(delete("/api/admin/suppliers/9220")
               .header("Authorization", "Bearer " + supplyChainToken()))
           .andExpect(status().isBadRequest())
           .andExpect(jsonPath("$.message")
               .value("该供应商已关联大板库存，不能删除，请先停用该供应商"));
+      mockMvc.perform(get("/api/admin/suppliers/9221/delete-check")
+              .header("Authorization", "Bearer " + supplyChainToken()))
+          .andExpect(status().isBadRequest())
+          .andExpect(header().string("X-Zdm-Operation-Blocked", "true"));
       mockMvc.perform(delete("/api/admin/suppliers/9221")
               .header("Authorization", "Bearer " + supplyChainToken()))
           .andExpect(status().isBadRequest())
@@ -1325,6 +1333,10 @@ class PlatformApiSmokeTest extends SpringContainerTestSupport {
           .andExpect(jsonPath("$.data[0].id").value(createdTypeId))
           .andExpect(jsonPath("$.data[0].referenced").value(true));
 
+      mockMvc.perform(get("/api/admin/supplier-supply-types/{id}/delete-check", createdTypeId)
+              .header("Authorization", "Bearer " + TokenAuthenticationFilter.DEV_TOKEN))
+          .andExpect(status().isBadRequest())
+          .andExpect(header().string("X-Zdm-Operation-Blocked", "true"));
       mockMvc.perform(delete("/api/admin/supplier-supply-types/{id}", createdTypeId)
               .header("Authorization", "Bearer " + TokenAuthenticationFilter.DEV_TOKEN))
           .andExpect(status().isBadRequest())
@@ -1335,6 +1347,10 @@ class PlatformApiSmokeTest extends SpringContainerTestSupport {
           .andExpect(status().isOk());
       supplierId = null;
 
+      mockMvc.perform(get("/api/admin/supplier-supply-types/{id}/delete-check", createdTypeId)
+              .header("Authorization", "Bearer " + TokenAuthenticationFilter.DEV_TOKEN))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.data").value(true));
       mockMvc.perform(delete("/api/admin/supplier-supply-types/{id}", createdTypeId)
               .header("Authorization", "Bearer " + TokenAuthenticationFilter.DEV_TOKEN))
           .andExpect(status().isOk())
@@ -1942,6 +1958,11 @@ class PlatformApiSmokeTest extends SpringContainerTestSupport {
 
   @Test
   void productCategoryDeleteReturnsClearBusinessErrors() throws Exception {
+    mockMvc.perform(get("/api/admin/product-categories/1/delete-check")
+            .header("Authorization", "Bearer " + TokenAuthenticationFilter.DEV_TOKEN))
+        .andExpect(status().isBadRequest())
+        .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("X-Zdm-Operation-Blocked", "true"))
+        .andExpect(jsonPath("$.message").value("该分类包含下级分类，请先删除或转移下级分类"));
     mockMvc.perform(delete("/api/admin/product-categories/1")
             .header("Authorization", "Bearer " + TokenAuthenticationFilter.DEV_TOKEN))
         .andExpect(status().isBadRequest())
@@ -1970,11 +1991,18 @@ class PlatformApiSmokeTest extends SpringContainerTestSupport {
         """
         INSERT INTO product_attributes (id, scope, name, value_type, attribute_role, status, created_by_account_id) VALUES (9204, 'finished', '模板引用删除测试属性', 'select', 'basic', 'enabled', 1)
         """);
+    mockMvc.perform(get("/api/admin/product-categories/9203/delete-check")
+            .header("Authorization", "Bearer " + TokenAuthenticationFilter.DEV_TOKEN))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.data").value(true));
     jdbcTemplate.update(
         """
         INSERT INTO category_template_versions (category_id, content, created_by_account_id) VALUES (9203, JSON_ARRAY(JSON_OBJECT('attributeId', 9204, 'options', JSON_ARRAY())), (SELECT MIN(id) FROM accounts WHERE display_name='测试人员'))
         """);
 
+    mockMvc.perform(get("/api/admin/product-categories/9203/delete-check")
+            .header("Authorization", "Bearer " + TokenAuthenticationFilter.DEV_TOKEN))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.message").value("该分类已配置发布属性模板，不能删除，请先移除模板配置"));
     mockMvc.perform(delete("/api/admin/product-categories/9203")
             .header("Authorization", "Bearer " + TokenAuthenticationFilter.DEV_TOKEN))
         .andExpect(status().isBadRequest())
@@ -1990,6 +2018,10 @@ class PlatformApiSmokeTest extends SpringContainerTestSupport {
         VALUES (9211, 1, '品种删除保护测试库存', 'VARIETY-DELETE-GUARD-9211', 'warehouse')
         """);
     try {
+      mockMvc.perform(get("/api/admin/slab-varieties/1/delete-check")
+              .header("Authorization", "Bearer " + TokenAuthenticationFilter.DEV_TOKEN))
+          .andExpect(status().isBadRequest())
+          .andExpect(header().string("X-Zdm-Operation-Blocked", "true"));
       mockMvc.perform(delete("/api/admin/slab-varieties/1")
               .header("Authorization", "Bearer " + TokenAuthenticationFilter.DEV_TOKEN))
           .andExpect(status().isBadRequest())
@@ -2053,6 +2085,10 @@ class PlatformApiSmokeTest extends SpringContainerTestSupport {
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.message").value("别名已存在或与标准纹理重复"));
 
+    mockMvc.perform(get("/api/admin/slab-textures/{id}/delete-check", textureId)
+            .header("Authorization", "Bearer " + TokenAuthenticationFilter.DEV_TOKEN))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data").value(true));
     mockMvc.perform(delete("/api/admin/slab-textures/{id}", textureId)
             .header("Authorization", "Bearer " + TokenAuthenticationFilter.DEV_TOKEN))
         .andExpect(status().isOk())
@@ -2095,6 +2131,10 @@ class PlatformApiSmokeTest extends SpringContainerTestSupport {
         .andExpect(jsonPath("$.data[*].name", hasItem(colorName)))
         .andExpect(jsonPath("$.data[*].categoryName", hasItem(categoryName)));
 
+    mockMvc.perform(get("/api/admin/slab-colors/categories/{id}/delete-check", categoryId)
+            .header("Authorization", "Bearer " + TokenAuthenticationFilter.DEV_TOKEN))
+        .andExpect(status().isBadRequest())
+        .andExpect(header().string("X-Zdm-Operation-Blocked", "true"));
     mockMvc.perform(delete("/api/admin/slab-colors/categories/{id}", categoryId)
             .header("Authorization", "Bearer " + TokenAuthenticationFilter.DEV_TOKEN))
         .andExpect(status().isBadRequest())
@@ -2107,7 +2147,15 @@ class PlatformApiSmokeTest extends SpringContainerTestSupport {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.status").value("disabled"));
 
+    mockMvc.perform(get("/api/admin/slab-colors/{id}/delete-check", colorId)
+            .header("Authorization", "Bearer " + TokenAuthenticationFilter.DEV_TOKEN))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data").value(true));
     mockMvc.perform(delete("/api/admin/slab-colors/{id}", colorId)
+            .header("Authorization", "Bearer " + TokenAuthenticationFilter.DEV_TOKEN))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data").value(true));
+    mockMvc.perform(get("/api/admin/slab-colors/categories/{id}/delete-check", categoryId)
             .header("Authorization", "Bearer " + TokenAuthenticationFilter.DEV_TOKEN))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data").value(true));
@@ -3037,6 +3085,10 @@ class PlatformApiSmokeTest extends SpringContainerTestSupport {
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.data[0].id").value(orderedIds.get(0)));
 
+      mockMvc.perform(get("/api/admin/slab-grades/{id}/delete-check", gradeId)
+              .header("Authorization", "Bearer " + TokenAuthenticationFilter.DEV_TOKEN))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.data").value(true));
       mockMvc.perform(delete("/api/admin/slab-grades/{id}", gradeId)
               .header("Authorization", "Bearer " + TokenAuthenticationFilter.DEV_TOKEN))
           .andExpect(status().isOk())
@@ -3291,6 +3343,10 @@ class PlatformApiSmokeTest extends SpringContainerTestSupport {
         "INSERT INTO slab_inventory (name, serial_no, origin_id, status) VALUES ('产地引用测试大板', ?, 1, 'warehouse')",
         referencedSku);
     try {
+      mockMvc.perform(get("/api/admin/slab-origins/1/delete-check")
+              .header("Authorization", "Bearer " + TokenAuthenticationFilter.DEV_TOKEN))
+          .andExpect(status().isBadRequest())
+          .andExpect(header().string("X-Zdm-Operation-Blocked", "true"));
       mockMvc.perform(delete("/api/admin/slab-origins/1")
               .header("Authorization", "Bearer " + TokenAuthenticationFilter.DEV_TOKEN))
           .andExpect(status().isBadRequest())
@@ -3548,6 +3604,10 @@ class PlatformApiSmokeTest extends SpringContainerTestSupport {
                 {"status":"disabled"}
                 """))
         .andExpect(status().isOk());
+    mockMvc.perform(get("/api/admin/slab-varieties/9032/delete-check")
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data").value(true));
     mockMvc.perform(delete("/api/admin/slab-varieties/9032")
             .header("Authorization", "Bearer " + token))
         .andExpect(status().isOk())
@@ -5823,7 +5883,7 @@ class PlatformApiSmokeTest extends SpringContainerTestSupport {
     mockMvc.perform(patch("/api/admin/stores/{id}/restore", storeId)
             .header("Authorization", "Bearer " + TokenAuthenticationFilter.DEV_TOKEN))
         .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.message").value("所属租户已归档，不能恢复门店运营"));
+        .andExpect(jsonPath("$.message").value("所属租户已归档，请先恢复租户运营"));
     mockMvc.perform(patch("/api/admin/tenants/{id}/status", tenantIdValue)
             .header("Authorization", "Bearer " + TokenAuthenticationFilter.DEV_TOKEN)
             .contentType("application/json")

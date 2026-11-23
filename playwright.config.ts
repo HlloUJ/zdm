@@ -7,6 +7,7 @@ export default defineConfig({
   timeout: 30_000,
   expect: { timeout: 5_000 },
   fullyParallel: true,
+  workers: process.env.ZDM_E2E_WORKERS,
   retries: 0,
   reporter: [['list'], ['html', { open: 'never' }]],
   use: { baseURL, screenshot: 'only-on-failure', trace: 'off' },

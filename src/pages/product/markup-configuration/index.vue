@@ -112,7 +112,8 @@
                   >
                     {{ row.status === 'enabled' ? '停用' : '启用' }}
                   </t-link>
-                  <t-link v-if="canDelete" :theme="buttonTheme('delete')" hover="color" @click="openConfirm(row)"
+                  <t-link v-if="canDelete" :theme="buttonTheme('delete')" hover="color" :disabled="operations.pending(`delete:${row.id}`)"
+                    @click="openConfirm(row)"
                     >删除</t-link
                   >
                 </div>
@@ -185,6 +186,7 @@
       action="删除"
       object-type="价格配置"
       :object-name="confirmRow?.name"
+      :loading="operations.pending(`delete:${confirmRow?.id}`)"
       @confirm="submitConfirm"
       @cancel="confirmVisible = false"
       @close="confirmVisible = false"
@@ -203,6 +205,9 @@
 </template>
 
 <script setup lang="ts">
+import { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';
+import { OperationBlockedError } from '@/services/http';
+import { useOperationPreflight, requireCondition } from '@/composables/useOperationPreflight';
 import { formConfirmationText } from '@/components/foundation/actions/confirmation';
 import { formConfirmation } from '@/components/foundation/actions/confirmation';
 import { buttonTheme } from '@/components/foundation/actions/buttonFunctions';
@@ -252,6 +257,8 @@ const tabs = [
 const prefix = 'admin.product-data-center.markup-configuration';
 const loginUser = computed(() => getLoginUser());
 const activeType = ref<PriceConfigurationTab>('finished');
+const operations = useOperationPreflight(() => activeType.value);
+
 const commodityPricing = computed(() => (activeType.value === 'accessory' ? accessoryPricing : finishedPricing));
 const commodityLabel = computed(() =>
   activeType.value === 'accessory' ? '配件' : activeType.value === 'finished' ? '成品' : '大板',
@@ -510,29 +517,34 @@ const submitForm = async () => {
 
 const confirmVisible = ref(false);
 const confirmRow = ref<MarkupConfigurationRecord | null>(null);
-const openConfirm = (row: MarkupConfigurationRecord) => {
+const openConfirm = (row: MarkupConfigurationRecord) => operations.check(`delete:${row.id}`, async () => {
   if (activeType.value === 'slab') {
-    const referenceCount = (row as SlabMarkupConfigurationRecord).autoReferenceCount ?? 0;
-    if (referenceCount > 0) {
-      adminFeedback.warning(`该价格配置正在被${referenceCount}条大板价格使用，不能删除，请先停用`);
-      return;
-    }
+    const count = (row as SlabMarkupConfigurationRecord).autoReferenceCount ?? 0;
+    if (count > 0) throw new OperationBlockedError(`该价格配置正在被${count}条大板价格使用，不能删除，请先停用`);
+  } else {
+    requireCondition(await commodityPricing.value.checkFinishedMarkupConfigurationDelete(row.id));
   }
+}, () => {
   confirmRow.value = row;
   confirmVisible.value = true;
-};
+});
 const submitConfirm = async () => {
   if (!confirmRow.value) return;
   const row = confirmRow.value;
-  try {
-    if (activeType.value !== 'slab') await commodityPricing.value.deleteFinishedMarkupConfiguration(row.id);
-    else await deleteSlabMarkupConfiguration(row.id);
-    await loadData();
-    confirmVisible.value = false;
-    adminFeedback.deleted(row.name);
-  } catch (error) {
-    adminFeedback.error(error instanceof Error ? error.message : '操作失败');
-  }
+  await operations.execute(`delete:${row.id}`, async (current) => {
+    try {
+      if (activeType.value !== 'slab') await commodityPricing.value.deleteFinishedMarkupConfiguration(row.id);
+      else await deleteSlabMarkupConfiguration(row.id);
+      if (!current()) return;
+      await loadData();
+      if (!current()) return;
+      confirmVisible.value = false;
+      adminFeedback.deleted(row.name);
+    } catch (error) {
+      if (!current()) return;
+      adminFeedback.error(getSafeErrorMessage(error, '操作失败'));
+    }
+  });
 };
 
 const statusConfirmVisible = ref(false);
@@ -562,6 +574,10 @@ watch(activeType, () => {
   void loadData();
 });
 onMounted(loadData);
+operations.onInvalidate(() => {
+  confirmVisible.value = false;
+  confirmRow.value = null;
+});
 </script>
 
 <style scoped>

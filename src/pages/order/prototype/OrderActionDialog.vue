@@ -10,6 +10,7 @@
       action === 'cancel' || action === 'void-payment' || action === 'revoke-plan' ? 'archive' : 'save'
     "
     :confirmation="operationConfirmation(label)"
+    :confirm-btn="{ loading: submitting }"
     @confirm="submit"
   >
     <t-alert theme="info" message="前端原型：本操作只更新当前浏览器的模拟记录，不写入真实业务。" />
@@ -194,12 +195,14 @@
         :show-limit-number="true"
         placeholder="请输入操作原因"
     /></t-form-item>
-    <t-form-item v-bind="fb.field('operation', error)" label="操作校验"
-      ><span>{{ error || '以本次填写内容执行，操作前后数据会保留在订单日志中。' }}</span></t-form-item
+    <t-form-item label="操作校验"
+      ><span>以本次填写内容执行，操作前后数据会保留在订单日志中。</span></t-form-item
     >
   </AdminFormDialog>
 </template>
 <script setup lang="ts">
+import { adminFeedback } from '@/components/foundation/feedback/adminFeedback';
+import { OrderFieldError } from './model';
 import DecimalInput from '@/components/DecimalInput.vue';
 import { validateNumericControls } from '@/utils/numericInputValidation';
 import { computed, ref, watch } from 'vue';
@@ -250,8 +253,8 @@ const props = defineProps<{
 const visible = defineModel<boolean>('visible', { required: true });
 const form = ref<ActionForm>(initial());
 const dialog = ref<InstanceType<typeof AdminFormDialog>>();
-const fb = useFormFeedback(visible),
-  error = ref('');
+const fb = useFormFeedback(visible);
+const submitting = ref(false);
 function initial(): ActionForm {
   return {
     amount: 0,
@@ -319,7 +322,6 @@ const paymentChannelOptions = ['现金', '银行转账', '微信', '支付宝'].
 watch(visible, (v) => {
   if (!v) return;
   form.value = initial();
-  error.value = '';
   if (props.action === 'correct-payment') {
     const p = props.order.payments.find((p) => p.id === props.recordId);
     if (p) Object.assign(form.value, clone(p));
@@ -348,17 +350,41 @@ function uploadProof(file: File): Promise<AdminMediaValue> {
   });
 }
 async function submit() {
-  if (!(await validateNumericControls(dialog.value))) return;
-  fb.clear();
-  error.value = '';
+  if (submitting.value) return;
+  submitting.value = true;
   try {
-    await props.execute(clone(form.value));
+    fb.clear();
+    const value = form.value;
+    let invalid = false;
+    const field = (key: keyof ActionForm, valid: unknown, message: string) => {
+      if (valid) return;
+      invalid = true;
+      fb.reject(key, value[key], message);
+    };
+    if (paymentAction.value) {
+      field('amount', value.amount > 0, '请输入大于零的金额');
+      field('method', value.method, '请选择收退款渠道');
+      field('at', value.at, '请选择实际时间');
+      if (paymentKind.value === 'receipt') field('nature', value.nature, '请选择款项名称');
+      else field('reason', value.reason.trim(), '请输入退款原因');
+    }
+    if (['ship', 'receive'].includes(props.action)) {
+      field('quantity', Number.isInteger(value.quantity) && value.quantity > 0, '请输入大于零的整数数量');
+      if (props.action === 'ship') field('at', value.at, '请选择实际发货时间');
+    }
+    if (needsReason.value) field('reason', value.reason.trim(), '请输入操作原因');
+    if (!(await validateNumericControls(dialog.value))) return;
+    if (invalid) { await rejectFormSubmission(dialog.value); return; }
+    await props.execute(clone(value));
     visible.value = false;
-    return;
-  } catch (e) {
-    error.value = e instanceof Error ? e.message : '操作失败';
-    fb.reject('operation', error.value, error.value);
+  } catch (error) {
+    if (error instanceof OrderFieldError) {
+      const field = error.field as keyof ActionForm;
+      fb.reject(field, form.value[field], error.message);
+      await rejectFormSubmission(dialog.value);
+    } else adminFeedback.actionError({ action: props.label, error });
+  } finally {
+    submitting.value = false;
   }
-  await rejectFormSubmission(dialog.value);
 }
 </script>

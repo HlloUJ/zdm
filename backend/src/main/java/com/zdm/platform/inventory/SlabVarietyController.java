@@ -68,6 +68,15 @@ public class SlabVarietyController extends AdminCrudController<SlabVariety> {
     return ApiResponse.ok(updated);
   }
 
+  @GetMapping("/{id}/delete-check")
+  public ApiResponse<Boolean> deleteVarietyCheck(@PathVariable Long id) {
+    permissionGuard.requirePermission(PERMISSION_PREFIX + ".delete");
+    if (!service.deleteVarietyCheck(id)) {
+      throw new com.zdm.platform.common.OperationBlockedException("记录不存在或已被删除");
+    }
+    return ApiResponse.ok(true);
+  }
+
   @Override
   @DeleteMapping("/{id}")
   public ApiResponse<Boolean> delete(@PathVariable Long id) {

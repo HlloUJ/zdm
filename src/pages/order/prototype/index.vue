@@ -366,6 +366,9 @@
   </div>
 </template>
 <script setup lang="ts">
+import { useOperationPreflight } from '@/composables/useOperationPreflight';
+import { ApiFieldError, OperationBlockedError } from '@/services/http';
+import { orderConfirmationBlock, requireOrderField } from './model';
 import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useRoute } from 'vue-router';
 import { storeScopeFingerprint } from '@/services/storeCacheCleanup';
@@ -443,6 +446,7 @@ import {
   type Log,
   type Status,
 } from './model';
+const operations = useOperationPreflight();
 const route = useRoute(),
   user = computed(() => getLoginUser());
 const context = computed<Context>(() => ({
@@ -726,6 +730,21 @@ function findOrder(id: string) {
   return o;
 }
 async function openAction(id: string, o?: Order, rid = '') {
+  if (id === 'confirm' && o) {
+    await operations.check(`confirm:${o.id}`, async () => {
+      await requireCurrentStoreScope();
+      demand(getUserFunctionAudience(user.value) === 'store' && can(id, o), '没有操作权限');
+      const reason = orderConfirmationBlock(state.value, findOrder(o.id));
+      if (reason) throw new OperationBlockedError(reason);
+    }, () => {
+      action.value = id;
+      recordId.value = rid;
+      actionOrderId.value = o.id;
+      actionVisible.value = true;
+    });
+    return;
+  }
+  operations.select(`${id}:${o?.id ?? ''}`);
   const openingScope = key.value;
   try {
     await requireCurrentStoreScope();
@@ -805,16 +824,16 @@ async function execute(f: ActionForm) {
       f.nature === existing?.nature &&
       f.paymentNameId === existing?.paymentNameId;
     if (kind === 'receipt' && !unchangedHistoricalName) {
-      demand(f.paymentNameId, '请选择款项名称');
+      requireOrderField(f.paymentNameId, 'nature', '请选择款项名称');
       const actionScope = key.value;
       const options = await listStorePaymentNameOptions();
       if (actionScope !== key.value) throw new Error('当前身份已变化，请重新操作');
       paymentNameOptions.value = options;
-      demand(
+      requireOrderField(
         options.some(
           (entry) => entry.id === f.paymentNameId && entry.version === f.paymentNameVersion && entry.name === f.nature,
         ),
-        '款项配置已变化，请重新选择',
+        'nature', '款项配置已变化，请重新选择',
       );
     }
     recordPayment(
@@ -1008,9 +1027,12 @@ async function addSetting() {
     await loadSettings();
   } catch (error) {
     if (scope !== key.value) return;
-    const message = error instanceof Error ? error.message : '保存失败';
-    settingFeedback.reject('name', settingName.value, message);
-    await rejectFormSubmission(settingDialog.value);
+    if (error instanceof ApiFieldError && error.field === 'name') {
+      settingFeedback.reject('name', settingName.value, error.message);
+      await rejectFormSubmission(settingDialog.value);
+    } else {
+      adminFeedback.actionError({ action: editing ? '修改' : '新增', error });
+    }
     await loadSettings();
   } finally {
     if (scope === key.value) settingsSaving.value = false;

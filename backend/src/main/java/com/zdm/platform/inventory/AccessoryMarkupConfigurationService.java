@@ -1,5 +1,7 @@
 package com.zdm.platform.inventory;
 
+import com.zdm.platform.common.OperationBlockedException;
+
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.zdm.platform.common.StoreLevelPricingDirectory;
 import com.zdm.platform.security.CurrentIdentity;
@@ -130,12 +132,16 @@ public class AccessoryMarkupConfigurationService {
 
   @Transactional
   public void deleteConfiguration(Long id) {
+    deleteConfigurationCheck(id);
+    mapper.deleteById(id);
+  }
+
+  public void deleteConfigurationCheck(Long id) {
     requirePlatformScope();
     requireConfiguration(id);
     if (priceSyncService.countAutoReferences(id) > 0) {
-      throw new IllegalArgumentException("该价格配置正在被配件价格使用，不能删除，请先停用");
+      throw new OperationBlockedException("该价格配置正在被配件价格使用，不能删除，请先停用");
     }
-    mapper.deleteById(id);
   }
 
   public AccessoryMarkupConfiguration requireConfiguration(Long id) {

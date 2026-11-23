@@ -59,6 +59,13 @@ public class SupplierSupplyTypeController {
     return ApiResponse.ok(service.updateStatus(id, request.status()));
   }
 
+  @GetMapping("/{id}/delete-check")
+  public ApiResponse<Boolean> deleteTypeCheck(@PathVariable Long id) {
+    permissionGuard.requirePermission(PREFIX + ".delete");
+    service.deleteTypeCheck(id);
+    return ApiResponse.ok(true);
+  }
+
   @DeleteMapping("/{id}")
   public ApiResponse<Boolean> delete(@PathVariable Long id) {
     permissionGuard.requirePermission(PREFIX + ".delete");

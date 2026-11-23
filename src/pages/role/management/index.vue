@@ -110,6 +110,7 @@
       action="删除"
       object-type="角色"
       :object-name="deletingRole?.name"
+      :loading="operations.pending(`delete:${deletingRole?.id}`)"
       @confirm="handleDeleteConfirm"
       @cancel="closeDeleteDialog"
       @close="closeDeleteDialog"
@@ -139,6 +140,8 @@
 </template>
 
 <script setup lang="ts">
+import { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';
+import { useOperationPreflight } from '@/composables/useOperationPreflight';
 import {
   formConfirmation,
   dialogButtonProps,
@@ -200,6 +203,7 @@ interface RolePermissionConfig {
   functionPermissions: string[];
 }
 
+const operations = useOperationPreflight();
 const roles = ref<RoleItem[]>([]);
 const loading = ref(false);
 const parsePermissions = (value?: string) => (value ? value.split(',').filter(Boolean) : []);
@@ -413,6 +417,7 @@ const handleSubmit = async () => {
 };
 
 const openDeleteConfirm = (row: RoleItem) => {
+  operations.select(`delete:${row.id}`);
   if (isStoreManagerRole(row)) return;
   if (isSuperAdminRole(row)) {
     adminFeedback.warning('超级管理员角色不可删除');
@@ -431,15 +436,19 @@ const handleDeleteConfirm = async () => {
   if (!deletingRole.value) return;
   const target = deletingRole.value;
 
-  try {
-    await deleteRole(target.id);
-    roles.value = roles.value.filter((item) => item.id !== target.id);
-    ensureCurrentPage();
-    closeDeleteDialog();
-    adminFeedback.deleted(target.name);
-  } catch (error) {
-    adminFeedback.error(error instanceof Error ? error.message : '操作失败');
-  }
+  await operations.execute(`delete:${target.id}`, async (current) => {
+    try {
+      await deleteRole(target.id);
+      if (!current()) return;
+      roles.value = roles.value.filter((item) => item.id !== target.id);
+      ensureCurrentPage();
+      closeDeleteDialog();
+      adminFeedback.deleted(target.name);
+    } catch (error) {
+      if (!current()) return;
+      adminFeedback.error(getSafeErrorMessage(error, '操作失败'));
+    }
+  });
 };
 
 const openPermissionDialog = (row: RoleItem) => {

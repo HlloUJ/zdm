@@ -6,12 +6,12 @@
 
 | 场景         | 组件/API                               | 文案原则                                                |
 | ------------ | -------------------------------------- | ------------------------------------------------------- |
-| 操作成功     | `adminFeedback.actionSuccess`          | 使用 `已 + 动作 + “对象名称”`，例如 `已停用“一级分类3”` |
+| 操作成功     | `adminFeedback.actionSuccess`          | 编辑保存沿用“修改成功”，其他操作使用 `已 + 动作 + “对象名称”`，例如 `已停用“一级分类3”` |
 | 操作失败     | `adminFeedback.error` / `actionError`  | 使用“动作失败：原因”，不展示 SQL、异常栈等内部细节      |
 | 风险提醒     | `adminFeedback.warning`                | 说明风险和下一步，不用成功色表达警告                    |
 | 普通信息     | `adminFeedback.info`                   | 仅用于无成功、失败或风险语义的信息                      |
-| 执行前确认   | `AdminConfirmDialog`，`mode="confirm"` | 标题和按钮写明动作，例如“确认删除”                      |
-| 业务规则阻断 | `AdminConfirmDialog`，`mode="blocked"` | 标题使用“无法 + 动作”，按钮统一为“我知道了”             |
+| 执行前确认   | `AdminConfirmDialog` | 标题和按钮写明动作，例如“确认删除”                      |
+| 业务规则阻断 | `adminFeedback.warning` | 首次点击说明具体原因，遵守[操作校验与反馈标准](ui/operation-feedback-standard.md) |
 | 页面持续状态 | `t-alert` 或表单校验                   | 不使用会自动消失的全局消息                              |
 
 ## 视觉和行为
@@ -24,7 +24,7 @@
 
 ## 使用示例
 
-存在明确操作对象时必须使用 `actionSuccess` 并传入对象名称；只有发送验证码、刷新列表等不存在单一对象的成功反馈，才使用 `adminFeedback.success`。
+编辑保存沿用“修改成功”。其他存在明确操作对象时必须使用 `actionSuccess` 并传入对象名称；只有发送验证码、刷新列表等不存在单一对象的成功反馈，才使用 `adminFeedback.success`。
 
 ```ts
 import { adminFeedback } from '@/components/foundation';

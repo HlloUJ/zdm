@@ -139,6 +139,13 @@ export const uid = () => `${Date.now().toString(36)}${Math.random().toString(36)
 export const now = () => new Date().toISOString();
 export const money = (amount: number) => `¥${amount.toFixed(2)}`;
 export const round = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
+export class OrderFieldError extends Error {
+  constructor(public readonly field: string, message: string) { super(message); }
+}
+
+export function requireOrderField(condition: unknown, field: string, message: string): asserts condition {
+  if (!condition) throw new OrderFieldError(field, message);
+}
 export function demand(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
 }
@@ -338,13 +345,18 @@ export function saveDraft(state: State, o: Order, c: Context, newCustomerReason 
   if (index < 0) state.orders.unshift(clone(o));
   else state.orders[index] = clone(o);
 }
-export function confirmOrder(state: State, o: Order, c: Context) {
-  demand(o.status === 'pending', '订单已确认');
+export function orderConfirmationBlock(state: State, o: Order) {
+  if (o.status !== 'pending') return '订单已确认';
   for (const l of o.lines) {
     const p = state.products.find((p) => p.sku === l.sku);
-    demand(p?.available, `${l.name}已下架，请移除或更换`);
-    demand(p.replenishable || freeStock(state, l.sku) >= l.quantity, `${l.name}可售库存不足，不能确认`);
+    if (!p?.available) return `${l.name}已下架，请移除或更换`;
+    if (!p.replenishable && freeStock(state, l.sku) < l.quantity) return `${l.name}可售库存不足，不能确认`;
   }
+  return '';
+}
+export function confirmOrder(state: State, o: Order, c: Context) {
+  const reason = orderConfirmationBlock(state, o);
+  demand(!reason, reason);
   const before = o.status;
   o.status = 'confirmed';
   o.confirmedAt = now();
@@ -372,21 +384,21 @@ export function recordPayment(o: Order, p: Payment, c: Context, replaceId?: stri
   demand(p.amount > 0 && p.method && p.at, '请填写金额、收退款渠道和实际时间');
   if (p.kind === 'receipt') {
     demand(o.status !== 'cancelled' || replaceId, '已取消订单不能新增收款');
-    demand(p.nature, '请选择款项名称');
-  } else demand(p.reason.trim(), '请输入退款原因');
+    requireOrderField(p.nature, 'nature', '请选择款项名称');
+  } else requireOrderField(p.reason.trim(), 'reason', '请输入退款原因');
   const before = clone(o.payments),
     next = clone(o.payments).filter((x) => x.id !== replaceId);
   next.push(p);
   const receipts = next.filter((x) => !x.voided && x.kind === 'receipt').reduce((n, x) => n + x.amount, 0),
     refunds = next.filter((x) => !x.voided && x.kind === 'refund').reduce((n, x) => n + x.amount, 0);
-  demand(refunds <= receipts, '累计退款不能超过有效已收款');
-  if (p.kind === 'receipt' && !replaceId) demand(receipts - refunds <= pricing(o).due, '净收款不能超过当前应收金额');
+  requireOrderField(refunds <= receipts, 'amount', '累计退款不能超过有效已收款');
+  if (p.kind === 'receipt' && !replaceId) requireOrderField(receipts - refunds <= pricing(o).due, 'amount', '净收款不能超过当前应收金额');
   o.payments = next;
   audit(o, c, replaceId ? '更正收退款' : p.kind === 'receipt' ? '登记收款' : '登记退款', before, next);
   settle(o);
 }
 export function voidPayment(o: Order, id: string, c: Context, reason: string) {
-  demand(reason.trim(), '请输入作废原因');
+  requireOrderField(reason.trim(), 'reason', '请输入作废原因');
   const p = o.payments.find((x) => x.id === id);
   demand(p && !p.voided, '记录不可作废');
   const before = clone(p);
@@ -396,25 +408,25 @@ export function voidPayment(o: Order, id: string, c: Context, reason: string) {
 export function planShipment(o: Order, plan: Plan, c: Context) {
   demand(['confirmed', 'shipped'].includes(o.status), '确认订单后才能安排发货');
   const line = o.lines.find((l) => l.sku === plan.sku);
-  demand(line, '请选择商品');
+  requireOrderField(line, 'sku', '请选择商品');
   const planned = o.plans
     .filter((p) => !p.voided && p.sku === line.sku)
     .reduce((n, p) => n + p.quantity - p.shipped, 0);
-  demand(
+  requireOrderField(
     Number.isInteger(plan.quantity) && plan.quantity > 0 && plan.quantity <= remaining(line) - planned,
-    '安排数量不能超过尚未安排的待发数量',
+    'quantity', '安排数量不能超过尚未安排的待发数量',
   );
   demand(
     plan.mode === 'pickup' || (plan.recipient.trim() && plan.phone.trim() && plan.address.trim()),
     '请填写收货人、电话和地址',
   );
-  if (plan.source === 'local') demand(plan.quantity <= line.reserved - planned, '不能发货尚未分配到库存的数量');
+  if (plan.source === 'local') requireOrderField(plan.quantity <= line.reserved - planned, 'quantity', '不能发货尚未分配到库存的数量');
   o.plans.push(plan);
   audit(o, c, plan.source === 'supply' ? '向供应链下单' : '安排本店发货', null, plan);
 }
 export function receivePlan(state: State, o: Order, p: Plan, qty: number, c: Context) {
   demand(!p.voided && p.source === 'supply' && p.route === 'store', '仅中转到店任务可以收货');
-  demand(Number.isInteger(qty) && qty > 0 && qty <= p.quantity - p.received, '收货数量超出剩余数量');
+  requireOrderField(Number.isInteger(qty) && qty > 0 && qty <= p.quantity - p.received, 'quantity', '收货数量超出剩余数量');
   const l = o.lines.find((l) => l.sku === p.sku)!;
   const lacking = Math.max(0, qty - l.reserved);
   if (lacking) {
@@ -428,12 +440,12 @@ export function receivePlan(state: State, o: Order, p: Plan, qty: number, c: Con
 export function shipPlan(state: State, o: Order, p: Plan, qty: number, at: string, c: Context) {
   demand(!p.voided, '安排已撤销');
   const l = o.lines.find((l) => l.sku === p.sku)!;
-  demand(
+  requireOrderField(
     Number.isInteger(qty) && qty > 0 && qty <= p.quantity - p.shipped && qty <= l.reserved,
-    '发货数量不能超过安排余量及已分配库存',
+    'quantity', '发货数量不能超过安排余量及已分配库存',
   );
   demand(p.route !== 'store' || p.source !== 'supply' || qty <= p.received - p.shipped, '先登记实际到店收货');
-  demand(at, '请选择实际发货时间');
+  requireOrderField(at, 'at', '请选择实际发货时间');
   p.shipped += qty;
   l.shipped += qty;
   l.reserved -= qty;

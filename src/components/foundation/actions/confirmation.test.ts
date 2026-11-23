@@ -94,9 +94,8 @@ describe('global execution button naming', () => {
       expect(onConfirm).toHaveBeenCalledTimes(1);
     });
   }
-  it('preserves simple confirmation descriptions, batch state, blocked close and hidden action behavior', async () => {
+  it('preserves simple confirmation descriptions, batch state, cancellation and hidden action behavior', async () => {
     const batch = ref(false);
-    const mode = ref<'confirm' | 'blocked'>('confirm');
     const onConfirm = vi.fn();
     const Host = {
       render: () =>
@@ -106,7 +105,6 @@ describe('global execution button naming', () => {
           action: '停用',
           description: '原有说明',
           batch: batch.value,
-          mode: mode.value,
           onConfirm,
         }),
     };
@@ -117,12 +115,8 @@ describe('global execution button naming', () => {
     batch.value = true;
     await nextTick();
     expect(dialog.props('confirmBtn')).toMatchObject({ content: '确认批量停用', theme: 'warning' });
-    mode.value = 'blocked';
-    await nextTick();
-    expect(dialog.props('confirmBtn')).toMatchObject({ content: '我知道了', theme: 'default' });
-    expect(dialog.props('cancelBtn')).toBeNull();
+    expect(dialog.props('cancelBtn')).toMatchObject({ content: '取消' });
     dialog.vm.$emit('confirm');
-    expect(wrapper.findComponent(AdminConfirmDialog).emitted('update:visible')).toEqual([[false]]);
     expect(onConfirm).toHaveBeenCalledTimes(1);
     const hidden = mount(
       { render: () => h(AdminConfirmDialog, { visible: false, function: 'close', action: '' }) },

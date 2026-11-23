@@ -284,6 +284,7 @@ for (const source of ['供应链', '运营端']) {
         });
       await page.route('**/api/admin/store-accessory-products**', (route) => {
         const path = new URL(route.request().url()).pathname;
+        if (path.endsWith('/41/shelf-check')) return route.fulfill({ json: ok(!unavailable) });
         if (path.endsWith('/all-batch-shelf')) {
           batchAttempts++;
           return route.fulfill({
@@ -398,7 +399,7 @@ for (const entry of ['门店详情']) {
   });
 }
 
-test('store submission race refreshes upstream overlay instead of an ordinary error', async ({ page }) => {
+test('store submission race reports the rejected shelf and refreshes the upstream overlay', async ({ page }) => {
   await storeLogin(page);
   let unavailable = false;
   const latest = () =>
@@ -408,6 +409,7 @@ test('store submission race refreshes upstream overlay instead of an ordinary er
     });
   await page.route('**/api/admin/store-accessory-products**', (route) => {
     const path = new URL(route.request().url()).pathname;
+    if (path.endsWith('/41/shelf-check')) return route.fulfill({ json: ok(!unavailable) });
     if (route.request().method() !== 'GET') {
       unavailable = true;
       return route.fulfill({
@@ -423,7 +425,7 @@ test('store submission race refreshes upstream overlay instead of an ordinary er
   await page.locator('.t-dialog:visible').getByRole('button', { name: '确认上架', exact: true }).click();
   await expect(main.locator('.source-unavailable-overlay')).toContainText('该商品已被运营端删除至回收站');
   await expect(page.locator('.t-dialog:visible')).toHaveCount(0);
-  await expect(page.getByText('上游商品不可用，只能查看或彻底删除', { exact: true })).toHaveCount(0);
+  await expect(page.locator('.t-message.t-is-error')).toContainText('上架失败：上游商品不可用，只能查看或彻底删除');
 });
 
 test('store price configuration separates category prices from role discounts', async ({ page }) => {

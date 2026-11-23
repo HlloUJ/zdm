@@ -80,6 +80,14 @@ public class ProductCategoryController extends AdminCrudController<ProductCatego
     return ApiResponse.ok(service.updateCategory(id, category));
   }
 
+  @GetMapping("/{id}/delete-check")
+  public ApiResponse<Boolean> deleteCategoryCheck(@PathVariable Long id) {
+    ProductCategory category = requireCategory(id);
+    requireCategoryPermission(category.getScope(), "delete");
+    service.deleteCategoryCheck(id);
+    return ApiResponse.ok(true);
+  }
+
   @Override
   @DeleteMapping("/{id}")
   public ApiResponse<Boolean> delete(@PathVariable Long id) {

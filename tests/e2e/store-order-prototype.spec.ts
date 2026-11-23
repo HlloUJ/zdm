@@ -412,6 +412,7 @@ test('payment configuration API failures never fall back to local names and can 
       return route.fulfill({
         status: 400,
         contentType: 'application/json',
+        headers: { 'X-Zdm-Invalid-Field': 'name' },
         body: JSON.stringify({ code: 400, message: '该名称已存在', data: null }),
       });
     return route.fallback();
@@ -420,6 +421,15 @@ test('payment configuration API failures never fall back to local names and can 
   await expect(dialog).toBeVisible();
   await expect(dialog.getByPlaceholder('请输入名称', { exact: true })).toHaveValue('十个字符名称测试文字');
   await expect(dialog.getByText('该名称已存在', { exact: true })).toBeVisible();
+  await dialog.getByPlaceholder('请输入名称', { exact: true }).fill('另一个名称');
+  await page.route('**/api/store/payment-names', (route) =>
+    route.fulfill({ status: 503, json: { code: 503, message: '款项服务暂不可用', data: null } }),
+    { times: 1 },
+  );
+  await dialog.getByRole('button', { name: '确认新增', exact: true }).click();
+  await expect(page.locator('.t-message.t-is-error')).toContainText('款项服务暂不可用');
+  await expect(dialog.locator('.t-is-error')).toHaveCount(0);
+  await expect(dialog.getByPlaceholder('请输入名称', { exact: true })).toHaveValue('另一个名称');
 });
 
 test('payment name changes during receipt entry require explicit reselection and retain the old label', async ({

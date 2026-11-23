@@ -1,5 +1,7 @@
 package com.zdm.platform.inventory;
 
+import com.zdm.platform.common.OperationBlockedException;
+
 import com.zdm.platform.account.CreatorAwareService;
 import com.zdm.platform.media.MediaAsset;
 import com.zdm.platform.media.MediaAssetService;
@@ -334,10 +336,10 @@ public class SlabInventoryService extends CreatorAwareService<SlabInventoryMappe
   private SlabInventory requireDeletable(Long id) {
     SlabInventory inventory = getById(id);
     if (inventory == null) {
-      throw new IllegalArgumentException("大板不存在或已被删除");
+      throw new OperationBlockedException("大板不存在或已被删除");
     }
     if (!Set.of("warehouse", "selling").contains(inventory.getStatus())) {
-      throw new IllegalArgumentException("只有仓库中或已上架的大板可以删除");
+      throw new OperationBlockedException("只有仓库中或已上架的大板可以删除");
     }
     return inventory;
   }
@@ -364,7 +366,7 @@ public class SlabInventoryService extends CreatorAwareService<SlabInventoryMappe
       if ("purge".equals(action)) {
         if (lifecycle.isSupplyChain() ? !"recycle".equals(state)
             : Boolean.TRUE.equals(item.getOperationsDeleted()) || (!"recycle".equals(state) && !item.isSourceUnavailable())) {
-          throw new IllegalArgumentException("只有回收站或来源已删除的大板可以彻底删除");
+          throw new OperationBlockedException("只有回收站或来源已删除的大板可以彻底删除");
         }
         continue;
       }
@@ -522,7 +524,7 @@ public class SlabInventoryService extends CreatorAwareService<SlabInventoryMappe
       default -> false;
     };
     if (!allowed) {
-      throw new IllegalArgumentException("当前大板状态不允许执行此操作");
+      throw new OperationBlockedException("当前大板状态不允许执行此操作");
     }
     if ("selling".equals(targetStatus)) {
       validateReadyForShelf(inventory);
@@ -544,7 +546,7 @@ public class SlabInventoryService extends CreatorAwareService<SlabInventoryMappe
         || inventory.getLengthMm() == null
         || inventory.getWidthMm() == null
         || inventory.getThicknessMm() == null) {
-      throw new IllegalArgumentException("请完善大板基础信息后再上架");
+      throw new OperationBlockedException("请完善大板基础信息后再上架");
     }
     if (inventory.getCostPrice() == null
         || inventory.getCostPrice().signum() < 0
@@ -552,7 +554,7 @@ public class SlabInventoryService extends CreatorAwareService<SlabInventoryMappe
         || inventory.getGuidePrice().signum() < 0
         || inventory.getGuidePriceCoefficient() == null
         || inventory.getGuidePriceCoefficient().signum() < 0) {
-      throw new IllegalArgumentException("请完善大板价格后再上架");
+      throw new OperationBlockedException("请完善大板价格后再上架");
     }
     priceService.requireCompletePrices(inventory.getId());
   }
@@ -612,7 +614,7 @@ public class SlabInventoryService extends CreatorAwareService<SlabInventoryMappe
     for (BigDecimal measurement : measurements) {
       if (measurement != null
           && (measurement.signum() <= 0 || measurement.stripTrailingZeros().scale() > 2)) {
-        throw new IllegalArgumentException("尺寸和扣角必须是大于0且最多2位小数的数字");
+        throw new OperationBlockedException("尺寸和扣角必须是大于0且最多2位小数的数字");
       }
     }
   }
@@ -641,7 +643,7 @@ public class SlabInventoryService extends CreatorAwareService<SlabInventoryMappe
           inventory.getVideoCoverMediaId(), existing == null ? null : existing.getVideoCoverMediaId(),
           "image", "商品视频封面不存在");
     } else if (inventory.getVideoCoverMediaId() != null) {
-      throw new IllegalArgumentException("商品视频不存在");
+      throw new OperationBlockedException("商品视频不存在");
     }
   }
 

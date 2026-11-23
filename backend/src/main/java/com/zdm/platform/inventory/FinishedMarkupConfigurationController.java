@@ -71,6 +71,13 @@ public class FinishedMarkupConfigurationController {
     return ApiResponse.ok(service.updateStatus(id, request.status()));
   }
 
+  @GetMapping("/{id}/delete-check")
+  public ApiResponse<Boolean> deleteConfigurationCheck(@PathVariable Long id) {
+    permissionGuard.requirePermission(permission("delete"));
+    service.deleteConfigurationCheck(id);
+    return ApiResponse.ok(true);
+  }
+
   @DeleteMapping("/{id}")
   public ApiResponse<Boolean> delete(@PathVariable Long id) {
     permissionGuard.requirePermission(permission("delete"));

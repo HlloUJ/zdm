@@ -49,3 +49,6 @@ export function deleteSlabVariety(id: number) {
     method: 'DELETE',
   });
 }
+
+export const checkSlabVarietyDelete = (id: number) =>
+  request<boolean>(`/admin/slab-varieties/${id}/delete-check`);

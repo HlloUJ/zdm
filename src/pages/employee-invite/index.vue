@@ -117,6 +117,8 @@
 </template>
 
 <script setup lang="ts">
+import { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';
+import { useOperationPreflight } from '@/composables/useOperationPreflight';
 import { confirmationText, operationConfirmation } from '@/components/foundation/actions/confirmation';
 import { buttonTheme } from '@/components/foundation/actions/buttonFunctions';
 import { rejectFormSubmission } from '@/utils/submitValidation';
@@ -228,20 +230,25 @@ const normalizeVerifyCode = (value: unknown) => {
     .slice(0, 6);
 };
 
+const formOperation = useOperationPreflight(() => token.value);
+formOperation.onInvalidate(() => { requestingCode.value = false; });
 const sendCode = async () => {
   if (countDown.value > 0 || requestingCode.value || submitting.value) return;
-  const validateResult = await phoneFormRef.value?.validate({ fields: ['phone'] });
-  if (validateResult !== true) return rejectFormSubmission(phoneFormRef.value);
-
+  const current = formOperation.capture();
   requestingCode.value = true;
   try {
+    const validateResult = await phoneFormRef.value?.validate({ fields: ['phone'] });
+    if (!current()) return;
+    if (validateResult !== true) return rejectFormSubmission(phoneFormRef.value);
     await requestEmployeeInviteCode(token.value, { phone: phoneForm.phone });
+    if (!current()) return;
     startCounter();
     adminFeedback.success('验证码已发送');
   } catch (error) {
-    adminFeedback.error(error instanceof Error ? error.message : '验证码获取失败');
+    if (!current()) return;
+    adminFeedback.error(getSafeErrorMessage(error, '验证码获取失败'));
   } finally {
-    requestingCode.value = false;
+    if (current()) requestingCode.value = false;
   }
 };
 

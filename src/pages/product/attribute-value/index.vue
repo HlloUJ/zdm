@@ -123,6 +123,7 @@
       :action="confirmType === 'delete' ? '删除' : confirmType === 'disable' ? '停用' : '启用'"
       object-type="属性值"
       :object-name="confirmTarget?.name"
+      :loading="operations.pending(`${confirmType}:${confirmTarget?.id}`)"
       @confirm="handleConfirm"
       @cancel="closeConfirmDialog"
       @close="closeConfirmDialog"
@@ -133,6 +134,8 @@
 </template>
 
 <script setup lang="ts">
+import { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';
+import { useOperationPreflight } from '@/composables/useOperationPreflight';
 import { formConfirmation } from '@/components/foundation/actions/confirmation';
 import { buttonTheme, buttonFunctionFor } from '@/components/foundation/actions/buttonFunctions';
 import { rejectFormSubmission } from '@/utils/submitValidation';
@@ -197,6 +200,8 @@ const resolveScope = (value: unknown): Scope =>
     : ((attributeOptions.value.find((item) => item.code === initialAttribute)?.scope ?? 'shared') as Scope);
 const initialScope = resolveScope(route.query.scope);
 const activeScope = ref<Scope>(initialScope);
+const operations = useOperationPreflight(() => activeScope.value);
+
 const lockedScope = computed(
   () => route.query.scope === 'finished' || route.query.scope === 'accessory' || route.query.scope === 'shared',
 );
@@ -390,11 +395,13 @@ const submit = async () => {
   }
 };
 const openStatusConfirm = (row: Value) => {
+  operations.select(`status:${row.id}`);
   confirmTarget.value = row;
   confirmType.value = row.status === 'enabled' ? 'disable' : 'enable';
   confirmDialogVisible.value = true;
 };
 const openDeleteConfirm = (row: Value) => {
+  operations.select(`delete:${row.id}`);
   confirmTarget.value = row;
   confirmType.value = 'delete';
   confirmDialogVisible.value = true;
@@ -412,30 +419,36 @@ const handleConfirm = async () => {
   const target = confirmTarget.value;
   const action = confirmType.value === 'delete' ? '删除' : confirmType.value === 'enable' ? '启用' : '停用';
 
-  try {
-    if (confirmType.value === 'delete') {
-      await deleteProductAttributeValue(target.id);
-      data.value = data.value.filter((item) => item.id !== target.id);
-      ensureCurrentPage();
-    } else {
-      const updated = await updateProductAttributeValueStatus(
-        target.id,
-        confirmType.value === 'enable' ? 'enabled' : 'disabled',
-      );
-      const targetIndex = data.value.findIndex((item) => item.id === target.id);
-      if (targetIndex !== -1) {
-        data.value.splice(targetIndex, 1, toValue(updated));
+  const operationType = confirmType.value;
+  await operations.execute(`${operationType}:${target.id}`, async (current) => {
+    try {
+      if (operationType === 'delete') {
+        await deleteProductAttributeValue(target.id);
+        if (!current()) return;
+        data.value = data.value.filter((item) => item.id !== target.id);
+        ensureCurrentPage();
+      } else {
+        const updated = await updateProductAttributeValueStatus(
+          target.id,
+          operationType === 'enable' ? 'enabled' : 'disabled',
+        );
+        if (!current()) return;
+        const targetIndex = data.value.findIndex((item) => item.id === target.id);
+        if (targetIndex !== -1) {
+          data.value.splice(targetIndex, 1, toValue(updated));
+        }
       }
+      if (operationType === 'delete') {
+        adminFeedback.deleted(target.name);
+      } else {
+        adminFeedback.actionSuccess({ action, target: target.name });
+      }
+      closeConfirmDialog();
+    } catch (error) {
+      if (!current()) return;
+      adminFeedback.error(getSafeErrorMessage(error, '操作失败'));
     }
-    if (confirmType.value === 'delete') {
-      adminFeedback.deleted(target.name);
-    } else {
-      adminFeedback.actionSuccess({ action, target: target.name });
-    }
-    closeConfirmDialog();
-  } catch (error) {
-    adminFeedback.error(error instanceof Error ? error.message : '操作失败');
-  }
+  });
 };
 watch(
   () => route.query.scope,
@@ -452,6 +465,10 @@ watch(activeScope, () => {
   pagination.current = 1;
 });
 onMounted(loadValues);
+operations.onInvalidate(() => {
+  confirmDialogVisible.value = false;
+  confirmTarget.value = null;
+});
 </script>
 
 <style scoped>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useOperationPreflight } from '@/composables/useOperationPreflight';
 import { buttonTheme } from '@/components/foundation/actions/buttonFunctions';
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import type { PageInfo } from 'tdesign-vue-next';
@@ -29,6 +30,7 @@ import ApprovedCategoryPanel from './components/SelectionCategoryPanel.vue';
 import FilterGlyph from './components/FilterGlyph.vue';
 import SelectionDetail from './components/SelectionDetail.vue';
 import './selection-center.css';
+const operations = useOperationPreflight();
 const route = useRoute(),
   router = useRouter();
 const view = computed(() => (route.query.view === 'basket' ? 'basket' : 'browse'));
@@ -246,20 +248,22 @@ async function remove(id: number | null) {
   if (!context.value || id == null) return;
   const owner = context.value.key;
   const removed = basketItems.value.find((item) => item.selectionId === id);
-  try {
-    await removeCenterSelection(owner, id);
-    if (context.value?.key !== owner) return;
-    if (removed) {
-      basketItems.value = basketItems.value.filter((item) => item.selectionId !== id);
-      basketTotal.value = Math.max(0, basketTotal.value - 1);
-      counts.value[removed.type] = Math.max(0, counts.value[removed.type] - 1);
-      for (const item of products.value) if (keyOf(item) === keyOf(removed)) item.inSelection = false;
-      if (detail.value && keyOf(detail.value.product) === keyOf(removed)) detail.value.product.inSelection = false;
+  await operations.execute(`remove:${owner}:${id}`, async (current) => {
+    try {
+      await removeCenterSelection(owner, id);
+      if (!current() || context.value?.key !== owner) return;
+      if (removed) {
+        basketItems.value = basketItems.value.filter((item) => item.selectionId !== id);
+        basketTotal.value = Math.max(0, basketTotal.value - 1);
+        counts.value[removed.type] = Math.max(0, counts.value[removed.type] - 1);
+        for (const item of products.value) if (keyOf(item) === keyOf(removed)) item.inSelection = false;
+        if (detail.value && keyOf(detail.value.product) === keyOf(removed)) detail.value.product.inSelection = false;
+      }
+      await loadBasket(true);
+    } catch (e) {
+      if (current()) mutationFailed(e);
     }
-    await loadBasket(true);
-  } catch (e) {
-    mutationFailed(e);
-  }
+  });
 }
 const pendingKey = () => `zdm-selection-join:${context.value?.key}`;
 async function submit() {
@@ -717,7 +721,7 @@ onBeforeUnmount(() => {
                   </div>
                 </div>
                 <div class="basket-price">¥ {{ centerPrice(p) }}</div>
-                <t-link hover="color" :theme="buttonTheme('remove')" @click.stop="remove(p.selectionId)">移除</t-link>
+                <t-link hover="color" :theme="buttonTheme('remove')" :disabled="operations.pending(`remove:${context?.key}:${p.selectionId}`)" @click.stop="remove(p.selectionId)">移除</t-link>
               </div>
 
               <t-empty v-if="!activeBasketItems.length" description="尚未选择该类型商品" />

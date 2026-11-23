@@ -1,5 +1,7 @@
 package com.zdm.platform.inventory;
 
+import com.zdm.platform.common.OperationBlockedException;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
@@ -360,24 +362,7 @@ public class StoreFinishedProductService {
     if ("purged".equals(target)) {
       return purge(store, listing, source);
     }
-    if (invalidated(listing) || !isUsable(source)) {
-      throw new IllegalArgumentException(sourceMessage(listing, source));
-    }
-    if ("selling".equals(current) && stock(source) == 0) {
-      throw new IllegalArgumentException("统一库存已售完，不能改变商品状态");
-    }
-    boolean allowed = switch (current) {
-      case "warehouse" -> List.of("selling", "recycle").contains(target);
-      case "selling" -> List.of("offShelf", "recycle").contains(target);
-      case "recycle" -> "warehouse".equals(target);
-      default -> false;
-    };
-    if (!allowed) {
-      throw new IllegalArgumentException("当前门店商品状态不允许此操作");
-    }
-    if ("selling".equals(target)) {
-      requireReadyToSell(store, id, source);
-    }
+    checkTransition(store, id, listing, source, target);
     if ("offShelf".equals(target) && (reason == null || reason.isBlank())) {
       throw new IllegalArgumentException("请选择下架原因");
     }
@@ -411,6 +396,37 @@ public class StoreFinishedProductService {
     log(store, id, number(listing.get("finished_product_id")), (String) source.get("name"),
         type, summary, current, nextState, changes);
     return detail(id);
+  }
+
+  @Transactional(readOnly = true)
+  public void checkShelf(Long id) {
+    var store = scopes.require();
+    var listing = listing(store, id, false);
+    var source = source(number(listing.get("finished_product_id")), false);
+    checkTransition(store, id, listing, source, "selling");
+  }
+
+  private void checkTransition(CityPartnerStoreScope.Store store, Long id, Map<String,Object> listing,
+      Map<String,Object> source, String target) {
+    String current = (String) listing.get("status");
+    if (invalidated(listing) || !isUsable(source)) {
+      throw new OperationBlockedException(sourceMessage(listing, source));
+    }
+    if ("selling".equals(current) && stock(source) == 0) {
+      throw new OperationBlockedException("统一库存已售完，不能改变商品状态");
+    }
+    boolean allowed = switch (current) {
+      case "warehouse" -> List.of("selling", "recycle").contains(target);
+      case "selling" -> List.of("offShelf", "recycle").contains(target);
+      case "recycle" -> "warehouse".equals(target);
+      default -> false;
+    };
+    if (!allowed) {
+      throw new OperationBlockedException("当前门店商品状态不允许此操作");
+    }
+    if ("selling".equals(target)) {
+      requireReadyToSell(store, id, source);
+    }
   }
 
   @Transactional
@@ -800,18 +816,24 @@ public class StoreFinishedProductService {
 
   private void requireReadyToSell(CityPartnerStoreScope.Store store, Long listingId,
       Map<String, Object> source) {
-    if (stock(source) <= 0) { throw new IllegalArgumentException("统一库存已售完，不能上架"); }
+    if (stock(source) <= 0) { throw new OperationBlockedException("统一库存已售完，不能上架"); }
     ProductView view = view(store, listing(store, listingId, false));
+    boolean missingPrices = view.skus().stream().anyMatch(sku -> sku.salePrice() == null || sku.saleCoefficient() == null);
+    var categoryContext = salePrices.context(store.storeId(), List.of(listingId));
+    try {
+      salePrices.requireCategory(categoryContext, view.storeCategoryId());
+    } catch (OperationBlockedException blocked) {
+      if (missingPrices) throw new OperationBlockedException("请先选择门店分类并完善商品售价后再上架");
+      if (view.storeCategoryId() == null) throw new OperationBlockedException("请先选择门店分类后再上架");
+      throw blocked;
+    }
     List<SkuPrice> sellableSkus = view.skus().stream()
         .filter(sku -> sku.stock() != null && sku.stock() > 0).toList();
     if (sellableSkus.isEmpty() || sellableSkus.stream().anyMatch(sku ->
         sku.costPrice() == null || sku.guidePrice() == null)) {
-      throw new IllegalArgumentException("请先完善每条可售规格的成本价和指导价");
+      throw new OperationBlockedException("请先完善每条可售规格的成本价和指导价");
     }
-    salePrices.requireCategory(salePrices.context(store.storeId(), List.of(listingId)), view.storeCategoryId());
-    if (view.skus().stream().anyMatch(sku -> sku.salePrice() == null || sku.saleCoefficient() == null)) {
-      throw new IllegalArgumentException("请先完善每条可售规格的商品售价");
-    }
+    if (missingPrices) throw new OperationBlockedException("请先完善商品售价后再上架");
   }
 
   private String sourceMessage(Map<String, Object> listing, Map<String, Object> source) {
