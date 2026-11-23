@@ -488,7 +488,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div id="selection-center-app" class="selection-center-shell selection-center">
+  <div id="selection-center-app" class="selection-center-shell selection-center" :data-view="view">
     <div class="chrome-reserve" :style="compactChrome ? { height: expandedChromeHeight + 'px' } : undefined">
       <div ref="chromeRef" :class="['sticky-chrome', { 'is-compact': compactChrome }]">
         <div v-if="compactChrome" class="compact-brand">

@@ -352,23 +352,47 @@ test('identity storage change clears old scope without submitting it to the new 
   await expect(page.locator('.t-alert')).toContainText('当前身份或门店已变更，请重新打开选品中心');
   expect(requests.filter((r) => r.path === '/join-batches')).toHaveLength(0);
 });
+const basketViewports = [{ width: 1440, height: 900 }, { width: 640, height: 800 }];
+
+async function expectWhiteBasketBottom(page: Page, height: number) {
+  const shell = page.locator('#selection-center-app');
+  await expect(shell).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await expect.poll(() => shell.evaluate((element) => {
+    const { clientWidth, clientHeight } = document.documentElement;
+    const edge = document.elementFromPoint(2, clientHeight - 1);
+    return {
+      bottom: Math.round(element.getBoundingClientRect().bottom),
+      coversLastPixel: element.contains(document.elementFromPoint(clientWidth / 2, clientHeight - 1)),
+      edgeColor: edge && getComputedStyle(edge).backgroundColor,
+    };
+  })).toEqual({ bottom: height, coversLastPixel: true, edgeColor: 'rgb(255, 255, 255)' });
+}
+
 test('an entirely empty basket fills the viewport with its white background', async ({ page }) => {
   await fixture(page);
   await page.goto('/store/selection-center?view=basket');
-  const shell = page.locator('#selection-center-app');
   await expect(page.getByText('选品清单还是空的', { exact: true })).toBeVisible();
-  await expect(shell).toHaveCSS('background-color', 'rgb(255, 255, 255)');
-
-  for (const viewport of [{ width: 1440, height: 900 }, { width: 640, height: 800 }]) {
+  for (const viewport of basketViewports) {
     await page.setViewportSize(viewport);
-    await expect.poll(() => shell.evaluate((element) => {
-      const { clientWidth, clientHeight } = document.documentElement;
-      return {
-        bottom: element.getBoundingClientRect().bottom,
-        coversLastPixel: element.contains(document.elementFromPoint(clientWidth / 2, clientHeight - 1)),
-      };
-    })).toEqual({ bottom: viewport.height, coversLastPixel: true });
+    await expectWhiteBasketBottom(page, viewport.height);
   }
+});
+
+test('a one-item basket fills the viewport in both the populated and empty product type', async ({ page }) => {
+  const writes = await fixture(page, { basket: true, catalogCount: 1 });
+  await page.goto('/store/selection-center?view=basket');
+  await expect(page.locator('.basket-row')).toHaveCount(1);
+  await expect(page.locator('.summary-total')).toContainText('1');
+  for (const [label, rowCount] of [['成品现货（1）', 1], ['配件（0）', 0]] as const) {
+    await page.getByText(label, { exact: true }).click();
+    await expect(page.locator('.basket-row')).toHaveCount(rowCount);
+    for (const viewport of basketViewports) {
+      await page.setViewportSize(viewport);
+      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+      await expectWhiteBasketBottom(page, viewport.height);
+    }
+  }
+  expect(writes).toHaveLength(0);
 });
 
 test('empty type hides headings and pagination while other type stays in summary', async ({ page }) => {

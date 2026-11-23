@@ -15821,6 +15821,11 @@
           "reason": "User task 134 review: page loading must be centered above page content using native fullscreen indicator.",
           "before": "<t-loading :loading=\"loading\" size=\"small\" />",
           "after": "<t-loading :loading=\"loading\" fullscreen size=\"small\" />"
+        },
+        {
+          "reason": "003 验收反馈：选品清单视图的白色背景铺满窗口，覆盖少量商品、空清单以及当前类型为空的状态。",
+          "before": "  <div id=\"selection-center-app\" class=\"selection-center-shell selection-center\">\n",
+          "after": "  <div id=\"selection-center-app\" class=\"selection-center-shell selection-center\" :data-view=\"view\">\n"
         }
       ],
       "approvedBusinessPatches": [
@@ -15927,9 +15932,9 @@
       "designReference": "selection-center-v24",
       "approvedVisualPatches": [
         {
-          "reason": "003 验收反馈：整份选品清单为空时，白色页面铺满当前窗口。",
+          "reason": "003 验收反馈：选品清单视图的白色背景铺满窗口，覆盖少量商品、空清单以及当前类型为空的状态。",
           "before": ".selection-center {\n  min-height: calc(100dvh - 56px);\n}\n",
-          "after": ".selection-center {\n  min-height: calc(100dvh - 56px);\n}\n.selection-center:has(.basket-empty) {\n  min-height: 100dvh;\n}\n"
+          "after": ".selection-center {\n  min-height: calc(100dvh - 56px);\n}\n.selection-center[data-view='basket'] {\n  min-height: 100dvh;\n}\n"
         }
       ]
     }
