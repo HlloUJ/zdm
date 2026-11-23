@@ -1,6 +1,6 @@
 import { expect, type Locator } from '@playwright/test';
 
-export async function clickOpenedDialogConfirmation(dialog: Locator, label: string) {
+export async function clickOpenedDialogConfirmation(dialog: Locator, label: string | RegExp) {
   const context = dialog.locator(
     'xpath=ancestor::*[contains(concat(" ", normalize-space(@class), " "), " t-dialog__ctx ")][1]',
   );
