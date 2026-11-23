@@ -16,6 +16,7 @@ async function fixture(
     singleSpecs?: boolean;
     descriptionMedia?: 'image' | 'video';
     thumbnailRatios?: boolean;
+    beforeDetailResponse?: () => Promise<void>;
     failMutation?: 'add' | 'remove' | 'join';
   } = {},
 ) {
@@ -127,6 +128,7 @@ async function fixture(
     if (path.startsWith('/products/')) {
       const id = Number(path.split('/').pop()),
         product = project(rows.find((r) => r.id === id)!);
+      await options.beforeDetailResponse?.();
       return route.fulfill({
         json: ok({
           product,
@@ -1330,6 +1332,36 @@ for (const change of ['search', 'type', 'store'] as const) {
     await expect.poll(() => page.evaluate(() => scrollY)).toBe(0);
   });
 }
+
+test('a detail read started before the first add keeps the confirmed selection', async ({ page }) => {
+  let entered!: () => void;
+  let release!: () => void;
+  const requested = new Promise<void>((resolve) => { entered = resolve; });
+  const held = new Promise<void>((resolve) => { release = resolve; });
+  const writes = await fixture(page, {
+    beforeDetailResponse: async () => { entered(); await held; },
+  });
+  await page.goto('/store/selection-center?view=browse');
+  const card = page.locator('.product-card').first();
+  const add = card.getByRole('button', { name: '加入清单', exact: true });
+  await card.click();
+  await requested;
+  try {
+    await add.click();
+    await expect(page.locator('.header-tools .t-badge')).toContainText('1');
+    await expect(add).toBeDisabled();
+  } finally {
+    release();
+  }
+
+  const drawer = page.locator('.t-drawer--open');
+  await expect(drawer.getByText('已加入选品清单', { exact: true })).toBeVisible();
+  await expect(drawer.getByRole('button', { name: '加入清单', exact: true })).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await expect(card.getByText('已加入选品清单', { exact: true })).toBeVisible();
+  await expect(add).toBeDisabled();
+  expect(writes.filter((request) => request.path === '/selection')).toHaveLength(1);
+});
 
 for (const entry of ['card', 'detail'] as const) {
   test(`a concurrent colleague selection updates the ${entry} without crediting the current employee`, async ({ page }) => {

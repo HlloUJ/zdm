@@ -250,6 +250,51 @@ async function openSelectionCenter(page: Page) {
   await expect(page.locator('.t-dialog:visible')).toHaveCount(0);
   return center;
 }
+test('first add from the management popup stays selected after a late focus refresh', async ({ page }) => {
+  await storeLogin(page);
+  await page.route('**/api/admin/store-finished-products**', (route) => route.fulfill({ json: ok([]) }));
+  const fixture = await selectionCenterFixture(page, { count: 2 });
+  await page.goto(productWarehouseUrl('/store/finished-stock-management'));
+
+  const catalog = (url: URL) => url.pathname === '/api/admin/store-product-center/products';
+  const initial = page.context().waitForEvent('response', (response) => catalog(new URL(response.url())));
+  const center = await openSelectionCenter(page);
+  const cards = center.locator('.product-card');
+  await expect(cards).toHaveCount(2);
+  const snapshot = await (await initial).json() as { data: { records: CenterProduct[] } };
+  snapshot.data.records[1].name = '焦点刷新后的商品';
+
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => { release = resolve; });
+  await center.route(catalog, async (route) => {
+    await held;
+    await route.fulfill({ json: snapshot });
+  }, { times: 1 });
+  const refreshing = center.waitForRequest((request) => catalog(new URL(request.url())));
+  await center.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await refreshing;
+
+  const first = cards.first();
+  const add = first.getByRole('button', { name: '加入清单', exact: true });
+  try {
+    await add.click();
+    await expect(center.locator('.header-tools .t-badge')).toContainText('1');
+    await expect(first.getByText('已加入选品清单', { exact: true })).toBeVisible();
+    await expect(add).toBeDisabled();
+  } finally {
+    release();
+  }
+  await expect(cards.nth(1).getByText('焦点刷新后的商品', { exact: true })).toBeVisible();
+  await expect(first.getByText('已加入选品清单', { exact: true })).toBeVisible();
+  await expect(add).toBeDisabled();
+  expect(fixture.writes()).toBe(1);
+
+  await cards.nth(1).getByRole('button', { name: '加入清单', exact: true }).click();
+  await expect(cards.nth(1).getByText('已加入选品清单', { exact: true })).toBeVisible();
+  await expect(center.locator('.header-tools .t-badge')).toContainText('2');
+  expect(fixture.writes()).toBe(2);
+});
+
 for (const displayMode of ['single', 'layered'] as const) {
   test(`${displayMode} selection center opens separately and shows store prices and read-only details without supply costs`, async ({
     page,

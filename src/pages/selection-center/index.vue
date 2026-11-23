@@ -105,6 +105,13 @@ let scopeVersion = 0;
 let contextSequence = 0, detailSequence = 0, basketSequence = 0, browseSequence = 0;
 let nextBrowsePage = 1;
 let retryRefresh = false;
+type SelectionState = Pick<CenterProduct, 'inSelection' | 'selectedByName'>;
+const pendingProductReads = new Set<Map<string, SelectionState>>();
+function trackProductRead() {
+  const confirmed = new Map<string, SelectionState>();
+  pendingProductReads.add(confirmed);
+  return confirmed;
+}
 function clearBrowse() {
   ++browseSequence;
   ++detailSequence;
@@ -118,6 +125,7 @@ function clearBrowse() {
 }
 function clearData() {
   ++scopeVersion;
+  pendingProductReads.clear();
   clearBrowse();
   ++basketSequence;
   result.value = null;
@@ -150,6 +158,7 @@ async function loadBrowse(refresh = false) {
   const last = refresh ? Math.max(1, nextBrowsePage - 1) : first;
   const rows = first === 1 ? [] : [...products.value];
   const seen = new Set(rows.map(keyOf));
+  const confirmed = trackProductRead();
   try {
     for (let page = first; page <= last; page++) {
       const data = await centerProducts(owner, {
@@ -171,6 +180,9 @@ async function loadBrowse(refresh = false) {
       }
       const hasMore = data.records.length === browseBatchSize && page * browseBatchSize < data.total;
       if (page === last || !hasMore) {
+        if (confirmed.size) {
+          for (const row of rows) Object.assign(row, confirmed.get(keyOf(row)));
+        }
         products.value = rows;
         browseTotal.value = data.total;
         nextBrowsePage = page + 1;
@@ -183,6 +195,7 @@ async function loadBrowse(refresh = false) {
     if (e instanceof ApiError && (e.status === 401 || e.status === 403)) fail(e);
     else browseError.value = getSafeErrorMessage(e, '加载失败，请重试');
   } finally {
+    pendingProductReads.delete(confirmed);
     if (seq === browseSequence) browseBusy.value = false;
   }
 }
@@ -261,13 +274,17 @@ function updateProduct(product: CenterProduct, changes: Partial<CenterProduct>) 
 async function openDetail(p: CenterProduct) {
   if (!context.value) return;
   const seq = ++detailSequence;
+  const confirmed = trackProductRead();
   try {
     const response = await centerDetail(context.value.key, p.type, p.id);
     if (seq !== detailSequence) return;
+    Object.assign(response.product, confirmed.get(keyOf(p)));
     updateProduct(p, response.product);
     detail.value = response;
   } catch (e) {
     if (seq === detailSequence) fail(e);
+  } finally {
+    pendingProductReads.delete(confirmed);
   }
 }
 async function add(p: CenterProduct) {
@@ -277,12 +294,12 @@ async function add(p: CenterProduct) {
   try {
     const mine = await addCenterSelection(owner, p.type, p.id);
     if (version !== scopeVersion) return;
-    if (mine) {
-      updateProduct(p, { inSelection: true, selectedByName: null });
-    } else {
-      const latest = await centerDetail(owner, p.type, p.id);
-      if (version !== scopeVersion) return;
-      updateProduct(p, latest.product);
+    const changes = mine ? { inSelection: true, selectedByName: null } : (await centerDetail(owner, p.type, p.id)).product;
+    if (version !== scopeVersion) return;
+    updateProduct(p, changes);
+    // A read started before this write can still return the previous holder.
+    for (const read of pendingProductReads) {
+      read.set(keyOf(p), { inSelection: changes.inSelection, selectedByName: changes.selectedByName });
     }
     await loadBasket(true);
   } catch (e) {
