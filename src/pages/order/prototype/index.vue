@@ -583,7 +583,7 @@ const filterDraft = ref<FilterValues>({}),
   pageSize = ref(10);
 const detailPagination = ref({ current: 1, pageSize: 5 });
 const fulfillmentPagination = ref({ current: 1, pageSize: 10 });
-const settingsPagination = ref({ current: 1, pageSize: 10 });
+const settingsPagination = ref({ current: 1, pageSize: 10, pageSizeOptions: [10, 20, 50] });
 async function updateListPagination(pagination: { current: number; pageSize: number }, info: PageInfo) {
   if (pagination.current === info.current && pagination.pageSize === info.pageSize) return;
   await runScopedRead(() => {

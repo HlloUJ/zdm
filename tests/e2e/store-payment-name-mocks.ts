@@ -1,8 +1,18 @@
 import type { Page } from '@playwright/test';
 import type { StorePaymentName } from '../../src/services/storePaymentNames';
-export async function installPaymentNameMocks(page: Page) {
+export async function installPaymentNameMocks(page: Page, initialNames: string[] = []) {
   let id = 0;
-  const rows: StorePaymentName[] = [];
+  const makeRow = (name: string): StorePaymentName => ({
+    id: String(++id),
+    name,
+    enabled: true,
+    version: 1,
+    createdBy: 7,
+    createdByName: '原型导购',
+    createdAt: `2026-11-06T10:00:${String(id % 60).padStart(2, '0')}`,
+    updatedAt: '2026-11-06T10:00:00',
+  });
+  const rows = initialNames.map(makeRow);
   await page.route('**/api/store/payment-names**', async (route) => {
     const request = route.request(),
       url = new URL(request.url());
@@ -26,16 +36,7 @@ export async function installPaymentNameMocks(page: Page) {
       if (!body?.name?.trim() || Array.from(body.name.trim()).length > 10)
         return reply(null, '名称不能超过10个字符', 400);
       if (rows.some((row) => row.name === body.name?.trim())) return reply(null, '该名称已存在', 400);
-      const row: StorePaymentName = {
-        id: String(++id),
-        name: body.name.trim(),
-        enabled: true,
-        version: 1,
-        createdBy: 7,
-        createdByName: '原型导购',
-        createdAt: `2026-11-06T10:00:${String(id % 60).padStart(2, '0')}`,
-        updatedAt: '2026-11-06T10:00:00',
-      };
+      const row = makeRow(body.name.trim());
       rows.push(row);
       return reply(row);
     }
