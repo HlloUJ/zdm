@@ -12,7 +12,7 @@ import {
   centerProducts,
   centerSelection,
   addCenterSelection,
-  removeCenterSelection,
+  removeCenterSelection as requestSelectionRemoval,
   joinCenterSelection,
   centerDetail,
   categoryTree,
@@ -30,7 +30,6 @@ import ApprovedCategoryPanel from './components/SelectionCategoryPanel.vue';
 import FilterGlyph from './components/FilterGlyph.vue';
 import SelectionDetail from './components/SelectionDetail.vue';
 import './selection-center.css';
-const operations = useOperationPreflight();
 const route = useRoute(),
   router = useRouter();
 const view = computed(() => (route.query.view === 'basket' ? 'basket' : 'browse'));
@@ -39,6 +38,21 @@ const selectedTypes = ref<string[]>(['finished', 'accessory']);
 const selectedStates = ref<string[]>(['unadded']);
 const effectiveTypes = computed(() => (selectedTypes.value.length ? selectedTypes.value : ['finished', 'accessory']));
 const basketTab = ref<ProductType>('finished');
+const operations = useOperationPreflight(() => `${context.value?.key}:${basketTab.value}`);
+const supersededRemoval = new Error('选品清单已切换');
+
+function removeCenterSelection(owner: string, id: number) {
+  const current = operations.capture();
+  return requestSelectionRemoval(owner, id).finally(() => {
+    if (!current()) throw supersededRemoval;
+  });
+}
+
+function remove(id: number | null) {
+  if (!context.value || id == null) return;
+  return operations.execute(`remove:${context.value.key}:${id}`, () => removeItem(id));
+}
+
 const counts = ref<Record<ProductType, number>>({ finished: 0, accessory: 0 });
 const count = computed(() => counts.value.finished + counts.value.accessory);
 const groups = computed(() =>
@@ -95,6 +109,7 @@ function fail(e: unknown) {
   adminFeedback.error(error.value);
 }
 function mutationFailed(e: unknown) {
+  if (e === supersededRemoval) return;
   if (e instanceof ApiError && (e.status === 401 || e.status === 403)) fail(e);
   else adminFeedback.error(getSafeErrorMessage(e, '操作失败，请重试'));
 }
@@ -244,26 +259,24 @@ async function add(p: CenterProduct) {
     adding.value = adding.value.filter((k) => k !== keyOf(p));
   }
 }
-async function remove(id: number | null) {
+async function removeItem(id: number | null) {
   if (!context.value || id == null) return;
   const owner = context.value.key;
   const removed = basketItems.value.find((item) => item.selectionId === id);
-  await operations.execute(`remove:${owner}:${id}`, async (current) => {
-    try {
-      await removeCenterSelection(owner, id);
-      if (!current() || context.value?.key !== owner) return;
-      if (removed) {
-        basketItems.value = basketItems.value.filter((item) => item.selectionId !== id);
-        basketTotal.value = Math.max(0, basketTotal.value - 1);
-        counts.value[removed.type] = Math.max(0, counts.value[removed.type] - 1);
-        for (const item of products.value) if (keyOf(item) === keyOf(removed)) item.inSelection = false;
-        if (detail.value && keyOf(detail.value.product) === keyOf(removed)) detail.value.product.inSelection = false;
-      }
-      await loadBasket(true);
-    } catch (e) {
-      if (current()) mutationFailed(e);
+  try {
+    await removeCenterSelection(owner, id);
+    if (context.value?.key !== owner) return;
+    if (removed) {
+      basketItems.value = basketItems.value.filter((item) => item.selectionId !== id);
+      basketTotal.value = Math.max(0, basketTotal.value - 1);
+      counts.value[removed.type] = Math.max(0, counts.value[removed.type] - 1);
+      for (const item of products.value) if (keyOf(item) === keyOf(removed)) item.inSelection = false;
+      if (detail.value && keyOf(detail.value.product) === keyOf(removed)) detail.value.product.inSelection = false;
     }
-  });
+    await loadBasket(true);
+  } catch (e) {
+    mutationFailed(e);
+  }
 }
 const pendingKey = () => `zdm-selection-join:${context.value?.key}`;
 async function submit() {

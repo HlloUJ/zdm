@@ -1139,11 +1139,11 @@
       }
     },
     "src/pages/selection-center/index.vue": {
-      "script": "5b19c3f2b6483596518ee10403985228566329725b267c4e335ee897798cc329",
+      "script": "2f61c8114d1811b159f53a144b669d140af5f00757aab0719e98a6e49e0f7ec7",
       "actions": {
         "add → add": "single",
-        "change → changeBasketPage": "form",
-        "change → changeBrowsePage": "form",
+        "change → changeBasketPage": "query",
+        "change → changeBrowsePage": "query",
         "choose → queryCategory": "query",
         "clear → query = ''; search();": "query",
         "click → add(p)": "single",
@@ -1795,7 +1795,7 @@
     },
     "src/pages/selection-center/index.vue": {
       "baseSha256": "9e302c7357a86ace68cb78bd430c0fa04824afa982f10b3a0593c0eae1afad8b",
-      "patchCount": 4
+      "patchCount": 6
     },
     "src/pages/slab/color/index.vue": {
       "baseSha256": "8f6dcf874ece4bec83580d7d96a2ce6dfc653bb3ad8b7cbb122c1b9b704d55f3",
@@ -1849,5 +1849,53 @@
       "baseSha256": "ce460c541cca46dd8c013e1fef94ef5f1679f1cd7b8dd61e59e40494eccec00f",
       "patchCount": 7
     }
-  }
+  },
+  "concurrentRevisions": [
+    {
+      "revision": "ff42c97237ecf909b3d8b0334fa7c0c5e76377f3",
+      "dependency": "src/services/storeSelectionCenter.ts",
+      "sha256": "3629553a3e7c1e3cc46c4f144ffa2a47ac066b1d6f00d06ec0560ff6a1034cd0",
+      "pages": {
+        "src/pages/selection-center/index.vue": {
+          "script": "2e03c1198a7f07a67f18040e61ea3f4093eb84c0230b4a7b11619321b32d0fb0",
+          "actions": {
+            "add → add": "single",
+            "change → changeBasketPage": "query",
+            "choose → queryCategory": "query",
+            "clear → query = ''; search();": "query",
+            "click → add(p)": "single",
+            "click → changeView('basket')": "view",
+            "click → changeView('browse')": "view",
+            "click → clearSelectedCategory": "query",
+            "click → loadBrowse(retryRefresh)": "query",
+            "click → openDetail(p)": "view",
+            "click → remove(p.selectionId)": "single",
+            "click → search": "query",
+            "click → submit": "@perItem",
+            "click → syncContext": "query",
+            "click → toggleState(item.value)": "query",
+            "click → toggleType(item.value)": "query",
+            "close → detail = null": "view",
+            "enter → search": "query",
+            "keydown → openDetail(p)": "view"
+          }
+        },
+        "src/pages/selection-center/components/SelectionDetail.vue": {
+          "script": "3072709e59c36cad07ed84addc97358c984d7e48e0da2d792ff3f960403bf570",
+          "actions": {
+            "change → mode = 'gallery'; index = i;": "view",
+            "change → mode = 'video'": "view",
+            "click → emit('add', detail.product)": "single",
+            "close → emit('close')": "view",
+            "close → mediaPreview = null": "view",
+            "preview → mediaPreview = $event": "view",
+            "update:visible → !$event && (mediaPreview = null)": "view"
+          }
+        }
+      },
+      "beforeChanges": {
+        "src/pages/selection-center/index.vue": "ae8804a7ddac0c076a928f8360d4f31bba72b8e47d79ae9f5cb4335464a2a576"
+      }
+    }
+  ]
 }

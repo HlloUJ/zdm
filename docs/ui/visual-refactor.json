@@ -17163,6 +17163,48 @@
           "after": "<span>价格</span>"
         },
         {
+          "stage": "before-migrations",
+          "task": "004",
+          "reason": "选品清单移除从首次点击起防重，过期响应不更新当前清单",
+          "before": "import { buttonTheme } from '@/components/foundation/actions/buttonFunctions';\n",
+          "after": "import { useOperationPreflight } from '@/composables/useOperationPreflight';\nimport { buttonTheme } from '@/components/foundation/actions/buttonFunctions';\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "004",
+          "reason": "选品清单移除从首次点击起防重，过期响应不更新当前清单",
+          "before": "  removeCenterSelection,\n",
+          "after": "  removeCenterSelection as requestSelectionRemoval,\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "004",
+          "reason": "选品清单移除从首次点击起防重，过期响应不更新当前清单",
+          "before": "const counts = ref<Record<ProductType, number>>({ finished: 0, accessory: 0 });\n",
+          "after": "const operations = useOperationPreflight(() => `${context.value?.key}:${basketTab.value}`);\nconst supersededRemoval = new Error('选品清单已切换');\n\nfunction removeCenterSelection(owner: string, id: number) {\n  const current = operations.capture();\n  return requestSelectionRemoval(owner, id).finally(() => {\n    if (!current()) throw supersededRemoval;\n  });\n}\n\nfunction remove(id: number | null) {\n  if (!context.value || id == null) return;\n  return operations.execute(`remove:${context.value.key}:${id}`, () => removeItem(id));\n}\n\nconst counts = ref<Record<ProductType, number>>({ finished: 0, accessory: 0 });\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "004",
+          "reason": "选品清单移除从首次点击起防重，过期响应不更新当前清单",
+          "before": "function mutationFailed(e: unknown) {\n",
+          "after": "function mutationFailed(e: unknown) {\n  if (e === supersededRemoval) return;\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "004",
+          "reason": "选品清单移除从首次点击起防重，过期响应不更新当前清单",
+          "before": "async function remove(id: number | null) {\n",
+          "after": "async function removeItem(id: number | null) {\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "004",
+          "reason": "选品清单移除从首次点击起防重，过期响应不更新当前清单",
+          "before": "                <t-link hover=\"color\" :theme=\"buttonTheme('remove')\" @click.stop=\"remove(p.selectionId)\">移除</t-link>\n",
+          "after": "                <t-link hover=\"color\" :theme=\"buttonTheme('remove')\" :disabled=\"operations.pending(`remove:${context?.key}:${p.selectionId}`)\" @click.stop=\"remove(p.selectionId)\">移除</t-link>\n"
+        },
+        {
           "before": "function clearData() {",
           "after": "function mutationFailed(e: unknown) {\n  if (e instanceof ApiError && (e.status === 401 || e.status === 403)) fail(e);\n  else adminFeedback.error(getSafeErrorMessage(e, '操作失败，请重试'));\n}\nfunction clearData() {",
           "reason": "User task134: catalog add and basket remove/join update locally without full-page loading or scroll jumps; preserve rows on refresh failures and identity safety."
@@ -17176,34 +17218,6 @@
           "before": "async function add(p: CenterProduct) {\n  if (!context.value || !p.canAdd || p.inSelection || adding.value.includes(keyOf(p))) return;\n  adding.value.push(keyOf(p));\n  try {\n    await addCenterSelection(context.value.key, p.type, p.id);\n    await Promise.all([loadBrowse(), loadBasket()]);\n    if (detail.value?.product.id === p.id && detail.value.product.type === p.type) await openDetail(p);\n  } catch (e) {\n    fail(e);\n  } finally {\n    adding.value = adding.value.filter((k) => k !== keyOf(p));\n  }\n}\nasync function remove(id: number | null) {\n  if (!context.value || id == null) return;\n  try {\n    await removeCenterSelection(context.value.key, id);\n    await Promise.all([loadBasket(), loadBrowse()]);\n  } catch (e) {\n    fail(e);\n  }\n}\nconst pendingKey = () => `zdm-selection-join:${context.value?.key}`;\nasync function submit() {\n  if (!context.value || submitting.value || (!count.value && !pendingRequest.value)) return;\n  submitting.value = true;\n  const owner = context.value.key;\n  pendingRequest.value ||= crypto.randomUUID();\n  localStorage.setItem(pendingKey(), pendingRequest.value);\n  try {\n    const data = await joinCenterSelection(context.value.key, pendingRequest.value);\n    if (context.value?.key !== owner) return;\n    result.value = data;\n    if (data.status === 'completed') {\n      localStorage.removeItem(pendingKey());\n      pendingRequest.value = null;\n      resultVisible.value = data.failureCount > 0;\n      if (!data.failureCount) adminFeedback.success(`成功加入门店${data.successCount}件商品`);\n      localStorage.setItem(\n        'zdm-selection-store-updated',\n        JSON.stringify({ context: context.value.key, time: Date.now() }),\n      );\n    } else adminFeedback.warning('本次加入仍在处理中，请重试以查询并继续本次处理');\n    await Promise.all([loadBasket(), loadBrowse()]);\n  } catch (e) {\n    fail(e);\n  } finally {\n    submitting.value = false;\n  }\n}\n",
           "after": "async function add(p: CenterProduct) {\n  if (!context.value || !p.canAdd || p.inSelection || adding.value.includes(keyOf(p))) return;\n  adding.value.push(keyOf(p));\n  const owner = context.value.key;\n  try {\n    await addCenterSelection(owner, p.type, p.id);\n    if (context.value?.key !== owner) return;\n    const markSelected = (item: CenterProduct) => {\n      if (keyOf(item) === keyOf(p)) item.inSelection = true;\n    };\n    products.value.forEach(markSelected);\n    if (detail.value) markSelected(detail.value.product);\n    counts.value[p.type] += 1;\n    await loadBasket(true);\n  } catch (e) {\n    mutationFailed(e);\n  } finally {\n    adding.value = adding.value.filter((k) => k !== keyOf(p));\n  }\n}\nasync function remove(id: number | null) {\n  if (!context.value || id == null) return;\n  const owner = context.value.key;\n  const removed = basketItems.value.find((item) => item.selectionId === id);\n  try {\n    await removeCenterSelection(owner, id);\n    if (context.value?.key !== owner) return;\n    if (removed) {\n      basketItems.value = basketItems.value.filter((item) => item.selectionId !== id);\n      basketTotal.value = Math.max(0, basketTotal.value - 1);\n      counts.value[removed.type] = Math.max(0, counts.value[removed.type] - 1);\n      for (const item of products.value) if (keyOf(item) === keyOf(removed)) item.inSelection = false;\n      if (detail.value && keyOf(detail.value.product) === keyOf(removed)) detail.value.product.inSelection = false;\n    }\n    await loadBasket(true);\n  } catch (e) {\n    mutationFailed(e);\n  }\n}\nconst pendingKey = () => `zdm-selection-join:${context.value?.key}`;\nasync function submit() {\n  if (!context.value || submitting.value || (!count.value && !pendingRequest.value)) return;\n  submitting.value = true;\n  const owner = context.value.key;\n  pendingRequest.value ||= crypto.randomUUID();\n  localStorage.setItem(pendingKey(), pendingRequest.value);\n  try {\n    const data = await joinCenterSelection(context.value.key, pendingRequest.value);\n    if (context.value?.key !== owner) return;\n    result.value = data;\n    if (data.status === 'completed') {\n      localStorage.removeItem(pendingKey());\n      pendingRequest.value = null;\n      resultVisible.value = data.failureCount > 0;\n      if (!data.failureCount) adminFeedback.success(`成功加入门店${data.successCount}件商品`);\n      localStorage.setItem(\n        'zdm-selection-store-updated',\n        JSON.stringify({ context: context.value.key, time: Date.now() }),\n      );\n    } else adminFeedback.warning('本次加入仍在处理中，请重试以查询并继续本次处理');\n    await loadBasket(true);\n  } catch (e) {\n    mutationFailed(e);\n  } finally {\n    submitting.value = false;\n  }\n}\n",
           "reason": "User task134: catalog add and basket remove/join update locally without full-page loading or scroll jumps; preserve rows on refresh failures and identity safety."
-        },
-        {
-          "stage": "before-migrations",
-          "task": "004",
-          "reason": "按已确认的操作校验与反馈整改方案接入本页登记的操作",
-          "before": "<script setup lang=\"ts\">\nimport { buttonTheme } from '@/components/foundation/actions/buttonFunctions';\nimport { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';\nimport type { PageInfo } from 'tdesign-vue-next';\n",
-          "after": "<script setup lang=\"ts\">\nimport { useOperationPreflight } from '@/composables/useOperationPreflight';\nimport { buttonTheme } from '@/components/foundation/actions/buttonFunctions';\nimport { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';\nimport type { PageInfo } from 'tdesign-vue-next';\n"
-        },
-        {
-          "stage": "before-migrations",
-          "task": "004",
-          "reason": "按已确认的操作校验与反馈整改方案接入本页登记的操作",
-          "before": "import FilterGlyph from './components/FilterGlyph.vue';\nimport SelectionDetail from './components/SelectionDetail.vue';\nimport './selection-center.css';\nconst route = useRoute(),\n  router = useRouter();\nconst view = computed(() => (route.query.view === 'basket' ? 'basket' : 'browse'));\n",
-          "after": "import FilterGlyph from './components/FilterGlyph.vue';\nimport SelectionDetail from './components/SelectionDetail.vue';\nimport './selection-center.css';\nconst operations = useOperationPreflight();\nconst route = useRoute(),\n  router = useRouter();\nconst view = computed(() => (route.query.view === 'basket' ? 'basket' : 'browse'));\n"
-        },
-        {
-          "stage": "before-migrations",
-          "task": "004",
-          "reason": "按已确认的操作校验与反馈整改方案接入本页登记的操作",
-          "before": "  if (!context.value || id == null) return;\n  const owner = context.value.key;\n  const removed = basketItems.value.find((item) => item.selectionId === id);\n  try {\n    await removeCenterSelection(owner, id);\n    if (context.value?.key !== owner) return;\n    if (removed) {\n      basketItems.value = basketItems.value.filter((item) => item.selectionId !== id);\n      basketTotal.value = Math.max(0, basketTotal.value - 1);\n      counts.value[removed.type] = Math.max(0, counts.value[removed.type] - 1);\n      for (const item of products.value) if (keyOf(item) === keyOf(removed)) item.inSelection = false;\n      if (detail.value && keyOf(detail.value.product) === keyOf(removed)) detail.value.product.inSelection = false;\n    }\n    await loadBasket(true);\n  } catch (e) {\n    mutationFailed(e);\n  }\n}\nconst pendingKey = () => `zdm-selection-join:${context.value?.key}`;\nasync function submit() {\n",
-          "after": "  if (!context.value || id == null) return;\n  const owner = context.value.key;\n  const removed = basketItems.value.find((item) => item.selectionId === id);\n  await operations.execute(`remove:${owner}:${id}`, async (current) => {\n    try {\n      await removeCenterSelection(owner, id);\n      if (!current() || context.value?.key !== owner) return;\n      if (removed) {\n        basketItems.value = basketItems.value.filter((item) => item.selectionId !== id);\n        basketTotal.value = Math.max(0, basketTotal.value - 1);\n        counts.value[removed.type] = Math.max(0, counts.value[removed.type] - 1);\n        for (const item of products.value) if (keyOf(item) === keyOf(removed)) item.inSelection = false;\n        if (detail.value && keyOf(detail.value.product) === keyOf(removed)) detail.value.product.inSelection = false;\n      }\n      await loadBasket(true);\n    } catch (e) {\n      if (current()) mutationFailed(e);\n    }\n  });\n}\nconst pendingKey = () => `zdm-selection-join:${context.value?.key}`;\nasync function submit() {\n"
-        },
-        {
-          "stage": "before-migrations",
-          "task": "004",
-          "reason": "按已确认的操作校验与反馈整改方案接入本页登记的操作",
-          "before": "                  </div>\n                </div>\n                <div class=\"basket-price\">¥ {{ centerPrice(p) }}</div>\n                <t-link hover=\"color\" :theme=\"buttonTheme('remove')\" @click.stop=\"remove(p.selectionId)\">移除</t-link>\n              </div>\n\n              <t-empty v-if=\"!activeBasketItems.length\" description=\"尚未选择该类型商品\" />\n",
-          "after": "                  </div>\n                </div>\n                <div class=\"basket-price\">¥ {{ centerPrice(p) }}</div>\n                <t-link hover=\"color\" :theme=\"buttonTheme('remove')\" :disabled=\"operations.pending(`remove:${context?.key}:${p.selectionId}`)\" @click.stop=\"remove(p.selectionId)\">移除</t-link>\n              </div>\n\n              <t-empty v-if=\"!activeBasketItems.length\" description=\"尚未选择该类型商品\" />\n"
         }
       ]
     },

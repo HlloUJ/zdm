@@ -113,9 +113,22 @@ export function verifyApprovedChange(file, source, entry, patches) {
 }
 
 export function policyChecks(root) {
-  const { pages, dependencies, policies, approvedChanges } = JSON.parse(readFileSync(resolve(root, 'docs/ui/operation-feedback-registry.json'), 'utf8'));
+  const { pages, dependencies, policies, approvedChanges, concurrentRevisions = [] } = JSON.parse(readFileSync(resolve(root, 'docs/ui/operation-feedback-registry.json'), 'utf8'));
   const { contracts } = JSON.parse(readFileSync(resolve(root, 'docs/ui/visual-refactor.json'), 'utf8'));
   const files = runtimePages(root);
+
+  // An independently published service revision can bring a different set of page actions.
+  // Select its complete, reviewed registration by content, then run the same checks on it.
+  for (const revision of concurrentRevisions) {
+    if (!Object.hasOwn(dependencies, revision.dependency)) throw new Error('并行版本缺少共享依赖登记');
+    if (hash(readFileSync(resolve(root, revision.dependency))) !== revision.sha256) continue;
+    dependencies[revision.dependency] = revision.sha256;
+    Object.assign(pages, revision.pages);
+    for (const [file, before] of Object.entries(revision.beforeChanges)) {
+      if (!approvedChanges[file]) throw new Error(file + ': 并行版本缺少原始变更登记');
+      approvedChanges[file] = { ...approvedChanges[file], baseSha256: before };
+    }
+  }
 
   function verifyCoverage() {
     if (JSON.stringify(files) !== JSON.stringify(Object.keys(pages).sort())) throw new Error('运行时页面登记不完整');

@@ -195,6 +195,26 @@ describe('registered page callbacks', () => {
     expect(adminFeedback.actionError).not.toHaveBeenCalledWith(expect.objectContaining({action: '删除'}));
   });
 
+  it.each([200, 500])('ignores a previous basket removal response after leaving and returning to the same store (%s)', async (status) => {
+    const pending = deferred<Response>();
+    const messages = feedback();
+    const fetch = mockApi((_path, method) => method === 'DELETE' ? pending.promise : undefined);
+    const page = await pageState('selection-center');
+    page.context = { key: 'store-a' };
+    page.basketItems = [{ selectionId: 91, type: 'finished', id: 7 }];
+    const first = page.remove(91);
+    page.context = { key: 'store-b' };
+    page.context = { key: 'store-a' };
+    page.basketItems = [{ selectionId: 91, type: 'finished', id: 8 }];
+    const before = fetch.mock.calls.length;
+    messages.error.mockClear();
+    pending.resolve(response(status === 200, status, '原清单请求失败'));
+    await first;
+    expect(fetch.mock.calls).toHaveLength(before);
+    expect(page.basketItems.map((item: { id: number }) => item.id)).toEqual([8]);
+    expect(messages.error).not.toHaveBeenCalled();
+  });
+
   it('keeps a later terminal selection when an older save finishes', async () => {
     const messages = feedback();
     const a = deferred<Response>();
