@@ -4,6 +4,7 @@ import { existsSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSyn
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { consumers as findConsumers, displayTests } from './consumers.mjs';
 import { planChanges } from './policy.mjs';
 
 export function digest(value) {
@@ -86,6 +87,7 @@ function manifest(cwd, tree, adapters = false) {
   const value = JSON.parse(git(cwd, ['show', tree + ':package.json']));
   for (const key of Object.keys(value.scripts || {}))
     if (key.startsWith('verify:')) delete value.scripts[key];
+  if(value.scripts?.['task:assess']==='node dev/quality-entry.mjs assess') delete value.scripts['task:assess'];
   if (adapters)
     for (const [name, id] of Object.entries(nativeChecks)) {
       if (value.scripts?.[name] === 'node dev/quality-entry.mjs run ' + id)
@@ -94,41 +96,49 @@ function manifest(cwd, tree, adapters = false) {
   return JSON.stringify(value);
 }
 function changeSet(cwd, base, tree, blobs) {
-  const paths = entries(
-    git(cwd, ['diff', '--no-ext-diff', '--no-renames', '--name-only', '-z', base, tree]),
-  );
+  const paths = entries(git(cwd, ['diff', '--no-ext-diff', '--no-renames', '--name-only', '-z', base, tree]));
   const old = new Map(blobList(cwd, base));
   const current = new Map(blobs);
-  return paths.map((path) => {
-    const needsPatch = /(?:\.md$|^src\/|^backend\/src\/)/.test(path);
-    const diff = needsPatch
-      ? git(cwd, [
-          '--literal-pathspecs',
-          'diff',
-          '--no-ext-diff',
-          '--no-textconv',
-          '--no-renames',
-          '-U0',
-          base,
-          tree,
-          '--',
-          path,
-        ])
-      : '';
-    const lines = diff
-      .split('\n')
-      .filter((line) => /^[+-](?![+-]{2})/.test(line))
-      .map((line) => line.slice(1));
-    const unsafeType = [old.get(path), current.get(path)].some(
-      (type) => type && !type.startsWith('100644 blob') && !type.startsWith('100755 blob'),
-    );
-    const packageChange = path === 'package.json' && old.has(path) && current.has(path);
-    return {
-      path,
-      patch: lines.join('\n'),
-      unsafeType,
-      onlyQualityAliases: packageChange && manifest(cwd, base) === manifest(cwd, tree),
-      onlyTestAdapters: packageChange && manifest(cwd, base, true) === manifest(cwd, tree, true),
+  const body = (ref, path, type) => {
+    if (!type || !/^100(?:644|755) blob /.test(type)) return '';
+    const size = Number(git(cwd, ['cat-file', '-s', type.split(' ').at(-1)]));
+    return size <= 8 * 1024 * 1024 ? git(cwd, ['show', ref + ':' + path]) : null;
+  };
+  const cache=new Map();
+  const source=(ref,path)=>{
+    const key=ref+':'+path;
+    if(!cache.has(key)) cache.set(key,git(cwd,['show',key]));
+    return cache.get(key);
+  };
+  return paths.map(path => {
+    const was = old.get(path), now = current.get(path);
+    const unsafeType = [was, now].some(type => type && !/^100(?:644|755) blob /.test(type));
+    const before = body(base, path, was), after = body(tree, path, now);
+    const diff = before === null || after === null ? '' : git(cwd, ['--literal-pathspecs', 'diff',
+      '--no-ext-diff','--no-textconv','--no-renames','-U0',base,tree,'--',path]);
+    const edited = diff.split('\n').filter(l => /^[+-]/.test(l) && !/^(?:--- |\+\+\+ )/.test(l));
+    const enclosing = diff.split('\n').filter(l=>l.startsWith('@@')).map(l=>l.split('@@').at(-1).trim()).filter(Boolean);
+    const removed = edited.filter(l => l[0] === '-').map(l => l.slice(1));
+    const added = edited.filter(l => l[0] === '+').map(l => l.slice(1));
+    const module = /^(?:src\/|tests\/e2e\/).+\.(?:[jt]s|vue)$/.test(path) && !/\.(?:test|spec)\./.test(path);
+    const consumers = module ? [...new Set([...findConsumers(cwd,base,path,source), ...findConsumers(cwd,tree,path,source)])].sort() : [];
+    const readerUses=consumers.filter(p=>p.startsWith('src/') && !/\.(?:test|spec)\./.test(p) && current.has(p))
+      .map(p=>source(tree,p));
+    const displayTerms=module && edited.length<=8 ? edited.flatMap(line=>[...line.matchAll(/['"]([^'"]*[\u3400-\u9fff][^'"]*)['"]/g)].map(m=>m[1])) : [];
+    const textTests=displayTerms.length ? [...new Set([...displayTests(cwd,base,displayTerms),...displayTests(cwd,tree,displayTerms)])].sort() : [];
+
+    if(displayTerms.length) for(const p of consumers) {
+      if(current.has(p) && /\.test\.[jt]s$/.test(p) &&
+          /\b(?:warehouseEntryLabel|(?:finishedP|p)roductOperationSummary)\s*\(/.test(source(tree,p)))
+        textTests.push(p);
+    }
+    const packageChange = path === 'package.json' && was && now;
+    return { path, before, after, removed, added, consumers, enclosing, readerUses, textTests,
+      oldBlob: was?.split(' ').at(-1), newBlob: now?.split(' ').at(-1),
+      unsafeType: unsafeType || before === null || after === null || diff.includes('Binary files '),
+      patch: edited.map(l => l.slice(1)).join('\n'),
+      onlyQualityAliases: packageChange && manifest(cwd,base) === manifest(cwd,tree),
+      onlyTestAdapters: packageChange && manifest(cwd,base,true) === manifest(cwd,tree,true),
     };
   });
 }
@@ -167,7 +177,11 @@ export function planTree(cwd, base, from, tree, fallback = false) {
   } catch {
     fallback = true;
   }
-  const plan = planChanges(changes, fallback);
+  const result=summarizeChanges(changes, fallback, blobs, base, tree);
+  return { ...result, changes, fallback };
+}
+export function summarizeChanges(changes, fallback, blobs, base, tree) {
+  const plan = planChanges(changes, fallback, blobs.map(([path]) => path));
   const policy = rulesIdentity();
   const files = changes.map((row) => row.path);
   const planId = digest(JSON.stringify([plan, policy, files, base, tree]));

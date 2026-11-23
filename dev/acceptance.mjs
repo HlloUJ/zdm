@@ -1,3 +1,5 @@
+import { EvidenceStore } from './quality/store.mjs';
+import { stateFor } from './quality/assessment-store.mjs';
 import { spawnSync } from 'node:child_process';
 import { existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, renameSync, rmdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -35,7 +37,20 @@ export function acceptance(cwd, command, argument, ...adapters) {
   }, source || {});
 }
 
-function runAcceptance(cwd, command, argument, runtimeFactory = createRuntime, checkDevelopment = directory => published(directory, ['dev'])) {
+function runAcceptance(cwd, command, argument, runtimeFactory = createRuntime, checkDevelopment = directory => {
+  published(directory, ['dev']);
+  const head=run(directory,'git',['rev-parse','HEAD']);
+  const base=run(directory,'git',['rev-parse','refs/remotes/origin/main']);
+  const common=realpathSync(run(directory,'git',['rev-parse','--path-format=absolute','--git-common-dir']));
+  const report=new EvidenceStore(common).report('dev',{head,base});
+  if (report?.status!=='passed' || report.tree!==run(directory,'git',['rev-parse','HEAD^{tree}']))
+    throw Error('5274 缺少当前源码树的开发验证回执');
+  if (report.standard!=='V1.2') return;
+  const ctx=observer(common,directory);
+  if (!report.assessments?.length || (ctx && ctx.ids.some(id=>!report.assessments.some(t=>t.id===id))))
+    throw Error('5274 缺少当前任务的判级，请按实际时点补评并通知');
+  return {tree:report.tree,base,planId:report.planId,assessments:report.assessments || []};
+}) {
   const git = (...args) => run(cwd, 'git', args);
   const commonDir = realpathSync(git('rev-parse', '--path-format=absolute', '--git-common-dir'));
   const statePath = join(commonDir, 'zdm-acceptance.json');
@@ -69,12 +84,12 @@ function runAcceptance(cwd, command, argument, runtimeFactory = createRuntime, c
     throw new Error('用法：node dev/acceptance.mjs init <运行目录> [当前验收分支] | publish | verify | sync | status | recover');
   }
   if (command === 'status') return current();
-  let validated;
+  let validated, evidence;
   if (command === 'publish') {
     const taskGit = inRepo(cwd);
     validated = taskGit('rev-parse', 'HEAD');
     if (!taskGit('branch','--show-current') || taskGit('branch','--show-current') === 'main') throw Error('请在任务分支发布。');
-    checkDevelopment(cwd);
+    evidence=checkDevelopment(cwd);
   }
   try {
     mkdirSync(lockPath);
@@ -132,6 +147,11 @@ function runAcceptance(cwd, command, argument, runtimeFactory = createRuntime, c
       throw new Error('请在对应任务的独立分支工作目录中执行。');
     }
     if (command === 'publish' && revision !== validated) throw Error('开发验证后任务版本发生变化。');
+    if (command==='publish' && evidence) {
+      if (evidence.base!==resolve(mainRef) || evidence.tree!==git('rev-parse',revision+'^{tree}') ||
+          evidence.assessments.some(t=>stateFor(commonDir,t.id)?.history.at(-1)?.revision!==t.revision))
+        throw Error('5274 的目标主线、源码树或任务复核版本已变化，请重新验证');
+    }
     if (command === 'verify') {
       if (!state.tasks.some((task) => task.branch === branch && task.revision === revision)) {
         throw new Error('当前任务提交与 5274 的待验收版本不同。');
@@ -154,7 +174,7 @@ function runAcceptance(cwd, command, argument, runtimeFactory = createRuntime, c
           throw new Error('任务分支包含与 ' + task.branch + ' 共用的未合并历史，请先隔离。');
         }
       }
-      const update = { branch, revision };
+      const update = evidence ? {branch,revision,evidence} : {branch,revision};
       tasks = previous ? tasks.map((task) => task.branch === branch ? update : task) : [...tasks, update];
     }
 

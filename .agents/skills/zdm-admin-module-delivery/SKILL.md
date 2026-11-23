@@ -7,7 +7,7 @@ description: 为装点猫管理后台新增、重构或补齐完整业务功能�
 
 ## 开始
 
-1. 读取项目规则，并按 `zdm-product-knowledge` 获取最相关的有效产品原则或 PRD；用户当前明确要求优先。
+1. 实际开工、恢复或返工时接入[项目任务判级](../zdm-task-assessment/SKILL.md)。读取项目规则，并按 `zdm-product-knowledge` 获取最相关的有效产品原则或 PRD；用户当前明确要求优先。
 2. 涉及组织业务数据读取、写入、共享或跨端协作时，同时使用 `zdm-data-permission-isolation`；涉及账号、身份、角色或权限模型调整时，同时使用 `account-permission-rules`。
 3. 涉及页面结构或新增页面时，同时使用 `zdm-admin-ui-conventions`；涉及全量功能资源目录登记或调整时，同时使用 `zdm-function-catalog-registration`。
 4. 涉及代码修改时，同时使用 `efficient-code-delivery`，按项目 `AGENTS.md` 的风险等级验证。
@@ -59,6 +59,8 @@ description: 为装点猫管理后台新增、重构或补齐完整业务功能�
 - 普通身份的有效功能权限取当前身份适用范围、终端功能范围和角色权限的交集。
 
 ### 7. 验证模块闭环
+
+- 按同一任务号复核本轮和整项，按[统一标准](../../../docs/verification.md)选测、记录并送达变级通知。
 
 - 验证全功能开发测试身份能够覆盖模块全部路径和操作。
 - 分别使用各适用业务端和代表性角色验证菜单、页面、Tab、按钮及数据范围。
