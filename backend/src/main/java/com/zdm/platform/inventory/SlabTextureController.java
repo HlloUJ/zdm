@@ -51,6 +51,13 @@ public class SlabTextureController {
     return ApiResponse.ok(service.updateStatus(id, request.status()));
   }
 
+  @GetMapping("/{id}/delete-check")
+  public ApiResponse<Boolean> deleteTextureCheck(@PathVariable Long id) {
+    permissionGuard.requirePermission(PREFIX + ".delete");
+    service.deleteTextureCheck(id);
+    return ApiResponse.ok(true);
+  }
+
   @DeleteMapping("/{id}")
   public ApiResponse<Boolean> delete(@PathVariable Long id) {
     permissionGuard.requirePermission(PREFIX + ".delete");

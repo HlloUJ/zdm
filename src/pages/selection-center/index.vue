@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useOperationPreflight } from '@/composables/useOperationPreflight';
 import { buttonTheme } from '@/components/foundation/actions/buttonFunctions';
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import type { PageInfo } from 'tdesign-vue-next';
@@ -11,7 +12,7 @@ import {
   centerProducts,
   centerSelection,
   addCenterSelection,
-  removeCenterSelection,
+  removeCenterSelection as requestSelectionRemoval,
   joinCenterSelection,
   centerDetail,
   categoryTree,
@@ -38,6 +39,21 @@ const selectedTypes = ref<string[]>(['finished', 'accessory']);
 const selectedStates = ref<string[]>(['unadded']);
 const effectiveTypes = computed(() => (selectedTypes.value.length ? selectedTypes.value : ['finished', 'accessory']));
 const basketTab = ref<ProductType>('finished');
+const operations = useOperationPreflight(() => `${context.value?.key}:${basketTab.value}`);
+const supersededRemoval = new Error('选品清单已切换');
+
+function removeCenterSelection(owner: string, id: number) {
+  const current = operations.capture();
+  return requestSelectionRemoval(owner, id).finally(() => {
+    if (!current()) throw supersededRemoval;
+  });
+}
+
+function remove(id: number | null) {
+  if (!context.value || id == null) return;
+  return operations.execute(`remove:${context.value.key}:${id}`, () => removeItem(id));
+}
+
 const counts = ref<Record<ProductType, number>>({ finished: 0, accessory: 0 });
 const count = computed(() => counts.value.finished + counts.value.accessory);
 const groups = computed(() =>
@@ -98,6 +114,7 @@ function fail(e: unknown) {
   adminFeedback.error(error.value);
 }
 function mutationFailed(e: unknown) {
+  if (e === supersededRemoval) return;
   if (e instanceof ApiError && (e.status === 401 || e.status === 403)) fail(e);
   else adminFeedback.error(getSafeErrorMessage(e, '操作失败，请重试'));
 }
@@ -308,7 +325,7 @@ async function add(p: CenterProduct) {
     if (version === scopeVersion) adding.value = adding.value.filter((k) => k !== keyOf(p));
   }
 }
-async function remove(id: number | null) {
+async function removeItem(id: number | null) {
   if (!context.value || id == null) return;
   const owner = context.value.key, version = scopeVersion;
   const removed = basketItems.value.find((item) => item.selectionId === id);
@@ -765,7 +782,7 @@ onBeforeUnmount(() => {
                   </div>
                 </div>
                 <div class="basket-price">¥ {{ centerPrice(p) }}</div>
-                <t-link hover="color" :theme="buttonTheme('remove')" @click.stop="remove(p.selectionId)">移除</t-link>
+                <t-link hover="color" :theme="buttonTheme('remove')" :disabled="operations.pending(`remove:${context?.key}:${p.selectionId}`)" @click.stop="remove(p.selectionId)">移除</t-link>
               </div>
 
               <t-empty v-if="!activeBasketItems.length" description="尚未选择该类型商品" />

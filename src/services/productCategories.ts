@@ -48,3 +48,6 @@ export function deleteProductCategory(id: number) {
     method: 'DELETE',
   });
 }
+
+export const checkProductCategoryDelete = (id: number) =>
+  request<boolean>(`/admin/product-categories/${id}/delete-check`);

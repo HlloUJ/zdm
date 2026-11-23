@@ -86,7 +86,8 @@
                   v-if="canDeleteSupplier"
                   :theme="buttonTheme('delete')"
                   hover="color"
-                  @click="openDeleteConfirm(row)"
+                  :disabled="operations.pending(`delete:${row.id}`)"
+                    @click="openDeleteConfirm(row)"
                 >
                   删除
                 </t-link>
@@ -154,6 +155,7 @@
       :action="confirmState.type === 'delete' ? '删除' : confirmState.type === 'disable' ? '停用' : '启用'"
       object-type="供应商"
       :object-name="confirmState.row?.name"
+      :loading="operations.pending(`${confirmState.type}:${confirmState.row?.id}`)"
       @confirm="handleConfirm"
       @cancel="closeConfirmDialog"
       @close="closeConfirmDialog"
@@ -164,6 +166,9 @@
 </template>
 
 <script setup lang="ts">
+import { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';
+import { checkSupplierDelete } from '@/services/suppliers';
+import { useOperationPreflight, requireCondition } from '@/composables/useOperationPreflight';
 import { formConfirmation } from '@/components/foundation/actions/confirmation';
 import { buttonTheme, buttonFunctionFor } from '@/components/foundation/actions/buttonFunctions';
 import { rejectFormSubmission } from '@/utils/submitValidation';
@@ -211,6 +216,7 @@ interface SupplierForm {
   remark: string;
 }
 
+const operations = useOperationPreflight();
 const tableData = ref<SupplierItem[]>([]);
 const supplyTypes = ref<SupplierSupplyTypeRecord[]>([]);
 const loading = ref(false);
@@ -458,6 +464,7 @@ const handleSubmit = async () => {
 };
 
 const openStatusConfirm = (row: SupplierItem) => {
+  operations.select(`status:${row.id}`);
   const isNormal = row.status === 'normal';
   confirmState.type = isNormal ? 'disable' : 'enable';
   confirmState.row = row;
@@ -466,10 +473,13 @@ const openStatusConfirm = (row: SupplierItem) => {
 };
 
 const openDeleteConfirm = (row: SupplierItem) => {
-  confirmState.type = 'delete';
-  confirmState.row = row;
-  confirmState.content = `是否删除供应商“${row.name}”？`;
-  confirmDialogVisible.value = true;
+  const key = `delete:${row.id}`;
+  return operations.check(key, () => checkSupplierDelete(row.id).then(requireCondition), () => {
+    confirmState.type = 'delete';
+    confirmState.row = row;
+    confirmState.content = `是否删除供应商“${row.name}”？`;
+    confirmDialogVisible.value = true;
+  });
 };
 
 const closeConfirmDialog = () => {
@@ -489,27 +499,35 @@ const handleConfirm = async () => {
   if (!confirmState.row) return;
 
   const targetName = confirmState.row.name;
-  try {
-    if (confirmState.type === 'delete') {
-      await deleteSupplier(confirmState.row.id);
-      tableData.value = tableData.value.filter((item) => item.id !== confirmState.row?.id);
-      ensureCurrentPage();
-    } else {
-      await persistSupplierStatus(confirmState.row, confirmState.type === 'enable' ? 'normal' : 'disabled');
-    }
+  const target = confirmState.row;
+  const operationType = confirmState.type;
+  await operations.execute(`${operationType}:${target.id}`, async (current) => {
+    try {
+      if (operationType === 'delete') {
+        const deleted = await deleteSupplier(target.id);
+        if (!current()) return;
+        if (!deleted) throw new Error('供应商未删除，请刷新后重试');
+        tableData.value = tableData.value.filter((item) => item.id !== target.id);
+        ensureCurrentPage();
+      } else {
+        await persistSupplierStatus(target, operationType === 'enable' ? 'normal' : 'disabled');
+        if (!current()) return;
+      }
 
-    closeConfirmDialog();
-    if (confirmState.type === 'delete') {
-      adminFeedback.deleted(targetName);
-    } else {
-      adminFeedback.actionSuccess({
-        action: confirmState.type === 'enable' ? '启用' : '停用',
-        target: targetName,
-      });
+      closeConfirmDialog();
+      if (operationType === 'delete') {
+        adminFeedback.deleted(targetName);
+      } else {
+        adminFeedback.actionSuccess({
+          action: operationType === 'enable' ? '启用' : '停用',
+          target: targetName,
+        });
+      }
+    } catch (error) {
+      if (!current()) return;
+      adminFeedback.error(getSafeErrorMessage(error, '操作失败'));
     }
-  } catch (error) {
-    adminFeedback.error(error instanceof Error ? error.message : '操作失败');
-  }
+  });
 };
 
 onMounted(async () => {

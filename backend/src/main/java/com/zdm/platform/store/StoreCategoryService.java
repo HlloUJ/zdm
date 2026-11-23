@@ -1,5 +1,7 @@
 package com.zdm.platform.store;
 
+import com.zdm.platform.common.OperationBlockedException;
+
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.zdm.platform.account.CreatorAwareService;
 import com.zdm.platform.common.CategoryProductCounts;
@@ -228,15 +230,7 @@ public class StoreCategoryService extends CreatorAwareService<StoreCategoryMappe
   public void deleteCategory(Long id, String scope) {
     if ("finished".equals(scope)) { salePrices.lockCategories(requireStoreId()); }
     if ("accessory".equals(scope)) { accessorySalePrices.lockCategories(requireStoreId()); }
-    StoreCategory category = requireCategory(id, scope);
-    if (!listSiblings(scope, id).isEmpty()) {
-      throw new IllegalArgumentException("该分类包含下级分类，请先删除或转移下级分类");
-    }
-    Long associatedProducts = jdbc.queryForObject("SELECT COUNT(*) FROM " + ("accessory".equals(scope) ? "store_accessory_products" : "store_finished_products") + " WHERE store_id=? AND store_category_id=?", Long.class, category.getStoreId(), id);
-    if (category.getProductCount() != null && category.getProductCount() > 0
-        || associatedProducts != null && associatedProducts > 0) {
-      throw new IllegalArgumentException("该分类已关联商品，不能删除，请先停用该分类");
-    }
+    StoreCategory category = deleteCategoryCheck(id, scope);
     if (!removeById(id)) {
       throw new IllegalArgumentException("分类删除失败，请刷新后重试");
     }
@@ -245,6 +239,19 @@ public class StoreCategoryService extends CreatorAwareService<StoreCategoryMappe
       siblings.get(index).setSortOrder(index + 1);
       updateById(siblings.get(index));
     }
+  }
+
+  public StoreCategory deleteCategoryCheck(Long id, String scope) {
+    StoreCategory category = requireCategory(id, scope);
+    if (!listSiblings(scope, id).isEmpty()) {
+      throw new OperationBlockedException("该分类包含下级分类，请先删除或转移下级分类");
+    }
+    Long associatedProducts = jdbc.queryForObject("SELECT COUNT(*) FROM " + ("accessory".equals(scope) ? "store_accessory_products" : "store_finished_products") + " WHERE store_id=? AND store_category_id=?", Long.class, category.getStoreId(), id);
+    if (category.getProductCount() != null && category.getProductCount() > 0
+        || associatedProducts != null && associatedProducts > 0) {
+      throw new OperationBlockedException("该分类已关联商品，不能删除，请先停用该分类");
+    }
+    return category;
   }
 
   private List<StoreCategory> listSiblings(String scope, Long parentId) {

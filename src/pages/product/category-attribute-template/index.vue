@@ -412,6 +412,8 @@
 </template>
 
 <script setup lang="ts">
+import { checkTemplateCategory } from '@/services/templateVersions';
+import { useOperationPreflight, requireCondition } from '@/composables/useOperationPreflight';
 import { operationConfirmation, formConfirmation } from '@/components/foundation/actions/confirmation';
 import { buttonTheme } from '@/components/foundation/actions/buttonFunctions';
 import { rejectFormSubmission } from '@/utils/submitValidation';
@@ -473,6 +475,8 @@ watch(versionLayout, (element, previous) => {
   if (element) categoryLayoutObserver.observe(element);
 });
 const categoryId = ref<number>();
+const operations = useOperationPreflight(() => categoryId.value);
+
 const keyword = ref('');
 const versions = ref<TemplateVersion[]>([]);
 const selectedId = ref<number>();
@@ -735,42 +739,50 @@ function selectCategory(ids: (string | number)[]) {
 }
 const copyTarget = ref<TemplateVersion>();
 let copyDraftSnapshot: { draftId: number; revision: number } | undefined;
-function prepareCopy(version: TemplateVersion) {
-  copyDraftSnapshot = draft.value ? { draftId: draft.value.id, revision: draft.value.revision } : undefined;
-  if (draft.value) copyTarget.value = version;
-  else void copyVersion(version);
+async function prepareCopy(version: TemplateVersion) {
+  const id = version.categoryId;
+  if (!id || busy.value) return;
+  await operations.check(`copy:${version.id}`, () => checkTemplateCategory(id, 'copy').then(requireCondition), async () => {
+    copyDraftSnapshot = draft.value ? { draftId: draft.value.id, revision: draft.value.revision } : undefined;
+    if (draft.value) copyTarget.value = version;
+    else await copyVersion(version);
+  });
 }
 async function copyVersion(version: TemplateVersion) {
   if (busy.value) return;
+  const current = operations.capture();
   busy.value = true;
   try {
     const copied = await copyTemplateDraft(version.id, copyDraftSnapshot);
+    if (!current()) return;
     pendingEdits.delete(copied.id);
     upsert(copied);
     copyTarget.value = undefined;
     historyVisible.value = false;
     adminFeedback.actionSuccess({ action: '复制', target: versionLabel(version) });
   } catch (e) {
-    error(e, '复制', versionLabel(version));
+    if (current()) error(e, '复制', versionLabel(version));
   } finally {
-    busy.value = false;
+    if (current()) busy.value = false;
   }
 }
 async function createDraft() {
-  if (!categoryId.value) return;
-  busy.value = true;
-  try {
-    upsert(
-      await createTemplateDraft({
-        categoryId: categoryId.value,
-      }),
-    );
-    historyVisible.value = false;
-  } catch (e) {
-    error(e);
-  } finally {
-    busy.value = false;
-  }
+  const id = categoryId.value;
+  if (!id || busy.value) return;
+  await operations.check(`create:${id}`, () => checkTemplateCategory(id, 'create').then(requireCondition), async () => {
+    const current = operations.capture();
+    busy.value = true;
+    try {
+      const created = await createTemplateDraft({ categoryId: id });
+      if (!current()) return;
+      upsert(created);
+      historyVisible.value = false;
+    } catch (e) {
+      if (current()) error(e);
+    } finally {
+      if (current()) busy.value = false;
+    }
+  });
 }
 function save(): Promise<boolean> {
   if (savePromise) return savePromise;
@@ -838,32 +850,41 @@ async function discardDraft() {
 }
 const publishVisible = ref(false);
 async function preparePublish() {
-  if (!(await save())) return;
-  validatedAttributeIds.value = rows.value.map((row) => row.attributeId);
-  if (
-    !rows.value.length ||
-    rows.value.some((r) => !r.attributeRole || (r.valueType === 'select' && !r.options.length))
-  ) {
-    const invalidIndex = rows.value.findIndex(
-      (row) => !row.attributeRole || (row.valueType === 'select' && !row.options.length),
-    );
-    if (invalidIndex >= 0) attributePage.value = Math.floor(invalidIndex / attributePageSize.value) + 1;
-    return rejectFormSubmission(versionLayout.value);
-  }
-  publishVisible.value = true;
+  const id = categoryId.value;
+  if (!id || busy.value) return;
+  await operations.check(`publish:${id}`, () => checkTemplateCategory(id, 'publish').then(requireCondition), async () => {
+    const current = operations.capture();
+    if (!(await save()) || !current()) return;
+    validatedAttributeIds.value = rows.value.map((row) => row.attributeId);
+    if (
+      !rows.value.length ||
+      rows.value.some((r) => !r.attributeRole || (r.valueType === 'select' && !r.options.length))
+    ) {
+      const invalidIndex = rows.value.findIndex(
+        (row) => !row.attributeRole || (row.valueType === 'select' && !row.options.length),
+      );
+      if (invalidIndex >= 0) attributePage.value = Math.floor(invalidIndex / attributePageSize.value) + 1;
+      return rejectFormSubmission(versionLayout.value);
+    }
+    publishVisible.value = true;
+  });
 }
 async function publish() {
-  if (!(await save())) return;
-  if (!selected.value) return;
+  if (busy.value || !selected.value) return;
+  const id = selected.value.id;
+  const current = operations.capture();
   busy.value = true;
   try {
-    upsert(await publishTemplateDraft(selected.value.id, selected.value.revision));
+    if (!(await save()) || !current() || selected.value?.id !== id) return;
+    const published = await publishTemplateDraft(id, selected.value.revision);
+    if (!current()) return;
+    upsert(published);
     publishVisible.value = false;
     adminFeedback.actionSuccess({ action: '发布', target: '新版本' });
   } catch (e) {
-    error(e, '发布', '新版本');
+    if (current()) error(e, '发布', '新版本');
   } finally {
-    busy.value = false;
+    if (current()) busy.value = false;
   }
 }
 const addVisible = ref(false),
@@ -1020,6 +1041,11 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('resize', updateCategoryHeight);
   categoryLayoutObserver.disconnect();
+});
+operations.onInvalidate(() => {
+  busy.value = false;
+  copyTarget.value = undefined;
+  publishVisible.value = false;
 });
 </script>
 <style scoped>

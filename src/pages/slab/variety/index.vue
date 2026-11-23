@@ -69,7 +69,8 @@
                   v-if="canDeleteVariety"
                   :theme="buttonTheme('delete')"
                   hover="color"
-                  @click="openDeleteConfirm(row)"
+                  :disabled="operations.pending(`delete:${row.id}`)"
+                    @click="openDeleteConfirm(row)"
                 >
                   删除
                 </t-link>
@@ -118,6 +119,7 @@
       :action="confirmState.type === 'delete' ? '删除' : confirmState.type === 'disable' ? '停用' : '启用'"
       object-type="品种"
       :object-name="confirmState.row?.name"
+      :loading="operations.pending(`${confirmState.type}:${confirmState.row?.id}`)"
       @confirm="handleConfirm"
       @cancel="closeConfirmDialog"
       @close="closeConfirmDialog"
@@ -128,6 +130,9 @@
 </template>
 
 <script setup lang="ts">
+import { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';
+import { checkSlabVarietyDelete } from '@/services/slabVarieties';
+import { useOperationPreflight, requireCondition } from '@/composables/useOperationPreflight';
 import { formConfirmation, dialogButtonProps } from '@/components/foundation/actions/confirmation';
 import { buttonTheme, buttonFunctionFor, cancelButtonProps } from '@/components/foundation/actions/buttonFunctions';
 import { rejectFormSubmission } from '@/utils/submitValidation';
@@ -167,6 +172,7 @@ interface VarietyForm {
   remark: string;
 }
 
+const operations = useOperationPreflight();
 const tableData = ref<VarietyItem[]>([]);
 const loading = ref(false);
 const varietyPermissionPrefix = 'admin.product-data-center.slab-variety';
@@ -368,6 +374,7 @@ const handleSubmit = async () => {
 };
 
 const openStatusConfirm = (row: VarietyItem) => {
+  operations.select(`status:${row.id}`);
   const isNormal = row.status === 'normal';
   confirmState.type = isNormal ? 'disable' : 'enable';
   confirmState.row = row;
@@ -376,10 +383,13 @@ const openStatusConfirm = (row: VarietyItem) => {
 };
 
 const openDeleteConfirm = (row: VarietyItem) => {
-  confirmState.type = 'delete';
-  confirmState.row = row;
-  confirmState.content = `是否删除品种“${row.name}”？`;
-  confirmDialogVisible.value = true;
+  const key = `delete:${row.id}`;
+  return operations.check(key, () => checkSlabVarietyDelete(row.id).then(requireCondition), () => {
+    confirmState.type = 'delete';
+    confirmState.row = row;
+    confirmState.content = `是否删除品种“${row.name}”？`;
+    confirmDialogVisible.value = true;
+  });
 };
 
 const closeConfirmDialog = () => {
@@ -399,31 +409,38 @@ const handleConfirm = async () => {
   const target = confirmState.row;
   const action = confirmState.type === 'delete' ? '删除' : confirmState.type === 'enable' ? '启用' : '停用';
 
-  try {
-    if (confirmState.type === 'delete') {
-      await deleteSlabVariety(target.id);
-      tableData.value = tableData.value.filter((item) => item.id !== target.id);
-      ensureCurrentPage();
-    } else {
-      const updated = await updateSlabVarietyStatus(
-        target.id,
-        toBackendStatus(confirmState.type === 'enable' ? 'normal' : 'disabled'),
-      );
-      const targetIndex = tableData.value.findIndex((item) => item.id === target.id);
-      if (targetIndex !== -1) {
-        tableData.value.splice(targetIndex, 1, toVarietyItem(updated));
+  const operationType = confirmState.type;
+  await operations.execute(`${operationType}:${target.id}`, async (current) => {
+    try {
+      if (operationType === 'delete') {
+        const deleted = await deleteSlabVariety(target.id);
+        if (!current()) return;
+        if (!deleted) throw new Error('品种未删除，请刷新后重试');
+        tableData.value = tableData.value.filter((item) => item.id !== target.id);
+        ensureCurrentPage();
+      } else {
+        const updated = await updateSlabVarietyStatus(
+          target.id,
+          toBackendStatus(operationType === 'enable' ? 'normal' : 'disabled'),
+        );
+        if (!current()) return;
+        const targetIndex = tableData.value.findIndex((item) => item.id === target.id);
+        if (targetIndex !== -1) {
+          tableData.value.splice(targetIndex, 1, toVarietyItem(updated));
+        }
       }
-    }
 
-    closeConfirmDialog();
-    if (confirmState.type === 'delete') {
-      adminFeedback.deleted(target.name);
-    } else {
-      adminFeedback.actionSuccess({ action, target: target.name });
+      closeConfirmDialog();
+      if (operationType === 'delete') {
+        adminFeedback.deleted(target.name);
+      } else {
+        adminFeedback.actionSuccess({ action, target: target.name });
+      }
+    } catch (error) {
+      if (!current()) return;
+      adminFeedback.error(getSafeErrorMessage(error, '操作失败'));
     }
-  } catch (error) {
-    adminFeedback.error(error instanceof Error ? error.message : '操作失败');
-  }
+  });
 };
 
 onMounted(loadVarieties);

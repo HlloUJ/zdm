@@ -220,3 +220,5 @@ export const getFinishedProductDetail = (id: number) =>
 
 export const checkFinishedProductShelf = (id: number) =>
   request<boolean>(`/admin/accessory-products/${id}/shelf-check`, { method: 'POST' });
+
+export const checkSourceProductShelf = (id: number) => request<boolean>(`/admin/accessory-products/${id}/source-shelf-check`);

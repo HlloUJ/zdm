@@ -81,6 +81,13 @@ public class StoreController {
     return ApiResponse.ok(storeService.restoreStore(id));
   }
 
+  @GetMapping("/{id}/restore-check")
+  public ApiResponse<Boolean> checkRestore(@PathVariable Long id) {
+    permissionGuard.requirePermission(PERMISSION_PREFIX + ".archived.restore");
+    storeService.checkRestore(id);
+    return ApiResponse.ok(true);
+  }
+
   @GetMapping("/{id}/purge-preview")
   public ApiResponse<com.zdm.platform.storeexit.StoreExitPreview> previewDelete(@PathVariable Long id) {
     permissionGuard.requirePermission(PERMISSION_PREFIX + ".archived.delete");

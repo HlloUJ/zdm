@@ -139,3 +139,5 @@ export const listStoreFinishedLogs = (filter: StoreFinishedLogFilter) => {
   return request<{ records: StoreFinishedLog[]; total: number }>(`${base}/operation-logs?${query}`);
 };
 export const getStoreFinishedLog = (id: number) => request<StoreFinishedLog>(`${base}/operation-logs/${id}`);
+
+export const checkStoreProductShelf = (id: number) => request<boolean>(`${base}/${id}/shelf-check`);

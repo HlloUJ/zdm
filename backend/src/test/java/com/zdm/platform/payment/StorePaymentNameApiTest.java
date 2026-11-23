@@ -87,9 +87,9 @@ class StorePaymentNameApiTest extends SpringContainerTestSupport {
     createRequest("   ").andExpect(status().isBadRequest());
     var upper = create("Deposit"); create("deposit");
     state(upper, false, 1).andExpect(status().isOk());
-    createRequest("Deposit").andExpect(status().isBadRequest());
+    createRequest("Deposit").andExpect(status().isBadRequest()).andExpect(header().string("X-Zdm-Invalid-Field", "name"));
     edit(upper, "十一字符名称测试文字啊", 2).andExpect(status().isBadRequest());
-    edit(upper, "deposit", 2).andExpect(status().isBadRequest());
+    edit(upper, "deposit", 2).andExpect(status().isBadRequest()).andExpect(header().string("X-Zdm-Invalid-Field", "name"));
   }
   @Test void sharedStoreNamesUseCurrentAccountNameAndKeepCreationMetadata() throws Exception {
     var row = create("定金");
@@ -114,7 +114,7 @@ class StorePaymentNameApiTest extends SpringContainerTestSupport {
     var row = create("定金");
     var edited = data(edit(row, "订金", 1));
     assertEquals(2, edited.path("version").asInt());
-    edit(row, "尾款", 1).andExpect(status().isBadRequest());
+    edit(row, "尾款", 1).andExpect(status().isBadRequest()).andExpect(header().doesNotExist("X-Zdm-Invalid-Field"));
     state(row, false, 1).andExpect(status().isBadRequest());
     deleteRequest(row, 1).andExpect(status().isBadRequest());
     assertEquals(2, jdbc.queryForObject("SELECT COUNT(*) FROM store_payment_name_events", Integer.class));

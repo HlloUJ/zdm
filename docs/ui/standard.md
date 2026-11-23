@@ -148,7 +148,7 @@
 | `switch-category`   | 切换分类       | `primary` |
 | `back`              | 返回           | `default` |
 | `cancel`            | 取消           | `default` |
-| `close`             | 关闭／我知道了 | `default` |
+| `close`             | 关闭／结果已阅 | `default` |
 | `login`             | 登录           | `primary` |
 | `logout`            | 退出登录       | `default` |
 | `verification-code` | 获取验证码     | `primary` |
@@ -173,7 +173,7 @@
 
 ### 确认、取消与校验
 
-- 确认按钮跟随实际动作：如归档／停用／下架为warning，启用／恢复为success，删除为danger。即使按钮文案是“提交”，也按实际动作取色。无操作可执行的阻断弹窗“我知道了”归入close，使用default。
+- 确认按钮跟随实际动作：如归档／停用／下架为warning，启用／恢复为success，删除为danger。即使按钮文案是“提交”，也按实际动作取色。已知业务阻断按[操作校验与反馈标准](operation-feedback-standard.md)给警告 Toast。
 - 取消始终default；关闭、返回亦为default。取消按钮的null（隐藏）、禁用、加载、回调及文案不变。
 - 校验失败使用字段红框、字段下方具体提示和原有统一提交反馈；创建规格、选择选项等正常动作不因错误改为danger。校验规则、提交时机和定位行为不变。
 - 删除与彻底删除同为danger，以原名称、说明和确认流程表达后果差异，不另造深红色。清空权限选择归入clear-selection，不按“清空”二字推断危险色。
@@ -201,7 +201,7 @@ ESLint 全量、增量、自动修复和提交前检查统一使用 `--max-warni
 
 公共实现为 `src/components/foundation/actions/confirmation.ts`。表单显式使用 `formConfirmation('create' | 'edit')`，随真实模式切换；独立保存按钮使用 `formConfirmationText`。业务操作使用 `operationConfirmation(登记动作, 是否批量)`；完整名称及明确兼容别名登记在现有 `button-functions.json` 的 `confirmationActions`。不按标题、旧按钮文案或选中数量推断动作和批量状态；恢复类需明确登记“取消归档”“放回仓库”“恢复运营”等实际含义。
 
-`AdminDialog` 和 `AdminFormDialog` 的 `confirmation` 必填；`AdminConfirmDialog` 使用已登记 `action` 和显式批量状态；原生弹框通过 `dialogButtonProps` 生成。确认按钮仅提供加载、禁用等行为选项，不覆盖名称或主题；原有功能映射继续决定颜色。取消保留“取消”；详情关闭、无法操作的“我知道了”、无执行按钮及下一步导航显式登记，保留其原有含义。
+`AdminDialog` 和 `AdminFormDialog` 的 `confirmation` 必填；`AdminConfirmDialog` 使用已登记 `action` 和显式批量状态；原生弹框通过 `dialogButtonProps` 生成。确认按钮仅提供加载、禁用等行为选项，不覆盖名称或主题；原有功能映射继续决定颜色。取消保留“取消”；详情和结果关闭、无执行按钮及下一步导航显式登记，保留其原有含义。
 
 新动作先登记完整名称，再接入公共入口；未知动作和表单模式不得回退为“提交”“确定”。现有源码守卫覆盖存量与新增页面：缺失配置、未登记动作、手写确认文案或绕过公共入口均失败；运行时同样拒绝未知动作。特殊场景须明确登记用途及固定文案，并补对应检查，不能自行豁免。
 

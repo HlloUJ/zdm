@@ -59,3 +59,6 @@ export const discardTemplateDraft = (id: number, revision: number) =>
   request<boolean>(`${root}/${id}?revision=${revision}`, { method: 'DELETE' });
 export const versionLabel = (version?: TemplateVersion) =>
   version ? (version.state === 'draft' ? '草稿' : `V${version.versionNo}`) : '暂无版本';
+
+export const checkTemplateCategory = (categoryId: number, operation: 'create' | 'copy' | 'publish') =>
+  request<boolean>(`/admin/template-versions/category-operation-check?categoryId=${categoryId}&operation=${operation}`);

@@ -65,7 +65,8 @@
                   v-if="canDelete"
                   :theme="buttonTheme('delete')"
                   hover="color"
-                  @click="openConfirm(row, 'delete')"
+                  :disabled="operations.pending(`delete:${row.id}`)"
+                    @click="openConfirm(row, 'delete')"
                   >删除</t-link
                 >
               </div>
@@ -151,6 +152,7 @@
       :action="confirmType === 'delete' ? '删除' : confirmType === 'disable' ? '停用' : '启用'"
       object-type="纹理"
       :object-name="confirmRow?.name"
+      :loading="operations.pending(`${confirmType}:${confirmRow?.id}`)"
       @confirm="submitConfirm"
       @cancel="confirmVisible = false"
       @close="confirmVisible = false"
@@ -163,6 +165,9 @@
 </template>
 
 <script setup lang="ts">
+import { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';
+import { checkSlabTextureDelete } from '@/services/slabTextures';
+import { useOperationPreflight, requireCondition } from '@/composables/useOperationPreflight';
 import { formConfirmation } from '@/components/foundation/actions/confirmation';
 import { buttonTheme, buttonFunctionFor } from '@/components/foundation/actions/buttonFunctions';
 import { rejectFormSubmission } from '@/utils/submitValidation';
@@ -191,6 +196,7 @@ import {
 
 type TextureItem = Omit<SlabTextureRecord, 'status'> & { status: 'normal' | 'disabled'; aliasCount: number };
 type ConfirmType = 'enable' | 'disable' | 'delete';
+const operations = useOperationPreflight();
 const prefix = 'admin.product-data-center.slab-texture';
 const user = computed(() => getLoginUser());
 const canCreate = computed(() => hasPermission(user.value, `${prefix}.create`));
@@ -356,26 +362,43 @@ const confirmVisible = ref(false);
 const confirmRow = ref<TextureItem | null>(null);
 const confirmType = ref<ConfirmType>('disable');
 const openConfirm = (row: TextureItem, type: ConfirmType) => {
-  confirmRow.value = row;
-  confirmType.value = type;
-  confirmVisible.value = true;
+  const key = `${type}:${row.id}`;
+  const open = () => {
+    confirmRow.value = row;
+    confirmType.value = type;
+    confirmVisible.value = true;
+  };
+  if (type === 'delete') {
+    return operations.check(key, () => checkSlabTextureDelete(row.id).then(requireCondition), open);
+  }
+  operations.select(key);
+  open();
 };
 const submitConfirm = async () => {
   if (!confirmRow.value) return;
-  try {
-    if (confirmType.value === 'delete') {
-      await deleteSlabTexture(confirmRow.value.id);
-      adminFeedback.deleted(confirmRow.value.name);
-    } else {
-      const next = confirmType.value === 'disable' ? 'disabled' : 'enabled';
-      await updateSlabTextureStatus(confirmRow.value.id, next);
-      adminFeedback.actionSuccess({ action: next === 'enabled' ? '启用' : '停用', target: confirmRow.value.name });
+  const target = confirmRow.value;
+  const operationType = confirmType.value;
+  await operations.execute(`${operationType}:${target.id}`, async (current) => {
+    try {
+      if (operationType === 'delete') {
+        const deleted = await deleteSlabTexture(target.id);
+        if (!current()) return;
+        if (!deleted) throw new Error('纹理未删除，请刷新后重试');
+        adminFeedback.deleted(target.name);
+      } else {
+        const next = operationType === 'disable' ? 'disabled' : 'enabled';
+        await updateSlabTextureStatus(target.id, next);
+        if (!current()) return;
+        adminFeedback.actionSuccess({ action: next === 'enabled' ? '启用' : '停用', target: target.name });
+      }
+      confirmVisible.value = false;
+      await loadData();
+      if (!current()) return;
+    } catch (error) {
+      if (!current()) return;
+      adminFeedback.error(getSafeErrorMessage(error, '操作失败'));
     }
-    confirmVisible.value = false;
-    await loadData();
-  } catch (error) {
-    adminFeedback.error(error instanceof Error ? error.message : '操作失败');
-  }
+  });
 };
 
 onMounted(loadData);

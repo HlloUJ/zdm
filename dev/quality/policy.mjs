@@ -8,6 +8,11 @@ const backend = /^(backend\/|infrastructure\/store-exit-ledger\/|(?:docker-|comp
 const governance =
   /^(dev\/quality(?:-entry\.mjs|\.mjs|\/)|tests\/quality[^/]*\.test\.mjs$|\.github\/workflows\/verification\.yml$)/;
 const acceptance = /^(dev\/acceptance[^/]*\.mjs|tests\/acceptance[^/]*\.test\.mjs)$/;
+const feedbackInputs = new Set([
+  'dev/operation-feedback-policy.mjs',
+  'docs/ui/operation-feedback-registry.json',
+  'docs/ui/visual-refactor.json',
+]);
 const npmInput = /^(package(?:-lock)?\.json|\.npmrc)$/;
 const nodeTest = (...files) => [process.execPath, '--test', ...files];
 export const checks = {
@@ -42,7 +47,7 @@ export const checks = {
   unit: {
     family: 'frontend',
     command: [process.execPath, 'node_modules/vitest/vitest.mjs', 'run'],
-    inputs: (p) => frontend.test(p) || p.startsWith('tests/'),
+    inputs: (p) => frontend.test(p) || p.startsWith('tests/') || feedbackInputs.has(p) || backend.test(p),
   },
   e2e: {
     family: 'browser',

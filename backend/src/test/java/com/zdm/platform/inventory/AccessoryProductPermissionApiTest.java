@@ -512,6 +512,25 @@ class AccessoryProductPermissionApiTest extends SpringContainerTestSupport {
   }
 
   @Test
+  void sourceShelfCheckUsesTheSourceActionAndRechecksPersistedStock() throws Exception {
+    long id = sourceFixture("平台发布", "warehouse").path("id").asLong();
+    String path = "/api/admin/accessory-products/{id}/source-shelf-check";
+    identity("all", "warehouse.shelf");
+    mvc.perform(get(path, id)).andExpect(status().isForbidden());
+    identityFor("supply-chain", "all", "warehouse.view");
+    mvc.perform(get(path, id)).andExpect(status().isForbidden());
+    identityFor("supply-chain", "all", "warehouse.shelf");
+    mvc.perform(get(path, id)).andExpect(status().isOk()).andExpect(jsonPath("$.data").value(true));
+    assertThat(jdbc.queryForObject("SELECT source_status FROM accessory_products WHERE id=?", String.class, id)).isEqualTo("warehouse");
+    jdbc.update("UPDATE accessory_products SET total_stock=0 WHERE id=?", id);
+    sqlSession.clearCache();
+    mvc.perform(get(path, id)).andExpect(status().isBadRequest())
+        .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("X-Zdm-Operation-Blocked", "true"));
+    mvc.perform(put("/api/admin/accessory-products/{id}", id).contentType("application/json").content("{\"name\":\"跨端商品\",\"status\":\"selling\"}"))
+        .andExpect(status().isBadRequest()).andExpect(jsonPath("$.message").value("请完善库存后再上架"));
+  }
+
+  @Test
   void operationsShelfCheckPreservesFunctionDataAndClientBoundaries() throws Exception {
     long id = sourceFixture("平台发布", "selling").path("id").asLong();
     identity("all", "warehouse.view");

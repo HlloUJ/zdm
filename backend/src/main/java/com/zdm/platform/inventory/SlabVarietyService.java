@@ -1,5 +1,7 @@
 package com.zdm.platform.inventory;
 
+import com.zdm.platform.common.OperationBlockedException;
+
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.zdm.platform.account.CreatorAwareService;
 import com.zdm.platform.security.CurrentIdentityProvider;
@@ -61,21 +63,22 @@ public class SlabVarietyService extends CreatorAwareService<SlabVarietyMapper, S
 
   @Transactional
   public boolean deleteVariety(Long id) {
-    SlabVariety existing = getById(id);
-    if (existing == null) {
-      return false;
-    }
-    Long referenceCount = slabInventoryMapper.selectCount(
-        Wrappers.<SlabInventory>lambdaQuery().eq(SlabInventory::getVarietyId, id));
-    if (referenceCount > 0) {
-      throw new IllegalArgumentException(REFERENCED_MESSAGE);
-    }
-
+    if (!deleteVarietyCheck(id)) return false;
     try {
       return removeById(id);
     } catch (DataIntegrityViolationException exception) {
       throw new IllegalArgumentException(REFERENCED_MESSAGE, exception);
     }
+  }
+
+  public boolean deleteVarietyCheck(Long id) {
+    if (getById(id) == null) return false;
+    Long referenceCount = slabInventoryMapper.selectCount(
+        Wrappers.<SlabInventory>lambdaQuery().eq(SlabInventory::getVarietyId, id));
+    if (referenceCount > 0) {
+      throw new OperationBlockedException(REFERENCED_MESSAGE);
+    }
+    return true;
   }
 
 

@@ -25,9 +25,9 @@ describe('confirmation color integration', () => {
     ['彻底删除', 'purge', 'danger'],
   ] as const) {
     it(`${action} keeps its function color through both dialog adapters`, async () => {
-      const mode = ref<'confirm' | 'blocked'>('confirm');
+      const loading = ref(false);
       const Host = {
-        render: () => h(AdminConfirmDialog, { visible: true, action, function: fn, mode: mode.value }),
+        render: () => h(AdminConfirmDialog, { visible: true, action, function: fn, loading: loading.value }),
       };
       const wrapper = mount(Host, { global });
       const dialog = wrapper.findComponent(Dialog);
@@ -35,10 +35,9 @@ describe('confirmation color integration', () => {
       expect(dialog.props('cancelBtn')).toMatchObject({ content: '取消', theme: 'default' });
       dialog.vm.$emit('confirm');
       expect(wrapper.findComponent(AdminConfirmDialog).emitted('confirm')).toHaveLength(1);
-      mode.value = 'blocked';
+      loading.value = true;
       await nextTick();
-      expect(dialog.props('confirmBtn')).toMatchObject({ content: '我知道了', theme: 'default' });
-      expect(dialog.props('cancelBtn')).toBeNull();
+      expect(dialog.props('confirmBtn')).toMatchObject({ content: `确认${action}`, theme, loading: true });
     });
   }
   it('a submission caption does not override the actual action or original button behavior', () => {

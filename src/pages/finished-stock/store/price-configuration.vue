@@ -289,6 +289,7 @@
   </div>
 </template>
 <script setup lang="ts">
+import { useOperationPreflight } from '@/composables/useOperationPreflight';
 import { useListBatchSelection } from '@/components/foundation';
 import { formConfirmationText } from '@/components/foundation/actions/confirmation';
 import { formConfirmation, operationConfirmation } from '@/components/foundation/actions/confirmation';
@@ -645,13 +646,18 @@ function openCreateDiscount() {
   createVisible.value = true;
   nextTick(() => createFormRef.value?.clearValidate());
 }
+const formOperation = useOperationPreflight(() => `${activeScope.value}:${editingDiscountId.value}:${createVisible.value}`);
+formOperation.onInvalidate(() => { saving.value = false; });
 async function saveDiscount() {
   if (saving.value || !can(editingDiscountId.value == null ? 'create' : 'edit')) return;
-  if ((await createFormRef.value?.validate()) !== true || createForm.roleId == null)
-    return rejectFormSubmission(createFormRef.value);
+  const editing = editingDiscountId.value != null;
+  const current = formOperation.capture();
   saving.value = true;
   try {
-    rules.value =
+    const valid = await createFormRef.value?.validate();
+    if (!current()) return;
+    if (valid !== true || createForm.roleId == null) return rejectFormSubmission(createFormRef.value);
+    const updatedRules =
       editingDiscountId.value == null
         ? await createStoreDiscount(activeScope.value, createForm.roleId, Number(createForm.coefficient))
         : await updateStoreDiscount(
@@ -660,12 +666,15 @@ async function saveDiscount() {
             createForm.roleId,
             Number(createForm.coefficient),
           );
+    if (!current()) return;
+    rules.value = updatedRules;
     createVisible.value = false;
     adminFeedback.actionSuccess({ action: editingDiscountId.value == null ? '新增' : '修改', target: '折扣配置' });
   } catch (error) {
-    adminFeedback.error(getSafeErrorMessage(error, '新增失败，请稍后重试'));
+    if (!current()) return;
+    adminFeedback.error(getSafeErrorMessage(error, editing ? '修改失败，请稍后重试' : '新增失败，请稍后重试'));
   } finally {
-    saving.value = false;
+    if (current()) saving.value = false;
   }
 }
 function editDiscount(rule: StorePriceRule) {

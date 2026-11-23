@@ -57,6 +57,10 @@ async function setup(page: Page, permissions = ['all']) {
     const method = route.request().method();
     const body = method === 'GET' || method === 'DELETE' ? {} : route.request().postDataJSON();
     let data: unknown;
+    if (path === '/category-operation-check') {
+      const id = Number(url.searchParams.get('categoryId'));
+      return route.fulfill({ json: { code: 0, data: [3, 4].includes(id) } });
+    }
     if (path === '/categories')
       data = [
         {
