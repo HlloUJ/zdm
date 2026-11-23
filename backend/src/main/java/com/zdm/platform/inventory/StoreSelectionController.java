@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Map;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -45,12 +46,13 @@ public class StoreSelectionController {
     return ApiResponse.ok(catalog.detail(context, type, id));
   }
   @GetMapping("/selection")
+  @Transactional(readOnly = true)
   public ApiResponse<Selection> selection(@RequestParam String context, @RequestParam(defaultValue = "finished") String type,
-      @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "5") int pageSize) {
+      @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "10") int pageSize) {
     return ApiResponse.ok(new Selection(catalog.selection(context, type, page, pageSize), catalog.counts(context)));
   }
   @PostMapping("/selection")
-  public ApiResponse<Boolean> add(@Valid @RequestBody Add input) { service.add(input.context(), input.type(), input.productId()); return ApiResponse.ok(true); }
+  public ApiResponse<Boolean> add(@Valid @RequestBody Add input) { return ApiResponse.ok(service.add(input.context(), input.type(), input.productId())); }
   @DeleteMapping("/selection/{id}")
   public ApiResponse<Boolean> remove(@RequestParam String context, @PathVariable Long id) { service.remove(context, id); return ApiResponse.ok(true); }
   @PostMapping("/join-batches")

@@ -14,6 +14,7 @@ import java.util.Set;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /** Read-only, store-priced catalog. No upstream cost or other store-level prices escape this projection. */
 @Service
@@ -23,7 +24,7 @@ public class StoreSelectionCatalog {
   public record Category(String type, Long id, Long parentId, String name) {}
   public record Product(String type, Long id, String name, Long categoryId, LocalDateTime sourceCreatedAt,
       String imageUrl, BigDecimal priceMin, BigDecimal priceMax, boolean soldOut, boolean addedToStore,
-      boolean inSelection, boolean canAdd, List<String> reasons, Long selectionId, LocalDateTime addedAt) {
+      boolean inSelection, String selectedByName, boolean canAdd, List<String> reasons, Long selectionId, LocalDateTime addedAt) {
     public Product { reasons = List.copyOf(reasons); }
   }
   public record Page(List<Product> records, long total, int page, int pageSize) {
@@ -108,10 +109,11 @@ public class StoreSelectionCatalog {
     return args;
   }
 
+  @Transactional(readOnly = true)
   public Page products(String context, String keyword, List<String> types, List<String> states,
       String categoryType, Long categoryId, int page, int pageSize) {
     var store = require(context);
-    validatePage(page, pageSize);
+    validatePage(page, pageSize, List.of(5, 10, 20, 40));
     var args = parameters(store);
     String sql = "SELECT * FROM (" + sourceSelect("finished") + " UNION ALL " + sourceSelect("accessory")
         + ") catalog WHERE status='selling' AND source_status IN ('selling','soldOut')"
@@ -145,11 +147,13 @@ public class StoreSelectionCatalog {
     Long total = named.queryForObject("SELECT COUNT(*) FROM (" + sql + ") counted", args, Long.class);
     args.put("limit", pageSize); args.put("offset", ((long) page - 1) * pageSize);
     var rows = named.queryForList(sql + " ORDER BY created_at DESC,product_type ASC,id DESC LIMIT :limit OFFSET :offset", args);
+    addColleagueNames(store, "finished", rows);
+    addColleagueNames(store, "accessory", rows);
     return new Page(rows.stream().map(this::project).toList(), total == null ? 0 : total, page, pageSize);
   }
 
   public Page selection(String context, String type, int page, int pageSize) {
-    var store = require(context); validType(type); validatePage(page, pageSize);
+    var store = require(context); validType(type); validatePage(page, pageSize, List.of(5, 10, 20, 40, 50));
     var args = parameters(store); args.put("type", type);
     Long count = named.queryForObject("SELECT COUNT(*) FROM store_selection_items WHERE tenant_id=:tenant"
         + " AND store_id=:store AND account_id=:account AND product_type=:type", args, Long.class);
@@ -162,7 +166,7 @@ public class StoreSelectionCatalog {
       var row = sourceRow(store, type, number(entry.get("product_id")));
       if (row == null) {
         rows.add(new Product(type, number(entry.get("product_id")), "商品当前不可用", null, null, null, null, null,
-            false, false, true, false, List.of("商品当前不可用，无法加入门店。"), number(entry.get("id")), time(entry.get("added_at"))));
+            false, false, true, null, false, List.of("商品当前不可用，无法加入门店。"), number(entry.get("id")), time(entry.get("added_at"))));
       } else { rows.add(project(row)); }
     }
     return new Page(rows, count == null ? 0 : count, page, pageSize);
@@ -183,6 +187,26 @@ public class StoreSelectionCatalog {
     return rows.isEmpty() ? null : rows.getFirst();
   }
 
+  // Resolve colleagues only for the visible products without a personal entry. Historical
+  // co-owners never multiply catalog rows or expose another employee's selection ID.
+  private void addColleagueNames(CityPartnerStoreScope.Store store, String type, List<Map<String, Object>> rows) {
+    var unowned = rows.stream().filter(row -> type.equals(row.get("product_type")) && row.get("selection_id") == null).toList();
+    if (unowned.isEmpty()) { return; }
+    var args = parameters(store);
+    args.put("type", type);
+    args.put("ids", unowned.stream().map(row -> number(row.get("id"))).toList());
+    var owners = named.queryForList("""
+        SELECT s.product_id, COALESCE(a.display_name,'账号已不可用') AS owner_name
+        FROM store_selection_items s LEFT JOIN accounts a ON a.id=s.account_id
+        WHERE s.tenant_id=:tenant AND s.store_id=:store AND s.account_id<>:account
+          AND s.product_type=:type AND s.product_id IN (:ids)
+        ORDER BY s.added_at,s.id
+        """, args);
+    Map<Long, String> names = new LinkedHashMap<>();
+    for (var owner : owners) { names.putIfAbsent(number(owner.get("product_id")), (String) owner.get("owner_name")); }
+    unowned.forEach(row -> row.put("selected_by_name", names.get(number(row.get("id")))));
+  }
+
   static boolean browsable(Map<String, Object> row) {
     return row != null && "selling".equals(row.get("status"))
         && List.of("selling", "soldOut").contains(row.get("source_status"))
@@ -198,10 +222,12 @@ public class StoreSelectionCatalog {
     return map;
   }
 
+  @Transactional(readOnly = true)
   public Detail detail(String context, String type, Long id) {
     var store = require(context); validType(type);
     var row = sourceRow(store, type, id);
     if (!browsable(row)) { throw new IllegalArgumentException("商品当前不可用"); }
+    addColleagueNames(store, type, List.of(row));
     Map<String, Object> info = information(type, id);
     return new Detail(project(row, info), info);
   }
@@ -231,16 +257,18 @@ public class StoreSelectionCatalog {
       }
       if (incomplete) { reasons.add("请先完善当前门店级别的商品价格配置"); }
     }
+    String colleague = (String) row.get("selected_by_name");
     return new Product(type, number(row.get("id")), (String) row.get("name"), number(row.get("category_id")),
         time(row.get("created_at")), (String) info.get("imageUrl"),
         prices.stream().min(BigDecimal::compareTo).orElse(null), prices.stream().max(BigDecimal::compareTo).orElse(null),
-        sold, added, row.get("selection_id") != null, reasons.isEmpty(), reasons, number(row.get("selection_id")), time(row.get("added_at")));
+        sold, added, row.get("selection_id") != null || colleague != null, colleague,
+        reasons.isEmpty() && colleague == null, reasons, number(row.get("selection_id")), time(row.get("added_at")));
   }
 
   public static Long number(Object value) { return value == null ? null : ((Number) value).longValue(); }
   private static LocalDateTime time(Object value) { return value instanceof java.sql.Timestamp t ? t.toLocalDateTime() : (LocalDateTime) value; }
   private static boolean flag(Object value) { return Boolean.TRUE.equals(value) || value instanceof Number n && n.intValue() != 0; }
-  private static void validatePage(int page, int size) {
-    if (page < 1 || !List.of(5, 10, 20, 40).contains(size)) { throw new IllegalArgumentException("分页参数无效"); }
+  private static void validatePage(int page, int size, List<Integer> sizes) {
+    if (page < 1 || !sizes.contains(size)) { throw new IllegalArgumentException("分页参数无效"); }
   }
 }

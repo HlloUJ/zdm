@@ -31,6 +31,7 @@ export interface CenterProduct {
   soldOut: boolean;
   addedToStore: boolean;
   inSelection: boolean;
+  selectedByName: string | null;
   canAdd: boolean;
   reasons: string[];
   selectionId: number | null;
@@ -128,6 +129,9 @@ export function categoryTree(rows: CenterCategory[], type: ProductType): Categor
     else roots.push(node);
   }
   return roots;
+}
+export function selectionLabel(product: CenterProduct) {
+  return product.selectedByName ? `已加入选品清单·${product.selectedByName}` : '已加入选品清单';
 }
 export function centerPrice(p: Pick<CenterProduct, 'priceMin' | 'priceMax'>) {
   const money = (value: number) => Number(value).toLocaleString('zh-CN', { maximumFractionDigits: 2 });
