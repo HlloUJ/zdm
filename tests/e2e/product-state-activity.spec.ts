@@ -29,7 +29,7 @@ const actorTitles = ['入库人', '上架人', '', '移入人'];
 const originType = (client: string) =>
   client === 'supply-chain' ? 'createEntry' : client === 'admin' ? 'sourceShelfEntry' : 'productCenterSelect';
 const originLabel = (client: string) =>
-  client === 'supply-chain' ? '创建入库' : client === 'admin' ? '供应链上架入库' : '商品中心选入';
+  client === 'supply-chain' ? '创建入库' : client === 'admin' ? '供应链上架入库' : '选品中心选入';
 const timeTitles = ['入库时间', '上架时间', '售完时间', '移入时间'];
 
 for (const surface of surfaces) {
@@ -476,6 +476,10 @@ for (const surface of surfaces) {
     await expect(rows.first()).toContainText('入库验证商品-00');
     await main.getByRole('button', { name: '入库时间', exact: true }).click();
     await expect(rows.first()).toContainText('入库验证商品-14');
+    if (surface.client === 'store') {
+      await main.locator('.t-tabs__nav-item').filter({ hasText: '全部' }).click();
+      await expect(main.getByText(originLabel(surface.client), { exact: true }).first()).toBeVisible();
+    }
     expect(unmocked).toEqual([]);
   });
 }

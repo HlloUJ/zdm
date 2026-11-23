@@ -24,7 +24,7 @@ describe('current warehouse entry presentation', () => {
   for (const [type, label] of [
     ['createEntry', '创建入库'],
     ['sourceShelfEntry', '供应链上架入库'],
-    ['productCenterSelect', '商品中心选入'],
+    ['productCenterSelect', '选品中心选入'],
     ['recycleRestore', '回收恢复'],
   ]) {
     it(`${type} shows only its tag and never stale reasons or a placeholder`, () => {
