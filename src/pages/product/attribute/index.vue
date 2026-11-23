@@ -57,6 +57,7 @@
                     v-if="canDeleteAttribute"
                     :theme="buttonTheme('delete')"
                     hover="color"
+                    :disabled="operations.pending(`delete:${row.id}`)"
                     @click="openDeleteConfirm(row)"
                     >删除</t-link
                   ><span v-if="!canToggleAttributeStatus && !canDeleteAttribute" class="table-action-placeholder"
@@ -109,6 +110,7 @@
       :action="confirmType === 'delete' ? '删除' : confirmType === 'disable' ? '停用' : '启用'"
       object-type="属性"
       :object-name="confirmTarget?.name"
+      :loading="operations.pending(`${confirmType}:${confirmTarget?.id}`)"
       @confirm="handleConfirm"
       @cancel="closeConfirmDialog"
       @close="closeConfirmDialog"
@@ -119,6 +121,9 @@
 </template>
 
 <script setup lang="ts">
+import { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';
+import { OperationBlockedError } from '@/services/http';
+import { useOperationPreflight } from '@/composables/useOperationPreflight';
 import { formConfirmation } from '@/components/foundation/actions/confirmation';
 import { buttonTheme, buttonFunctionFor } from '@/components/foundation/actions/buttonFunctions';
 import { rejectFormSubmission } from '@/utils/submitValidation';
@@ -176,6 +181,8 @@ const attributeScopeTabs: { label: string; value: Scope }[] = [
 const resolveScope = (value: unknown): Scope =>
   value === 'finished' || value === 'accessory' || value === 'shared' ? value : 'shared';
 const activeScope = ref<Scope>(resolveScope(route.query.scope));
+const operations = useOperationPreflight(() => activeScope.value);
+
 const {
   visibleTabs: scopeTabs,
   showTabRail: showScopeTabRail,
@@ -335,6 +342,7 @@ const submit = async () => {
   }
 };
 const openStatusConfirm = (row: Attribute) => {
+  operations.select(`status:${row.id}`);
   if (!canToggleAttributeStatus.value) return;
   confirmTarget.value = row;
   confirmType.value = row.status === 'enabled' ? 'disable' : 'enable';
@@ -342,19 +350,17 @@ const openStatusConfirm = (row: Attribute) => {
 };
 const openDeleteConfirm = async (row: Attribute) => {
   if (!canDeleteAttribute.value) return;
-  try {
+  await operations.check(`delete:${row.id}`, async () => {
     const preview = await previewProductAttributeDelete(row.id);
-    if (preview.deletionMode === 'blocked') {
-      adminFeedback.error(preview.message || '该属性当前不能删除');
-      return;
-    }
+    if (preview.deletionMode === 'blocked') throw new OperationBlockedError(preview.message || '该属性当前不能删除');
+    if (!['physical', 'business'].includes(preview.deletionMode)) throw new Error('无效删除预检结果');
+    return preview;
+  }, (preview) => {
     confirmTarget.value = row;
     confirmType.value = 'delete';
     deletePreview.value = preview;
     confirmDialogVisible.value = true;
-  } catch (error) {
-    adminFeedback.error(error instanceof Error ? error.message : '删除条件检查失败');
-  }
+  });
 };
 const closeConfirmDialog = () => {
   confirmDialogVisible.value = false;
@@ -376,37 +382,43 @@ const handleConfirm = async () => {
   const target = confirmTarget.value;
   const action = confirmType.value === 'delete' ? '删除' : confirmType.value === 'enable' ? '启用' : '停用';
 
-  try {
-    if (confirmType.value === 'delete') {
-      const result = await deleteProductAttribute(target.id);
-      data.value = data.value.filter((item) => item.id !== target.id);
-      ensureCurrentPage();
-      if (result.deletionMode === 'physical') {
-        if (result.attributeValueCount > 0) {
-          adminFeedback.success(`属性“${target.name}”及其 ${result.attributeValueCount} 个属性值已删除。`);
+  const operationType = confirmType.value;
+  await operations.execute(`${operationType}:${target.id}`, async (current) => {
+    try {
+      if (operationType === 'delete') {
+        const result = await deleteProductAttribute(target.id);
+        if (!current()) return;
+        data.value = data.value.filter((item) => item.id !== target.id);
+        ensureCurrentPage();
+        if (result.deletionMode === 'physical') {
+          if (result.attributeValueCount > 0) {
+            adminFeedback.success(`属性“${target.name}”及其 ${result.attributeValueCount} 个属性值已删除。`);
+          } else {
+            adminFeedback.deleted(target.name);
+          }
         } else {
-          adminFeedback.deleted(target.name);
+          adminFeedback.success(`属性“${target.name}”已删除，历史商品数据已保留。`);
         }
       } else {
-        adminFeedback.success(`属性“${target.name}”已删除，历史商品数据已保留。`);
+        const updated = await updateProductAttributeStatus(
+          target.id,
+          operationType === 'enable' ? 'enabled' : 'disabled',
+        );
+        if (!current()) return;
+        const targetIndex = data.value.findIndex((item) => item.id === target.id);
+        if (targetIndex !== -1) {
+          data.value.splice(targetIndex, 1, toAttribute(updated));
+        }
       }
-    } else {
-      const updated = await updateProductAttributeStatus(
-        target.id,
-        confirmType.value === 'enable' ? 'enabled' : 'disabled',
-      );
-      const targetIndex = data.value.findIndex((item) => item.id === target.id);
-      if (targetIndex !== -1) {
-        data.value.splice(targetIndex, 1, toAttribute(updated));
+      if (operationType !== 'delete') {
+        adminFeedback.actionSuccess({ action, target: target.name });
       }
+      closeConfirmDialog();
+    } catch (error) {
+      if (!current()) return;
+      adminFeedback.error(getSafeErrorMessage(error, '操作失败'));
     }
-    if (confirmType.value !== 'delete') {
-      adminFeedback.actionSuccess({ action, target: target.name });
-    }
-    closeConfirmDialog();
-  } catch (error) {
-    adminFeedback.error(error instanceof Error ? error.message : '操作失败');
-  }
+  });
 };
 watch(
   () => route.query.scope,
@@ -419,6 +431,10 @@ watch(activeScope, () => {
   pagination.current = 1;
 });
 onMounted(loadAttributes);
+operations.onInvalidate(() => {
+  confirmDialogVisible.value = false;
+  confirmTarget.value = null;
+});
 </script>
 
 <style scoped>

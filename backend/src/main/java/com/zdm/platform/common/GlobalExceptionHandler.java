@@ -14,6 +14,17 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 public class GlobalExceptionHandler {
   private static final Logger LOGGER = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+  @ExceptionHandler(FieldValidationException.class)
+  public ResponseEntity<ApiResponse<Void>> handleInvalidField(FieldValidationException ex) {
+    return ResponseEntity.badRequest().header("X-Zdm-Invalid-Field", ex.field()).body(ApiResponse.fail(ex.getMessage()));
+  }
+
+  @ExceptionHandler(OperationBlockedException.class)
+  public ResponseEntity<ApiResponse<Void>> handleOperationBlocked(OperationBlockedException ex) {
+    return ResponseEntity.badRequest().header("X-Zdm-Operation-Blocked", "true")
+        .body(ApiResponse.fail(ex.getMessage()));
+  }
+
   @ExceptionHandler(IllegalArgumentException.class)
   public ResponseEntity<ApiResponse<Void>> handleIllegalArgument(IllegalArgumentException ex) {
     return ResponseEntity.badRequest().body(ApiResponse.fail(ex.getMessage()));

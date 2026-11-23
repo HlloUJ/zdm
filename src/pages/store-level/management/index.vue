@@ -79,7 +79,8 @@
                   v-if="canDelete"
                   :theme="buttonTheme('delete')"
                   hover="color"
-                  @click="openConfirm(row, 'delete')"
+                  :disabled="operations.pending(`delete:${row.id}`)"
+                    @click="openConfirm(row, 'delete')"
                   >删除</t-link
                 >
               </div>
@@ -120,6 +121,7 @@
       :action="confirmType === 'delete' ? '删除' : confirmType === 'disable' ? '停用' : '启用'"
       object-type="门店级别"
       :object-name="confirmRow?.name"
+      :loading="operations.pending(`${confirmType}:${confirmRow?.id}`)"
       @confirm="submitConfirm"
       @cancel="confirmVisible = false"
       @close="confirmVisible = false"
@@ -128,6 +130,8 @@
 </template>
 
 <script setup lang="ts">
+import { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';
+import { useOperationPreflight, requireCondition } from '@/composables/useOperationPreflight';
 import { formConfirmation } from '@/components/foundation/actions/confirmation';
 import { buttonTheme, buttonFunctionFor } from '@/components/foundation/actions/buttonFunctions';
 import { rejectFormSubmission } from '@/utils/submitValidation';
@@ -155,6 +159,7 @@ import {
 type LevelStatus = 'normal' | 'disabled';
 type ConfirmType = 'enable' | 'disable' | 'delete';
 type LevelItem = Omit<StoreLevelRecord, 'status' | 'createdAt'> & { status: LevelStatus; createdAt: string };
+const operations = useOperationPreflight();
 const permissionPrefix = 'admin.tenant.store-level-management';
 const loginUser = computed(() => getLoginUser());
 const canCreate = computed(() => hasPermission(loginUser.value, `${permissionPrefix}.create`));
@@ -294,39 +299,46 @@ const submitLevel = async () => {
 const confirmVisible = ref(false);
 const confirmType = ref<ConfirmType>('disable');
 const confirmRow = ref<LevelItem | null>(null);
-const openConfirm = async (row: LevelItem, type: ConfirmType) => {
-  if (type === 'disable' || type === 'delete') {
-    try {
-      if (type === 'disable') await previewStoreLevelDisable(row.id);
-      else await previewStoreLevelDelete(row.id);
-    } catch (error) {
-      adminFeedback.error(
-        error instanceof Error ? error.message : type === 'disable' ? '停用条件校验失败' : '删除条件校验失败',
-      );
-      return;
-    }
-  }
-  confirmRow.value = row;
-  confirmType.value = type;
-  confirmVisible.value = true;
+const openConfirm = (row: LevelItem, type: ConfirmType) => {
+  const key = `${type}:${row.id}`;
+  const open = () => {
+    confirmRow.value = row;
+    confirmType.value = type;
+    confirmVisible.value = true;
+  };
+  if (type === 'enable') { operations.select(key); open(); return; }
+  return operations.check(key, () => (type === 'delete' ? previewStoreLevelDelete : previewStoreLevelDisable)(row.id).then(requireCondition), open);
 };
 const submitConfirm = async () => {
   if (!confirmRow.value) return;
   const target = confirmRow.value;
   const targetName = target.name;
   const action = confirmType.value === 'delete' ? '删除' : confirmType.value === 'enable' ? '启用' : '停用';
-  try {
-    if (confirmType.value === 'delete') await deleteStoreLevel(target.id);
-    else await updateStoreLevelStatus(target.id, confirmType.value === 'enable' ? 'enabled' : 'disabled');
-    await loadLevels();
-    confirmVisible.value = false;
-    if (confirmType.value === 'delete') adminFeedback.deleted(targetName);
-    else adminFeedback.actionSuccess({ action, target: targetName });
-  } catch (error) {
-    adminFeedback.error(error instanceof Error ? error.message : '操作失败');
-  }
+  const operationType = confirmType.value;
+  await operations.execute(`${operationType}:${target.id}`, async (current) => {
+    try {
+      if (operationType === 'delete') {
+        const deleted = await deleteStoreLevel(target.id);
+        if (!current()) return;
+        if (!deleted) throw new Error('门店级别未删除，请刷新后重试');
+      } else await updateStoreLevelStatus(target.id, operationType === 'enable' ? 'enabled' : 'disabled');
+      if (!current()) return;
+      await loadLevels();
+      if (!current()) return;
+      confirmVisible.value = false;
+      if (operationType === 'delete') adminFeedback.deleted(targetName);
+      else adminFeedback.actionSuccess({ action, target: targetName });
+    } catch (error) {
+      if (!current()) return;
+      adminFeedback.error(getSafeErrorMessage(error, '操作失败'));
+    }
+  });
 };
 onMounted(loadLevels);
+operations.onInvalidate(() => {
+  confirmVisible.value = false;
+  confirmRow.value = null;
+});
 </script>
 
 <style scoped>

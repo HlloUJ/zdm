@@ -19,7 +19,7 @@
             <t-button
               v-if="canSave"
               :theme="buttonTheme('save')"
-              :loading="loading"
+              :loading="loading || operations.pending(`save:${activeTerminal}`)"
               :disabled="!currentModules.length"
               @click="saveAllocation"
             >
@@ -36,6 +36,7 @@
 </template>
 
 <script setup lang="ts">
+import { useOperationPreflight } from '@/composables/useOperationPreflight';
 import { formConfirmationText } from '@/components/foundation/actions/confirmation';
 import { buttonTheme } from '@/components/foundation/actions/buttonFunctions';
 import { getLoginUser } from '@/services/auth';
@@ -60,6 +61,7 @@ import {
   type TerminalFunctionPolicyRecord,
 } from '@/services/terminalFunctionPolicies';
 
+const operations = useOperationPreflight();
 const canSave = computed(() => isPlatformSuperAdmin(getLoginUser()));
 
 const activeTerminal = ref<TerminalType>('store');
@@ -111,33 +113,38 @@ const resetAllocation = () => {
   adminFeedback.info('已重置为上次保存状态');
 };
 
+let tabRevision = 0;
 const saveAllocation = async () => {
   if (!canSave.value) return;
   const terminal = activeTerminal.value;
-  loading.value = true;
-  try {
-    const saved = await saveTerminalFunctionPolicy(terminal, checkedValues.value.join(','));
-    terminalPolicies[terminal] = saved;
-    savedAllocationValues[terminal] = normalizeTerminalPermissions(
-      terminal,
-      parsePermissions(saved.functionPermissions),
-    );
-    checkedValues.value = [...savedAllocationValues[terminal]];
-    adminFeedback.actionSuccess({ action: '修改' });
-  } catch (error) {
-    adminFeedback.error(error instanceof Error ? error.message : '保存失败');
-  } finally {
-    loading.value = false;
-  }
+  const revision = tabRevision;
+  const permissions = checkedValues.value.join(',');
+  await operations.execute(`save:${terminal}`, async (current) => {
+    try {
+      const saved = await saveTerminalFunctionPolicy(terminal, permissions);
+      if (!current()) return;
+      terminalPolicies[terminal] = saved;
+      savedAllocationValues[terminal] = normalizeTerminalPermissions(
+        terminal,
+        parsePermissions(saved.functionPermissions),
+      );
+      if (tabRevision !== revision) return;
+      checkedValues.value = [...savedAllocationValues[terminal]];
+      adminFeedback.actionSuccess({ action: '修改' });
+    } catch (error) {
+      if (current() && tabRevision === revision) adminFeedback.error(error instanceof Error ? error.message : '保存失败');
+    }
+  });
 };
 
 watch(
   activeTerminal,
   () => {
+    tabRevision++;
     checkedValues.value = [...savedAllocationValues[activeTerminal.value]];
     activeModuleValue.value = terminalFunctionTrees[activeTerminal.value][0]?.value ?? '';
   },
-  { immediate: true },
+  { immediate: true, flush: 'sync' },
 );
 
 onMounted(() => {

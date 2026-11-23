@@ -225,6 +225,7 @@
                         :key="action.action"
                         :theme="buttonTheme(buttonFunctionFor('stock', action.action))"
                         hover="color"
+                        :disabled="operations.pending(`${action.action}:${row.id}`)"
                         @click="handleRowAction(action.action, row)"
                       >
                         {{ action.label }}
@@ -1072,7 +1073,7 @@
 
     <AdminConfirmDialog
       v-model:visible="confirmDialogVisible"
-      :confirm-loading="saving"
+      :loading="saving"
       :function="buttonFunctionFor('stock', confirmState.type)"
       :action="confirmAction"
       :title="confirmTitle"
@@ -1165,6 +1166,8 @@
 </template>
 
 <script setup lang="ts">
+import { OperationBlockedError } from '@/services/http';
+import { useOperationPreflight, requireCondition } from '@/composables/useOperationPreflight';
 import { useListBatchSelection } from '@/components/foundation';
 import DecimalInput from '@/components/DecimalInput.vue';
 import { numericError } from '@/utils/numericInput';
@@ -1293,11 +1296,13 @@ type SalesNumberChangeContext = {
   type?: string;
 };
 const activeTab = ref<SlabTab>(initialProductListTab(useRoute().query.tab));
+const operations = useOperationPreflight(() => activeTab.value);
+
 const { descending, tableSort, toggleTimeSort, onTimeSortChange } = useStateActivitySort(activeTab, () => {
   currentPagination.value.current = 1;
 });
 const loginUser = computed(() => getLoginUser());
-const productPermissionPrefix = computed(() => `${'admin'}.slab-management`);
+const productPermissionPrefix = computed(() => `admin.slab-management`);
 const sourceBlocked = (row: SlabItem) => Boolean(row.sourceUnavailable);
 const slabPermissionScope: Record<SlabTab, string> = {
   all: 'all',
@@ -1670,7 +1675,9 @@ const upsertSlabItem = (record: SlabRecord) => {
   else tableData.value.unshift(nextItem);
   return nextItem;
 };
-const loadSlabs = async () => {
+let slabLoadGeneration = 0;
+const loadSlabs = async (current?: () => boolean) => {
+  const generation = ++slabLoadGeneration;
   loading.value = true;
   try {
     const [records, publishOptionsResult, markupResult, guideSetting] = await Promise.all([
@@ -1679,6 +1686,7 @@ const loadSlabs = async () => {
       listSlabMarkupConfigurationOptions(),
       getSlabGuidePriceSetting(),
     ]);
+    if (generation !== slabLoadGeneration || (current && !current())) return;
     Object.assign(publishOptions, publishOptionsResult);
     markupConfigurations.value = markupResult;
     guidePriceSettingCoefficient.value = guideSetting?.priceCoefficient;
@@ -1686,10 +1694,12 @@ const loadSlabs = async () => {
     const selectableIds = new Set(tableData.value.filter((row) => !sourceBlocked(row)).map((row) => row.id));
     selectedKeys.value = selectedKeys.value.filter((id) => selectableIds.has(id));
   } catch (error) {
+    if (generation !== slabLoadGeneration || (current && !current())) return;
+    if (current) throw error;
     tableData.value = [];
     adminFeedback.actionError({ action: '加载大板数据', error, fallback: '请稍后重试' });
   } finally {
-    loading.value = false;
+    if (generation === slabLoadGeneration) loading.value = false;
   }
 };
 onMounted(loadSlabs);
@@ -2598,25 +2608,27 @@ const canStartShelf = (rows: SlabItem[]) => {
   adminFeedback.warning(rows.length > 1 ? `“${blockedRow.name}”：${message}` : message);
   return false;
 };
-const checkingAction = ref(false);
 const canStartAction = async (
   ids: number[],
   action: 'shelf' | 'offShelf' | 'restore' | 'delete' | 'purge' | 'clearRecycle',
+  refreshRow?: SlabItem,
 ) => {
-  if (checkingAction.value) return false;
-  checkingAction.value = true;
-  try {
-    await checkSlabAction(ids, action);
-    return true;
-  } catch (error) {
-    await loadSlabs();
-    if (tableData.value.some((row) => ids.includes(row.id) && sourceBlocked(row))) return false;
-    const message = error instanceof Error ? error.message : '当前商品无法执行此操作';
-    adminFeedback.warning(action === 'shelf' && message === '请完善全部大板价格' ? `${message}后再上架` : message);
-    return false;
-  } finally {
-    checkingAction.value = false;
-  }
+  return operations.check(`${action}:${ids.join(',')}`, async () => {
+    const current = operations.capture();
+    if (refreshRow) {
+      await loadSlabs(current);
+      if (!current()) return;
+      const latest = tableData.value.find((item) => item.id === refreshRow.id);
+      if (!latest) throw new OperationBlockedError('大板不存在或不可访问');
+      if (sourceBlocked(latest)) throw new OperationBlockedError(latest.sourceMessage || '大板来源已不可用');
+    }
+    try {
+      requireCondition(await checkSlabAction(ids, action));
+    } catch (error) {
+      if (current()) await loadSlabs(current).catch(() => undefined);
+      throw error;
+    }
+  }, () => undefined);
 };
 const handleBatchAction = async (action: BatchAction) => {
   if (saving.value) return;
@@ -2671,21 +2683,18 @@ const handleBatchAction = async (action: BatchAction) => {
   openConfirm('clearRecycle', null, '清空后所有回收站大板将无法恢复，是否清空回收站？');
 };
 const handleRowAction = async (action: RowAction, row: SlabItem) => {
-  if (!sourceBlocked(row)) {
+  operations.select(`${action}:${row.id}`);
+  const current = operations.capture();
+  if (sourceBlocked(row) && !['purge', 'detail'].includes(action)) return;
+  if (action === 'shelf' || action === 'offShelf' || action === 'restore' || action === 'delete' || action === 'purge') {
+    if (!(await canStartAction([row.id], action, sourceBlocked(row) ? undefined : row)) || !current()) return;
+    row = tableData.value.find((item) => item.id === row.id) ?? row;
+  } else if (!sourceBlocked(row)) {
     await loadSlabs();
+    if (!current()) return;
     const latest = tableData.value.find((item) => item.id === row.id);
     if (!latest || sourceBlocked(latest)) return;
     row = latest;
-  }
-  if (sourceBlocked(row) && !['purge', 'detail'].includes(action)) return;
-  if (['shelf', 'offShelf', 'restore', 'delete', 'purge'].includes(action)) {
-    if (
-      !(await canStartAction(
-        [row.id],
-        action as 'shelf' | 'offShelf' | 'restore' | 'delete' | 'purge' | 'clearRecycle',
-      ))
-    )
-      return;
   }
   if (action === 'detail') void openDetailDrawer(row);
   if (action === 'price') openPriceDrawer(row);
@@ -2953,6 +2962,7 @@ const saveBatchPrice = async () => {
     openConfirm('savePrice', target, `是否保存大板“${target.name}”的价格？`);
   }
 };
+operations.onInvalidate(closeConfirmDialog);
 </script>
 
 <style scoped src="../shared/index.css"></style>

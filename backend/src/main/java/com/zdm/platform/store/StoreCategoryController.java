@@ -76,6 +76,13 @@ public class StoreCategoryController {
     return ApiResponse.ok(service.sortCategories(request));
   }
 
+  @GetMapping("/{id}/delete-check")
+  public ApiResponse<Boolean> deleteCategoryCheck(@PathVariable Long id, @RequestParam String scope) {
+    permissionGuard.requirePermission(prefix(scope) + ".delete");
+    service.deleteCategoryCheck(id, scope);
+    return ApiResponse.ok(true);
+  }
+
   @DeleteMapping("/{id}")
   public ApiResponse<Boolean> delete(@PathVariable Long id, @RequestParam String scope) {
     permissionGuard.requirePermission(prefix(scope) + ".delete");

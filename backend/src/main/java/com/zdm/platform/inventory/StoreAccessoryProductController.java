@@ -108,6 +108,15 @@ public class StoreAccessoryProductController {
     return ApiResponse.ok(product);
   }
 
+  @GetMapping("/{id}/shelf-check")
+  public ApiResponse<Boolean> checkShelf(@PathVariable Long id) {
+    guard.requireDataPermission();
+    var product = service.detail(id);
+    requireTransition(product, "selling", false);
+    service.checkShelf(id);
+    return ApiResponse.ok(true);
+  }
+
   @PutMapping("/{id}/status")
   public ApiResponse<StoreAccessoryProductService.ProductView> status(@PathVariable Long id,
       @Valid @RequestBody TransitionRequest request) {

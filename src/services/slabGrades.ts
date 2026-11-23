@@ -36,3 +36,6 @@ export const reorderSlabGrades = (orderedIds: number[]) =>
     body: JSON.stringify({ orderedIds }),
   });
 export const deleteSlabGrade = (id: number) => request<boolean>(`/admin/slab-grades/${id}`, { method: 'DELETE' });
+
+export const checkSlabGradeDelete = (id: number) =>
+  request<boolean>(`/admin/slab-grades/${id}/delete-check`);

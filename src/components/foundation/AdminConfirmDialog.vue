@@ -1,14 +1,14 @@
 <template>
   <AdminDialog
     :visible="visible"
-    :confirm-function="mode === 'blocked' ? 'close' : props.function"
+    :confirm-function="props.function"
+    :confirm-btn="{ loading }"
     :header="dialogTitle"
     :width="width"
     dialog-class-name="zdm-admin-confirm-dialog"
     :confirmation="confirmation"
-    :cancel-btn="mode === 'blocked' ? null : '取消'"
     @update:visible="emit('update:visible', $event)"
-    @confirm="handleConfirm"
+    @confirm="emit('confirm')"
     @cancel="emit('cancel')"
     @close="emit('close')"
     @opened="emit('opened')"
@@ -33,7 +33,7 @@ const props = withDefaults(
     action: string;
     batch?: boolean;
     description?: string;
-    mode?: 'confirm' | 'blocked';
+    loading?: boolean;
     objectName?: string;
     objectType?: string;
     title?: string;
@@ -43,7 +43,7 @@ const props = withDefaults(
   {
     batch: false,
     description: '',
-    mode: 'confirm',
+    loading: false,
     objectName: '',
     objectType: '',
     title: '',
@@ -64,27 +64,11 @@ const targetText = computed(() => {
   const name = props.objectName ? `“${props.objectName}”` : '';
   return `${props.objectType}${name}`;
 });
-const dialogTitle = computed(
-  () => props.title || (props.mode === 'blocked' ? `无法${props.action}` : `是否${props.action}`),
-);
+const dialogTitle = computed(() => props.title || `是否${props.action}`);
 const confirmation = computed<Confirmation>(() =>
-  props.mode === 'blocked'
-    ? { kind: 'close', text: '我知道了' }
-    : props.visible
-      ? operationConfirmation(props.action, props.batch)
-      : { kind: 'none' },
+  props.visible ? operationConfirmation(props.action, props.batch) : { kind: 'none' },
 );
-const dialogDescription = computed(() => {
-  if (props.description) return props.description;
-  return props.mode === 'blocked'
-    ? `${targetText.value || '当前对象'}暂时无法${props.action}。`
-    : `是否${props.action}${targetText.value}？`;
-});
-
-function handleConfirm() {
-  if (props.mode === 'blocked') emit('update:visible', false);
-  emit('confirm');
-}
+const dialogDescription = computed(() => props.description || `是否${props.action}${targetText.value}？`);
 </script>
 
 <style scoped>

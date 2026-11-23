@@ -205,7 +205,7 @@ test('操作时来源已下架会刷新遮罩并清除旧选择', async ({ page 
   await expect(page.locator('.selection-info')).toHaveCount(0);
 });
 
-test('操作时来源不可用直接刷新遮罩，不显示 toast 或确认弹框', async ({ page }) => {
+test('操作时来源不可用刷新遮罩，给出警告并停止提交', async ({ page }) => {
   await setup(page, 'selling');
   await page.addInitScript(() => {
     const user = JSON.parse(localStorage.getItem('zdm-admin-user')!);
@@ -218,7 +218,7 @@ test('操作时来源不可用直接刷新遮罩，不显示 toast 或确认弹�
     return route.fulfill({ json: { code: 0, data: true } });
   });
   await page.route('**/api/admin/slabs/action-check', (route) =>
-    route.fulfill({ status: 400, json: { code: 400, message: '来源商品未上架或已删除，只能彻底删除运营商品' } }),
+    route.fulfill({ status: 400, headers: { 'X-Zdm-Operation-Blocked': 'true' }, json: { code: 400, message: '来源商品未上架或已删除，只能彻底删除运营商品' } }),
   );
   await page.reload();
   await page.getByRole('main').locator('tbody tr').first().locator('.t-checkbox').click();
@@ -243,7 +243,7 @@ test('操作时来源不可用直接刷新遮罩，不显示 toast 或确认弹�
   await page.getByRole('main').locator('.table-actions').getByText('下架', { exact: true }).click();
   await expect(page.getByRole('main').locator('.source-unavailable-overlay')).toContainText('该商品已被供应链下架');
   await expect(page.locator('.selection-info')).toHaveCount(0);
-  await expect(page.locator('.t-message')).toHaveCount(0);
+  await expect(page.locator('.t-message.t-is-warning')).toContainText('该商品已被供应链下架');
   await expect(page.locator('.t-dialog:visible')).toHaveCount(0);
   expect(submissions).toBe(0);
 });
@@ -326,7 +326,11 @@ for (const [status, actions] of Object.entries({
       await expect(page.getByRole('main').locator('.source-unavailable-overlay')).toContainText('该商品已被供应链下架');
       await expect(page.locator('.t-dialog:visible')).toHaveCount(0);
       await expect(page.locator('.t-drawer--open')).toHaveCount(0);
-      await expect(page.locator('.t-message')).toHaveCount(0);
+      if (['上架', '下架', '删除', '放回仓库', '彻底删除'].includes(label)) {
+        await expect(page.locator('.t-message.t-is-warning')).toContainText('该商品已被供应链下架');
+      } else {
+        await expect(page.locator('.t-message')).toHaveCount(0);
+      }
     });
   }
 }

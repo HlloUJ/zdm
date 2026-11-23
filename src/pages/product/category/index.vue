@@ -124,6 +124,7 @@
                     v-if="canDeleteCategory"
                     hover="color"
                     :theme="buttonTheme('delete')"
+                    :disabled="operations.pending(`delete:${row.node.id}`)"
                     @click="openDeleteDialog(row.node)"
                     >删除</t-link
                   >
@@ -170,20 +171,13 @@
       action="删除"
       object-type="分类"
       :object-name="deleteTarget?.name"
-      :mode="canDeleteTarget ? 'confirm' : 'blocked'"
+      :loading="operations.pending(`delete:${deleteTarget?.id}`)"
       @confirm="handleDeleteConfirm"
       @close="closeDeleteDialog"
       @opened="restorePageScroll"
       @closed="restorePageScroll"
     >
-      <template v-if="deleteTarget?.productCount"
-        >分类“{{ deleteTarget.name }}”已关联
-        {{ deleteTarget.productCount }} 个商品，不能删除。请停用该分类，避免新商品继续使用。</template
-      >
-      <template v-else-if="deleteTarget?.children.length"
-        >分类“{{ deleteTarget.name }}”包含下级分类，请先删除或转移下级分类。</template
-      >
-      <template v-else>是否删除分类“{{ deleteTarget?.name }}”？</template>
+      是否删除分类“{{ deleteTarget?.name }}”？
     </AdminConfirmDialog>
 
     <AdminConfirmDialog
@@ -203,6 +197,10 @@
 </template>
 
 <script setup lang="ts">
+import { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';
+import { OperationBlockedError } from '@/services/http';
+import { checkProductCategoryDelete } from '@/services/productCategories';
+import { useOperationPreflight, requireCondition } from '@/composables/useOperationPreflight';
 import { formConfirmation, dialogButtonProps } from '@/components/foundation/actions/confirmation';
 import { buttonTheme, cancelButtonProps } from '@/components/foundation/actions/buttonFunctions';
 import { rejectFormSubmission } from '@/utils/submitValidation';
@@ -271,6 +269,8 @@ const categoryScopeTabs: { label: string; value: Scope }[] = [
 ];
 const resolveScope = (value: unknown): Scope => (value === 'accessory' ? 'accessory' : 'finished');
 const activeScope = ref<Scope>(resolveScope(route.query.scope));
+const operations = useOperationPreflight(() => activeScope.value);
+
 const {
   visibleTabs: scopeTabs,
   showTabRail: showScopeTabRail,
@@ -334,9 +334,6 @@ const activeNodes = computed(() => categoryData.value[activeScope.value]);
 const hasSearch = computed(() => Boolean(appliedSearch.keyword.trim() || appliedSearch.status));
 const parentName = computed(() => (formData.parentId ? (findNode(formData.parentId)?.name ?? '') : ''));
 const formLevel = computed(() => (formData.parentId ? getNodeLevel(formData.parentId) + 1 : 1));
-const canDeleteTarget = computed(() =>
-  Boolean(deleteTarget.value && !deleteTarget.value.productCount && !deleteTarget.value.children.length),
-);
 const statusConfirmText = computed(() => {
   if (!statusTarget.value) return '';
   return statusTarget.value.status === 'enabled'
@@ -658,6 +655,7 @@ async function handleCategoryDragSort(context: { current: CategoryRow }) {
   }
 }
 function openStatusConfirm(node: CategoryNode) {
+  operations.select(`status:${node.id}`);
   statusTarget.value = node;
   rememberPageScroll();
   statusConfirmVisible.value = true;
@@ -693,9 +691,15 @@ async function handleStatusConfirm() {
   closeStatusConfirm();
 }
 function openDeleteDialog(node: CategoryNode) {
-  deleteTarget.value = node;
-  rememberPageScroll();
-  deleteVisible.value = true;
+  return operations.check(`delete:${node.id}`, async () => {
+    if (node.children.length) throw new OperationBlockedError('该分类包含下级分类，请先删除或转移下级分类');
+    if (node.productCount) throw new OperationBlockedError('该分类已关联商品，不能删除，请先停用该分类');
+    requireCondition(await checkProductCategoryDelete(node.id));
+  }, () => {
+    deleteTarget.value = node;
+    rememberPageScroll();
+    deleteVisible.value = true;
+  });
 }
 function closeDeleteDialog() {
   deleteVisible.value = false;
@@ -712,19 +716,19 @@ function removeNode(nodes: CategoryNode[], id: number): boolean {
 async function handleDeleteConfirm() {
   const node = deleteTarget.value;
   if (!node) return;
-  if (node.productCount || node.children.length) {
-    closeDeleteDialog();
-    return;
-  }
-  try {
-    const deleted = await deleteProductCategory(node.id);
-    if (!deleted) throw new Error('分类删除失败，请刷新后重试');
-    removeNode(activeNodes.value, node.id);
-    adminFeedback.deleted(node.name);
-    closeDeleteDialog();
-  } catch (error) {
-    adminFeedback.error(error instanceof Error ? error.message : '删除失败');
-  }
+  await operations.execute(`delete:${node.id}`, async (current) => {
+    try {
+      const deleted = await deleteProductCategory(node.id);
+      if (!current()) return;
+      if (!deleted) throw new Error('分类删除失败，请刷新后重试');
+      removeNode(activeNodes.value, node.id);
+      adminFeedback.deleted(node.name);
+      closeDeleteDialog();
+    } catch (error) {
+      if (!current()) return;
+      adminFeedback.error(getSafeErrorMessage(error, '删除失败'));
+    }
+  });
 }
 function handleSearch() {
   appliedSearch.keyword = searchForm.keyword;
@@ -744,6 +748,10 @@ watch(
   },
 );
 onMounted(loadCategories);
+operations.onInvalidate(() => {
+  deleteVisible.value = false;
+  deleteTarget.value = null;
+});
 </script>
 
 <style scoped>

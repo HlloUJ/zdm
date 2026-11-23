@@ -487,7 +487,7 @@ test('operations incomplete shelf warns before confirmation without updating pro
     return route.fulfill({ json: { code: 0, data: product } });
   });
   await page.route('**/api/admin/accessory-products/991/shelf-check', (route) =>
-    route.fulfill({ status: 400, json: { code: 400, message: '请完善全部配件价格后再上架' } }),
+    route.fulfill({ status: 400, headers: { 'X-Zdm-Operation-Blocked': 'true' }, json: { code: 400, message: '请完善全部配件价格后再上架' } }),
   );
   await page.goto(productWarehouseUrl('/accessory-management'));
   await page.locator('tbody tr').filter({ hasText: product.name }).getByText('上架', { exact: true }).click();

@@ -1,5 +1,7 @@
 package com.zdm.platform.catalog;
 
+import com.zdm.platform.common.OperationBlockedException;
+
 import com.zdm.platform.account.CreatorAwareService;
 import com.zdm.platform.common.CategoryProductCounts;
 import com.zdm.platform.security.CurrentIdentityProvider;
@@ -84,26 +86,30 @@ public class ProductCategoryService extends CreatorAwareService<ProductCategoryM
 
   @Transactional
   public void deleteCategory(Long id) {
+    deleteCategoryCheck(id);
+    if (!removeById(id)) {
+      throw new IllegalArgumentException("分类删除失败，请刷新后重试");
+    }
+  }
+
+  public void deleteCategoryCheck(Long id) {
     ProductCategory category = getById(id);
     if (category == null) {
-      throw new IllegalArgumentException("分类不存在或已被删除");
+      throw new OperationBlockedException("分类不存在或已被删除");
     }
     if (lambdaQuery().eq(ProductCategory::getParentId, id).count() > 0) {
-      throw new IllegalArgumentException("该分类包含下级分类，请先删除或转移下级分类");
+      throw new OperationBlockedException("该分类包含下级分类，请先删除或转移下级分类");
     }
     Long referencedProductCount = jdbcTemplate.queryForObject(
         "SELECT COUNT(*) FROM (SELECT category_id FROM finished_products UNION ALL SELECT category_id FROM accessory_products) products WHERE category_id = ?",
         Long.class,
         id);
     if (referencedProductCount != null && referencedProductCount > 0) {
-      throw new IllegalArgumentException("该分类已关联商品，不能删除，请先停用该分类");
+      throw new OperationBlockedException("该分类已关联商品，不能删除，请先停用该分类");
     }
     if (java.util.Objects.requireNonNull(jdbcTemplate.queryForObject(
         "SELECT COUNT(*) FROM category_template_versions WHERE category_id = ?", Long.class, id)) > 0) {
-      throw new IllegalArgumentException("该分类已配置发布属性模板，不能删除，请先移除模板配置");
-    }
-    if (!removeById(id)) {
-      throw new IllegalArgumentException("分类删除失败，请刷新后重试");
+      throw new OperationBlockedException("该分类已配置发布属性模板，不能删除，请先移除模板配置");
     }
   }
 

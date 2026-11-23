@@ -64,6 +64,13 @@ public class SupplierController extends AdminCrudController<Supplier> {
     return ApiResponse.ok(updated);
   }
 
+  @GetMapping("/{id}/delete-check")
+  public ApiResponse<Boolean> deleteSupplierCheck(@PathVariable Long id) {
+    permissionGuard.requirePermission(PERMISSION_PREFIX + ".delete");
+    service.deleteSupplierCheck(id);
+    return ApiResponse.ok(true);
+  }
+
   @Override
   @DeleteMapping("/{id}")
   public ApiResponse<Boolean> delete(@PathVariable Long id) {

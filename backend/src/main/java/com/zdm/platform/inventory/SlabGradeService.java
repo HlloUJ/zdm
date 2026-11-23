@@ -1,5 +1,7 @@
 package com.zdm.platform.inventory;
 
+import com.zdm.platform.common.OperationBlockedException;
+
 import com.zdm.platform.account.CreatorAwareService;
 import com.zdm.platform.security.CurrentIdentityProvider;
 import java.util.HashSet;
@@ -85,11 +87,16 @@ public class SlabGradeService extends CreatorAwareService<SlabGradeMapper, SlabG
 
   @Transactional
   public boolean deleteGrade(Long id) {
-    SlabGrade existing = getById(id);
-    if (existing == null) {
-      return false;
-    }
+    if (!deleteGradeCheck(id)) return false;
     return removeById(id);
+  }
+
+  public boolean deleteGradeCheck(Long id) {
+    if (getById(id) == null) return false;
+    if (baseMapper.countInventoryReferences(id) > 0) {
+      throw new OperationBlockedException("该等级已被大板库存引用，不能删除，请先停用该等级");
+    }
+    return true;
   }
 
 

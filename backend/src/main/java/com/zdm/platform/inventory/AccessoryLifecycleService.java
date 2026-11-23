@@ -1,5 +1,7 @@
 package com.zdm.platform.inventory;
 
+import com.zdm.platform.common.OperationBlockedException;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zdm.platform.security.CurrentIdentityProvider;
@@ -73,15 +75,15 @@ public class AccessoryLifecycleService {
     };
   }
   public void requireOperational(String source, Boolean deleted) {
-    if (Boolean.TRUE.equals(deleted)) { throw new IllegalArgumentException("运营商品已被彻底删除"); }
-    if (unavailable(source)) { throw new IllegalArgumentException("来源商品未上架或已删除，只能彻底删除运营商品"); }
+    if (Boolean.TRUE.equals(deleted)) { throw new OperationBlockedException("运营商品已被彻底删除"); }
+    if (unavailable(source)) { throw new OperationBlockedException("来源商品未上架或已删除，只能彻底删除运营商品"); }
   }
   public void requireAccessoryOperational(AccessoryProduct product) {
-    if (product.isSourceUnavailable()) { throw new IllegalArgumentException(product.getSourceMessage()); }
+    if (product.isSourceUnavailable()) { throw new OperationBlockedException(product.getSourceMessage()); }
     requireOperational(product.getSourceStatus(), product.getOperationsDeleted());
   }
   public void requireSlabOperational(SlabInventory item) {
-    if (item.isSourceUnavailable()) { throw new IllegalArgumentException(item.getSourceMessage()); }
+    if (item.isSourceUnavailable()) { throw new OperationBlockedException(item.getSourceMessage()); }
     requireOperational(item.getSourceStatus(), item.getOperationsDeleted());
   }
   public Map<String,Object> lock(Kind kind, Long id) {
@@ -110,7 +112,7 @@ public class AccessoryLifecycleService {
       case "recycle" -> List.of("warehouse", "purged").contains(target);
       default -> false;
     };
-    if (!allowed) { throw new IllegalArgumentException("当前供应链状态不允许此操作"); }
+    if (!allowed) { throw new OperationBlockedException("当前供应链状态不允许此操作"); }
     if ("selling".equals(target)) { validateSourceReady(kind, id, row); }
   }
 
@@ -248,11 +250,11 @@ public class AccessoryLifecycleService {
   }
 
   private void validateSourceReady(Kind kind,Long id,Map<String,Object> row) {
-    if(!(row.get(kind==Kind.SLAB?"stock":"total_stock") instanceof Number stock) || stock.intValue()<=0) { throw new IllegalArgumentException("请完善库存后再上架"); }
+    if(!(row.get(kind==Kind.SLAB?"stock":"total_stock") instanceof Number stock) || stock.intValue()<=0) { throw new OperationBlockedException("请完善库存后再上架"); }
     List<String> required=kind==Kind.SLAB ? List.of("supplier_id","variety_id","origin_id","texture_id","color_id","grade_id","length_mm","width_mm","thickness_mm","main_image_media_id","scan_image_media_id","design_image_media_id") : List.of("supplier_id","category_id","name","detail","main_image_media_id","video_media_id");
-    if(required.stream().anyMatch(key -> row.get(key)==null || row.get(key).toString().isBlank())) { throw new IllegalArgumentException("请完善商品信息后再上架"); }
+    if(required.stream().anyMatch(key -> row.get(key)==null || row.get(key).toString().isBlank())) { throw new OperationBlockedException("请完善商品信息后再上架"); }
     var variants=kind==Kind.SLAB?List.of(row):jdbc.queryForList("SELECT cost_price FROM accessory_product_variants WHERE accessory_product_id=?",id);
-    if(variants.isEmpty() || variants.stream().anyMatch(v -> !(v.get("cost_price") instanceof BigDecimal cost) || cost.signum()<0)) { throw new IllegalArgumentException("请完善成本价后再上架"); }
+    if(variants.isEmpty() || variants.stream().anyMatch(v -> !(v.get("cost_price") instanceof BigDecimal cost) || cost.signum()<0)) { throw new OperationBlockedException("请完善成本价后再上架"); }
   }
   @Transactional
   public boolean purgeOperations(Kind kind, Long id) {

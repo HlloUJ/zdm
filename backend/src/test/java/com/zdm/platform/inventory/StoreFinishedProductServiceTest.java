@@ -1461,7 +1461,10 @@ class StoreFinishedProductServiceTest extends SpringContainerTestSupport {
     Long id = salePriceFixture();
     assertThat(products.detail(id).storeCategoryId()).isNull();
     assertThat(products.detail(id).skus()).allSatisfy(sku -> assertThat(sku.salePrice()).isNull());
-    assertThatThrownBy(() -> products.changeStatus(id, "selling", null, null)).isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> products.checkShelf(id)).isInstanceOf(com.zdm.platform.common.OperationBlockedException.class)
+        .hasMessage("请先选择门店分类并完善商品售价后再上架");
+    assertThatThrownBy(() -> products.changeStatus(id, "selling", null, null))
+        .hasMessage("请先选择门店分类并完善商品售价后再上架");
     for (Long category : List.of(99603L, 99604L)) {
       assertThatThrownBy(() -> products.saveEdit(id, category, saleInputs("manual"))).isInstanceOf(IllegalArgumentException.class);
     }

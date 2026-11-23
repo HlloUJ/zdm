@@ -80,7 +80,8 @@
                   v-if="canDelete"
                   :theme="buttonTheme('delete')"
                   hover="color"
-                  @click="openConfirm(row, 'delete')"
+                  :disabled="operations.pending(`delete:${row.id}`)"
+                    @click="openConfirm(row, 'delete')"
                   >删除</t-link
                 >
               </div>
@@ -126,6 +127,7 @@
       :action="confirmType === 'delete' ? '删除' : confirmType === 'disable' ? '停用' : '启用'"
       object-type="等级"
       :object-name="confirmRow ? `${confirmRow.code} ${confirmRow.name}` : undefined"
+      :loading="operations.pending(`${confirmType}:${confirmRow?.id}`)"
       @confirm="submitConfirm"
       @cancel="confirmVisible = false"
       @close="confirmVisible = false"
@@ -134,6 +136,9 @@
 </template>
 
 <script setup lang="ts">
+import { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';
+import { checkSlabGradeDelete } from '@/services/slabGrades';
+import { useOperationPreflight, requireCondition } from '@/composables/useOperationPreflight';
 import { formConfirmation } from '@/components/foundation/actions/confirmation';
 import { buttonTheme, buttonFunctionFor } from '@/components/foundation/actions/buttonFunctions';
 import { rejectFormSubmission } from '@/utils/submitValidation';
@@ -161,6 +166,7 @@ type GradeStatus = 'normal' | 'disabled';
 type ConfirmType = 'enable' | 'disable' | 'delete';
 type GradeItem = Omit<SlabGradeRecord, 'status' | 'createdAt'> & { status: GradeStatus; createdAt: string };
 
+const operations = useOperationPreflight();
 const permissionPrefix = 'admin.product-data-center.slab-grade';
 const loginUser = computed(() => getLoginUser());
 const canCreate = computed(() => hasPermission(loginUser.value, `${permissionPrefix}.create`));
@@ -320,25 +326,42 @@ const confirmVisible = ref(false);
 const confirmType = ref<ConfirmType>('disable');
 const confirmRow = ref<GradeItem | null>(null);
 const openConfirm = (row: GradeItem, type: ConfirmType) => {
-  confirmRow.value = row;
-  confirmType.value = type;
-  confirmVisible.value = true;
+  const key = `${type}:${row.id}`;
+  const open = () => {
+    confirmRow.value = row;
+    confirmType.value = type;
+    confirmVisible.value = true;
+  };
+  if (type === 'delete') {
+    return operations.check(key, () => checkSlabGradeDelete(row.id).then(requireCondition), open);
+  }
+  operations.select(key);
+  open();
 };
 const submitConfirm = async () => {
   if (!confirmRow.value) return;
   const target = confirmRow.value;
   const targetName = `${target.code} ${target.name}`;
   const action = confirmType.value === 'delete' ? '删除' : confirmType.value === 'enable' ? '启用' : '停用';
-  try {
-    if (confirmType.value === 'delete') await deleteSlabGrade(target.id);
-    else await updateSlabGradeStatus(target.id, confirmType.value === 'enable' ? 'enabled' : 'disabled');
-    await loadGrades();
-    confirmVisible.value = false;
-    if (confirmType.value === 'delete') adminFeedback.deleted(targetName);
-    else adminFeedback.actionSuccess({ action, target: targetName });
-  } catch (error) {
-    adminFeedback.error(error instanceof Error ? error.message : '操作失败');
-  }
+  const operationType = confirmType.value;
+  await operations.execute(`${operationType}:${target.id}`, async (current) => {
+    try {
+      if (operationType === 'delete') {
+        const deleted = await deleteSlabGrade(target.id);
+        if (!current()) return;
+        if (!deleted) throw new Error('等级未删除，请刷新后重试');
+      } else await updateSlabGradeStatus(target.id, operationType === 'enable' ? 'enabled' : 'disabled');
+      if (!current()) return;
+      await loadGrades();
+      if (!current()) return;
+      confirmVisible.value = false;
+      if (operationType === 'delete') adminFeedback.deleted(targetName);
+      else adminFeedback.actionSuccess({ action, target: targetName });
+    } catch (error) {
+      if (!current()) return;
+      adminFeedback.error(getSafeErrorMessage(error, '操作失败'));
+    }
+  });
 };
 
 onMounted(loadGrades);

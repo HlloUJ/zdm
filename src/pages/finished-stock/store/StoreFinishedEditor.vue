@@ -211,6 +211,7 @@
   </t-drawer>
 </template>
 <script setup lang="ts">
+import { useOperationPreflight } from '@/composables/useOperationPreflight';
 import { useCommodityModule } from '@/composables/useCommodityModule';
 const commodity = useCommodityModule();
 
@@ -418,19 +419,24 @@ onMounted(async () => {
     adminFeedback.error(getSafeErrorMessage(error, '门店分类加载失败'));
   }
 });
+const formOperation = useOperationPreflight(() => props.product.id);
+formOperation.onInvalidate(() => { saving.value = false; });
 async function save() {
   if (saving.value || !ready.value) return;
-  submitted.value = true;
-  if ((await formRef.value?.validate()) !== true) return rejectFormSubmission(productFormRoot.value);
-  if (
-    props.product.skus.some(
-      (item) =>
-        !isValidSpecPriceNumber(drafts[item.skuId].price) || !isValidSpecPriceNumber(drafts[item.skuId].coefficient),
-    )
-  )
-    return rejectFormSubmission(productFormRoot.value);
+  const current = formOperation.capture();
   saving.value = true;
   try {
+    submitted.value = true;
+    const valid = await formRef.value?.validate();
+    if (!current()) return;
+    if (valid !== true) return rejectFormSubmission(productFormRoot.value);
+    if (
+      props.product.skus.some(
+        (item) =>
+          !isValidSpecPriceNumber(drafts[item.skuId].price) || !isValidSpecPriceNumber(drafts[item.skuId].coefficient),
+      )
+    )
+      return rejectFormSubmission(productFormRoot.value);
     const product = await saveStoreFinishedEdit(props.product.id, {
       storeCategoryId: form.categoryId!,
       skus: props.product.skus.map((item) => ({
@@ -440,12 +446,14 @@ async function save() {
         saleCoefficient: drafts[item.skuId].coefficient === '' ? null : Number(drafts[item.skuId].coefficient),
       })),
     });
+    if (!current()) return;
     adminFeedback.actionSuccess({ action: '修改', target: '商品' });
     emit('saved', product);
   } catch (error) {
+    if (!current()) return;
     adminFeedback.error(getSafeErrorMessage(error, '保存商品失败'));
   } finally {
-    saving.value = false;
+    if (current()) saving.value = false;
   }
 }
 </script>

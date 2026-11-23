@@ -1,5 +1,7 @@
 package com.zdm.platform.inventory;
 
+import com.zdm.platform.common.OperationBlockedException;
+
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.zdm.platform.account.CreatorAwareService;
 import com.zdm.platform.security.CurrentIdentityProvider;
@@ -50,8 +52,15 @@ public class SlabTextureService extends CreatorAwareService<SlabTextureMapper, S
 
   @Transactional
   public boolean deleteTexture(Long id) {
-    requireTexture(id);
+    deleteTextureCheck(id);
     return removeById(id);
+  }
+
+  public void deleteTextureCheck(Long id) {
+    requireTexture(id);
+    if (baseMapper.countInventoryReferences(id) > 0) {
+      throw new OperationBlockedException("该纹理已被大板库存引用，不能删除，请先停用该纹理");
+    }
   }
 
   public List<SlabTextureAlias> listAliases(Long textureId) {

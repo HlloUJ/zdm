@@ -1,5 +1,7 @@
 package com.zdm.platform.store;
 
+import com.zdm.platform.common.OperationBlockedException;
+
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.zdm.platform.account.CreatorAwareService;
 import com.zdm.platform.common.StoreLevelPricingDirectory;
@@ -208,15 +210,15 @@ public class StoreLevelService extends CreatorAwareService<StoreLevelMapper, Sto
     Long referenceCount = storeMapper.selectCount(
         Wrappers.<Store>lambdaQuery().eq(Store::getStoreLevelId, id));
     if (referenceCount > 0) {
-      throw new IllegalArgumentException(STORE_REFERENCED_MESSAGE);
+      throw new OperationBlockedException(STORE_REFERENCED_MESSAGE);
     }
     if (isPriceConfigured("accessory_markup_configurations", id) || isPriceConfigured("finished_markup_configurations", id)
         || isPriceConfigured("slab_markup_configurations", id)) {
-      throw new IllegalArgumentException(PRICE_REFERENCED_MESSAGE);
+      throw new OperationBlockedException(PRICE_REFERENCED_MESSAGE);
     }
     if (isPriceConfigured("accessory_product_prices", id) || isPriceConfigured("finished_product_prices", id)
         || isPriceConfigured("slab_prices", id)) {
-      throw new IllegalArgumentException(PRODUCT_PRICE_REFERENCED_MESSAGE);
+      throw new OperationBlockedException(PRODUCT_PRICE_REFERENCED_MESSAGE);
     }
   }
 

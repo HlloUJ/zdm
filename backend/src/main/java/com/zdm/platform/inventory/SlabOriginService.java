@@ -1,5 +1,7 @@
 package com.zdm.platform.inventory;
 
+import com.zdm.platform.common.OperationBlockedException;
+
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.zdm.platform.account.CreatorAwareService;
 import com.zdm.platform.security.CurrentIdentityProvider;
@@ -59,20 +61,22 @@ public class SlabOriginService extends CreatorAwareService<SlabOriginMapper, Sla
 
   @Transactional
   public boolean deleteOrigin(Long id) {
-    SlabOrigin existing = getById(id);
-    if (existing == null) {
-      return false;
-    }
-    Long referenceCount = slabInventoryMapper.selectCount(
-        Wrappers.<SlabInventory>lambdaQuery().eq(SlabInventory::getOriginId, id));
-    if (referenceCount > 0) {
-      throw new IllegalArgumentException(REFERENCED_MESSAGE);
-    }
+    if (!deleteOriginCheck(id)) return false;
     try {
       return removeById(id);
     } catch (DataIntegrityViolationException exception) {
       throw new IllegalArgumentException(REFERENCED_MESSAGE, exception);
     }
+  }
+
+  public boolean deleteOriginCheck(Long id) {
+    if (getById(id) == null) return false;
+    Long referenceCount = slabInventoryMapper.selectCount(
+        Wrappers.<SlabInventory>lambdaQuery().eq(SlabInventory::getOriginId, id));
+    if (referenceCount > 0) {
+      throw new OperationBlockedException(REFERENCED_MESSAGE);
+    }
+    return true;
   }
 
 

@@ -110,10 +110,12 @@
                     v-if="canRestore"
                     :theme="buttonTheme('restore-operation')"
                     hover="color"
+                    :disabled="operations.pending(`restore:${row.id}`)"
                     @click="openRestoreConfirm(row)"
                     >恢复运营</t-link
                   >
-                  <t-link v-if="canDelete" :theme="buttonTheme('purge')" hover="color" @click="openDeleteConfirm(row)"
+                  <t-link v-if="canDelete" :theme="buttonTheme('purge')" hover="color" :disabled="operations.pending(`delete:${row.id}`)"
+                    @click="openDeleteConfirm(row)"
                     >彻底删除</t-link
                   >
                 </div>
@@ -227,6 +229,7 @@
       :action="confirmAction"
       object-type="门店"
       :object-name="confirmState.row?.shopName"
+      :loading="operations.pending(`${confirmState.type}:${confirmState.row?.id}`)"
       @confirm="handleConfirm"
       @cancel="closeConfirmDialog"
       @close="closeConfirmDialog"
@@ -262,6 +265,9 @@
 </template>
 
 <script setup lang="ts">
+import { checkStoreRestore } from '@/services/stores';
+import { OperationBlockedError } from '@/services/http';
+import { useOperationPreflight, requireCondition } from '@/composables/useOperationPreflight';
 import { formConfirmation, operationConfirmation } from '@/components/foundation/actions/confirmation';
 import { buttonTheme, buttonFunctionFor } from '@/components/foundation/actions/buttonFunctions';
 import { rejectFormSubmission } from '@/utils/submitValidation';
@@ -310,6 +316,8 @@ type ConfirmType = 'archive' | 'restore' | 'delete';
 const permissionPrefix = 'admin.tenant.tenant-store-management';
 const loginUser = computed(() => getLoginUser());
 const activeTab = ref<StoreTab>('operating');
+const operations = useOperationPreflight(() => activeTab.value);
+
 const allStoreTabs: { label: string; value: StoreTab }[] = [
   { label: '运营中', value: 'operating' },
   { label: '已归档', value: 'archived' },
@@ -712,49 +720,46 @@ const handleLevelSubmit = async () => {
 };
 
 const openArchiveConfirm = (row: StoreItem) => {
+  operations.select(`archive:${row.id}`);
   confirmState.type = 'archive';
   confirmState.row = row;
   confirmState.content = '归档后，该门店的全部员工将无法登录或切换到该门店。';
   confirmDialogVisible.value = true;
 };
 
-const openRestoreConfirm = (row: StoreItem) => {
+const openRestoreConfirm = (row: StoreItem) => operations.check(`restore:${row.id}`, () => checkStoreRestore(row.id).then(requireCondition), () => {
   confirmState.type = 'restore';
   confirmState.row = row;
   confirmState.content = `是否恢复门店“${row.shopName}”运营？`;
   confirmDialogVisible.value = true;
-};
+});
 
 const deleteResult = ref<StoreExitResult | null>(null);
 const deleteResultVisible = ref(false);
 const deletePlanHash = ref('');
-const openDeleteConfirm = async (row: StoreItem) => {
-  deletePlanHash.value = '';
-  try {
-    const preview = await getStorePurgePreview(row.id);
-    if (preview.blockers.length > 0) {
-      adminFeedback.actionError({
-        action: '删除预检',
-        target: row.shopName,
-        error: new Error(preview.blockers.join('；')),
-      });
-      return;
-    }
-    deletePlanHash.value = preview.planHash;
-    confirmState.type = 'delete';
-    confirmState.row = row;
-    const businessCount = Object.entries(preview.counts)
-      .filter(
-        ([name]) =>
-          !['media_lifecycle_candidates', 'accounts_delete', 'accounts_retained', 'phones_released'].includes(name),
-      )
-      .reduce((sum, [, count]) => sum + count, 0);
-    confirmState.content = `将清理门店“${preview.storeName}”的独占业务数据，预检涉及${businessCount}条业务数据，${preview.counts.media_lifecycle_candidates ?? 0}项媒体候选；删除独立账号${preview.counts.accounts_delete ?? 0}个，保留仍有业务关联或受保护账号${preview.counts.accounts_retained ?? 0}个。${preview.retained.join('；')}。删除后无法通过产品恢复。`;
-    confirmDialogVisible.value = true;
-  } catch (error) {
-    adminFeedback.actionError({ action: '删除预检', target: row.shopName, error });
+const openDeleteConfirm = (row: StoreItem) => operations.check(`delete:${row.id}`, async () => {
+  const preview = await getStorePurgePreview(row.id);
+  if (typeof preview.eligible !== 'boolean' || !Array.isArray(preview.blockers)) throw new Error('无效门店清理预检');
+  if (!preview.eligible || preview.blockers.length) {
+    throw new OperationBlockedError(preview.blockers.join('；') || '当前门店不能彻底删除');
   }
-};
+  if (preview.storeId !== row.id || !preview.planHash || !preview.counts || !Array.isArray(preview.retained)) {
+    throw new Error('无效门店清理方案');
+  }
+  return preview;
+}, (preview) => {
+  deletePlanHash.value = preview.planHash;
+  confirmState.type = 'delete';
+  confirmState.row = row;
+  const businessCount = Object.entries(preview.counts)
+    .filter(
+      ([name]) =>
+        !['media_lifecycle_candidates', 'accounts_delete', 'accounts_retained', 'phones_released'].includes(name),
+    )
+    .reduce((sum, [, count]) => sum + count, 0);
+  confirmState.content = `将清理门店“${preview.storeName}”的独占业务数据，预检涉及${businessCount}条业务数据，${preview.counts.media_lifecycle_candidates ?? 0}项媒体候选；删除独立账号${preview.counts.accounts_delete ?? 0}个，保留仍有业务关联或受保护账号${preview.counts.accounts_retained ?? 0}个。${preview.retained.join('；')}。删除后无法通过产品恢复。`;
+  confirmDialogVisible.value = true;
+});
 
 const closeConfirmDialog = () => {
   confirmDialogVisible.value = false;
@@ -766,29 +771,37 @@ const handleConfirm = async () => {
   const target = confirmState.row;
   const action = confirmAction.value;
 
-  try {
-    if (confirmState.type === 'delete') {
-      deleteResult.value = await deleteStore(target.id, deletePlanHash.value);
-      deleteResultVisible.value = true;
-      tableData.value = tableData.value.filter((item) => item.id !== target.id);
-    } else if (confirmState.type === 'archive') {
-      await archiveStore(target.id);
-      tableData.value = tableData.value.filter((item) => item.id !== target.id);
-    } else if (confirmState.type === 'restore') {
-      await restoreStore(target.id);
-      tableData.value = tableData.value.filter((item) => item.id !== target.id);
-    }
+  const operationType = confirmState.type;
+  await operations.execute(`${operationType}:${target.id}`, async (current) => {
+    try {
+      if (operationType === 'delete') {
+        const result = await deleteStore(target.id, deletePlanHash.value);
+        if (!current()) return;
+        deleteResult.value = result;
+        deleteResultVisible.value = true;
+        tableData.value = tableData.value.filter((item) => item.id !== target.id);
+      } else if (operationType === 'archive') {
+        await archiveStore(target.id);
+        if (!current()) return;
+        tableData.value = tableData.value.filter((item) => item.id !== target.id);
+      } else if (operationType === 'restore') {
+        await restoreStore(target.id);
+        if (!current()) return;
+        tableData.value = tableData.value.filter((item) => item.id !== target.id);
+      }
 
-    closeConfirmDialog();
-    if (action === '彻底删除') {
-      adminFeedback.deleted(target.shopName);
-    } else {
-      adminFeedback.actionSuccess({ action, target: target.shopName });
+      closeConfirmDialog();
+      if (action === '彻底删除') {
+        adminFeedback.deleted(target.shopName);
+      } else {
+        adminFeedback.actionSuccess({ action, target: target.shopName });
+      }
+      ensureCurrentPage();
+    } catch (error) {
+      if (!current()) return;
+      adminFeedback.actionError({ action, target: target.shopName, error, fallback: '请稍后重试' });
     }
-    ensureCurrentPage();
-  } catch (error) {
-    adminFeedback.actionError({ action, target: target.shopName, error, fallback: '请稍后重试' });
-  }
+  });
 };
 
 watch(activeTab, () => {
@@ -797,6 +810,10 @@ watch(activeTab, () => {
 });
 
 onMounted(loadStorePage);
+operations.onInvalidate(() => {
+  confirmDialogVisible.value = false;
+  deletePlanHash.value = '';
+});
 </script>
 
 <style scoped>

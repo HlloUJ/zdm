@@ -804,12 +804,20 @@ async function confirmOperation() {
     return;
   }
   if (!detail.value || submitting.value) return;
+  const customerId = detail.value.customer.id;
   submitting.value = true;
   try {
-    await deleteFollowup(detail.value.customer.id, deletingFollowId.value);
+    const deleted = await deleteFollowup(customerId, deletingFollowId.value);
+    if (!deleted) throw new Error('跟进记录未删除，请刷新后重试');
+    adminFeedback.success('已删除跟进记录');
     confirmVisible.value = false;
-    detail.value = await getCustomerDetail(detail.value.customer.id);
-    await reload();
+    try {
+      const updated = await getCustomerDetail(customerId);
+      if (detail.value?.customer.id === customerId) detail.value = updated;
+      await reload();
+    } catch (error) {
+      fail('刷新客户详情', error);
+    }
   } catch (error) {
     fail('删除', error);
   } finally {

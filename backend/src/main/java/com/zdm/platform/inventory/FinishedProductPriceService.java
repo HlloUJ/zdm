@@ -1,5 +1,7 @@
 package com.zdm.platform.inventory;
 
+import com.zdm.platform.common.OperationBlockedException;
+
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.zdm.platform.common.StoreLevelPricingDirectory;
 import java.math.BigDecimal;
@@ -53,7 +55,7 @@ public class FinishedProductPriceService {
     Set<Long> expectedLevels = storeLevelDirectory.listOperationalPricingLevels().stream()
         .map(StoreLevelPricingDirectory.Level::id).collect(Collectors.toSet());
     if (expectedLevels.isEmpty()) {
-      throw new IllegalArgumentException("请先在门店级别管理配置门店级别");
+      throw new OperationBlockedException("请先在门店级别管理配置门店级别");
     }
     for (FinishedProductVariant variant : variants) {
       List<FinishedProductPrice> skuPrices = prices.stream()
@@ -64,7 +66,7 @@ public class FinishedProductPriceService {
           || skuPrices.stream().anyMatch(price -> price.getPriceCoefficient() == null || price.getPriceCoefficient().signum() < 0
               || price.getCostPrice() == null || price.getCostPrice().signum() < 0
               || price.getPrice() == null || price.getPrice().signum() < 0)) {
-        throw new IllegalArgumentException("请完善全部成品现货价格后再上架");
+        throw new OperationBlockedException("请完善全部成品现货价格后再上架");
       }
     }
   }

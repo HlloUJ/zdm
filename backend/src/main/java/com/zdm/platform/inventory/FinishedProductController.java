@@ -135,6 +135,19 @@ public class FinishedProductController extends AdminCrudController<FinishedProdu
     return ApiResponse.ok(visiblePrices(service.createWithDetails(product)));
   }
 
+  @GetMapping("/{id}/source-shelf-check")
+  public ApiResponse<Boolean> checkSourceShelf(@PathVariable Long id) {
+    if (!isSupplyChain()) { throw new org.springframework.security.access.AccessDeniedException("此操作属于供应链协同系统"); }
+    permissionGuard.requireDataPermission();
+    FinishedProduct product = service.getById(id);
+    if (product == null) { throw new IllegalArgumentException("成品现货不存在或已被删除"); }
+    permissionGuard.requireData(product);
+    permissionGuard.requireAnyPermission(permission(scope(product.getSourceStatus()), "shelf"),
+        permission(scope(product.getSourceStatus()), "batch-shelf"));
+    service.checkSourceShelf(id);
+    return ApiResponse.ok(true);
+  }
+
   @PostMapping("/{id}/shelf-check")
   public ApiResponse<Boolean> checkShelf(@PathVariable Long id) {
     if (!"admin".equals(permissionGuard.identity().clientCode())) { throw new org.springframework.security.access.AccessDeniedException("此操作属于运营管理平台"); }

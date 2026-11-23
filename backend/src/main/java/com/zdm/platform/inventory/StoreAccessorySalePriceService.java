@@ -1,5 +1,7 @@
 package com.zdm.platform.inventory;
 
+import com.zdm.platform.common.OperationBlockedException;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.HashSet;
@@ -76,12 +78,12 @@ public class StoreAccessorySalePriceService {
     return partnerPrice == null || coefficient == null ? null : partnerPrice.multiply(coefficient).setScale(2, RoundingMode.HALF_UP);
   }
   public void requireCategory(Context context, Long categoryId) {
-    if (categoryId == null) { throw new IllegalArgumentException("请选择门店分类"); }
+    if (categoryId == null) { throw new OperationBlockedException("请选择门店分类"); }
     Category category = context.categories().get(categoryId);
-    if (category == null || context.categories().values().stream().anyMatch(child -> Objects.equals(child.parentId(), categoryId))) { throw new IllegalArgumentException("请选择本门店已启用的末级分类"); }
+    if (category == null || context.categories().values().stream().anyMatch(child -> Objects.equals(child.parentId(), categoryId))) { throw new OperationBlockedException("请选择本门店已启用的末级分类"); }
     var seen = new HashSet<Long>();
     for (Category current = category; current != null; current = context.categories().get(current.parentId())) {
-      if (!"enabled".equals(current.status()) || !seen.add(current.id()) || current.parentId() != null && !context.categories().containsKey(current.parentId())) { throw new IllegalArgumentException("请选择本门店已启用的末级分类"); }
+      if (!"enabled".equals(current.status()) || !seen.add(current.id()) || current.parentId() != null && !context.categories().containsKey(current.parentId())) { throw new OperationBlockedException("请选择本门店已启用的末级分类"); }
     }
   }
   public void save(Long listingId, Long skuId, Price price, Long accountId) {

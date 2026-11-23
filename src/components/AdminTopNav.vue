@@ -91,7 +91,7 @@
           <span class="user-role">{{ roleText }}</span>
         </div>
       </div>
-      <t-button variant="text" :theme="buttonTheme('logout')" @click="handleLogout">
+      <t-button variant="text" :theme="buttonTheme('logout')" :loading="loggingOut" @click="handleLogout">
         <template #icon><t-icon name="logout" /></template>
         退出登录
       </t-button>
@@ -188,10 +188,17 @@ const handleIdentityChange = async (value: string | number) => {
   }
 };
 
+const loggingOut = ref(false);
 const handleLogout = async () => {
-  await logout();
-  adminFeedback.success('已退出登录');
-  await router.replace('/login');
+  if (loggingOut.value) return;
+  loggingOut.value = true;
+  try {
+    await logout();
+    adminFeedback.success('已退出登录');
+    await router.replace('/login');
+  } finally {
+    loggingOut.value = false;
+  }
 };
 
 onMounted(async () => {

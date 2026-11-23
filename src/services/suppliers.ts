@@ -110,3 +110,9 @@ export function deleteSupplierSupplyType(id: number) {
     method: 'DELETE',
   });
 }
+
+export const checkSupplierDelete = (id: number) =>
+  request<boolean>(`/admin/suppliers/${id}/delete-check`);
+
+export const checkSupplierSupplyTypeDelete = (id: number) =>
+  request<boolean>(`/admin/supplier-supply-types/${id}/delete-check`);

@@ -221,6 +221,7 @@
                           :key="action.id"
                           :theme="buttonTheme(buttonFunctionFor('stock', action.id))"
                           hover="color"
+                          :disabled="operations.pending(`${action.id}:${row.id}`)"
                           @click="handleManagementRowButton(action.id, row)"
                           >{{ action.label }}</t-link
                         >
@@ -1079,7 +1080,7 @@
     <FinishedOperationLogs v-if="canViewOperationLogs" v-model:visible="operationLogsVisible" />
     <AdminConfirmDialog
       v-model:visible="confirmDialogVisible"
-      :confirm-loading="saving"
+      :loading="saving"
       :function="buttonFunctionFor('stock', confirmState.type)"
       :action="confirmAction"
       object-type="商品"
@@ -1099,6 +1100,7 @@
 </template>
 
 <script setup lang="ts">
+import { useOperationPreflight, requireCondition } from '@/composables/useOperationPreflight';
 import { useListBatchSelection } from '@/components/foundation';
 import DecimalInput from '@/components/DecimalInput.vue';
 import { deleteProductsBatch } from '@/services/productBatchDelete';
@@ -1227,9 +1229,11 @@ const tabs: TabConfig[] = [
 ];
 const pageSizeOptions = [10, 20, 50];
 const offShelfReasons = ['库存异常', '价格调整', '图片更新', '供应商申请'];
-const productPermissionPrefix = computed(() => `${'supply-chain'}.${commodity.moduleKey}`);
+const productPermissionPrefix = computed(() => `supply-chain.${commodity.moduleKey}`);
 const sourceBlocked: (row: StockItem) => boolean = () => false;
 const activeTab = ref<StockTab>(initialProductListTab(useRoute().query.tab));
+const operations = useOperationPreflight(() => activeTab.value);
+
 const { descending, tableSort, toggleTimeSort, onTimeSortChange } = useStateActivitySort(activeTab, () => {
   currentPagination.value.current = 1;
 });
@@ -2288,6 +2292,7 @@ const handleBatchAction = (action: BatchAction) => {
   openConfirm('clearRecycle', null, '是否清空回收站？');
 };
 const handleRowAction = async (action: RowAction, row: StockItem) => {
+  operations.select(`${action}:${row.id}`);
   if (sourceBlocked(row) && !['purge', 'detail'].includes(action)) return;
   if (action === 'detail') {
     void openProductDetail(row);
@@ -2298,7 +2303,9 @@ const handleRowAction = async (action: RowAction, row: StockItem) => {
     return;
   }
   if (action === 'shelf') {
-    openConfirm('shelf', row, `是否上架商品“${row.name}”？`);
+    await operations.check(`shelf:${row.id}`, () => commodity.products.checkSourceProductShelf(row.id).then(requireCondition), () => {
+      openConfirm('shelf', row, `是否上架商品“${row.name}”？`);
+    });
     return;
   }
   if (action === 'offShelf') {
@@ -3053,6 +3060,7 @@ const handleConfirm = async () => {
     saving.value = false;
   }
 };
+operations.onInvalidate(closeConfirmDialog);
 </script>
 
 <style scoped src="../shared/index.css"></style>

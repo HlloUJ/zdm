@@ -178,6 +178,7 @@
                         :key="action.id"
                         :theme="buttonTheme(buttonFunctionFor('stock', action.id))"
                         hover="color"
+                        :disabled="operations.pending(`${action.id}:${row.id}`)"
                         @click="handleStoreRowButton(action.id, row)"
                         >{{ action.label }}</t-link
                       >
@@ -269,7 +270,7 @@
     <AdminConfirmDialog
       :function="confirm ? buttonFunctionFor('store-confirm', confirm.kind) : 'close'"
       :visible="Boolean(confirm)"
-      :confirm-loading="confirming"
+      :loading="confirming || (confirm?.kind === 'shelf' && operations.pending(`shelf:${confirm.product?.id}`))"
       :action="confirm?.label || ''"
       object-type="商品"
       :description="confirm ? batchConfirmDescriptions[confirm.kind] : undefined"
@@ -360,6 +361,8 @@
 </template>
 
 <script setup lang="ts">
+import { OperationBlockedError } from '@/services/http';
+import { useOperationPreflight, requireCondition } from '@/composables/useOperationPreflight';
 import { useListBatchSelection } from '@/components/foundation';
 import { deleteProductsBatch } from '@/services/productBatchDelete';
 import { canBatchDelete } from '@/services/productBatchPermissions';
@@ -455,6 +458,8 @@ const tabs = computed(() =>
 );
 type StoreFinishedTab = StoreFinishedStatus | 'all';
 const activeTab = ref<StoreFinishedTab>(initialProductListTab(route.query.tab));
+const operations = useOperationPreflight(() => activeTab.value);
+
 const { descending, tableSort, toggleTimeSort, onTimeSortChange } = useStateActivitySort(activeTab, () => {
   page.value = 1;
 });
@@ -679,6 +684,16 @@ const handleStoreToolbarAction = (action: string) => {
   } else if (action === 'clear') confirm.value = { kind: 'clear', label: '清空回收站' };
 };
 const handleStoreRowButton = async (action: string, row: StoreFinishedProduct) => {
+  operations.select(`${action}:${row.id}`);
+  if (action === 'shelf') {
+    await operations.check(`shelf:${row.id}`, async () => {
+      const current = operations.capture();
+      if (await refreshAvailability([row.id], false, current, true)) {
+        requireCondition(await commodity.store.checkStoreProductShelf(row.id));
+      }
+    }, () => prepareAction('shelf', row));
+    return;
+  }
   if (!['detail', 'purge'].includes(action) && !(await refreshAvailability([row.id]))) return;
   if (action === 'detail') void openDetail(row);
   else if (action === 'edit') void router.push({ name: commodity.storeEditRoute, params: { id: row.id } });
@@ -740,18 +755,21 @@ function resetFilter() {
   filter.category = undefined;
   searchList();
 }
-async function refreshAvailability(ids: number[], allowBlocked = false, isCurrent: () => boolean = () => true) {
+async function refreshAvailability(ids: number[], allowBlocked = false, isCurrent: () => boolean = () => true, preflight = false) {
   try {
     const latest = await listStoreFinishedProducts();
     if (!isCurrent()) return false;
     rows.value = latest;
     selected.value = selected.value.filter((id) => latest.some((item) => item.id === id && !item.sourceUnavailable));
     const missing = ids.some((id) => !latest.some((item) => item.id === id));
+    if (preflight && missing) throw new OperationBlockedError('商品不存在或不可访问');
     if (missing) adminFeedback.warning('商品不存在或不可访问');
     const blocked = ids.some((id) => latest.some((item) => item.id === id && item.sourceUnavailable));
     if (blocked && current.value && ids.includes(current.value.id) && editingId.value) void closeEdit();
+    if (preflight && blocked) throw new OperationBlockedError(latest.find((item) => ids.includes(item.id) && item.sourceUnavailable)?.sourceMessage || '来源商品已不可用');
     return !missing && (!blocked || allowBlocked);
   } catch (error) {
+    if (preflight) throw error;
     if (isCurrent()) adminFeedback.error(getSafeErrorMessage(error, '商品状态核验失败，请重试'));
     return false;
   }
@@ -910,6 +928,25 @@ async function confirmOffShelf() {
 async function runConfirmed() {
   const action = confirm.value;
   if (!action || confirming.value) return;
+  if (action.kind === 'shelf' && action.product) {
+    const id = action.product.id;
+    return operations.execute(`shelf:${id}`, async (current) => {
+      try {
+        if (!(await refreshAvailability([id], false, current, true)) || !current()) return;
+        await changeStoreFinishedStatus(id, 'selling');
+        if (!current()) return;
+        confirm.value = null;
+        selected.value = [];
+        adminFeedback.success('操作成功');
+        await load();
+      } catch (error) {
+        if (!current()) return;
+        confirm.value = null;
+        adminFeedback.actionError({ action: '上架', error });
+        await refreshAvailability([id], true, current, true).catch(() => undefined);
+      }
+    });
+  }
   confirming.value = true;
   const ids = action.ids ?? (action.product ? [action.product.id] : []);
   try {
@@ -988,6 +1025,7 @@ onMounted(() => {
   window.addEventListener('focus', refreshOnSelectionReturn);
 });
 onBeforeUnmount(() => window.removeEventListener('focus', refreshOnSelectionReturn));
+operations.onInvalidate(() => { confirm.value = null; });
 </script>
 <style scoped>
 @import url('./index.css');
