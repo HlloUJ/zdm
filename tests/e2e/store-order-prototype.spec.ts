@@ -407,16 +407,15 @@ test('payment configuration API failures never fall back to local names and can 
   await page.getByRole('button', { name: '新增', exact: true }).click();
   const dialog = page.locator('.t-dialog:visible');
   await dialog.getByPlaceholder('请输入名称', { exact: true }).fill('十个字符名称测试文字');
-  await page.route('**/api/store/payment-names', async (route) => {
-    if (route.request().method() === 'POST')
-      return route.fulfill({
-        status: 400,
-        contentType: 'application/json',
-        headers: { 'X-Zdm-Invalid-Field': 'name' },
-        body: JSON.stringify({ code: 400, message: '该名称已存在', data: null }),
-      });
-    return route.fallback();
+  const created = await page.evaluate(async () => {
+    const response = await fetch('/api/store/payment-names', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: '十个字符名称测试文字' }),
+    });
+    return response.ok;
   });
+  expect(created).toBe(true);
   await dialog.getByRole('button', { name: '确认新增', exact: true }).click();
   await expect(dialog).toBeVisible();
   await expect(dialog.getByPlaceholder('请输入名称', { exact: true })).toHaveValue('十个字符名称测试文字');
@@ -494,6 +493,10 @@ test('payment name changes during receipt entry require explicit reselection and
   });
   await dialog.getByPlaceholder('请输入金额', { exact: false }).fill('100');
   await dialog.getByRole('button', { name: '确认登记收款', exact: true }).click();
+  await expect(dialog.locator('.t-form-item-tips').filter({ hasText: '请选择收退款渠道' })).toBeVisible();
+  await dialog.getByPlaceholder('请选择收退款渠道', { exact: true }).click();
+  await page.locator('.t-select-option').getByText('现金', { exact: true }).click();
+  await dialog.getByRole('button', { name: '确认登记收款', exact: true }).click();
   await expect(dialog.locator('.t-form-item-tips').filter({ hasText: '款项配置已变化，请重新选择' })).toBeVisible();
   await expect(dialog.getByPlaceholder('请选择款项名称', { exact: true })).toHaveValue('定金');
   const state = await page.evaluate(() => JSON.parse(localStorage.getItem('zdm-order-prototype-v1:1:2:7:7')!));
@@ -542,7 +545,8 @@ test('concurrent payment-name deletion refreshes the list and preserves the edit
     await fetch('/api/store/payment-names/1?version=1', { method: 'DELETE' });
   });
   await dialog.getByRole('button', { name: '确认保存', exact: true }).click();
-  await expect(dialog.locator('.t-form-item-tips').filter({ hasText: '款项名称不存在或已删除' })).toBeVisible();
+  await expect(page.locator('.t-message.t-is-error')).toHaveText('修改失败：款项名称不存在或已删除');
+  await expect(dialog.locator('.t-is-error')).toHaveCount(0);
   await expect(dialog.getByPlaceholder('请输入名称', { exact: true })).toHaveValue('填写中货款');
   await expect(page.getByRole('cell', { name: '待编辑货款', exact: true })).toHaveCount(0);
   expect(await page.evaluate(async () => (await (await fetch('/api/store/payment-names')).json()).data.total)).toBe(0);
