@@ -173,10 +173,31 @@ function classify(c, changes, files, oldPlan) {
     old.reasons[0],
   );
 }
+// Match executable changes that establish a scenario, separately from keywords used to suggest tests.
+const operations = [
+  ['concurrency', /\bFOR\s+UPDATE\b|\b(?:compareAndSet|acquireLock|withLock|putIfAbsent|runExclusive)\s*\(|\b(?:ON\s+CONFLICT|ON\s+DUPLICATE\s+KEY)\b/i],
+  ['api', /@(?:Get|Post|Put|Patch|Delete|Request)Mapping\s*\(|\brouter\.(?:get|post|put|patch|delete)\s*\(/],
+  ['state', /\b(?:transitionTo|canTransition|applyTransition|setStatus)\s*\(|\.status\s*=(?!=)/],
+  ['batch', /\b(?:executeBatch|batchUpdate|bulkWrite|allSettled)\s*\(/],
+];
+function withOperations(fact, change) {
+  if (behaviors[fact.kind][0] < 2 || testPath(change.path) || !/^(?:src\/|backend\/src\/main\/)/.test(change.path))
+    return fact;
+  const lines = [...(change.removed || []), ...(change.added || [])]
+    .filter(line => !/^\s*(?:\/\/|\/\*|\*)/.test(line)).join('\n');
+  const extra = operations.filter(([kind, signal]) =>
+    kind !== fact.kind && !fact.other.includes(kind) && signal.test(lines)).map(([kind]) => kind);
+  if (!extra.length) return fact;
+  const server = change.path.startsWith('backend/');
+  const dev = server ? ['backend'] : ['unit', 'e2e'];
+  const delivery = server ? ['backend', 'e2e'] : ['unit', 'build', 'e2e'];
+  return { ...fact, other: [...fact.other, ...extra], reason: [fact.reason, ...extra.map(k => behaviors[k][1])].join('，'),
+    dev: [...new Set([...fact.dev, ...dev])], delivery: [...new Set([...fact.delivery, ...delivery])] };
+}
 export function semanticPlan(changes, fallback, files, catalogue, legacy) {
   fallback ||= process.env.ZDM_QUALITY_FULL === '1';
   const old = legacy(changes, fallback);
-  const facts = changes.map((c) => classify(c, changes, files, legacy));
+  const facts = changes.map((c) => withOperations(classify(c, changes, files, legacy), c));
   if (fallback)
     facts.push({
       path: '',

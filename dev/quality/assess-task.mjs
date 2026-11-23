@@ -13,6 +13,7 @@ import { blockFor, summaryFor } from './assessment-summary.mjs';
 import { behaviors } from './behaviors.mjs';
 import { reviewPullRequest } from './remote.mjs';
 import { EvidenceStore } from './store.mjs';
+import { inputReader } from './inputs.mjs';
 import { contextVariable, observer, rootFor, taskRecord } from './timing-events.mjs';
 
 function location(cwd) {
@@ -94,9 +95,9 @@ export function previousEvidence(snap, state) {
     !latest ||
     latest.phase !== 'dev' ||
     latest.status !== 'passed' ||
-    latest.tree !== saved.tree ||
-    !latest.assessments?.some((t) => t.id === state.id) ||
-    !latest.results.every((row) => store.intact(row))
+    latest.run !== saved.run ||
+    latest.tree !== saved.tree || latest.base !== saved.base || latest.policy !== saved.policy ||
+    !latest.assessments?.some((t) => t.id === state.id)
   )
     return null;
   try {
@@ -104,7 +105,7 @@ export function previousEvidence(snap, state) {
   } catch {
     return null;
   }
-  return saved;
+  return { ...saved, report: latest };
 }
 export function saveBaselines(snap, report) {
   if (!snap.tasks?.length || report.phase !== 'dev' || report.status !== 'passed') return;
@@ -168,6 +169,41 @@ export function automaticReview(snap, state) {
     state,
   );
 }
+// The previous source tree describes the round. Invalid original results extend its checks individually.
+function carryEvidence(snap, tasks, plan) {
+  const originals = new Map();
+  for (const state of tasks) {
+    const report = previousEvidence(snap, state)?.report;
+    if (!report) continue;
+    for (const row of [...(report.inherited || []), ...report.results]) {
+      if (['diff', 'docs'].includes(row.id) || !plan.delivery.includes(row.id)) continue;
+      originals.set(JSON.stringify([row.id, row.args || []]), row);
+    }
+  }
+  if (!originals.size) return [];
+  const store = new EvidenceStore(snap.common);
+  const input = inputReader(snap);
+  const covered = row => {
+    if (!plan.dev.includes(row.id)) return false;
+    const scope = plan.scopes[row.id];
+    return !scope?.length || (row.args?.length && row.args.every(path => scope.includes(path)));
+  };
+  const retained = [];
+  for (const row of originals.values()) {
+    if (covered(row)) continue;
+    if (store.intact(row) && row.identity === input(row.id).identity) {
+      retained.push(row);
+      continue;
+    }
+    const scheduled = plan.dev.includes(row.id);
+    if (!scheduled) plan.dev.push(row.id);
+    if (!['e2e', 'unit'].includes(row.id)) continue;
+    if (row.args?.length && (!scheduled || plan.scopes[row.id]?.length))
+      plan.scopes[row.id] = [...new Set([...(plan.scopes[row.id] || []), ...row.args])].sort();
+    else delete plan.scopes[row.id];
+  }
+  return retained.filter(row => !covered(row));
+}
 export function development(snap, states) {
   const tasks = states.map((s) => automaticReview(snap, s));
   if (!tasks.length) return snap;
@@ -189,12 +225,14 @@ export function development(snap, states) {
       plan.scopes[id] = [...new Set(required.flatMap((p) => p.scopes[id]))].sort();
     else delete plan.scopes[id];
   }
+  const inherited = carryEvidence(snap, tasks, plan);
   const refs = tasks.map((s) => ({ id: s.id, revision: s.history.at(-1).revision }));
   return {
     ...snap,
     tasks,
     plan,
     assessments: refs,
+    inherited,
     planId: digest(JSON.stringify([snap.planId, refs, plan.dev, plan.scopes])),
   };
 }

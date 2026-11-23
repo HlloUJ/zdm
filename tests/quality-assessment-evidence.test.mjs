@@ -5,9 +5,25 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import test from 'node:test';
 import { bindSummary, blockFor, readSummary } from '../dev/quality/assessment-summary.mjs';
+import { planChanges } from '../dev/quality/policy.mjs';
 import { stateFor, updateAssessment } from '../dev/quality/assessment-store.mjs';
 import { update } from '../dev/task-timing/registry.mjs';
 import { writeJson } from '../dev/quality/timing-events.mjs';
+
+test('事务锁从实际差异进入复核行为，普通异步读取保留本域验证', () => {
+  const assess = (path, before, after) => planChanges([{
+    path, before, after, removed: [before], added: [after], patch: '-' + before + '\\n+' + after,
+    consumers: [], enclosing: [],
+  }], false, [path]);
+  const locking = assess('backend/src/main/java/example/RegionOrders.java',
+    'db.query("SELECT id FROM orders WHERE tenant_id=?");',
+    'db.query("SELECT id FROM orders WHERE tenant_id=? FOR UPDATE");');
+  assert.ok(locking.behaviors.includes('concurrency') && locking.delivery.includes('backend'));
+  const simple = assess('src/pages/example/indicator.ts', 'export async function show() { return 1; }',
+    'export async function show() { return 2; }');
+  assert.equal(simple.risk, 'R2');
+  assert.ok(!simple.behaviors.includes('concurrency'));
+});
 
 test('摘要、候选、主线、规则及定向用例相互绑定，申请者无法缩小最低覆盖', () => {
   const context = { base: 'base', candidate: 'candidate', policy: 'policy' };
@@ -182,6 +198,21 @@ test('同批分别复核，R4 整项在 R1 背景返工中沿用已验证版本'
   assert.ok(
     next.dev.includes('e2e') && !next.dev.includes('backend') && next.delivery.includes('acceptance'),
   );
+  const accepted = passed.results.find(row => row.id === 'acceptance');
+  const originalLog = readFileSync(accepted.log);
+  writeFileSync(accepted.log, 'lost original development evidence');
+  const repaired = call('plan');
+  assert.equal(repaired.risk, 'R1');
+  assert.ok(repaired.dev.includes('acceptance') && !repaired.dev.includes('backend'));
+  writeFileSync(accepted.log, originalLog);
+  const previousLanguage = env.LANG;
+  env.LANG = previousLanguage === 'C' ? 'en_US.UTF-8' : 'C';
+  const changedEnvironment = call('plan');
+  assert.equal(changedEnvironment.risk, 'R1');
+  assert.ok(changedEnvironment.dev.includes('acceptance') && !changedEnvironment.dev.includes('backend'));
+  if (previousLanguage === undefined) delete env.LANG;
+  else env.LANG = previousLanguage;
+  assert.ok(!call('plan').dev.includes('acceptance'));
   call(
     'assess',
     'start',
