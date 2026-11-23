@@ -19,6 +19,12 @@ public class TemplateVersionController {
   private final TemplateVersionService service;
   public TemplateVersionController(TemplateVersionService service) { this.service = service; }
 
+  @GetMapping("/category-operation-check")
+  public ApiResponse<Boolean> checkCategoryOperation(@RequestParam long categoryId, @RequestParam String operation) {
+    service.checkCategoryOperation(categoryId, operation);
+    return ApiResponse.ok(true);
+  }
+
   @GetMapping("/categories")
   public ApiResponse<List<ProductCategory>> categories(@RequestParam String scope) {
     return ApiResponse.ok(service.categoryOptions(scope));

@@ -7,6 +7,7 @@
     "env:init": "node dev/init-env.mjs",
     "dev": "vite --configLoader runner",
     "build": "node dev/quality-entry.mjs run build",
+    "test:source-guards": "node dev/operation-feedback-policy.mjs",
     "test:unit": "node dev/quality-entry.mjs run unit",
     "test:e2e": "node dev/quality-entry.mjs run e2e",
     "backend:dev": "docker compose up -d --build backend",

@@ -98,6 +98,7 @@
                     v-if="canDeleteTenant"
                     :theme="buttonTheme('purge')"
                     hover="color"
+                    :disabled="operations.pending(`purge:${row.id}`)"
                     @click="openPurgeDialog(row)"
                   >
                     彻底删除
@@ -182,6 +183,7 @@
       :action="confirmState.type === 'archive' ? '归档' : '恢复运营'"
       object-type="租户"
       :object-name="confirmState.row?.tenantName"
+      :loading="operations.pending(`${confirmState.type}:${confirmState.row?.id}`)"
       @confirm="handleConfirm"
       @cancel="closeConfirmDialog"
       @close="closeConfirmDialog"
@@ -212,13 +214,6 @@
         }}</t-descriptions-item>
         <t-descriptions-item label="释放手机号">{{ purgePreview.phoneReleaseCount }}</t-descriptions-item>
       </t-descriptions>
-      <t-alert
-        v-for="blocker in purgePreview?.blockers ?? []"
-        :key="blocker"
-        class="purge-blocker"
-        theme="warning"
-        :message="blocker"
-      />
       <t-form class="purge-confirm-form" label-width="100px" colon>
         <t-form-item help="请输入完整租户名称" label="租户名称" required-mark>
           <t-input v-model="purgeConfirmationName" placeholder="请输入租户名称" />
@@ -229,6 +224,8 @@
 </template>
 
 <script setup lang="ts">
+import { OperationBlockedError } from '@/services/http';
+import { useOperationPreflight } from '@/composables/useOperationPreflight';
 import {
   formConfirmation,
   dialogButtonProps,
@@ -303,6 +300,8 @@ const loading = ref(false);
 const currentUser = getLoginUser();
 const permissionPrefix = 'admin.tenant.tenant-management';
 const activeTab = ref<TenantTab>('unarchived');
+const operations = useOperationPreflight(() => activeTab.value);
+
 const allTenantTabs: { label: string; value: TenantTab }[] = [
   { label: '运营中', value: 'unarchived' },
   { label: '已归档', value: 'archived' },
@@ -568,6 +567,7 @@ const handleBusinessSubmit = async () => {
 };
 
 const openStatusConfirm = (row: TenantItem) => {
+  operations.select(`status:${row.id}`);
   const isUnarchived = row.status === 'normal';
   confirmState.type = isUnarchived ? 'archive' : 'restore';
   confirmState.row = row;
@@ -577,18 +577,20 @@ const openStatusConfirm = (row: TenantItem) => {
   confirmDialogVisible.value = true;
 };
 
-const openPurgeDialog = async (row: TenantItem) => {
-  purgeTarget.value = row;
-  purgePreview.value = null;
-  purgeConfirmationName.value = '';
-  try {
-    purgePreview.value = await getTenantPurgePreview(row.id);
-    purgeDialogVisible.value = true;
-  } catch (error) {
-    purgeTarget.value = null;
-    adminFeedback.actionError({ action: '加载删除预检', target: row.tenantName, error });
+const openPurgeDialog = (row: TenantItem) => operations.check(`purge:${row.id}`, async () => {
+  const preview = await getTenantPurgePreview(row.id);
+  if (typeof preview.eligible !== 'boolean') throw new Error('无效租户删除预检结果');
+  if (!preview.eligible) throw new OperationBlockedError(preview.blockers.join('；') || '当前租户不能彻底删除');
+  if (!preview.tenantName || !preview.storePlans || Array.isArray(preview.storePlans) || typeof preview.storePlans !== 'object') {
+    throw new Error('无效租户清理方案');
   }
-};
+  return preview;
+}, (preview) => {
+  purgeTarget.value = { ...row, tenantName: preview.tenantName };
+  purgePreview.value = preview;
+  purgeConfirmationName.value = '';
+  purgeDialogVisible.value = true;
+});
 
 const closePurgeDialog = () => {
   if (purgeSubmitting.value) return;
@@ -600,10 +602,12 @@ const closePurgeDialog = () => {
 
 const handlePurge = async () => {
   const target = purgeTarget.value;
-  if (!target || !purgePreview.value?.eligible || purgeConfirmationName.value !== target.tenantName) return;
+  if (purgeSubmitting.value || !target || !purgePreview.value?.eligible || purgeConfirmationName.value !== target.tenantName) return;
+  const current = operations.capture();
   purgeSubmitting.value = true;
   try {
     const result = await purgeTenant(target.id, purgeConfirmationName.value, purgePreview.value.storePlans);
+    if (!current()) return;
     tableData.value = tableData.value.filter((item) => item.id !== target.id);
     ensureCurrentPage();
     purgeSubmitting.value = false;
@@ -613,6 +617,7 @@ const handlePurge = async () => {
       adminFeedback.info('经营数据已清理；门店仍有独立记录或媒体收尾事项，按原规则继续处理。');
     }
   } catch (error) {
+    if (!current()) return;
     purgeSubmitting.value = false;
     adminFeedback.actionError({ action: '彻底删除', target: target.tenantName, error });
   }
@@ -628,15 +633,20 @@ const handleConfirm = async () => {
   const target = confirmState.row;
   const action = confirmState.type === 'restore' ? '恢复运营' : '归档';
 
-  try {
-    const updated = await updateTenantStatus(target.id, confirmState.type === 'restore' ? 'enabled' : 'disabled');
-    replaceTenantItem(updated);
+  const operationType = confirmState.type;
+  await operations.execute(`${operationType}:${target.id}`, async (current) => {
+    try {
+      const updated = await updateTenantStatus(target.id, operationType === 'restore' ? 'enabled' : 'disabled');
+      if (!current()) return;
+      replaceTenantItem(updated);
 
-    closeConfirmDialog();
-    adminFeedback.actionSuccess({ action, target: target.tenantName });
-  } catch (error) {
-    adminFeedback.actionError({ action, target: target.tenantName, error });
-  }
+      closeConfirmDialog();
+      adminFeedback.actionSuccess({ action, target: target.tenantName });
+    } catch (error) {
+      if (!current()) return;
+      adminFeedback.actionError({ action, target: target.tenantName, error });
+    }
+  });
 };
 
 watch(activeTab, () => {
@@ -664,6 +674,14 @@ const toggleBusiness = (business: BusinessType) => {
     businessSelection.value = [...businessSelection.value, business];
   }
 };
+operations.onInvalidate(() => {
+  purgeDialogVisible.value = false;
+  purgeTarget.value = null;
+  confirmDialogVisible.value = false;
+  purgeSubmitting.value = false;
+  purgeConfirmationName.value = '';
+  purgePreview.value = null;
+});
 </script>
 
 <style scoped>

@@ -58,3 +58,9 @@ export const updateSlabColorCategory = (id: number, payload: SlabColorCategoryPa
   });
 export const deleteSlabColorCategory = (id: number) =>
   request<boolean>(`/admin/slab-colors/categories/${id}`, { method: 'DELETE' });
+
+export const checkSlabColorDelete = (id: number) =>
+  request<boolean>(`/admin/slab-colors/${id}/delete-check`);
+
+export const checkSlabColorCategoryDelete = (id: number) =>
+  request<boolean>(`/admin/slab-colors/categories/${id}/delete-check`);

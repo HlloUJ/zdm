@@ -57,3 +57,6 @@ export const updateFinishedGuidePriceSetting = (priceCoefficient: number) =>
     method: 'PUT',
     body: JSON.stringify({ priceCoefficient }),
   });
+
+export const checkFinishedMarkupConfigurationDelete = (id: number) =>
+  request<boolean>(`/admin/finished-markup-configurations/${id}/delete-check`);

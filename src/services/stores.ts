@@ -97,3 +97,5 @@ export function deleteStore(id: number, planHash: string) {
     method: 'DELETE',
   });
 }
+
+export const checkStoreRestore = (id: number) => request<boolean>(`/admin/stores/${id}/restore-check`);

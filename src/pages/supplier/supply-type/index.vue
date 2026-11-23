@@ -70,7 +70,8 @@
                     @click="openStatusDialog(row)"
                     >{{ row.status === 'enabled' ? '停用' : '启用' }}</t-link
                   >
-                  <t-link v-if="can('delete')" :theme="buttonTheme('delete')" hover="color" @click="deleting = row"
+                  <t-link v-if="can('delete')" :theme="buttonTheme('delete')" hover="color" :disabled="operations.pending(`delete:${row.id}`)"
+                    @click="openDelete(row)"
                     >删除</t-link
                   >
                 </t-space></template
@@ -137,6 +138,8 @@
   </div>
 </template>
 <script setup lang="ts">
+import { checkSupplierSupplyTypeDelete } from '@/services/suppliers';
+import { useOperationPreflight, requireCondition } from '@/composables/useOperationPreflight';
 import { formConfirmation, operationConfirmation } from '@/components/foundation/actions/confirmation';
 import { buttonTheme, buttonFunctionFor } from '@/components/foundation/actions/buttonFunctions';
 import { rejectFormSubmission } from '@/utils/submitValidation';
@@ -161,6 +164,7 @@ import {
   deleteSupplierSupplyType,
   type SupplierSupplyTypeRecord,
 } from '@/services/suppliers';
+const operations = useOperationPreflight();
 const can = (action: string) => hasPermission(getLoginUser(), `admin.supplier-supply-type-management.${action}`);
 const rows = ref<SupplierSupplyTypeRecord[]>([]);
 const page = ref(1);
@@ -278,6 +282,10 @@ const confirmStatusChange = async () => {
     changingStatus.value = false;
   }
 };
+const openDelete = (row: SupplierSupplyTypeRecord) => operations.check(`delete:${row.id}`,
+  () => checkSupplierSupplyTypeDelete(row.id).then(requireCondition),
+  () => { deleting.value = row; },
+);
 const remove = async () => {
   if (!deleting.value || saving.value) return;
   const target = deleting.value;

@@ -189,6 +189,11 @@ test('does not open a deletion dialog when an unfinished product still uses the 
 });
 
 test('warns immediately instead of opening confirmation when a slab is not ready for shelving', async ({ page }) => {
+  await page.route('**/api/admin/slabs/action-check', (route) =>
+    route.fulfill({ status: 400, headers: { 'X-Zdm-Operation-Blocked': 'true' }, json: {
+      code: 400, message: '请完善大板销售信息后再上架',
+    } }),
+  );
   await page.route('**/api/admin/slab-markup-configurations/options', async (route) => {
     await route.fulfill({
       contentType: 'application/json',

@@ -65,6 +65,7 @@ test('shows the reference blocker before opening the store level delete confirma
     await route.fulfill({
       status: 400,
       contentType: 'application/json',
+      headers: { 'X-Zdm-Operation-Blocked': 'true' },
       body: JSON.stringify({ code: 400, message: '该门店级别已被门店引用，不能删除', data: null }),
     });
   });

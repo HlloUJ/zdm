@@ -1,5 +1,6 @@
 package com.zdm.platform.inventory;
 
+import com.zdm.platform.common.OperationBlockedException;
 import com.zdm.platform.common.SlabSupplierOptionProvider;
 import com.zdm.platform.common.StoreLevelPricingDirectory;
 import com.zdm.platform.security.CurrentIdentityProvider;
@@ -109,7 +110,7 @@ public class SlabInventoryReferenceService {
     if (inventory.getSupplierId() != null
         && !Objects.equals(inventory.getSupplierId(), existing == null ? null : existing.getSupplierId())
         && !slabSupplierOptionProvider.isSelectableSlabSupplier(inventory.getSupplierId())) {
-      throw new IllegalArgumentException("供应商不存在、已停用或不支持大板供货");
+      throw new OperationBlockedException("供应商不存在、已停用或不支持大板供货");
     }
     if (color != null) {
       SlabColorCategory category = com.zdm.platform.security.DataScope.filter(identityProvider.require(), colorService.listCategories()).stream()
@@ -118,7 +119,7 @@ public class SlabInventoryReferenceService {
           .orElse(null);
       boolean unchanged = existing != null && Objects.equals(color.getId(), existing.getColorId());
       if ((category == null || !"enabled".equals(category.getStatus())) && !unchanged) {
-        throw new IllegalArgumentException("色系分类已停用，不能选择该色系");
+        throw new OperationBlockedException("色系分类已停用，不能选择该色系");
       }
     }
   }
@@ -133,10 +134,10 @@ public class SlabInventoryReferenceService {
     }
     T entity = finder.apply(requestedId);
     if (entity == null) {
-      throw new IllegalArgumentException(label + "不存在");
+      throw new OperationBlockedException(label + "不存在");
     }
     if (!"enabled".equals(entity.getStatus()) && !Objects.equals(requestedId, existingId)) {
-      throw new IllegalArgumentException(label + "已停用，不能选择");
+      throw new OperationBlockedException(label + "已停用，不能选择");
     }
     return entity;
   }

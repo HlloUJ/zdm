@@ -123,6 +123,7 @@
                     v-if="canDeleteCategory"
                     hover="color"
                     :theme="buttonTheme('delete')"
+                    :disabled="operations.pending(`delete:${row.node.id}`)"
                     @click="openDeleteDialog(row.node)"
                     >删除</t-link
                   >
@@ -181,17 +182,10 @@
       action="删除"
       object-type="分类"
       :object-name="deleteTarget?.name"
-      :mode="deleteBlocked ? 'blocked' : 'confirm'"
+      :loading="operations.pending(`delete:${deleteTarget?.id}`)"
       @confirm="handleDeleteConfirm"
     >
-      <template v-if="deleteTarget?.productCount">
-        分类“{{ deleteTarget.name }}”已关联
-        {{ deleteTarget.productCount }} 个商品，不能删除。请停用该分类，避免新商品继续使用。
-      </template>
-      <template v-else-if="deleteTarget?.children.length">
-        分类“{{ deleteTarget.name }}”包含下级分类，请先删除或转移下级分类。
-      </template>
-      <template v-else>是否删除分类“{{ deleteTarget?.name }}”？删除后不可恢复。</template>
+      是否删除分类“{{ deleteTarget?.name }}”？删除后不可恢复。
     </AdminConfirmDialog>
 
     <AdminConfirmDialog
@@ -209,6 +203,9 @@
 </template>
 
 <script setup lang="ts">
+import { OperationBlockedError } from '@/services/http';
+import { checkStoreCategoryDelete } from '@/services/storeCategories';
+import { useOperationPreflight, requireCondition } from '@/composables/useOperationPreflight';
 import { formConfirmation } from '@/components/foundation/actions/confirmation';
 import { buttonTheme } from '@/components/foundation/actions/buttonFunctions';
 import { rejectFormSubmission } from '@/utils/submitValidation';
@@ -240,6 +237,8 @@ type FormMode = 'create' | 'edit';
 const permissionPrefix = 'admin.tenant.store-category-management';
 const loginUser = computed(() => getLoginUser());
 const activeScope = ref<StoreCategoryScope>('finished');
+const operations = useOperationPreflight(() => activeScope.value);
+
 const { visibleTabs: scopeTabs, showTabRail } = usePermissionTabs({
   tabs: [
     { label: '成品现货分类', value: 'finished' as const },
@@ -307,7 +306,6 @@ const formMode = ref<FormMode>('create');
 const formData = reactive<CategoryForm>({ id: null, parentId: null, name: '', status: 'enabled' });
 const deleteTarget = ref<CategoryNode | null>(null);
 const statusTarget = ref<CategoryNode | null>(null);
-const deleteBlocked = computed(() => Boolean(deleteTarget.value?.productCount || deleteTarget.value?.children.length));
 
 const formRules: Record<string, FormRule[]> = {
   name: [{ required: true, message: '请输入分类名称', type: 'error' }],
@@ -584,6 +582,7 @@ const applyStatusChange = async (node: CategoryNode) => {
 };
 
 const openStatusConfirm = (node: CategoryNode) => {
+  operations.select(`status:${node.id}`);
   statusTarget.value = node;
   statusConfirmVisible.value = true;
 };
@@ -662,28 +661,34 @@ async function handleCategoryDragSort(context: { current: CategoryRow }) {
 }
 
 const openDeleteDialog = (node: CategoryNode) => {
-  deleteTarget.value = node;
-  deleteVisible.value = true;
+  return operations.check(`delete:${node.id}`, async () => {
+    if (node.children.length) throw new OperationBlockedError('该分类包含下级分类，请先删除或转移下级分类');
+    if (node.productCount) throw new OperationBlockedError('该分类已关联商品，不能删除，请先停用该分类');
+    requireCondition(await checkStoreCategoryDelete(node.id, activeScope.value));
+  }, () => {
+    deleteTarget.value = node;
+    deleteVisible.value = true;
+  });
 };
 
 const handleDeleteConfirm = async () => {
   if (!deleteTarget.value) return;
-  if (deleteBlocked.value) {
-    deleteVisible.value = false;
-    deleteTarget.value = null;
-    return;
-  }
   const target = deleteTarget.value;
-  try {
-    await deleteStoreCategory(target.id, activeScope.value);
-    deleteVisible.value = false;
-    deleteTarget.value = null;
-    await loadCategories();
-    adminFeedback.deleted(target.name);
-  } catch (error) {
-    showError(error, '分类删除失败');
-    return;
-  }
+  await operations.execute(`delete:${target.id}`, async (current) => {
+    try {
+      if (!(await deleteStoreCategory(target.id, activeScope.value))) throw new Error('分类未删除，请刷新后重试');
+      if (!current()) return;
+      deleteVisible.value = false;
+      deleteTarget.value = null;
+      await loadCategories();
+      if (!current()) return;
+      adminFeedback.deleted(target.name);
+    } catch (error) {
+      if (!current()) return;
+      showError(error, '分类删除失败');
+      return;
+    }
+  });
 };
 
 watch(
@@ -700,6 +705,10 @@ watch(
   },
   { immediate: true },
 );
+operations.onInvalidate(() => {
+  deleteVisible.value = false;
+  deleteTarget.value = null;
+});
 </script>
 
 <style scoped>

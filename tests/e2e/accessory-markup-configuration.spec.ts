@@ -87,6 +87,10 @@ const mockMarkupConfigurations = async (page: import('@playwright/test').Page) =
     });
   });
   await page.route('**/api/admin/accessory-markup-configurations**', async (route) => {
+    if (route.request().url().endsWith('/delete-check')) {
+      const id = Number(new URL(route.request().url()).pathname.split('/').at(-2));
+      return route.fulfill({ json: { code: 0, data: finished.some((row) => row.id === id) } });
+    }
     if (route.request().method() === 'PATCH' && route.request().url().endsWith('/status')) {
       const id = Number(new URL(route.request().url()).pathname.split('/').at(-2));
       const row = finished.find((item) => item.id === id)!;

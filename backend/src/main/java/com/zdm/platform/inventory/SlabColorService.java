@@ -1,5 +1,7 @@
 package com.zdm.platform.inventory;
 
+import com.zdm.platform.common.OperationBlockedException;
+
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.zdm.platform.account.CreatorAwareService;
 import com.zdm.platform.security.CurrentIdentityProvider;
@@ -69,8 +71,15 @@ public class SlabColorService extends CreatorAwareService<SlabColorMapper, SlabC
 
   @Transactional
   public boolean deleteColor(Long id) {
-    requireColor(id);
+    deleteColorCheck(id);
     return removeById(id);
+  }
+
+  public void deleteColorCheck(Long id) {
+    requireColor(id);
+    if (baseMapper.countInventoryReferences(id) > 0) {
+      throw new OperationBlockedException("该色系已被大板库存引用，不能删除，请先停用该色系");
+    }
   }
 
   public List<SlabColorCategory> listCategories() {
@@ -99,11 +108,15 @@ public class SlabColorService extends CreatorAwareService<SlabColorMapper, SlabC
 
   @Transactional
   public boolean deleteCategory(Long id) {
+    deleteCategoryCheck(id);
+    return categoryMapper.deleteById(id) > 0;
+  }
+
+  public void deleteCategoryCheck(Long id) {
     requireCategory(id);
     if (lambdaQuery().eq(SlabColor::getCategoryId, id).count() > 0) {
-      throw new IllegalArgumentException("该色系分类已被色系引用，无法删除");
+      throw new OperationBlockedException("该色系分类已被色系引用，无法删除");
     }
-    return categoryMapper.deleteById(id) > 0;
   }
 
   private SlabColor requireColor(Long id) {

@@ -75,7 +75,8 @@
                   v-if="canDelete"
                   :theme="buttonTheme('delete')"
                   hover="color"
-                  @click="openColorConfirm(row, 'delete')"
+                  :disabled="operations.pending(`delete:${row.id}`)"
+                    @click="openColorConfirm(row, 'delete')"
                 >
                   删除
                 </t-link>
@@ -138,7 +139,8 @@
         <template #operation="{ row }">
           <div class="table-actions">
             <t-link :theme="buttonTheme('edit')" hover="color" @click="openCategoryForm(row)">编辑</t-link>
-            <t-link :theme="buttonTheme('delete')" hover="color" @click="openCategoryDelete(row)">删除</t-link>
+            <t-link :theme="buttonTheme('delete')" hover="color" :disabled="operations.pending(`category-delete:${row.id}`)"
+                    @click="openCategoryDelete(row)">删除</t-link>
           </div>
         </template>
       </t-table>
@@ -171,6 +173,7 @@
       :action="colorConfirmType === 'delete' ? '删除' : colorConfirmType === 'disable' ? '停用' : '启用'"
       object-type="色系"
       :object-name="colorConfirmRow?.name"
+      :loading="operations.pending(`${colorConfirmType}:${colorConfirmRow?.id}`)"
       @confirm="submitColorConfirm"
       @cancel="colorConfirmVisible = false"
       @close="colorConfirmVisible = false"
@@ -182,6 +185,7 @@
       action="删除"
       object-type="色系分类"
       :object-name="categoryDeleteRow?.name"
+      :loading="operations.pending(`category-delete:${categoryDeleteRow?.id}`)"
       @confirm="submitCategoryDelete"
       @cancel="categoryDeleteVisible = false"
       @close="categoryDeleteVisible = false"
@@ -192,6 +196,10 @@
 </template>
 
 <script setup lang="ts">
+import { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';
+import { checkSlabColorCategoryDelete } from '@/services/slabColors';
+import { checkSlabColorDelete } from '@/services/slabColors';
+import { useOperationPreflight, requireCondition } from '@/composables/useOperationPreflight';
 import { formConfirmation } from '@/components/foundation/actions/confirmation';
 import { buttonTheme, buttonFunctionFor } from '@/components/foundation/actions/buttonFunctions';
 import { rejectFormSubmission } from '@/utils/submitValidation';
@@ -224,6 +232,7 @@ type ColorStatus = 'normal' | 'disabled';
 type ConfirmType = 'enable' | 'disable' | 'delete';
 type ColorItem = Omit<SlabColorRecord, 'status' | 'createdAt'> & { status: ColorStatus; createdAt: string };
 
+const operations = useOperationPreflight();
 const permissionPrefix = 'admin.product-data-center.slab-color';
 const loginUser = computed(() => getLoginUser());
 const canCreate = computed(() => hasPermission(loginUser.value, `${permissionPrefix}.create`));
@@ -384,24 +393,41 @@ const colorConfirmVisible = ref(false);
 const colorConfirmType = ref<ConfirmType>('disable');
 const colorConfirmRow = ref<ColorItem | null>(null);
 const openColorConfirm = (row: ColorItem, type: ConfirmType) => {
-  colorConfirmRow.value = row;
-  colorConfirmType.value = type;
-  colorConfirmVisible.value = true;
+  const key = `${type}:${row.id}`;
+  const open = () => {
+    colorConfirmRow.value = row;
+    colorConfirmType.value = type;
+    colorConfirmVisible.value = true;
+  };
+  if (type === 'delete') {
+    return operations.check(key, () => checkSlabColorDelete(row.id).then(requireCondition), open);
+  }
+  operations.select(key);
+  open();
 };
 const submitColorConfirm = async () => {
   if (!colorConfirmRow.value) return;
   const target = colorConfirmRow.value;
   const action = colorConfirmType.value === 'delete' ? '删除' : colorConfirmType.value === 'enable' ? '启用' : '停用';
-  try {
-    if (colorConfirmType.value === 'delete') await deleteSlabColor(target.id);
-    else await updateSlabColorStatus(target.id, colorConfirmType.value === 'enable' ? 'enabled' : 'disabled');
-    await loadColors();
-    colorConfirmVisible.value = false;
-    if (colorConfirmType.value === 'delete') adminFeedback.deleted(target.name);
-    else adminFeedback.actionSuccess({ action, target: target.name });
-  } catch (error) {
-    adminFeedback.error(error instanceof Error ? error.message : '操作失败');
-  }
+  const operationType = colorConfirmType.value;
+  await operations.execute(`${operationType}:${target.id}`, async (current) => {
+    try {
+      if (operationType === 'delete') {
+        const deleted = await deleteSlabColor(target.id);
+        if (!current()) return;
+        if (!deleted) throw new Error('色系未删除，请刷新后重试');
+      } else await updateSlabColorStatus(target.id, operationType === 'enable' ? 'enabled' : 'disabled');
+      if (!current()) return;
+      await loadColors();
+      if (!current()) return;
+      colorConfirmVisible.value = false;
+      if (operationType === 'delete') adminFeedback.deleted(target.name);
+      else adminFeedback.actionSuccess({ action, target: target.name });
+    } catch (error) {
+      if (!current()) return;
+      adminFeedback.error(getSafeErrorMessage(error, '操作失败'));
+    }
+  });
 };
 
 const categoryManagementVisible = ref(false);
@@ -443,20 +469,28 @@ const submitCategory = async () => {
 const categoryDeleteVisible = ref(false);
 const categoryDeleteRow = ref<SlabColorCategoryRecord | null>(null);
 const openCategoryDelete = (row: SlabColorCategoryRecord) => {
-  categoryDeleteRow.value = row;
-  categoryDeleteVisible.value = true;
+  const key = `category-delete:${row.id}`;
+  return operations.check(key, () => checkSlabColorCategoryDelete(row.id).then(requireCondition), () => {
+    categoryDeleteRow.value = row;
+    categoryDeleteVisible.value = true;
+  });
 };
 const submitCategoryDelete = async () => {
   if (!categoryDeleteRow.value) return;
   const target = categoryDeleteRow.value;
-  try {
-    await deleteSlabColorCategory(target.id);
-    await loadCategories();
-    categoryDeleteVisible.value = false;
-    adminFeedback.deleted(target.name);
-  } catch (error) {
-    adminFeedback.error(error instanceof Error ? error.message : '操作失败');
-  }
+  await operations.execute(`category-delete:${target.id}`, async (current) => {
+    try {
+      await deleteSlabColorCategory(target.id);
+      if (!current()) return;
+      await loadCategories();
+      if (!current()) return;
+      categoryDeleteVisible.value = false;
+      adminFeedback.deleted(target.name);
+    } catch (error) {
+      if (!current()) return;
+      adminFeedback.error(getSafeErrorMessage(error, '操作失败'));
+    }
+  });
 };
 
 onMounted(async () => {

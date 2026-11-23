@@ -16,6 +16,14 @@ export class ApiError extends Error {
   }
 }
 
+export class OperationBlockedError extends ApiError {
+  constructor(message: string, body?: unknown) { super(message, 400, body); }
+}
+
+export class ApiFieldError extends ApiError {
+  constructor(public readonly field: string, message: string, body?: unknown) { super(message, 400, body); }
+}
+
 export const SESSION_EXPIRED_MESSAGE = '登录已失效，请重新登录';
 
 export class SessionExpiredError extends ApiError {
@@ -69,6 +77,11 @@ export async function request<T>(path: string, init: RequestInit = {}): Promise<
       // A delayed response from an old session must not clear a newer login.
       if (getAuthToken() === token || !getAuthToken()) clearExpiredLoginSession();
       throw new SessionExpiredError(body);
+    }
+    const field = response.headers?.get('X-Zdm-Invalid-Field');
+    if (response.status === 400 && field && body?.message) throw new ApiFieldError(field, body.message, body);
+    if (response.status === 400 && response.headers?.get('X-Zdm-Operation-Blocked') === 'true') {
+      throw new OperationBlockedError(body?.message ?? '当前条件不允许操作', body);
     }
     throw new ApiError(body?.message ?? '请求失败', response.status, body);
   }

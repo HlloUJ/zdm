@@ -225,6 +225,7 @@
                           :key="action.id"
                           :theme="buttonTheme(buttonFunctionFor('stock', action.id))"
                           hover="color"
+                          :disabled="operations.pending(`${action.id}:${row.id}`)"
                           @click="handleManagementRowButton(action.id, row)"
                           >{{ action.label }}</t-link
                         >
@@ -658,7 +659,7 @@
     <FinishedOperationLogs v-if="canViewOperationLogs" v-model:visible="operationLogsVisible" />
     <AdminConfirmDialog
       v-model:visible="confirmDialogVisible"
-      :confirm-loading="saving"
+      :loading="saving"
       :function="buttonFunctionFor('stock', confirmState.type)"
       :action="confirmAction"
       object-type="商品"
@@ -678,6 +679,7 @@
 </template>
 
 <script setup lang="ts">
+import { useOperationPreflight, requireCondition } from '@/composables/useOperationPreflight';
 import { useListBatchSelection } from '@/components/foundation';
 import { operationsHistoricalLayeredFields } from './historicalSpecification';
 import { deleteProductsBatch } from '@/services/productBatchDelete';
@@ -792,9 +794,11 @@ const tabs: TabConfig[] = [
 ];
 const pageSizeOptions = [10, 20, 50];
 const offShelfReasons = ['库存异常', '价格调整', '图片更新', '供应商申请'];
-const productPermissionPrefix = computed(() => `${'admin'}.${commodity.moduleKey}`);
+const productPermissionPrefix = computed(() => `admin.${commodity.moduleKey}`);
 const sourceBlocked = (row: StockItem) => Boolean(row.sourceUnavailable);
 const activeTab = ref<StockTab>(initialProductListTab(useRoute().query.tab));
+const operations = useOperationPreflight(() => activeTab.value);
+
 const { descending, tableSort, toggleTimeSort, onTimeSortChange } = useStateActivitySort(activeTab, () => {
   currentPagination.value.current = 1;
 });
@@ -994,7 +998,6 @@ const refreshPriceConfigurations = () => {
 const guidePriceSettingCoefficient = ref<number>();
 const dataItems = ref<StockItem[]>([]);
 const shelfErrors = reactive<Record<number, string>>({});
-const checkingShelf = ref(false);
 const categoryCascaderOptions = computed<CategoryCascaderOption[]>(() => {
   const enabled = productCategories.value.filter(
     (category) => category.scope === commodity.scope && category.status !== 'disabled',
@@ -1250,7 +1253,9 @@ const toProductPayload = (
     status: nextItem.status,
   };
 };
-const loadInventoryData = async () => {
+let inventoryLoadGeneration = 0;
+const loadInventoryData = async (current?: () => boolean) => {
+  const generation = ++inventoryLoadGeneration;
   if (!finishedTabs.value.length) return;
   loading.value = true;
   try {
@@ -1261,6 +1266,7 @@ const loadInventoryData = async () => {
       getFinishedGuidePriceSetting(),
       listFinishedProductTemplateAttributes(),
     ]);
+    if (generation !== inventoryLoadGeneration || (current && !current())) return;
     productCategories.value = options.categories;
     productAttributes.value = options.attributes;
     categoryAttributeBindings.value = bindings;
@@ -1270,9 +1276,11 @@ const loadInventoryData = async () => {
     dataItems.value = products.map(toStockItem);
     selectedKeys.value = [];
   } catch (error) {
+    if (generation !== inventoryLoadGeneration || (current && !current())) return;
+    if (current) throw error;
     adminFeedback.error(error instanceof Error ? error.message : `${commodity.shortLabel}库存加载失败`);
   } finally {
-    loading.value = false;
+    if (generation === inventoryLoadGeneration) loading.value = false;
   }
 };
 const categoryFilterVisible = ref(false);
@@ -1585,6 +1593,7 @@ const handleBatchAction = (action: BatchAction) => {
   openConfirm('clearRecycle', null, '是否清空回收站？');
 };
 const handleRowAction = async (action: RowAction, row: StockItem) => {
+  operations.select(`${action}:${row.id}`);
   if (sourceBlocked(row) && !['purge', 'detail'].includes(action)) return;
   if (action === 'detail') {
     void openProductDetail(row);
@@ -1595,24 +1604,18 @@ const handleRowAction = async (action: RowAction, row: StockItem) => {
     return;
   }
   if (action === 'shelf') {
-    {
-      if (checkingShelf.value) return;
-      checkingShelf.value = true;
+    await operations.check(`shelf:${row.id}`, async () => {
+      const current = operations.capture();
       try {
-        await checkFinishedProductShelf(row.id);
-        delete shelfErrors[row.id];
+        requireCondition(await checkFinishedProductShelf(row.id));
       } catch (error) {
-        await loadInventoryData();
-        const latest = dataItems.value.find((item) => item.id === row.id);
-        if (latest && !sourceBlocked(latest)) {
-          adminFeedback.warning(error instanceof Error ? error.message : '当前商品无法上架');
-        }
-        return;
-      } finally {
-        checkingShelf.value = false;
+        if (current()) await loadInventoryData(current).catch(() => undefined);
+        throw error;
       }
-    }
-    openConfirm('shelf', row, `是否上架商品“${row.name}”？`);
+    }, () => {
+      delete shelfErrors[row.id];
+      openConfirm('shelf', row, `是否上架商品“${row.name}”？`);
+    });
     return;
   }
   if (action === 'offShelf') {
@@ -2109,7 +2112,7 @@ const handleConfirm = async () => {
     if (type === 'shelf') {
       closeConfirmDialog();
       await loadInventoryData();
-      adminFeedback.warning(error instanceof Error ? error.message : '当前商品无法上架');
+      adminFeedback.actionError({ action: '上架', error });
     } else {
       adminFeedback.error(error instanceof Error ? error.message : '操作失败');
     }
@@ -2117,6 +2120,7 @@ const handleConfirm = async () => {
     saving.value = false;
   }
 };
+operations.onInvalidate(closeConfirmDialog);
 </script>
 
 <style scoped>

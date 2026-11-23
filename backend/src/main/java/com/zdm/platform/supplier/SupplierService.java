@@ -1,5 +1,7 @@
 package com.zdm.platform.supplier;
 
+import com.zdm.platform.common.OperationBlockedException;
+
 import com.zdm.platform.account.CreatorAwareService;
 import com.zdm.platform.common.SlabSupplierOptionProvider;
 import com.zdm.platform.security.CurrentIdentity;
@@ -143,12 +145,21 @@ public class SupplierService extends CreatorAwareService<SupplierMapper, Supplie
 
   @Transactional
   public boolean deleteSupplier(Long id) {
+    deleteSupplierCheck(id);
+    try {
+      return removeById(id);
+    } catch (DataIntegrityViolationException exception) {
+      throw new IllegalArgumentException(REFERENCED_MESSAGE, exception);
+    }
+  }
+
+  public void deleteSupplierCheck(Long id) {
     CurrentIdentity identity = identityProvider.require();
     SupplierScope scope = SupplierScope.from(identity);
     requireScopedSupplier(id, identity, scope);
 
     Long accessoryReferences = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM accessory_products WHERE supplier_id = ?", Long.class, id);
-    if (accessoryReferences != null && accessoryReferences > 0) { throw new IllegalArgumentException("该供应商已关联配件，不能删除"); }
+    if (accessoryReferences != null && accessoryReferences > 0) { throw new OperationBlockedException("该供应商已关联配件，不能删除"); }
     Long slabInventoryReferenceCount = jdbcTemplate.queryForObject(
         "SELECT COUNT(*) FROM slab_inventory WHERE supplier_id = ?",
         Long.class,
@@ -162,19 +173,13 @@ public class SupplierService extends CreatorAwareService<SupplierMapper, Supplie
     boolean referencedByFinishedProduct =
         finishedProductReferenceCount != null && finishedProductReferenceCount > 0;
     if (referencedBySlabInventory && referencedByFinishedProduct) {
-      throw new IllegalArgumentException(REFERENCED_MESSAGE);
+      throw new OperationBlockedException(REFERENCED_MESSAGE);
     }
     if (referencedBySlabInventory) {
-      throw new IllegalArgumentException(SLAB_REFERENCED_MESSAGE);
+      throw new OperationBlockedException(SLAB_REFERENCED_MESSAGE);
     }
     if (referencedByFinishedProduct) {
-      throw new IllegalArgumentException(FINISHED_REFERENCED_MESSAGE);
-    }
-
-    try {
-      return removeById(id);
-    } catch (DataIntegrityViolationException exception) {
-      throw new IllegalArgumentException(REFERENCED_MESSAGE, exception);
+      throw new OperationBlockedException(FINISHED_REFERENCED_MESSAGE);
     }
   }
 

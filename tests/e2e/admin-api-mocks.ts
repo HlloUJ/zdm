@@ -854,6 +854,21 @@ async function mockCollection(page: Page, pattern: string, records: unknown[]) {
   );
 
   await page.route(`${pattern}/**`, async (route) => {
+    const pathname = new URL(route.request().url()).pathname;
+    if (pattern === '**/api/admin/slabs' && pathname.endsWith('/action-check') && route.request().method() === 'POST') {
+      const { action, ids } = route.request().postDataJSON();
+      const supported = ['shelf', 'offShelf', 'restore', 'delete', 'purge', 'clearRecycle'].includes(action);
+      return fulfillJson(route, supported && Array.isArray(ids) && (action === 'clearRecycle' || ids.length > 0));
+    }
+    if (route.request().method() === 'GET' && pathname.endsWith('/delete-check')) {
+      const id = Number(pathname.split('/').at(-2));
+      const rows = collection as { id: number; parentId?: number; productCount?: number }[];
+      const row = rows.find((item) => item.id === id);
+      const blocked = rows.some((item) => item.parentId === id) ? '该分类包含下级分类，请先删除或转移下级分类'
+        : row?.productCount ? '该分类已关联商品，不能删除，请先停用该分类' : undefined;
+      if (blocked) return route.fulfill({ status: 400, headers: { 'X-Zdm-Operation-Blocked': 'true' }, json: { code: 400, message: blocked } });
+      return fulfillJson(route, Boolean(row));
+    }
     if (route.request().method() === 'DELETE') {
       if (pattern === '**/api/admin/slabs') {
         const action = new URL(route.request().url()).pathname.split('/').at(-1);

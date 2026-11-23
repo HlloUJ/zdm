@@ -51,6 +51,13 @@ public class SlabColorController {
     return ApiResponse.ok(service.updateStatus(id, request.status()));
   }
 
+  @GetMapping("/{id}/delete-check")
+  public ApiResponse<Boolean> deleteColorCheck(@PathVariable Long id) {
+    permissionGuard.requirePermission(PREFIX + ".delete");
+    service.deleteColorCheck(id);
+    return ApiResponse.ok(true);
+  }
+
   @DeleteMapping("/{id}")
   public ApiResponse<Boolean> delete(@PathVariable Long id) {
     permissionGuard.requirePermission(PREFIX + ".delete");
@@ -74,6 +81,13 @@ public class SlabColorController {
       @PathVariable Long id, @Valid @RequestBody SlabColorCategory category) {
     permissionGuard.requirePermission(PREFIX + ".manage-categories");
     return ApiResponse.ok(service.updateCategory(id, category));
+  }
+
+  @GetMapping("/categories/{id}/delete-check")
+  public ApiResponse<Boolean> deleteCategoryCheck(@PathVariable Long id) {
+    permissionGuard.requirePermission(PREFIX + ".manage-categories");
+    service.deleteCategoryCheck(id);
+    return ApiResponse.ok(true);
   }
 
   @DeleteMapping("/categories/{id}")

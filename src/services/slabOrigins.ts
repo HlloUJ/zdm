@@ -47,3 +47,6 @@ export function deleteSlabOrigin(id: number) {
     method: 'DELETE',
   });
 }
+
+export const checkSlabOriginDelete = (id: number) =>
+  request<boolean>(`/admin/slab-origins/${id}/delete-check`);

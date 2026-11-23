@@ -1,5 +1,7 @@
 package com.zdm.platform.inventory;
 
+import com.zdm.platform.common.OperationBlockedException;
+
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.zdm.platform.account.CreatorAwareService;
 import com.zdm.platform.media.MediaAssetService;
@@ -293,6 +295,10 @@ public class FinishedProductService extends CreatorAwareService<FinishedProductM
     return stateActivities.attach("finished",lifecycle.isSupplyChain()?"supply-chain":"admin",List.of(updated)).getFirst();
   }
 
+  public void checkSourceShelf(Long id) {
+    lifecycle.checkSourceTransition(ProductLifecycleService.Kind.FINISHED, id, "selling");
+  }
+
   @Transactional
   public void checkOperationsShelf(Long id) {
     if (lifecycle.isSupplyChain()) { throw new org.springframework.security.access.AccessDeniedException("此操作属于运营管理平台"); }
@@ -303,37 +309,37 @@ public class FinishedProductService extends CreatorAwareService<FinishedProductM
   }
 
   private void validateOperationsShelf(FinishedProduct product) {
-    if (!"warehouse".equals(product.getStatus())) { throw new IllegalArgumentException("当前成品现货状态不允许上架"); }
+    if (!"warehouse".equals(product.getStatus())) { throw new OperationBlockedException("当前成品现货状态不允许上架"); }
     if (product.getMainImageMediaId() == null || product.getVideoMediaId() == null) {
-      throw new IllegalArgumentException("请完善商品图片或视频后再上架");
+      throw new OperationBlockedException("请完善商品图片或视频后再上架");
     }
     // These IDs come from the locked persisted product, not from an upload request.
     List<Long> imageIds = product.getMainImageMediaIds() == null || product.getMainImageMediaIds().isEmpty()
         ? List.of(product.getMainImageMediaId()) : product.getMainImageMediaIds();
     for (Long imageId : imageIds) {
       if (!"image".equals(mediaAssetService.requireReferencedAvailableForUpdate(imageId).getMediaType())) {
-        throw new IllegalArgumentException("请完善商品图片后再上架");
+        throw new OperationBlockedException("请完善商品图片后再上架");
       }
     }
     if (!"video".equals(mediaAssetService.requireReferencedAvailableForUpdate(product.getVideoMediaId()).getMediaType())) {
-      throw new IllegalArgumentException("请完善商品视频后再上架");
+      throw new OperationBlockedException("请完善商品视频后再上架");
     }
     if (product.getCategoryId() == null || product.getSupplierId() == null
         || !StringUtils.hasText(product.getName()) || !StringUtils.hasText(product.getDetail())) {
-      throw new IllegalArgumentException("请完善商品基础信息后再上架");
+      throw new OperationBlockedException("请完善商品基础信息后再上架");
     }
     if (product.getTotalStock() == null || product.getTotalStock() <= 0
         || product.getVariants() == null || product.getVariants().isEmpty()) {
-      throw new IllegalArgumentException("请完善商品规格与库存后再上架");
+      throw new OperationBlockedException("请完善商品规格与库存后再上架");
     }
     for (FinishedProductVariant variant : product.getVariants()) {
       if (variant.getCostPrice() == null || variant.getCostPrice().signum() < 0) {
-        throw new IllegalArgumentException("请完善商品成本价后再上架");
+        throw new OperationBlockedException("请完善商品成本价后再上架");
       }
       var guides = product.getGuidePrices().stream().filter(price -> variant.getId().equals(price.getSkuId())).toList();
       if (guides.size() != 1 || guides.getFirst().getPriceCoefficient() == null || guides.getFirst().getPriceCoefficient().signum() < 0
           || guides.getFirst().getPrice() == null || guides.getFirst().getPrice().signum() < 0) {
-        throw new IllegalArgumentException("请完善每条规格的指导价后再上架");
+        throw new OperationBlockedException("请完善每条规格的指导价后再上架");
       }
     }
     priceService.requireCompletePrices(product.getId(), product.getVariants());

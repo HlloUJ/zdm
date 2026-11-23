@@ -6,6 +6,7 @@ import com.zdm.platform.inventory.CityPartnerStoreScope;
 import com.zdm.platform.security.PermissionGuard;
 import java.time.LocalDateTime;
 import java.util.List;
+import com.zdm.platform.common.FieldValidationException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
@@ -124,7 +125,7 @@ public class StorePaymentNameService {
           .usingGeneratedKeyColumns("id").executeAndReturnKey(java.util.Map.of(
               "tenant_id", store.tenantId(), "store_id", store.storeId(), "name", name,
               "created_by_account_id", store.accountId(), "updated_by_account_id", store.accountId()));
-    } catch (DuplicateKeyException exception) { throw new IllegalArgumentException("该名称已存在", exception); }
+    } catch (DuplicateKeyException exception) { throw new FieldValidationException("name", "该名称已存在", exception); }
     var created = require(store, key.longValue());
     audit(store, "create", null, created);
     return created;
@@ -139,7 +140,7 @@ public class StorePaymentNameService {
     try {
       jdbc.update("UPDATE store_payment_names SET name=?,version=version+1,updated_by_account_id=?,updated_at=CURRENT_TIMESTAMP(3) WHERE tenant_id=? AND store_id=? AND id=? AND version=? AND deleted_at IS NULL",
           name, store.accountId(), store.tenantId(), store.storeId(), id, version);
-    } catch (DuplicateKeyException exception) { throw new IllegalArgumentException("该名称已存在", exception); }
+    } catch (DuplicateKeyException exception) { throw new FieldValidationException("name", "该名称已存在", exception); }
     var after = require(store, id);
     audit(store, "edit", before, after);
     return after;

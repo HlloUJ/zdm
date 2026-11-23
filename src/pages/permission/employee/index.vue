@@ -245,6 +245,7 @@
       :action="confirmType === 'delete' ? '删除' : confirmType === 'disable' ? '停用' : '启用'"
       object-type="员工"
       :object-name="confirmEmployee?.name"
+      :loading="operations.pending(`${confirmType}:${confirmEmployee?.id}`)"
       @confirm="handleConfirmSubmit"
       @cancel="closeConfirmDialog"
       @close="closeConfirmDialog"
@@ -255,6 +256,8 @@
 </template>
 
 <script setup lang="ts">
+import { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';
+import { useOperationPreflight } from '@/composables/useOperationPreflight';
 import {
   operationConfirmation,
   dialogButtonProps,
@@ -330,6 +333,7 @@ interface EmployeeFilter {
   status: '' | EmployeeStatus;
 }
 
+const operations = useOperationPreflight();
 const operationRoles = ref<RoleRecord[]>([]);
 const loginUser = computed(() => getLoginUser());
 const managedClient = ref<'admin' | 'supply-chain'>(
@@ -780,6 +784,7 @@ const validateEmployeeBeforeEnable = (row: EmployeeItem) => {
 };
 
 const openStatusConfirm = (row: EmployeeItem) => {
+  operations.select(`status:${row.id}`);
   if (isSuperAdminEmployee(row)) {
     adminFeedback.warning('超级管理员不可停用或启用');
     return;
@@ -797,6 +802,7 @@ const openStatusConfirm = (row: EmployeeItem) => {
 };
 
 const openDeleteConfirm = (row: EmployeeItem) => {
+  operations.select(`delete:${row.id}`);
   if (isSuperAdminEmployee(row)) {
     adminFeedback.warning('超级管理员不可删除');
     return;
@@ -825,42 +831,49 @@ const confirmText = computed(() => {
 const handleConfirmSubmit = async () => {
   if (!confirmEmployee.value) return;
 
-  try {
-    if (confirmType.value === 'delete') {
-      await (
-        confirmEmployee.value.identityType === 'supply_chain_admin' ? deleteSupplyChainAdministrator : deleteEmployee
-      )(confirmEmployee.value.id);
-      employees.value = employees.value.filter((employee) => employee.id !== confirmEmployee.value?.id);
-      if (pagination.current > pageCount.value) pagination.current = pageCount.value;
-      adminFeedback.deleted(confirmEmployee.value.name);
-    } else {
-      const updated =
-        confirmEmployee.value.identityType === 'supply_chain_admin'
-          ? await setSupplyChainAdministratorStatus(
-              confirmEmployee.value.id,
-              confirmType.value === 'disable' ? 'disabled' : 'enabled',
-            )
-          : await updateEmployee(
-              confirmEmployee.value.id,
-              toEmployeePayload({
-                ...confirmEmployee.value,
-                status: confirmType.value === 'disable' ? 'disabled' : 'normal',
-              }),
-            );
-      const targetIndex = employees.value.findIndex((employee) => employee.id === confirmEmployee.value?.id);
-      if (targetIndex !== -1) {
-        employees.value.splice(targetIndex, 1, toEmployeeItem(updated));
+  const target = confirmEmployee.value;
+  const operationType = confirmType.value;
+  await operations.execute(`${operationType}:${target.id}`, async (current) => {
+    try {
+      if (operationType === 'delete') {
+        await (
+          target.identityType === 'supply_chain_admin' ? deleteSupplyChainAdministrator : deleteEmployee
+        )(target.id);
+        if (!current()) return;
+        employees.value = employees.value.filter((employee) => employee.id !== target.id);
+        if (pagination.current > pageCount.value) pagination.current = pageCount.value;
+        adminFeedback.deleted(target.name);
+      } else {
+        const updated =
+          target.identityType === 'supply_chain_admin'
+            ? await setSupplyChainAdministratorStatus(
+                target.id,
+                operationType === 'disable' ? 'disabled' : 'enabled',
+              )
+            : await updateEmployee(
+                target.id,
+                toEmployeePayload({
+                  ...target,
+                  status: operationType === 'disable' ? 'disabled' : 'normal',
+                }),
+              );
+              if (!current()) return;
+        const targetIndex = employees.value.findIndex((employee) => employee.id === target.id);
+        if (targetIndex !== -1) {
+          employees.value.splice(targetIndex, 1, toEmployeeItem(updated));
+        }
+        adminFeedback.actionSuccess({
+          action: operationType === 'disable' ? '停用' : '启用',
+          target: target.name,
+        });
       }
-      adminFeedback.actionSuccess({
-        action: confirmType.value === 'disable' ? '停用' : '启用',
-        target: confirmEmployee.value.name,
-      });
+    } catch (error) {
+      if (!current()) return;
+      adminFeedback.error(getSafeErrorMessage(error, '操作失败'));
+      return;
     }
-  } catch (error) {
-    adminFeedback.error(error instanceof Error ? error.message : '操作失败');
-    return;
-  }
-  closeConfirmDialog();
+    closeConfirmDialog();
+  });
 };
 
 const handleManagedClientChange = () => {

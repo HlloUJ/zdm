@@ -1,5 +1,7 @@
 package com.zdm.platform.store;
 
+import com.zdm.platform.common.OperationBlockedException;
+
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zdm.platform.security.CurrentIdentity;
 import com.zdm.platform.security.CurrentIdentityProvider;
@@ -122,13 +124,23 @@ public class StoreService extends ServiceImpl<StoreMapper, Store> {
     if (existing == null) {
       return null;
     }
-    recovery.requireFreshAvailability(id);
-    requireArchived(existing);
-    requireTenantOperating(existing.getTenantId());
+    checkRestoreConditions(id, existing);
     existing.setStatus("enabled");
     updateById(existing);
     jdbcTemplate.update("UPDATE stores SET archived_by_tenant = 0 WHERE id = ?", id);
     return getById(id);
+  }
+
+  public void checkRestore(Long id) {
+    Store existing = getById(id);
+    if (existing == null) throw new OperationBlockedException("门店不存在或已被删除");
+    checkRestoreConditions(id, existing);
+  }
+
+  private void checkRestoreConditions(Long id, Store existing) {
+    recovery.requireFreshAvailability(id);
+    requireArchived(existing);
+    requireTenantOperating(existing.getTenantId());
   }
 
   public void retryDelete(Long id) { exits.retry(id); }
@@ -181,7 +193,7 @@ public class StoreService extends ServiceImpl<StoreMapper, Store> {
         Integer.class,
         tenantId);
     if (count == null || count == 0) {
-      throw new IllegalArgumentException("所属租户已归档，不能恢复门店运营");
+      throw new OperationBlockedException("所属租户已归档，请先恢复租户运营");
     }
   }
 
@@ -222,7 +234,7 @@ public class StoreService extends ServiceImpl<StoreMapper, Store> {
 
   private void requireArchived(Store store) {
     if (!"disabled".equals(store.getStatus())) {
-      throw new IllegalArgumentException("请先归档门店");
+      throw new OperationBlockedException("请先归档门店");
     }
   }
   @Override

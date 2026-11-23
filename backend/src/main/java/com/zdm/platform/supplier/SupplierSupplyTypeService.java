@@ -1,5 +1,7 @@
 package com.zdm.platform.supplier;
 
+import com.zdm.platform.common.OperationBlockedException;
+
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.zdm.platform.security.CurrentIdentity;
 import com.zdm.platform.security.CurrentIdentityProvider;
@@ -73,12 +75,16 @@ public class SupplierSupplyTypeService {
 
   @Transactional
   public void deleteType(Long id) {
+    deleteTypeCheck(id);
+    mapper.deleteById(id);
+  }
+
+  public void deleteTypeCheck(Long id) {
     requirePlatformScope();
     SupplierSupplyType existing = requireType(id);
     if (mapper.countSupplierReferences(id) > 0) {
-      throw new IllegalArgumentException("供货类型“" + existing.getName() + "”已被供应商使用，无法删除");
+      throw new OperationBlockedException("供货类型“" + existing.getName() + "”已被供应商使用，无法删除");
     }
-    mapper.deleteById(id);
   }
 
   @Transactional

@@ -48,3 +48,6 @@ export const updateSlabTextureAlias = (textureId: number, aliasId: number, name:
   });
 export const deleteSlabTextureAlias = (textureId: number, aliasId: number) =>
   request<boolean>(`/admin/slab-textures/${textureId}/aliases/${aliasId}`, { method: 'DELETE' });
+
+export const checkSlabTextureDelete = (id: number) =>
+  request<boolean>(`/admin/slab-textures/${id}/delete-check`);

@@ -72,6 +72,15 @@ public class SlabGradeController extends AdminCrudController<SlabGrade> {
     return ApiResponse.ok(permissionGuard.filterData(service.reorderGrades(request.orderedIds())));
   }
 
+  @GetMapping("/{id}/delete-check")
+  public ApiResponse<Boolean> deleteGradeCheck(@PathVariable Long id) {
+    permissionGuard.requirePermission(PERMISSION_PREFIX + ".delete");
+    if (!service.deleteGradeCheck(id)) {
+      throw new com.zdm.platform.common.OperationBlockedException("记录不存在或已被删除");
+    }
+    return ApiResponse.ok(true);
+  }
+
   @Override
   @DeleteMapping("/{id}")
   public ApiResponse<Boolean> delete(@PathVariable Long id) {
