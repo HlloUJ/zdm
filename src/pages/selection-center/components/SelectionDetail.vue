@@ -3,7 +3,7 @@ import { buttonTheme } from '@/components/foundation/actions/buttonFunctions';
 import { computed, ref, watch, onBeforeUnmount } from 'vue';
 import { AdminDialog } from '@/components/foundation';
 import type { CenterDetail, CenterProduct } from '@/services/storeSelectionCenter';
-import { centerPrice } from '@/services/storeSelectionCenter';
+import { centerPrice, selectionLabel } from '@/services/storeSelectionCenter';
 import { selectionSalesModel, selectionAttributes } from '../selectionDetailModel';
 import HistoricalRichText from '@/pages/finished-stock/management/components/HistoricalRichText.vue';
 const props = defineProps<{ detail: CenterDetail | null }>();
@@ -119,7 +119,7 @@ onBeforeUnmount(unlock);
           >
         </div>
         <t-tag v-if="detail.product.addedToStore" theme="primary" variant="light">已加入门店</t-tag
-        ><t-tag v-else-if="detail.product.inSelection" theme="success" variant="light">已加入选品清单</t-tag
+        ><t-tag v-else-if="detail.product.inSelection" theme="success" variant="light">{{ selectionLabel(detail.product) }}</t-tag
         ><t-tag v-if="detail.product.soldOut" theme="warning" variant="light">已售完</t-tag>
         <t-tag
           v-for="reason in detail.product.reasons.filter((r) => !r.includes('已加入门店') && !r.includes('已售完'))"

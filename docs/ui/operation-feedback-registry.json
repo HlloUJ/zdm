@@ -1943,6 +1943,40 @@
       "beforeChanges": {
         "src/pages/order/prototype/index.vue": "ff3c5f3cbc085070d7ce4d9a0457c1441a23759cd18681c34794378ebcd6ac02"
       }
+    },
+    {
+      "revision": "918d0422d67c4d1a8fc8e936d301c0b3fea42a4b",
+      "source": "src/pages/selection-center/index.vue",
+      "sha256": "2a13cd41ae9a648e5d865a83ef9ca41672baee061d9bfbbf5a0e1ea5762b9605",
+      "pages": {
+        "src/pages/selection-center/index.vue": {
+          "script": "11fdabdea751378b76615d23caa7f9b2ffd5dd572de29045f9763f19e7022856",
+          "actions": {
+            "add → add": "single",
+            "change → changeBasketPage": "query",
+            "choose → queryCategory": "query",
+            "clear → query = ''; search();": "query",
+            "click → add(p)": "single",
+            "click → changeView('basket')": "view",
+            "click → changeView('browse')": "view",
+            "click → clearSelectedCategory": "query",
+            "click → loadBrowse(retryRefresh)": "query",
+            "click → openDetail(p)": "view",
+            "click → remove(p.selectionId)": "single",
+            "click → search": "query",
+            "click → submit": "@perItem",
+            "click → syncContext": "query",
+            "click → toggleState(item.value)": "query",
+            "click → toggleType(item.value)": "query",
+            "close → detail = null": "view",
+            "enter → search": "query",
+            "keydown → openDetail(p)": "view"
+          }
+        }
+      },
+      "beforeChanges": {
+        "src/pages/selection-center/index.vue": "ce5f4d26dfd05df3ba12353a7c518e5b9c6189e61c1e1d41b638d2d2e1b824f1"
+      }
     }
   ]
 }

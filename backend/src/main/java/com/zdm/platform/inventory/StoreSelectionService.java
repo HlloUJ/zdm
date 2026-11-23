@@ -33,19 +33,21 @@ public class StoreSelectionService {
     this.transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
   }
 
-  public void add(String context, String type, Long id) {
+  /** True for a personal selection (including replay), false when a colleague already holds it. */
+  public boolean add(String context, String type, Long id) {
     var store = catalog.require(context); StoreSelectionCatalog.validType(type);
-    transaction.executeWithoutResult(status -> {
-      if (!catalog.canMaintain(type)) { throw new AccessDeniedException("无对应商品维护权限"); }
-      // Lock the source consistently with join/removal/status workflows.
+    return Boolean.TRUE.equals(transaction.execute(status -> {
+      // Take both locks before a consistent read so a waiting add sees the previous winner.
       jdbc.queryForList("SELECT id FROM " + type + "_products WHERE id=? FOR UPDATE", id);
       lockStore(context, store);
+      if (!catalog.canMaintain(type)) { throw new AccessDeniedException("无对应商品维护权限"); }
       var product = catalog.detail(context, type, id).product();
-      if (product.inSelection()) { return; }
+      if (product.inSelection()) { return product.selectionId() != null; }
       if (!product.canAdd()) { throw new IllegalArgumentException(product.reasons().getFirst()); }
       jdbc.update("INSERT INTO store_selection_items(tenant_id,store_id,account_id,product_type,product_id) VALUES(?,?,?,?,?)",
           store.tenantId(), store.storeId(), store.accountId(), type, id);
-    });
+      return true;
+    }));
   }
 
   public void remove(String context, Long id) {

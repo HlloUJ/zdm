@@ -344,6 +344,9 @@
 .selection-center {
   min-height: calc(100dvh - 56px);
 }
+.selection-center[data-view='basket'] {
+  min-height: 100dvh;
+}
 .selection-center .identity {
   gap: 12px;
 }

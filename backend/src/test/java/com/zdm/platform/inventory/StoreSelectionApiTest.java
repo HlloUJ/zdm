@@ -53,7 +53,12 @@ class StoreSelectionApiTest extends SpringContainerTestSupport {
     mvc.perform(get("/api/admin/store-product-center/products/accessory/69901").param("context","1:69901:1")).andExpect(status().isOk()).andExpect(jsonPath("$.data.product.soldOut").value(true));
     mvc.perform(post("/api/admin/store-product-center/selection").contentType("application/json").content("{\"context\":\"1:69901:1\",\"type\":\"accessory\",\"productId\":69901}")).andExpect(status().isForbidden());
     mvc.perform(get("/api/admin/store-product-center/products/finished/69901").param("context","1:69901:1")).andExpect(status().isOk()).andExpect(jsonPath("$.data.information.skus[0].partnerPrice").value(100)).andExpect(jsonPath("$.data.information.skus[0].guidePrice").doesNotExist()).andExpect(jsonPath("$.data.information.skus[0].costPrice").doesNotExist());
-    service.add("1:69901:1","finished",69901L);
+    mvc.perform(post("/api/admin/store-product-center/selection").contentType("application/json").content("{\"context\":\"1:69901:1\",\"type\":\"finished\",\"productId\":69901}"))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.data").value(true));
+    mvc.perform(get("/api/admin/store-product-center/selection").param("context","1:69901:1"))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.data.page.pageSize").value(10)).andExpect(jsonPath("$.data.page.total").value(1));
+    mvc.perform(get("/api/admin/store-product-center/selection").param("context","1:69901:1").param("pageSize","50"))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.data.page.pageSize").value(50));
     var result=service.join("1:69901:1","real-selection-request-01");assertThat(result.successCount()).isEqualTo(1);assertThat(result.failureCount()).isZero();
     assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM store_finished_products WHERE store_id=69901 AND finished_product_id=69901 AND status='warehouse'",Long.class)).isEqualTo(1);
     assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM store_finished_operation_logs WHERE store_id=69901 AND finished_product_id=69901 AND operation_type='SELECT'",Long.class)).isEqualTo(1);
