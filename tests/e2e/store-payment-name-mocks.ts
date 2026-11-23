@@ -9,14 +9,12 @@ export async function installPaymentNameMocks(page: Page) {
     const base = '/api/store/payment-names';
     const parts = url.pathname.slice(base.length).split('/').filter(Boolean);
     const body = request.postDataJSON() as { name?: string; enabled?: boolean; version?: number } | null;
-    const reply = (data: unknown, message = 'ok', status = 200, headers?: Record<string, string>) =>
+    const reply = (data: unknown, message = 'ok', status = 200) =>
       route.fulfill({
         status,
-        headers,
         contentType: 'application/json',
         body: JSON.stringify({ code: status === 200 ? 0 : status, message, data }),
       });
-    const duplicateName = () => reply(null, '该名称已存在', 400, { 'X-Zdm-Invalid-Field': 'name' });
     if (request.method() === 'GET') {
       if (parts[0] === 'options')
         return reply(rows.filter((row) => row.enabled).map(({ id, name, version }) => ({ id, name, version })));
@@ -27,7 +25,7 @@ export async function installPaymentNameMocks(page: Page) {
     if (request.method() === 'POST') {
       if (!body?.name?.trim() || Array.from(body.name.trim()).length > 10)
         return reply(null, '名称不能超过10个字符', 400);
-      if (rows.some((row) => row.name === body.name?.trim())) return duplicateName();
+      if (rows.some((row) => row.name === body.name?.trim())) return reply(null, '该名称已存在', 400);
       const row: StorePaymentName = {
         id: String(++id),
         name: body.name.trim(),
@@ -55,7 +53,7 @@ export async function installPaymentNameMocks(page: Page) {
       row.version++;
       return reply(row);
     }
-    if (rows.some((entry) => entry.id !== row.id && entry.name === body?.name)) return duplicateName();
+    if (rows.some((entry) => entry.id !== row.id && entry.name === body?.name)) return reply(null, '该名称已存在', 400);
     row.name = body!.name!;
     row.version++;
     return reply(row);

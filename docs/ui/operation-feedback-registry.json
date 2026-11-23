@@ -1853,7 +1853,6 @@
   "concurrentRevisions": [
     {
       "revision": "ff42c97237ecf909b3d8b0334fa7c0c5e76377f3",
-      "dependency": "src/services/storeSelectionCenter.ts",
       "sha256": "3629553a3e7c1e3cc46c4f144ffa2a47ac066b1d6f00d06ec0560ff6a1034cd0",
       "pages": {
         "src/pages/selection-center/index.vue": {
@@ -1895,6 +1894,54 @@
       },
       "beforeChanges": {
         "src/pages/selection-center/index.vue": "ae8804a7ddac0c076a928f8360d4f31bba72b8e47d79ae9f5cb4335464a2a576"
+      },
+      "source": "src/services/storeSelectionCenter.ts"
+    },
+    {
+      "revision": "dfed9fa793e4a5a64169714443258e636f62d074",
+      "source": "src/pages/order/prototype/index.vue",
+      "sha256": "4e08ef712104429fda274ffdbb73115a68460db44438f29737f9dd254317961b",
+      "pages": {
+        "src/pages/order/prototype/index.vue": {
+          "script": "513272ccddaeda35bdf5f627a2163d349fba43a579234072223137fc2c7b15b9",
+          "actions": {
+            "action → openAction": "@order",
+            "action → openSetting()": "form",
+            "click → deletingSetting = row; deleteSettingVisible = true;": "single",
+            "click → loadSettings": "query",
+            "click → openAction('correct-payment', selected!, row.id)": "form",
+            "click → openAction('correct-shipment', selected!, row.id)": "form",
+            "click → openAction('receive', findOrder(row.orderId), row.id)": "form",
+            "click → openAction('revoke-plan', selected!, row.id)": "form",
+            "click → openAction('ship', findOrder(row.orderId), row.id)": "form",
+            "click → openAction('void-payment', selected!, row.id)": "form",
+            "click → openAction(a.id, selected!)": "@order",
+            "click → openSetting(row)": "form",
+            "click → openToggleSetting(row)": "single",
+            "click → proofUrl = row.proof.url": "view",
+            "click → runScopedRead(() => { logDetail = row; })": "view",
+            "click → runScopedRead(() => { selectedId = ''; })": "view",
+            "click → runScopedRead(() => {})": "view",
+            "confirm → addSetting": "form",
+            "confirm → confirmToggleSetting": "single",
+            "confirm → deleteSetting": "single",
+            "confirm → logDetail = null": "view",
+            "expand-change → updateOrderExpansion": "view",
+            "page-change → changePage": "query",
+            "page-change → updateListPagination(detailPagination, $event)": "query",
+            "page-change → updateListPagination(fulfillmentPagination, $event)": "query",
+            "page-change → updateListPagination(settingsPagination, $event)": "query",
+            "reset → reset": "query",
+            "save → saveEditor": "form",
+            "search → search": "query",
+            "tab-change → switchTab": "query",
+            "update:visible → !$event && (logDetail = null)": "view",
+            "update:visible → !$event && (proofUrl = '')": "view"
+          }
+        }
+      },
+      "beforeChanges": {
+        "src/pages/order/prototype/index.vue": "ff3c5f3cbc085070d7ce4d9a0457c1441a23759cd18681c34794378ebcd6ac02"
       }
     }
   ]

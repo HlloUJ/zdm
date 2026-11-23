@@ -117,12 +117,13 @@ export function policyChecks(root) {
   const { contracts } = JSON.parse(readFileSync(resolve(root, 'docs/ui/visual-refactor.json'), 'utf8'));
   const files = runtimePages(root);
 
-  // An independently published service revision can bring a different set of page actions.
+  // An independently published revision can bring a different set of page actions.
   // Select its complete, reviewed registration by content, then run the same checks on it.
   for (const revision of concurrentRevisions) {
-    if (!Object.hasOwn(dependencies, revision.dependency)) throw new Error('并行版本缺少共享依赖登记');
-    if (hash(readFileSync(resolve(root, revision.dependency))) !== revision.sha256) continue;
-    dependencies[revision.dependency] = revision.sha256;
+    const { source, sha256 } = revision;
+    if (!Object.hasOwn(dependencies, source) && !Object.hasOwn(pages, source)) throw new Error('并行版本缺少来源登记');
+    if (hash(readFileSync(resolve(root, source))) !== sha256) continue;
+    if (Object.hasOwn(dependencies, source)) dependencies[source] = sha256;
     Object.assign(pages, revision.pages);
     for (const [file, before] of Object.entries(revision.beforeChanges)) {
       if (!approvedChanges[file]) throw new Error(file + ': 并行版本缺少原始变更登记');

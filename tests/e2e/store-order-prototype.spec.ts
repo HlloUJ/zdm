@@ -407,15 +407,12 @@ test('payment configuration API failures never fall back to local names and can 
   await page.getByRole('button', { name: '新增', exact: true }).click();
   const dialog = page.locator('.t-dialog:visible');
   await dialog.getByPlaceholder('请输入名称', { exact: true }).fill('十个字符名称测试文字');
-  const created = await page.evaluate(async () => {
-    const response = await fetch('/api/store/payment-names', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: '十个字符名称测试文字' }),
-    });
-    return response.ok;
-  });
-  expect(created).toBe(true);
+  await page.route('**/api/store/payment-names', (route) =>
+    route.fulfill({
+      status: 400,
+      headers: { 'X-Zdm-Invalid-Field': 'name' },
+      json: { code: 400, message: '该名称已存在', data: null },
+    }), { times: 1 });
   await dialog.getByRole('button', { name: '确认新增', exact: true }).click();
   await expect(dialog).toBeVisible();
   await expect(dialog.getByPlaceholder('请输入名称', { exact: true })).toHaveValue('十个字符名称测试文字');
