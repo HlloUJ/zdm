@@ -3,10 +3,10 @@ import { expect, test, type Page } from '@playwright/test';
 import { installAdminApiMocks } from './admin-api-mocks';
 import { installPaymentNameMocks } from './store-payment-name-mocks';
 
-async function setup(page: Page, store = false) {
+async function setup(page: Page, store = false, paymentNames: string[] = []) {
   await installAdminApiMocks(page);
   if (store) {
-    await installPaymentNameMocks(page);
+    await installPaymentNameMocks(page, paymentNames);
     await page.route('**/api/admin/auth/contexts', (route) =>
       route.fulfill({
         json: {
@@ -34,16 +34,18 @@ async function setup(page: Page, store = false) {
   }, store);
 }
 
-async function chooseTwenty(page: Page) {
+async function choosePageSize(page: Page, size: 10 | 20 | 50, expectedOptions?: string[]) {
   const pager = page.locator('main .t-pagination:visible').first();
   await pager.locator('.t-pagination__select').click();
-  const option = page.locator('.t-select-option:visible').filter({ hasText: /^20 条\/页$/ });
+  const options = page.locator('.t-select-option:visible');
+  if (expectedOptions) await expect(options).toHaveText(expectedOptions);
+  const option = options.filter({ hasText: new RegExp(`^${size} 条/页$`) });
   await expect(option).toBeVisible();
   // Wait for the native Popup animation so the pointer cannot land on the row below it.
   await expect(option).toHaveCSS('opacity', '1');
   await page.waitForTimeout(400);
   await option.click();
-  await expect(pager.locator('.t-pagination__select input')).toHaveValue('20 条/页');
+  await expect(pager.locator('.t-pagination__select input')).toHaveValue(`${size} 条/页`);
 }
 
 for (const width of [1366, 768, 390]) {
@@ -121,43 +123,51 @@ for (const width of [1366, 768, 390]) {
       }));
       localStorage.setItem(key, JSON.stringify(state));
     });
-    await page.evaluate(async () => {
-      await Promise.all(
-        Array.from({ length: 45 }, (_, index) =>
-          fetch('/api/store/payment-names', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: `款项${index}` }),
-          }),
-        ),
-      );
-    });
-    for (const [route, total] of [
-      ['fulfillment', 30],
-      ['settings', 45],
-    ] as const) {
-      await page.goto(productWarehouseUrl(`/store/order-management/${route}`));
-      const pager = page.locator('main .t-pagination');
-      const table = page.locator('main .t-table:has(.t-pagination)');
-      await expect(pager.locator('.t-pagination__total')).toHaveText(`共 ${total} 条数据`);
-      await expect(table.locator('tbody > tr')).toHaveCount(10);
-      await pager.locator('.t-pagination__btn-next').click();
-      await expect(pager.locator('.t-pagination__number.t-is-current')).toHaveText('2');
-      await pager.locator('.t-pagination__btn-prev').click();
-      await chooseTwenty(page);
-      await expect(table.locator('tbody > tr')).toHaveCount(20);
-    }
+    const pager = page.locator('main .t-pagination');
+    const table = page.locator('main .t-table:has(.t-pagination)');
+    await page.goto(productWarehouseUrl('/store/order-management/fulfillment'));
+    await expect(pager.locator('.t-pagination__total')).toHaveText('共 30 条数据');
+    await expect(table.locator('tbody > tr')).toHaveCount(10);
+    await pager.locator('.t-pagination__btn-next').click();
+    await expect(pager.locator('.t-pagination__number.t-is-current')).toHaveText('2');
+    await pager.locator('.t-pagination__btn-prev').click();
+    await choosePageSize(page, 20);
+    await expect(table.locator('tbody > tr')).toHaveCount(20);
+
     await page.goto(productWarehouseUrl('/store/order-management/sales'));
     await page.getByRole('button', { name: '详情', exact: true }).first().click();
     await expect(page.getByRole('main').getByText('金额计算过程', { exact: true })).toBeVisible();
-    const pager = page.locator('main .t-pagination');
-    const table = page.locator('main .t-table:has(.t-pagination)');
     await expect(pager.locator('.t-pagination__total')).toHaveText('共 25 条数据');
     await expect(table.locator('tbody > tr')).toHaveCount(5);
     await pager.locator('.t-pagination__btn-next').click();
     await expect(table.getByText('分页日志5', { exact: true })).toBeVisible();
     await pager.locator('.t-pagination__btn-prev').click();
-    await chooseTwenty(page);
+    await choosePageSize(page, 20);
     await expect(table.locator('tbody > tr')).toHaveCount(20);
+  });
+
+  test(`store payment configuration defaults to 10 and pages the matching records at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    const paymentNames = Array.from({ length: 55 }, (_, index) => `款项${index + 1}`);
+    await setup(page, true, paymentNames);
+    await page.goto('/store/order-management/settings');
+
+    const pager = page.locator('main .t-pagination');
+    const names = page.locator('main .t-table:has(.t-pagination) tbody > tr > td:first-child');
+    const newestFirst = [...paymentNames].reverse();
+    await expect(pager.locator('.t-pagination__select input')).toHaveValue('10 条/页');
+    await expect(pager.locator('.t-pagination__total')).toHaveText('共 55 条数据');
+    await expect(names).toHaveText(newestFirst.slice(0, 10));
+
+    for (const size of [20, 50, 10] as const) {
+      await choosePageSize(page, size, ['10 条/页', '20 条/页', '50 条/页']);
+      await expect(names).toHaveText(newestFirst.slice(0, size));
+      await pager.locator('.t-pagination__btn-next').click();
+      await expect(pager.locator('.t-pagination__number.t-is-current')).toHaveText('2');
+      await expect(names).toHaveText(newestFirst.slice(size, 2 * size));
+      await expect(pager.locator('.t-pagination__total')).toHaveText('共 55 条数据');
+      await pager.locator('.t-pagination__btn-prev').click();
+      await expect(names).toHaveText(newestFirst.slice(0, size));
+    }
   });
 }
