@@ -6,6 +6,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { consumers as findConsumers, displayTests } from './consumers.mjs';
 import { planChanges } from './policy.mjs';
+import { layoutImpact, measuresSelector } from './layout-impact.mjs';
 
 export function digest(value) {
   return createHash('sha256').update(value).digest('hex');
@@ -133,13 +134,21 @@ function changeSet(cwd, base, tree, blobs) {
         textTests.push(p);
     }
     const packageChange = path === 'package.json' && was && now;
-    return { path, before, after, removed, added, consumers, enclosing, readerUses, textTests,
+    const change = { path, before, after, removed, added, consumers, enclosing, readerUses, textTests,
       oldBlob: was?.split(' ').at(-1), newBlob: now?.split(' ').at(-1),
       unsafeType: unsafeType || before === null || after === null || diff.includes('Binary files '),
       patch: edited.map(l => l.slice(1)).join('\n'),
       onlyQualityAliases: packageChange && manifest(cwd,base) === manifest(cwd,tree),
       onlyTestAdapters: packageChange && manifest(cwd,base,true) === manifest(cwd,tree,true),
     };
+    if (!change.unsafeType && /\.(?:css|vue)$/.test(path)) {
+      change.layout = layoutImpact(change, [...current.keys()], {
+        find: selector => [...new Set([...displayTests(cwd, base, [selector]), ...displayTests(cwd, tree, [selector])])],
+        measured: (suite, selector, dimension) => old.has(suite) && current.has(suite) &&
+          [base, tree].every(ref => measuresSelector(source(ref, suite), selector, dimension)),
+      });
+    }
+    return change;
   });
 }
 export function inspect(cwd, baseRef, phase) {

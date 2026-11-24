@@ -1,5 +1,6 @@
 import { active } from './release.mjs';
 import { behaviors } from './behaviors.mjs';
+import { layoutImpact, layoutNote } from './layout-impact.mjs';
 import {
   dangerousCopy,
   ordinaryComments,
@@ -29,6 +30,51 @@ const dangerous = [
   ],
   ['migration', /(?:ALTER\s+TABLE|DROP\s+TABLE|FLYWAY|SPRING_DATASOURCE|MIGRATION|MIGRATE|jdbc:mysql)/i],
 ];
+const effectSignals = {
+  access: /(?:\b(?:if|return|throw|where|select|join|filter|scope|permit|deny|guard|require\w*|canAccess|hasRole|hasPermission|authorize\w*)\b|@PreAuthorize|[!=]==?|&&|\|\||(?:tenant|store|user)(?:Id|_id)\s*[:=]|(?:permissions?|roles?)\s*[:=]|\.includes\s*\()/i,
+  inventory: /(?:\b(?:return|update|insert|set|where|save|reserve|release|adjust|replenish|decrement|incrementStock)\b|(?:stock|inventory|price|amount|quantity)\w*\s*[:=]|\w+\s*[+*/-]\s*\w+|\.(?:add|subtract|multiply|divide)\s*\()/i,
+  deletion: /(?:\bdelete\s+(?:from|[\w$]+[.[])|\bdelete(?:From|By|All|If|Where|Product)?\s*\(|\.remove(?:All|ById)?\s*\(|\bpurge\w*\s*\(|['"]DELETE['"]|\b(?:if|return|throw|insert|constraint|conflict|unique)\b|@DeleteMapping|@\w+\s*=\s*["'][^"']*(?:remove|delete))/i,
+  migration: /\b(?:alter|drop|create|rename|migrat\w*|flyway|spring_datasource|jdbc:mysql)\b/i,
+};
+
+function riskSignals(c) {
+  const context = executableContext(c);
+  const result = [];
+  for (const [kind, terms] of dangerous) {
+    if (!terms.test(context)) continue;
+    if (effectSignals[kind].test(context)) result.push(kind);
+    // A changed field, callback or decorator can alter a contract even without a visible local write.
+    else if (terms.test(c.patch) && /=>|[=:()]|\b(?:public|private|final|export)\b/.test(c.patch))
+      result.push('unknown');
+  }
+  if (/@DeleteMapping\b/i.test(context) && !result.includes('deletion')) result.push('deletion');
+  // A removed check is still an observed change of authorization behavior.
+  if (!result.includes('access') && (
+      /\b(?:allow|deny|hasPermission|canAccess|authorize|authorized|tenantScope)\b/i.test(context) ||
+      (/auth|permission|security|tenant|storeselection/i.test(c.path) &&
+       /\b(?:return|throw|where|filter|select|update)\b/i.test(c.patch)))) result.push('access');
+  if (!result.includes('inventory') && /\b(?:stockQuantity|salePrice)\b/i.test(context) &&
+      effectSignals.inventory.test(context)) result.push('inventory');
+  return [...new Set(result)];
+}
+function executableContext(c) {
+  const code = [c.before || '', c.after || ''].join('\n');
+  const timerCollections = new Set();
+  if (c.path.startsWith('src/') && /\bsetTimeout\s*\(/.test(code) && /\bclearTimeout\s*\(/.test(code) &&
+      /\bonScopeDispose\s*\(/.test(code) && !/\b(?:fetch|axios|indexedDB|localStorage|sessionStorage)\b/.test(code)) {
+    for (const match of code.matchAll(/\bconst\s+(\w+)\s*=\s*new Map<[^;\n]*ReturnType<typeof setTimeout>/g))
+      timerCollections.add(match[1]);
+    for (const match of code.matchAll(/\bconst\s+(\w+)\s*=\s*reactive\(new Set\b/g)) {
+      if (new RegExp('return\\s*\\([^()]*\\)\\s*=>\\s*' + match[1] + '\\.has\\(').test(code))
+        timerCollections.add(match[1]);
+    }
+  }
+  const patch = c.patch.replace(/\b(\w+)\.delete(?=\s*\()/g,
+    (method, receiver) => timerCollections.has(receiver) ? receiver + '.clearLocalKey' : method);
+  // An import printed in the Git hunk header is location metadata, not an edited price or access rule.
+  const enclosing = (c.enclosing || []).filter(line => !/^\s*(?:import\b|export\s+.*\bfrom\b|\/\/)/.test(line));
+  return [patch, ...enclosing].join('\n');
+}
 function classify(c, changes, files, oldPlan) {
   const { path, patch, consumers = [] } = c;
   const row = (kind, dev, delivery, reason, scope = {}, other = []) => ({
@@ -110,35 +156,22 @@ function classify(c, changes, files, oldPlan) {
         scope,
       );
     }
-    if (path.endsWith('.css') && !/@import|url\(|expression\(/i.test(patch)) {
-      const folder = path.split('/').at(-2);
-      const e2e = files.filter((p) => browserFile(p) && p.includes(folder));
-      return row('layout', ['e2e'], ['build', 'e2e'], '布局尺寸或视口变化', { e2e });
-    }
+    const layout = c.layout ?? layoutImpact(c, files);
+    if (layout) return row('layout', ['e2e'], ['build', 'e2e'], layout.reason, { e2e: layout.e2e });
   }
   if (path.startsWith('src/') || path.startsWith('backend/')) {
-    const context = [patch, ...(c.enclosing || [])].join('\n');
-    const dangers = dangerous.filter(([, p]) => p.test(context)).map(([name]) => name);
-    if (
-      /\b(?:allow|deny|hasPermission|canAccess|authorize|authorized|tenantScope|stockQuantity|salePrice)\b/i.test(
-        context,
-      ) &&
-      !dangers.length
-    )
-      dangers.push('access');
-    if (
-      /auth|permission|security|tenant|storeselection/i.test(path) &&
-      /\b(?:return|throw|where|filter|select|update)\b/i.test(patch) &&
-      !dangers.includes('access')
-    )
-      dangers.push('access');
+    const dangers = riskSignals(c);
     // When a guarded implementation is removed in full the guards still appear in the before image.
+    if (dangers.includes('unknown'))
+      return row('unknown', behaviors.unknown[2], behaviors.unknown[2],
+        path + ' 的受保护契约有变，无法从当前调用关系证明后果，保留完整适用验证', {},
+        dangers.filter(k => k !== 'unknown'));
     if (dangers.length)
       return row(
         dangers[0],
         path.startsWith('src/') ? ['unit', 'e2e'] : ['backend'],
         ['unit', 'e2e', 'build', 'backend'],
-        dangers.map((k) => behaviors[k][1]).join('，'),
+        path + ' 的可执行差异或所在行为涉及' + dangers.map((k) => behaviors[k][1]).join('，'),
         {},
         dangers.slice(1),
       );
@@ -198,6 +231,30 @@ export function semanticPlan(changes, fallback, files, catalogue, legacy) {
   fallback ||= process.env.ZDM_QUALITY_FULL === '1';
   const old = legacy(changes, fallback);
   const facts = changes.map((c) => withOperations(classify(c, changes, files, legacy), c));
+  if (facts.some(f => f.kind === 'layout' && f.path.startsWith('src/'))) {
+    for (const [i, change] of changes.entries()) {
+      if (facts[i].kind === 'shared' && layoutNote(change))
+        facts[i] = { ...facts[i], kind: 'note', dev: [], delivery: [], reason: '随布局更新的展示说明，已核对改前改后文字' };
+    }
+  }
+  // Evaluate the changed provider and its changed callers together, even if each alone has a single consumer.
+  const changed = new Map(changes.map((c, i) => [c.path, { change: c, fact: facts[i] }]));
+  for (const { change, fact } of changed.values()) {
+    if (fact.kind !== 'local') continue;
+    const implementation = [change.patch, ...(change.enclosing || [])].join('\n');
+    const exports = [...implementation.matchAll(/\bexport\s+(?:async\s+)?(?:function|const|class)\s+(\w+)/g)];
+    if (!exports.length) continue;
+    const callers = (change.consumers || []).filter(p => {
+      const caller = changed.get(p);
+      if (!caller || testPath(p) || behaviors[caller.fact.kind][0] < 2) return false;
+      return exports.some(([, name]) => new RegExp('\\b' + name + '\\s*\\(').test(caller.change.patch));
+    });
+    if (callers.length) {
+      fact.other = [...new Set([...fact.other, 'shared'])];
+      fact.dev = [...new Set([...fact.dev, 'unit', 'e2e'])];
+      fact.reason += '。导出行为与调用点共同变化：' + callers.join('、');
+    }
+  }
   if (fallback)
     facts.push({
       path: '',
