@@ -19,9 +19,11 @@
     </div>
     <div v-if="path.length" class="category-picker-path">已选择：{{ path.map(id => byId.get(id)?.name).join(' > ') }}</div>
     <t-alert v-if="leaf && leaf.coefficient == null" theme="warning" title="该分类未设置价格系数">
-      <div>更换此分类，规格<strong>当前售价不变，但会转为手工定价</strong>。</div>
-      <div>以后更换设有价格系数的分类，需主动切回自动定价才会重新计算。</div>
-      <div>已有售价保留，未定价的规格继续留空。</div>
+      <div class="category-warning-description">
+        <div>更换此分类，规格当前售价不变，但会转为手工定价。</div>
+        <div>再次更换有价格系数的分类时，需主动切回“跟随价格配置浮动”，才会自动重新计算价格。</div>
+        <div>已有售价保留，未定价的规格继续留空。</div>
+      </div>
     </t-alert>
   </AdminDialog>
 </template>
@@ -63,4 +65,9 @@ const leaf = computed(() => {
 </script>
 <style scoped>
 @import url('../shared/category-picker.css');
+
+.category-warning-description {
+  font: var(--td-font-body-small);
+  color: var(--td-text-color-secondary);
+}
 </style>

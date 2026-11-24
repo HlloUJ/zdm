@@ -422,11 +422,21 @@ for (const surface of surfaces.filter(item => item.client === 'store')) {
     await expect(dialog.getByText('停用分类')).toHaveCount(0);
     await dialog.getByRole('button', { name: '桌椅' }).click();
     await expect(dialog.getByText('该分类未设置价格系数')).toBeVisible();
-    await expect(dialog.locator('.t-alert__description > div')).toHaveText([
+    const description = dialog.locator('.category-warning-description');
+    await expect(description.locator(':scope > div')).toHaveText([
       '更换此分类，规格当前售价不变，但会转为手工定价。',
-      '以后更换设有价格系数的分类，需主动切回自动定价才会重新计算。',
+      '再次更换有价格系数的分类时，需主动切回“跟随价格配置浮动”，才会自动重新计算价格。',
       '已有售价保留，未定价的规格继续留空。',
     ]);
+    const secondary = await dialog.locator('.category-picker-path').evaluate(element => {
+      const style = getComputedStyle(element);
+      return { font: style.font, color: style.color };
+    });
+    for (const element of await description.locator('*').all()) {
+      await expect(element).toHaveCSS('font', secondary.font);
+      await expect(element).toHaveCSS('color', secondary.color);
+      await expect(element).toHaveCSS('font-weight', '400');
+    }
     await dialog.getByRole('button', { name: '沙发' }).click();
     await expect(dialog.getByText('该分类未设置价格系数')).toHaveCount(0);
     await dialog.getByRole('button', { name: '取消' }).click();
