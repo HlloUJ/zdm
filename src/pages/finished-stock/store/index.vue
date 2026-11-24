@@ -162,6 +162,10 @@
                       <t-icon v-else name="image-off" />
                     </button>
                   </template>
+                  <template #storeCategory="{ row }">{{ categoryNames.get(row.storeCategoryId) || '-' }}</template>
+                  <template #salePrice="{ row }">
+                    <div v-for="line in storeSalePriceLines(row.skus)" :key="line">{{ line }}</div>
+                  </template>
                   <template #totalStock="{ row }">{{ row.totalStock ?? 0 }}</template>
                   <template #createdAt="{ row }">{{ time(row.createdAt) }}</template>
                   <template #stateOperatorName="{ row }"
@@ -358,6 +362,13 @@
     >
       <img v-if="imagePreview" :src="imagePreview" alt="商品主图" style="max-width: 100%" />
     </AdminDialog>
+    <StoreBatchCategoryDialog
+      v-if="categoryDialog && canSetCategory"
+      :categories="listCategories"
+      :busy="submittingCategory"
+      @cancel="categoryDialog = false"
+      @submit="submitCategory"
+    />
     <OperationsBatchShelfResult
       v-model:visible="allBatchResultVisible"
       :result="allBatchResult"
@@ -376,10 +387,12 @@ import { useListBatchSelection } from '@/components/foundation';
 import { deleteProductsBatch } from '@/services/productBatchDelete';
 import { canBatchDelete } from '@/services/productBatchPermissions';
 import { batchRequestError } from '@/services/productBatchFeedback';
+import StoreBatchCategoryDialog from './StoreBatchCategoryDialog.vue';
+import { storeSalePriceLines } from './storeSalePriceLines';
 import OperationsBatchShelfResult from '@/components/OperationsBatchShelfResult.vue';
 import { shelfProductsFromAll } from '@/services/productAllBatchShelf';
 import type { BatchShelfResult } from '@/services/operationsBatchShelf';
-const batchOperation = ref<'上架' | '删除'>('上架');
+const batchOperation = ref<'上架' | '删除' | '设置分类'>('上架');
 const allBatchResultVisible = ref(false);
 const allBatchResult = ref<BatchShelfResult>({ total: 0, successCount: 0, failureCount: 0, failures: [] });
 import ProductListStatusTag from '@/components/ProductListStatusTag.vue';
@@ -417,7 +430,7 @@ import { getLoginUser } from '@/services/auth';
 import ProductOperationLogTemplate from '@/components/product-logs/ProductOperationLogTemplate.vue';
 import { finishedProductOperationSummary } from '@/services/productOperationLog';
 import {
-  type StorePoolCategory,
+  type StoreFinishedEditCategory,
   type StoreFinishedProduct,
   type StoreFinishedStatus,
 } from '@/services/storeFinishedStock';
@@ -426,7 +439,8 @@ const {
   changeStoreFinishedStatusBatch,
   clearStoreFinishedRecycle,
   getStoreFinishedProduct,
-  listStoreFinishedCategories,
+  listStoreCategories,
+  setStoreCategories,
   listStoreFinishedProducts,
   purgeStoreFinishedProduct,
   purgeStoreFinishedProducts,
@@ -480,7 +494,8 @@ const pageSize = ref(10);
 const filter = reactive<{ keyword: string; category?: number }>({ keyword: '' });
 const appliedFilter = reactive<{ keyword: string; category?: number }>({ keyword: '' });
 type PoolCategoryOption = { value: number; label: string; children?: PoolCategoryOption[] };
-const listCategories = ref<StorePoolCategory[]>([]);
+const listCategories = ref<StoreFinishedEditCategory[]>([]);
+const categoryNames = computed(() => new Map(listCategories.value.map(item => [item.id, item.name])));
 const listCategoryVisible = ref(false);
 const listCategoryOptions = computed(() => {
   const build = (parentId?: number, visited = new Set<number>()): PoolCategoryOption[] =>
@@ -550,7 +565,7 @@ const filteredRows = computed(() =>
         ? isAllProductStatus(row.effectiveStatus) && can(row.effectiveStatus, 'view')
         : row.effectiveStatus === activeTab.value) &&
       (!appliedFilter.keyword || `${row.name} ${row.productId}`.includes(appliedFilter.keyword)) &&
-      matchesListCategory(row.categoryId),
+      matchesListCategory(row.storeCategoryId),
   ),
 );
 const pageRows = computed(() =>
@@ -627,6 +642,34 @@ const batchAction = computed(() => {
     ? action
     : null;
 });
+const categoryDialog = ref(false);
+const submittingCategory = ref(false);
+const canSetCategory = computed(() => activeTab.value === 'all'
+  ? can('warehouse', 'batch-set-category') && can('selling', 'batch-set-category')
+  : ['warehouse', 'selling'].includes(activeTab.value) && can(activeTab.value, 'batch-set-category'));
+watch([activeTab, canSetCategory], () => { categoryDialog.value = false; });
+async function submitCategory(categoryId: number) {
+  if (!categoryDialog.value || !canSetCategory.value || submittingCategory.value || !selected.value.length) return;
+  const ids = [...selected.value];
+  const tab = activeTab.value;
+  const isCurrent = captureSelectionContext();
+  const names = new Map(rows.value.map(row => [row.id, row.productId]));
+  submittingCategory.value = true;
+  try {
+    const result = await setStoreCategories(ids, categoryId, tab);
+    if (!isCurrent()) return;
+    batchOperation.value = '设置分类';
+    allBatchResult.value = { ...result, failures: result.failures.map(f => ({ ...f, id: names.get(f.id) ?? f.id })) };
+    categoryDialog.value = false;
+    selected.value = [];
+    allBatchResultVisible.value = true;
+    await load();
+  } catch (error) {
+    if (isCurrent()) adminFeedback.error(batchRequestError(error, '设置分类'));
+  } finally {
+    submittingCategory.value = false;
+  }
+}
 const storeToolbarActions = computed<FinishedStockToolbarAction[]>(() => [
   ...(['all', 'warehouse'].includes(activeTab.value) && canGlobal('select')
     ? [{ id: 'select', label: '选品中心', icon: 'add' }]
@@ -649,6 +692,7 @@ const storeToolbarActions = computed<FinishedStockToolbarAction[]>(() => [
         },
       ]
     : []),
+  ...(canSetCategory.value ? [{ id: 'batch-set-category', batch: true, label: '批量设置分类', icon: 'edit', disabled: !selected.value.length }] : []),
   ...(canBatchDelete(activeTab.value, can)
     ? [{ id: 'batch-delete', batch: true, label: '批量删除', icon: 'delete', disabled: !selected.value.length }]
     : []),
@@ -681,6 +725,7 @@ const storeRowButtons = (row: StoreFinishedProduct): FinishedStockRowAction[] =>
     .map((action) => ({ id: action.id, label: action.label }));
 const handleStoreToolbarAction = (action: string) => {
   if (action === 'select') void openPool();
+  else if (action === 'batch-set-category' && selected.value.length && canSetCategory.value) categoryDialog.value = true;
   else if (action === 'batch') prepareBatch();
   else if (action === 'batch-delete' && selected.value.length)
     confirm.value = { kind: 'batch-delete', label: '批量删除', ids: [...selected.value] };
@@ -729,9 +774,11 @@ const columns = computed<PrimaryTableCol<TableRowData>[]>(() =>
       ...(['all', 'warehouse'].includes(activeTab.value)
         ? [{ colKey: 'warehouseEntry', title: '入库类型 / 详细说明', minWidth: 140 }]
         : []),
+      { colKey: 'storeCategory', title: '商品分类', minWidth: 120 },
+      { colKey: 'salePrice', title: '商品价格', minWidth: 110 },
       ...(activeTab.value === 'all'
-        ? productCreationColumns(toggleTimeSort)
-        : stateActivityColumns(activeTab.value, toggleTimeSort)),
+        ? productCreationColumns(toggleTimeSort).filter(column => column.colKey !== 'createdByName')
+        : stateActivityColumns(activeTab.value, toggleTimeSort).filter(column => column.colKey !== 'stateOperatorName')),
       { colKey: 'operation', title: '操作', width: operationWidths[activeTab.value], align: 'left', fixed: 'right' },
     ],
     'select',
@@ -747,7 +794,7 @@ async function load() {
   Object.keys(dismissedPriceWarnings).forEach((id) => delete dismissedPriceWarnings[Number(id)]);
   loading.value = true;
   try {
-    const [products, categories] = await Promise.all([listStoreFinishedProducts(), listStoreFinishedCategories()]);
+    const [products, categories] = await Promise.all([listStoreFinishedProducts(), listStoreCategories()]);
     rows.value = products;
     listCategories.value = categories;
     if (!tabs.value.some((tab) => tab.value === activeTab.value)) activeTab.value = tabs.value[0]?.value ?? 'warehouse';

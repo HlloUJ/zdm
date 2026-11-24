@@ -31,7 +31,7 @@ const permissions = [
 
 async function storeLogin(page: Page) {
   await installAdminApiMocks(page);
-  await page.route('**/api/admin/store-accessory-products/categories', (route) => route.fulfill({ json: ok([]) }));
+  await page.route('**/api/admin/store-accessory-products/list/categories', (route) => route.fulfill({ json: ok([]) }));
   await page.addInitScript((grants) => {
     localStorage.setItem('zdm-admin-token', 'dev-token');
     localStorage.setItem(
@@ -164,16 +164,16 @@ test('store uses a direct menu, refreshes selected products, and edits only its 
   records = [product()];
   await page.evaluate(() => window.dispatchEvent(new Event('focus')));
   await expect(main.getByText('门店测试商品')).toBeVisible();
-  await expect(main.getByRole('columnheader', { name: '入库人', exact: true })).toBeVisible();
+  await expect(main.getByRole('columnheader', { name: '入库人', exact: true })).toHaveCount(0);
   await expect(main.getByRole('columnheader', { name: '入库时间', exact: true })).toBeVisible();
   await expect(main.getByRole('columnheader', { name: '挑选时间', exact: true })).toHaveCount(0);
   await expect(main.getByRole('columnheader', { name: '商品主图', exact: true })).toBeVisible();
   await expect(main.getByRole('columnheader', { name: '供应商', exact: true })).toHaveCount(0);
   await expect(main.getByRole('columnheader', { name: '统一库存', exact: true })).toHaveCount(0);
-  await expect(main.getByRole('cell', { name: '门店创建员工', exact: true })).toBeVisible();
+  await expect(main.getByRole('cell', { name: '门店创建员工', exact: true })).toHaveCount(0);
   await expect(main.getByRole('cell', { name: '2026/10/08 12:34', exact: true })).toBeVisible();
   const columns = await main.locator('thead th').allTextContents();
-  expect(columns.indexOf('入库人')).toBeLessThan(columns.indexOf('入库时间'));
+  expect(columns.slice(columns.indexOf('商品名称/ID'), columns.indexOf('商品名称/ID') + 4)).toEqual(['商品名称/ID', '入库类型 / 详细说明', '商品分类', '商品价格']);
   await expect(main.locator('.product-code')).toHaveCSS('font-size', '12px');
   await expect(main.locator('th.t-table__th-operation')).toHaveCSS('width', '190px');
   await main.getByText(/已上架（0）/).click();
@@ -611,17 +611,17 @@ for (const operationType of ['SHELF', 'OFF_SHELF', 'RESTORE', 'DELETE_TO_RECYCLE
   });
 }
 
-test('store list applies keyword and operations category only after query', async ({ page }) => {
+test('store list applies keyword and store category only after query', async ({ page }) => {
   await storeLogin(page);
   await page.route('**/api/admin/store-accessory-products', (route) =>
     route.fulfill({
       json: ok([
-        product({ id: 41, productId: 91, name: '餐桌商品', categoryId: 3 }),
-        product({ id: 42, productId: 92, name: '沙发商品', categoryId: 4 }),
+        product({ id: 41, productId: 91, name: '餐桌商品', categoryId: 8, storeCategoryId: 3 }),
+        product({ id: 42, productId: 92, name: '沙发商品', categoryId: 8, storeCategoryId: 4 }),
       ]),
     }),
   );
-  await page.route('**/api/admin/store-accessory-products/categories', (route) =>
+  await page.route('**/api/admin/store-accessory-products/list/categories', (route) =>
     route.fulfill({
       json: ok([
         { id: 1, name: '家具' },

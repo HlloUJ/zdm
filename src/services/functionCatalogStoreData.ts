@@ -116,6 +116,7 @@ const storeFinishedStock: FunctionModule = {
               actions: [
                 ['shelf', '上架'],
                 ['edit', '编辑'],
+                ['batch-set-category', '批量设置分类'],
                 ['delete', '删除'],
               ].map(([code, label]) => ({ label, value: `store.finished-stock-management.warehouse.${code}` })),
             },
@@ -125,6 +126,7 @@ const storeFinishedStock: FunctionModule = {
               actions: [
                 ['off-shelf', '下架'],
                 ['edit', '编辑'],
+                ['batch-set-category', '批量设置分类'],
                 ['delete', '删除'],
               ].map(([code, label]) => ({ label, value: `store.finished-stock-management.selling.${code}` })),
             },
@@ -177,6 +179,7 @@ const storeAccessoryStock: FunctionModule = {
               actions: [
                 ['shelf', '上架'],
                 ['edit', '编辑'],
+                ['batch-set-category', '批量设置分类'],
                 ['delete', '删除'],
               ].map(([code, label]) => ({ label, value: `store.accessory-management.warehouse.${code}` })),
             },
@@ -186,6 +189,7 @@ const storeAccessoryStock: FunctionModule = {
               actions: [
                 ['off-shelf', '下架'],
                 ['edit', '编辑'],
+                ['batch-set-category', '批量设置分类'],
                 ['delete', '删除'],
               ].map(([code, label]) => ({ label, value: `store.accessory-management.selling.${code}` })),
             },

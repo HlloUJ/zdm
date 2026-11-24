@@ -21,7 +21,7 @@
 import { computed } from 'vue';
 import { AdminDialog } from '@/components/foundation';
 import { groupShelfFailures, type BatchShelfResult } from '@/services/operationsBatchShelf';
-const props = withDefaults(defineProps<{ visible: boolean; result: BatchShelfResult; operation?: '上架' | '删除' }>(), {
+const props = withDefaults(defineProps<{ visible: boolean; result: BatchShelfResult; operation?: '上架' | '删除' | '设置分类' }>(), {
   operation: '上架',
 });
 const emit = defineEmits<{ 'update:visible': [value: boolean] }>();

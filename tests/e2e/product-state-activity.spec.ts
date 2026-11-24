@@ -98,7 +98,7 @@ for (const surface of surfaces) {
               : 'finished-products';
     await page.route(`**/api/admin/${endpoint}`, (route) => route.fulfill({ json: { code: 0, data: records } }));
     if (surface.client === 'store') {
-      await page.route(`**/api/admin/${endpoint}/categories`, (route) =>
+      await page.route(`**/api/admin/${endpoint}/list/categories`, (route) =>
         route.fulfill({ json: { code: 0, data: [] } }),
       );
     }
@@ -110,6 +110,11 @@ for (const surface of surfaces) {
     for (let index = 0; index < states.length; index++) {
       await main.locator('.t-tabs__nav-item').filter({ hasText: titles[index] }).click();
       await expect(main.getByRole('columnheader', { name: timeTitles[index], exact: true })).toBeVisible();
+      if (surface.client === 'store' && states[index] !== 'warehouse') {
+        const keys = await main.locator('thead th').evaluateAll(headers => headers.map(h => h.getAttribute('data-colkey')));
+        const product = keys.indexOf('product');
+        expect(keys.slice(product, product + 4)).toEqual(['product', 'storeCategory', 'salePrice', 'stateOperatedAt']);
+      }
       if (states[index] === 'warehouse') {
         await expect(main.locator('.zdm-admin-filter-form').getByText('入库类型', { exact: true })).toHaveCount(0);
         await expect(main.locator('.zdm-admin-filter-form').getByText('入库人', { exact: true })).toHaveCount(0);
@@ -118,11 +123,10 @@ for (const surface of surfaces) {
           .evaluateAll((headers) => headers.map((header) => header.getAttribute('data-colkey')));
         const entryIndex = columnKeys.indexOf('warehouseEntry');
         expect(entryIndex).toBeGreaterThanOrEqual(0);
-        expect(columnKeys.slice(entryIndex, entryIndex + 3)).toEqual([
-          'warehouseEntry',
-          'stateOperatorName',
-          'stateOperatedAt',
-        ]);
+        const expected = surface.client === 'store'
+          ? ['warehouseEntry', 'storeCategory', 'salePrice', 'stateOperatedAt']
+          : ['warehouseEntry', 'stateOperatorName', 'stateOperatedAt'];
+        expect(columnKeys.slice(entryIndex, entryIndex + expected.length)).toEqual(expected);
       }
       const timeHeader = main.getByRole('columnheader', { name: timeTitles[index], exact: true });
       const sortIcons = timeHeader.locator('.t-table__sort-icon');
@@ -171,7 +175,7 @@ for (const surface of surfaces) {
       await expect(rows.first()).toContainText(`${states[index]}-新创建`);
       await main.getByRole('button', { name: timeTitles[index], exact: true }).click();
       await expect(rows.first()).toContainText(`${states[index]}-最近变更`);
-      if (actorTitles[index]) {
+      if (actorTitles[index] && surface.client !== 'store') {
         await expect(main.getByRole('columnheader', { name: actorTitles[index], exact: true })).toBeVisible();
         await expect(rows.first()).toContainText('状态操作员');
         await expect(rows.first().locator('td').filter({ hasText: '状态操作员' }).locator('.t-tag')).toHaveCount(0);
@@ -293,7 +297,8 @@ for (const surface of surfaces) {
       await main.locator('.t-tabs__nav-item').filter({ hasText: '仓库中' }).click();
       for (const id of batch ? [801, 802] : [801]) {
         const row = main.locator('tbody tr').filter({ hasText: `状态同步${id}` });
-        await expect(row).toContainText(`真实入库人${id}`);
+        if (surface.client === 'store') await expect(row).not.toContainText(`真实入库人${id}`);
+        else await expect(row).toContainText(`真实入库人${id}`);
         await expect(row).toContainText('2026/10/27 14:01');
         await expect(row).not.toContainText('旧操作人');
       }
@@ -453,7 +458,7 @@ for (const surface of surfaces) {
               : 'finished-products';
     await page.route(`**/api/admin/${endpoint}`, (route) => route.fulfill({ json: { code: 0, data: records } }));
     if (surface.client === 'store')
-      await page.route(`**/api/admin/${endpoint}/categories`, (route) =>
+      await page.route(`**/api/admin/${endpoint}/list/categories`, (route) =>
         route.fulfill({ json: { code: 0, data: [] } }),
       );
     await page.route(`**/api/admin/${endpoint}/attribute-template-options`, (route) =>

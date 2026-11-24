@@ -50,6 +50,18 @@ public class StoreAccessoryProductController {
     this.guard = guard;
   }
 
+  @GetMapping("/list/categories")
+  public ApiResponse<List<StoreAccessorySalePriceService.Category>> storeCategories() {
+    guard.requireView(PREFIX);
+    guard.requireDataPermission();
+    return ApiResponse.ok(service.storeCategories());
+  }
+
+  @PostMapping("/batch-set-category")
+  public ApiResponse<OperationsBatchShelfService.Result> setBatchCategory(@Valid @RequestBody StoreBatchCategoryRequest request) {
+    return ApiResponse.ok(request.execute(PREFIX, guard, service::setBatchCategory));
+  }
+
   @GetMapping("/categories")
   public ApiResponse<List<StoreAccessoryProductService.PoolCategory>> categories() {
     guard.requireView(PREFIX);

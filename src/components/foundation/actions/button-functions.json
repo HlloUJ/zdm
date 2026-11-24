@@ -308,6 +308,7 @@
       "price": "edit"
     },
     "store-toolbar": {
+      "batch-set-category": "batch-fill",
       "select": "product-center",
       "batch-shelf": "shelf",
       "batch-delete": "delete",
@@ -358,6 +359,7 @@
     }
   },
   "confirmationActions": {
+    "设置分类": "设置分类",
     "新增": "新增",
     "删除": "删除",
     "删除跟进记录": "删除跟进记录",

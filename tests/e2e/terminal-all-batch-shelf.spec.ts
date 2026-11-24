@@ -15,7 +15,7 @@ for (const surface of surfaces)
     }) => {
       await (surface.resource.includes('accessory') ? installAccessoryApiMocks : installAdminApiMocks)(page);
       if (surface.resource !== 'slabs') {
-        for (const option of ['attribute-template-options', 'price-level-options', 'categories'])
+        for (const option of ['attribute-template-options', 'price-level-options', surface.resource.startsWith('store-') ? 'list/categories' : 'categories'])
           await page.route(`**/api/admin/${surface.resource}/${option}`, (route) =>
             route.fulfill({ json: { code: 0, data: [] } }),
           );

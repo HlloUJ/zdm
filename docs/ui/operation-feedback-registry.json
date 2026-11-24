@@ -107,7 +107,8 @@
         "batch": "@storeConfirm",
         "batch-delete": "@perItem",
         "batch-purge": "@concurrent",
-        "clear": "@transaction"
+        "clear": "@transaction",
+        "batch-set-category": "@perItem"
       }
     },
     "reason": {
@@ -240,7 +241,7 @@
       "actions": {}
     },
     "src/components/OperationsBatchShelfResult.vue": {
-      "script": "bfce1b5ee6b49904ec5dccf98854d62f2a77addd6404660960acd44adc1bef8a",
+      "script": "15a422c764579621756c94ecc4d561c0b701b1580434ae00ff2042981f691c68",
       "actions": {
         "close → emit('update:visible', false)": "view",
         "confirm → emit('update:visible', false)": "view",
@@ -660,8 +661,9 @@
       }
     },
     "src/pages/finished-stock/store/index.vue": {
-      "script": "6f97fdb3e64d7b458f24c9f31ff25084f7e424b7c0d154793c29a870c36722c2",
+      "script": "c53efd07754b84316fd05c2a515fc1aca3bffee44927bf1834909a5da84b062f",
       "actions": {
+        "cancel → categoryDialog = false": "view",
         "cancel → closeEdit": "view",
         "cancel → confirm = null": "view",
         "cancel → offShelfVisible = false": "view",
@@ -696,6 +698,7 @@
         "saved → finishEdit": "view",
         "search → searchLogs": "query",
         "sort-change → onTimeSortChange": "query",
+        "submit → submitCategory": "@perItem",
         "update:current → page = $event": "query",
         "update:page-size → pageSize = $event": "query",
         "update:visible → !$event && (confirm = null)": "view",
@@ -1555,6 +1558,15 @@
         "confirm → handleSubmitOnce": "form",
         "popup-visible-change → handleShopTypePopupVisibleChange": "view"
       }
+    },
+    "src/pages/finished-stock/store/StoreBatchCategoryDialog.vue": {
+      "script": "2afcdfa67ab20f316bb4372d0e40df50cd5b6a3c0f1c0d8bfce16fb081e0d492",
+      "actions": {
+        "cancel → !busy && emit('cancel')": "view",
+        "click → path = [...path.slice(0,index), item.id]": "form",
+        "close → !busy && emit('cancel')": "view",
+        "confirm → leaf && !busy && emit('submit', leaf.id)": "@perItem"
+      }
     }
   },
   "dependencies": {
@@ -1593,11 +1605,11 @@
     "backend/src/main/java/com/zdm/platform/inventory/SlabTextureService.java": "dadbedd947529e6d8c08e4cbfef614ee77f04c35c5e1ce05b4e0cc6d1bd65df9",
     "backend/src/main/java/com/zdm/platform/inventory/SlabVarietyController.java": "74dca4bd39825d052e923341d3d69f9286eb799dda9a3fdbba269f1dca69a505",
     "backend/src/main/java/com/zdm/platform/inventory/SlabVarietyService.java": "90362ec8d482d2f6c618d56a5cefae09e2a2029e0233beb345b8e7f92ab8d8ec",
-    "backend/src/main/java/com/zdm/platform/inventory/StoreAccessoryProductController.java": "b0e61d817bc76fdc7807fdfea0fb981a2a195fe7423c117b108300f4fe89c794",
-    "backend/src/main/java/com/zdm/platform/inventory/StoreAccessoryProductService.java": "625a31a0bf3cb65ca45a2e79480cad9fea940ac40ccfa57f93fc043408dd3f66",
+    "backend/src/main/java/com/zdm/platform/inventory/StoreAccessoryProductController.java": "8d6403cfc96260c3c22d4883ecf997f92e8172c97323f7c61d87fce1dd7448ab",
+    "backend/src/main/java/com/zdm/platform/inventory/StoreAccessoryProductService.java": "564fb6ccd2423a8285244ad89c5f2f66ad84508b404072378d13b7cd8249197d",
     "backend/src/main/java/com/zdm/platform/inventory/StoreAccessorySalePriceService.java": "ca43621e2406bf761a874e3dc69f39699776cc002149455eefbdb66eb317a333",
-    "backend/src/main/java/com/zdm/platform/inventory/StoreFinishedProductController.java": "35c6737449e9ddd4186ec4b8aea602005f2698be77a2ae31e0fa7f13b8648aaa",
-    "backend/src/main/java/com/zdm/platform/inventory/StoreFinishedProductService.java": "01f9abd5c490a0fc4b420e5ed04d42bf174ba10391ae7899106d318ce8670985",
+    "backend/src/main/java/com/zdm/platform/inventory/StoreFinishedProductController.java": "db006b6116d948ef358919c3bc9bbcbbbb3bd4889f34cbe5a82ceab51ea01be0",
+    "backend/src/main/java/com/zdm/platform/inventory/StoreFinishedProductService.java": "29c5f3826717ce46ab8a57f6517c8f530bdc95f003ef5d8e0f07ec4af039561c",
     "backend/src/main/java/com/zdm/platform/inventory/StoreFinishedSalePriceService.java": "1d98034389addb8578b18cfa71d70cc0ce16e437bfa759804c7d844809872281",
     "backend/src/main/java/com/zdm/platform/media/MediaAssetService.java": "7d8d2317b155fe20044dd128f16ab28a00a7c7ab06665482428a6e7a9d647b82",
     "backend/src/main/java/com/zdm/platform/payment/StorePaymentNameService.java": "00714ae86d7be38ac16e999455de262fa51b9f9272ddfb79f48788c4ff275f1a",
@@ -1630,14 +1642,17 @@
     "src/services/slabOrigins.ts": "613f4cdf780f7a1dccecdef9f63b587bde3bddf831a2c4e301c2f2f879605363",
     "src/services/slabTextures.ts": "3baf894387d4465b8a2767751d9e527b2486a273124644963a0469c001ff64cd",
     "src/services/slabVarieties.ts": "c49e1428c48ebdcb48f7cb5a9354e630911bfe483da3d0623ce886db91c279dc",
-    "src/services/storeAccessoryStock.ts": "932179f6cf999f8a999d9166ce6e31ed1d06cfc552a68615d6cbeab2217b2332",
+    "src/services/storeAccessoryStock.ts": "c2108956a0655e3c7890287e54d7afdd4dd324fa275999e7e496e0fe996d096b",
     "src/services/storeCategories.ts": "643c969f83d93baffb279930e2e4c885e04b60bb2a06fdcb389dfee231f94906",
-    "src/services/storeFinishedStock.ts": "2725ea1eda160c2f08815326bf954643b2ddb9f4e94eb685685717205dc93dac",
+    "src/services/storeFinishedStock.ts": "bbb646f7b96dc62b4c33328e013bc292430bbec76fc7167fae916b42fc8d2c68",
     "src/services/storeSelectionCenter.ts": "bdfed932e8337ada562572412d8c4c574ff593a94098e7fd45613fe3ee2943d2",
     "src/services/stores.ts": "42280b785248b1a77de0dba817561493424e9735ce366a3ee2022a50adead3f2",
     "src/services/suppliers.ts": "f5579765b4b38f877224844aebae45b01fb96f416025ebf2c8f46561fc032d1b",
     "src/services/templateVersions.ts": "42e913c2dbedd6d4d02f03496d3506a1b90026d5765489690684d3c0baf53114",
-    "src/utils/submitValidation.ts": "9c992f808de42cf274883ec1df1c857d3594fc912056070c335b03f783182d81"
+    "src/utils/submitValidation.ts": "9c992f808de42cf274883ec1df1c857d3594fc912056070c335b03f783182d81",
+    "src/services/productBatchFeedback.ts": "1fbc6bc81362257c4caf08559614018de4027781013f9f38f8cc349e59a4e894",
+    "src/pages/finished-stock/store/storeSalePriceLines.ts": "030022d460fdabcf0397b23b3203de0648a710a09022db3f2e56687d866447e0",
+    "backend/src/main/java/com/zdm/platform/inventory/StoreBatchCategoryRequest.java": "4c0cdf1704dcf94c4be915c1283f555c649e0efee6a680fdd9b3597ea93f693f"
   },
   "approvedChanges": {
     "src/components/AdminTopNav.vue": {
@@ -2056,7 +2071,7 @@
     },
     "src/pages/finished-stock/store/index.vue": {
       "baseSha256": "f1f785011a4d1a96737a1b17627dcc8ec77f54e224bfaa60c4f21f79fd6df568",
-      "patchCount": 19,
+      "patchCount": 34,
       "patches": [
         {
           "stage": "before-migrations",
@@ -2157,6 +2172,96 @@
         {
           "before": "onBeforeUnmount(() => window.removeEventListener('focus', refreshOnSelectionReturn));\noperations.onInvalidate(() => { confirm.value = null; });\n</script>\n<style scoped>\n",
           "after": "onBeforeUnmount(() => window.removeEventListener('focus', refreshOnSelectionReturn));\noperations.onInvalidate(() => { confirm.value = null; });\n\nconst contentLoading = useDelayedLoading(() => Boolean(loading.value));\n\nconst { pending: confirmOffShelfPending, run: confirmOffShelfOnce } = usePendingAction(confirmOffShelf);\n</script>\n<style scoped>\n"
+        },
+        {
+          "task": "010",
+          "reason": "门店商品列表字段及批量设置分类",
+          "before": "                      <img v-if=\"row.imageUrl\" :src=\"row.imageUrl\" :alt=\"row.name\" />\n                      <t-icon v-else name=\"image-off\" />\n                    </button>\n                  </template>\n                  <template #totalStock=\"{ row }\">{{ row.totalStock ?? 0 }}</template>\n                  <template #createdAt=\"{ row }\">{{ time(row.createdAt) }}</template>\n",
+          "after": "                      <img v-if=\"row.imageUrl\" :src=\"row.imageUrl\" :alt=\"row.name\" />\n                      <t-icon v-else name=\"image-off\" />\n                    </button>\n                  </template>\n                  <template #storeCategory=\"{ row }\">{{ categoryNames.get(row.storeCategoryId) || '-' }}</template>\n                  <template #salePrice=\"{ row }\">\n                    <div v-for=\"line in storeSalePriceLines(row.skus)\" :key=\"line\">{{ line }}</div>\n                  </template>\n                  <template #totalStock=\"{ row }\">{{ row.totalStock ?? 0 }}</template>\n                  <template #createdAt=\"{ row }\">{{ time(row.createdAt) }}</template>\n"
+        },
+        {
+          "task": "010",
+          "reason": "门店商品列表字段及批量设置分类",
+          "before": "    >\n      <img v-if=\"imagePreview\" :src=\"imagePreview\" alt=\"商品主图\" style=\"max-width: 100%\" />\n    </AdminDialog>\n    <OperationsBatchShelfResult\n      v-model:visible=\"allBatchResultVisible\"\n      :result=\"allBatchResult\"\n",
+          "after": "    >\n      <img v-if=\"imagePreview\" :src=\"imagePreview\" alt=\"商品主图\" style=\"max-width: 100%\" />\n    </AdminDialog>\n    <StoreBatchCategoryDialog\n      v-if=\"categoryDialog && canSetCategory\"\n      :categories=\"listCategories\"\n      :busy=\"submittingCategory\"\n      @cancel=\"categoryDialog = false\"\n      @submit=\"submitCategory\"\n    />\n    <OperationsBatchShelfResult\n      v-model:visible=\"allBatchResultVisible\"\n      :result=\"allBatchResult\"\n"
+        },
+        {
+          "task": "010",
+          "reason": "门店商品列表字段及批量设置分类",
+          "before": "import { deleteProductsBatch } from '@/services/productBatchDelete';\nimport { canBatchDelete } from '@/services/productBatchPermissions';\nimport { batchRequestError } from '@/services/productBatchFeedback';\nimport OperationsBatchShelfResult from '@/components/OperationsBatchShelfResult.vue';\nimport { shelfProductsFromAll } from '@/services/productAllBatchShelf';\nimport type { BatchShelfResult } from '@/services/operationsBatchShelf';\nconst batchOperation = ref<'上架' | '删除'>('上架');\nconst allBatchResultVisible = ref(false);\nconst allBatchResult = ref<BatchShelfResult>({ total: 0, successCount: 0, failureCount: 0, failures: [] });\nimport ProductListStatusTag from '@/components/ProductListStatusTag.vue';\n",
+          "after": "import { deleteProductsBatch } from '@/services/productBatchDelete';\nimport { canBatchDelete } from '@/services/productBatchPermissions';\nimport { batchRequestError } from '@/services/productBatchFeedback';\nimport StoreBatchCategoryDialog from './StoreBatchCategoryDialog.vue';\nimport { storeSalePriceLines } from './storeSalePriceLines';\nimport OperationsBatchShelfResult from '@/components/OperationsBatchShelfResult.vue';\nimport { shelfProductsFromAll } from '@/services/productAllBatchShelf';\nimport type { BatchShelfResult } from '@/services/operationsBatchShelf';\nconst batchOperation = ref<'上架' | '删除' | '设置分类'>('上架');\nconst allBatchResultVisible = ref(false);\nconst allBatchResult = ref<BatchShelfResult>({ total: 0, successCount: 0, failureCount: 0, failures: [] });\nimport ProductListStatusTag from '@/components/ProductListStatusTag.vue';\n"
+        },
+        {
+          "task": "010",
+          "reason": "门店商品列表字段及批量设置分类",
+          "before": "import ProductOperationLogTemplate from '@/components/product-logs/ProductOperationLogTemplate.vue';\nimport { finishedProductOperationSummary } from '@/services/productOperationLog';\nimport {\n  type StorePoolCategory,\n  type StoreFinishedProduct,\n  type StoreFinishedStatus,\n} from '@/services/storeFinishedStock';\n",
+          "after": "import ProductOperationLogTemplate from '@/components/product-logs/ProductOperationLogTemplate.vue';\nimport { finishedProductOperationSummary } from '@/services/productOperationLog';\nimport {\n  type StoreFinishedEditCategory,\n  type StoreFinishedProduct,\n  type StoreFinishedStatus,\n} from '@/services/storeFinishedStock';\n"
+        },
+        {
+          "task": "010",
+          "reason": "门店商品列表字段及批量设置分类",
+          "before": "  changeStoreFinishedStatusBatch,\n  clearStoreFinishedRecycle,\n  getStoreFinishedProduct,\n  listStoreFinishedCategories,\n  listStoreFinishedProducts,\n  purgeStoreFinishedProduct,\n  purgeStoreFinishedProducts,\n",
+          "after": "  changeStoreFinishedStatusBatch,\n  clearStoreFinishedRecycle,\n  getStoreFinishedProduct,\n  listStoreCategories,\n  setStoreCategories,\n  listStoreFinishedProducts,\n  purgeStoreFinishedProduct,\n  purgeStoreFinishedProducts,\n"
+        },
+        {
+          "task": "010",
+          "reason": "门店商品列表字段及批量设置分类",
+          "before": "const filter = reactive<{ keyword: string; category?: number }>({ keyword: '' });\nconst appliedFilter = reactive<{ keyword: string; category?: number }>({ keyword: '' });\ntype PoolCategoryOption = { value: number; label: string; children?: PoolCategoryOption[] };\nconst listCategories = ref<StorePoolCategory[]>([]);\nconst listCategoryVisible = ref(false);\nconst listCategoryOptions = computed(() => {\n  const build = (parentId?: number, visited = new Set<number>()): PoolCategoryOption[] =>\n",
+          "after": "const filter = reactive<{ keyword: string; category?: number }>({ keyword: '' });\nconst appliedFilter = reactive<{ keyword: string; category?: number }>({ keyword: '' });\ntype PoolCategoryOption = { value: number; label: string; children?: PoolCategoryOption[] };\nconst listCategories = ref<StoreFinishedEditCategory[]>([]);\nconst categoryNames = computed(() => new Map(listCategories.value.map(item => [item.id, item.name])));\nconst listCategoryVisible = ref(false);\nconst listCategoryOptions = computed(() => {\n  const build = (parentId?: number, visited = new Set<number>()): PoolCategoryOption[] =>\n"
+        },
+        {
+          "task": "010",
+          "reason": "门店商品列表字段及批量设置分类",
+          "before": "        ? isAllProductStatus(row.effectiveStatus) && can(row.effectiveStatus, 'view')\n        : row.effectiveStatus === activeTab.value) &&\n      (!appliedFilter.keyword || `${row.name} ${row.productId}`.includes(appliedFilter.keyword)) &&\n      matchesListCategory(row.categoryId),\n  ),\n);\nconst pageRows = computed(() =>\n",
+          "after": "        ? isAllProductStatus(row.effectiveStatus) && can(row.effectiveStatus, 'view')\n        : row.effectiveStatus === activeTab.value) &&\n      (!appliedFilter.keyword || `${row.name} ${row.productId}`.includes(appliedFilter.keyword)) &&\n      matchesListCategory(row.storeCategoryId),\n  ),\n);\nconst pageRows = computed(() =>\n"
+        },
+        {
+          "task": "010",
+          "reason": "门店商品列表字段及批量设置分类",
+          "before": "    ? action\n    : null;\n});\nconst storeToolbarActions = computed<FinishedStockToolbarAction[]>(() => [\n  ...(['all', 'warehouse'].includes(activeTab.value) && canGlobal('select')\n    ? [{ id: 'select', label: '选品中心', icon: 'add' }]\n",
+          "after": "    ? action\n    : null;\n});\nconst categoryDialog = ref(false);\nconst submittingCategory = ref(false);\nconst canSetCategory = computed(() => activeTab.value === 'all'\n  ? can('warehouse', 'batch-set-category') && can('selling', 'batch-set-category')\n  : ['warehouse', 'selling'].includes(activeTab.value) && can(activeTab.value, 'batch-set-category'));\nwatch([activeTab, canSetCategory], () => { categoryDialog.value = false; });\nasync function submitCategory(categoryId: number) {\n  if (!categoryDialog.value || !canSetCategory.value || submittingCategory.value || !selected.value.length) return;\n  const ids = [...selected.value];\n  const tab = activeTab.value;\n  const isCurrent = captureSelectionContext();\n  const names = new Map(rows.value.map(row => [row.id, row.productId]));\n  submittingCategory.value = true;\n  try {\n    const result = await setStoreCategories(ids, categoryId, tab);\n    if (!isCurrent()) return;\n    batchOperation.value = '设置分类';\n    allBatchResult.value = { ...result, failures: result.failures.map(f => ({ ...f, id: names.get(f.id) ?? f.id })) };\n    categoryDialog.value = false;\n    selected.value = [];\n    allBatchResultVisible.value = true;\n    await load();\n  } catch (error) {\n    if (isCurrent()) adminFeedback.error(batchRequestError(error, '设置分类'));\n  } finally {\n    submittingCategory.value = false;\n  }\n}\nconst storeToolbarActions = computed<FinishedStockToolbarAction[]>(() => [\n  ...(['all', 'warehouse'].includes(activeTab.value) && canGlobal('select')\n    ? [{ id: 'select', label: '选品中心', icon: 'add' }]\n"
+        },
+        {
+          "task": "010",
+          "reason": "门店商品列表字段及批量设置分类",
+          "before": "        },\n      ]\n    : []),\n  ...(canBatchDelete(activeTab.value, can)\n    ? [{ id: 'batch-delete', batch: true, label: '批量删除', icon: 'delete', disabled: !selected.value.length }]\n    : []),\n",
+          "after": "        },\n      ]\n    : []),\n  ...(canSetCategory.value ? [{ id: 'batch-set-category', batch: true, label: '批量设置分类', icon: 'edit', disabled: !selected.value.length }] : []),\n  ...(canBatchDelete(activeTab.value, can)\n    ? [{ id: 'batch-delete', batch: true, label: '批量删除', icon: 'delete', disabled: !selected.value.length }]\n    : []),\n"
+        },
+        {
+          "task": "010",
+          "reason": "门店商品列表字段及批量设置分类",
+          "before": "    .map((action) => ({ id: action.id, label: action.label }));\nconst handleStoreToolbarAction = (action: string) => {\n  if (action === 'select') void openPool();\n  else if (action === 'batch') prepareBatch();\n  else if (action === 'batch-delete' && selected.value.length)\n    confirm.value = { kind: 'batch-delete', label: '批量删除', ids: [...selected.value] };\n",
+          "after": "    .map((action) => ({ id: action.id, label: action.label }));\nconst handleStoreToolbarAction = (action: string) => {\n  if (action === 'select') void openPool();\n  else if (action === 'batch-set-category' && selected.value.length && canSetCategory.value) categoryDialog.value = true;\n  else if (action === 'batch') prepareBatch();\n  else if (action === 'batch-delete' && selected.value.length)\n    confirm.value = { kind: 'batch-delete', label: '批量删除', ids: [...selected.value] };\n"
+        },
+        {
+          "task": "010",
+          "reason": "门店商品列表字段及批量设置分类",
+          "before": "  { colKey: 'select', title: 'selectTitle', width: 52, align: 'center' },\n  { colKey: 'imageUrl', title: '商品主图', width: 96 },\n  { colKey: 'product', title: '商品名称/ID', minWidth: 220 },\n];\nconst operationWidths: Record<StoreFinishedTab, number> = {\n  all: 208,\n",
+          "after": "  { colKey: 'select', title: 'selectTitle', width: 52, align: 'center' },\n  { colKey: 'imageUrl', title: '商品主图', width: 96 },\n  { colKey: 'product', title: '商品名称/ID', minWidth: 220 },\n  { colKey: 'storeCategory', title: '商品分类', minWidth: 120 },\n  { colKey: 'salePrice', title: '商品价格', minWidth: 110 },\n];\nconst operationWidths: Record<StoreFinishedTab, number> = {\n  all: 208,\n"
+        },
+        {
+          "task": "010",
+          "reason": "门店商品列表字段及批量设置分类",
+          "before": "        ? [{ colKey: 'warehouseEntry', title: '入库类型 / 详细说明', minWidth: 140 }]\n        : []),\n      ...(activeTab.value === 'all'\n        ? productCreationColumns(toggleTimeSort)\n        : stateActivityColumns(activeTab.value, toggleTimeSort)),\n      { colKey: 'operation', title: '操作', width: operationWidths[activeTab.value], align: 'left', fixed: 'right' },\n    ],\n    'select',\n",
+          "after": "        ? [{ colKey: 'warehouseEntry', title: '入库类型 / 详细说明', minWidth: 140 }]\n        : []),\n      ...(activeTab.value === 'all'\n        ? productCreationColumns(toggleTimeSort).filter(column => column.colKey !== 'createdByName')\n        : stateActivityColumns(activeTab.value, toggleTimeSort).filter(column => column.colKey !== 'stateOperatorName')),\n      { colKey: 'operation', title: '操作', width: operationWidths[activeTab.value], align: 'left', fixed: 'right' },\n    ],\n    'select',\n"
+        },
+        {
+          "task": "010",
+          "reason": "门店商品列表字段及批量设置分类",
+          "before": "  Object.keys(dismissedPriceWarnings).forEach((id) => delete dismissedPriceWarnings[Number(id)]);\n  loading.value = true;\n  try {\n    const [products, categories] = await Promise.all([listStoreFinishedProducts(), listStoreFinishedCategories()]);\n    rows.value = products;\n    listCategories.value = categories;\n    if (!tabs.value.some((tab) => tab.value === activeTab.value)) activeTab.value = tabs.value[0]?.value ?? 'warehouse';\n",
+          "after": "  Object.keys(dismissedPriceWarnings).forEach((id) => delete dismissedPriceWarnings[Number(id)]);\n  loading.value = true;\n  try {\n    const [products, categories] = await Promise.all([listStoreFinishedProducts(), listStoreCategories()]);\n    rows.value = products;\n    listCategories.value = categories;\n    if (!tabs.value.some((tab) => tab.value === activeTab.value)) activeTab.value = tabs.value[0]?.value ?? 'warehouse';\n"
+        },
+        {
+          "task": "010",
+          "reason": "按验收反馈将分类和价格列移到入库信息后",
+          "before": "  { colKey: 'imageUrl', title: '商品主图', width: 96 },\n  { colKey: 'product', title: '商品名称/ID', minWidth: 220 },\n  { colKey: 'storeCategory', title: '商品分类', minWidth: 120 },\n  { colKey: 'salePrice', title: '商品价格', minWidth: 110 },\n];\nconst operationWidths: Record<StoreFinishedTab, number> = {\n",
+          "after": "  { colKey: 'imageUrl', title: '商品主图', width: 96 },\n  { colKey: 'product', title: '商品名称/ID', minWidth: 220 },\n];\nconst operationWidths: Record<StoreFinishedTab, number> = {\n"
+        },
+        {
+          "task": "010",
+          "reason": "按验收反馈将分类和价格列移到入库信息后",
+          "before": "        ? [{ colKey: 'warehouseEntry', title: '入库类型 / 详细说明', minWidth: 140 }]\n        : []),\n      ...(activeTab.value === 'all'\n        ? productCreationColumns(toggleTimeSort).filter(column => column.colKey !== 'createdByName')\n",
+          "after": "        ? [{ colKey: 'warehouseEntry', title: '入库类型 / 详细说明', minWidth: 140 }]\n        : []),\n      { colKey: 'storeCategory', title: '商品分类', minWidth: 120 },\n      { colKey: 'salePrice', title: '商品价格', minWidth: 110 },\n      ...(activeTab.value === 'all'\n        ? productCreationColumns(toggleTimeSort).filter(column => column.colKey !== 'createdByName')\n"
         }
       ]
     },
