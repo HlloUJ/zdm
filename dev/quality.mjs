@@ -33,8 +33,9 @@ function verifyReport(store, snap, phase) {
     report.policy !== snap.policy
   )
     throw Error('缺少当前候选和目标主线的完整验证记录。');
-  if (!(report.inherited || []).every(row => store.intact(row))) throw Error('前轮沿用的原始开发验证记录已失效。');
   const input = inputReader(snap);
+  if (!(report.inherited || []).every(row => store.intact(row) && row.fingerprint === input(row.id, row.args || []).fingerprint))
+    throw Error('前轮沿用的原始开发验证记录或相关输入已失效。');
   const expected = phase === 'dev' ? snap.plan.dev : snap.plan.delivery;
   if (report.results.length !== expected.length) throw Error('必测项数量与记录不一致。');
   for (const id of expected) {
@@ -75,6 +76,8 @@ function validate(snap, phase, options, rawId, args = []) {
     planId: snap.planId,
     planned: selected,
     reasons: snap.plan.reasons,
+    rounds: snap.plan.rounds || [],
+    evidence: snap.plan.evidence || [],
     specialties: snap.plan.specialties,
     changed: snap.files,
     status: 'running',

@@ -57,7 +57,28 @@ function pathsFor(values) {
   return [...new Set(values)].sort();
 }
 function intentFor(input) {
-  const behaviors = kinds(input.behaviors);
+  for (const field of ['items', 'interactions'])
+    if (input[field] !== undefined && (!Array.isArray(input[field]) || input[field].length > 100))
+      throw Error(field + ' 须为同一任务内的事项清单');
+  const items = (input.items || []).map(item => ({
+    name: label(item.name, '事项名称'),
+    before: label(item.before, '事项改前行为'),
+    after: label(item.after, '事项改后行为'),
+    consumers: nonempty(item.consumers, '事项使用方'),
+    consequence: label(item.consequence ?? input.data, '事项出错后果'),
+    behaviors: kinds(item.behaviors),
+    paths: pathsFor(item.paths || []),
+  })).map(item => ({ ...item, risk: riskOf(item.behaviors), checks: intentChecks(item.behaviors, input.domain) }));
+  const names = new Set(items.map(item => item.name));
+  if (names.size !== items.length) throw Error('同一任务的事项名称必须唯一');
+  const interactions = (input.interactions || []).map(link => {
+    const involved = [...new Set(nonempty(link.items, '组合事项'))];
+    if (involved.length < 2 || involved.some(name => !names.has(name))) throw Error('组合必须引用同任务中至少两个已登记事项');
+    const behaviors = kinds(link.behaviors);
+    return { items: involved, behaviors, risk: riskOf(behaviors), reason: label(link.reason, '组合后果') };
+  });
+  const behaviors = kinds([...(input.behaviors || []), ...items.flatMap(item => item.behaviors),
+    ...interactions.flatMap(link => link.behaviors)]);
   return {
     name: label(input.name, '任务全名'),
     source: label(input.source, '原交办'),
@@ -68,6 +89,8 @@ function intentFor(input) {
     data: label(input.data, '数据影响'),
     unknown: input.unknown ? label(input.unknown, '待核事实') : '',
     behaviors,
+    items,
+    interactions,
     roundBehaviors: kinds(input.roundBehaviors || behaviors),
     reason: label(input.reason, '判级依据'),
     domain: input.domain || null,
@@ -226,18 +249,49 @@ export function reviewed(intent, current, whole, round, from, disposition) {
     disposition.ref.trim() &&
     typeof disposition.basis === 'string' &&
     disposition.basis.trim();
-  const missed = gaps.filter(
-    (k) => !resolved && k !== 'note' && (k !== 'unknown' || !whole.plan.facts.length),
-  );
+  if (resolved && (intent.items || []).length) {
+    for (const [field, allowed] of [['items', intent.items.map(item => item.name)], ['behaviors', intent.behaviors]]) {
+      const selected = disposition[field];
+      if (selected !== undefined && (!Array.isArray(selected) || selected.some(value => !allowed.includes(value))))
+        throw Error('复核依据须引用本任务中已登记的' + (field === 'items' ? '事项' : '行为'));
+    }
+  }
+  const items = (intent.items || []).map(item => {
+    const facts = whole.plan.facts.filter(f => item.paths?.includes(f.path));
+    const observed = new Set(facts.flatMap(f => [f.kind, ...(f.other || [])]));
+    const missing = item.behaviors.filter(k => !observed.has(k));
+    const explained = resolved && disposition.items?.includes(item.name);
+    return { ...item, matchedPaths: facts.map(f => f.path), missing: explained ? [] : missing,
+      status: explained ? 'explained' : missing.length ? 'needs-evidence' : 'matched' };
+  });
+  const unresolvedItems = items.filter(i => i.missing.length);
+  const interactions = (intent.interactions || []).map(link => {
+    const members = items.filter(item => link.items.includes(item.name));
+    const paths = new Set(members.flatMap(item => item.matchedPaths));
+    const observed = whole.plan.facts.filter(f => paths.has(f.path)).flatMap(f => [f.kind, ...(f.other || [])]);
+    const missing = link.behaviors.filter(k => !members.every(item => item.matchedPaths.length) || !observed.includes(k));
+    const explained = resolved && link.items.every(name => disposition.items?.includes(name)) &&
+      link.behaviors.every(k => disposition.behaviors?.includes(k));
+    return { ...link, missing: explained ? [] : missing, status: explained ? 'explained' : missing.length ? 'needs-evidence' : 'matched' };
+  });
+  const resolvedBehavior = k => resolved && (!items.length || disposition.behaviors?.includes(k));
+  const missed = [...new Set([...gaps.filter(k => !resolvedBehavior(k) && k !== 'note' &&
+    (k !== 'unknown' || !whole.plan.facts.length)), ...unresolvedItems.flatMap(i => i.missing),
+    ...interactions.flatMap(link => link.missing)])];
   // A smaller diff alone cannot remove an obligation. A scope correction carries its source into history.
   const wholeRisk = missed.length ? highest(whole.plan.risk, riskOf(missed)) : whole.plan.risk;
-  const empty = !round.plan.facts.length && missed.length > 0;
+  const roundMissing = missed.filter(k => intent.roundBehaviors.includes(k));
+  const roundRisk = roundMissing.length ? highest(round.plan.risk, riskOf(roundMissing)) : round.plan.risk;
   const incomplete = missed.length ? ['需求尚未实现或缺少可核实证据：' + missed.join('、')] : [];
+  for (const item of unresolvedItems) incomplete.push('事项待核：' + item.name);
+  for (const link of interactions.filter(link => link.missing.length)) incomplete.push('组合影响待核：' + link.items.join('、'));
   return {
+    items,
+    interactions,
     whole: wholeRisk,
-    round: empty ? riskOf(intent.roundBehaviors) : round.plan.risk,
-    dev: empty
-      ? [...new Set([...round.plan.dev, ...intentChecks(intent.roundBehaviors, intent.domain)])]
+    round: roundRisk,
+    dev: roundMissing.length
+      ? [...new Set([...round.plan.dev, ...intentChecks(roundMissing, intent.domain)])]
       : round.plan.dev,
     delivery: [
       ...new Set([
@@ -246,6 +300,7 @@ export function reviewed(intent, current, whole, round, from, disposition) {
       ]),
     ],
     gaps: incomplete,
+    uncoveredRound: roundMissing,
     base: whole.base,
     tree: whole.tree,
     head: whole.head,

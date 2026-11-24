@@ -17,6 +17,10 @@ description: 装点猫管理后台直接交办或总协调派发的任务实际�
 
 ## 复核与交付
 
+一次交办包含多件事时沿用同一任务身份。可在开工 JSON 的 `items` 中逐项填写 `name`、`before`、`after`、`consumers`、`consequence`、`behaviors`，形成实际改动后用 `paths` 关联文件。存在组合影响时用 `interactions` 填两个或更多事项名称（`items`）、`behaviors` 和具体 `reason`。陌生业务也按行为后果选择，涉及不可撤回写入或外部副作用可登记 `irreversible`。多事项中已有能力满足某项要求时，在 `disposition.items` 中指定已核实的事项，并按需要用 `disposition.behaviors` 指明已有依据的行为。其他事项继续独立复核。
+
+返工优先检查计划的 `rounds`，把整项等级、本轮等级、比较起点及定向用例告诉用户。用 `evidence` 核对原检查为何复用或补跑，再对照开发报告 `results[].args` 看实际运行范围。无法缩小范围时说明缺少哪类覆盖。恢复时填本轮真实行为，整项标签保存在本任务累计记录中。
+
 - 可测改动后运行 `verify:plan` 和 `verify:dev`，核对本轮和整项、实际使用方、漏项及定向用例。需求或依据修订时用 `task:assess -- review <身份> -` 提交真实事件、执行对话、前一修订和原因，需要时传修订后的 `intent`。降档事实或用户明确收缩范围的依据填入 `disposition`。处理每一条真实变级通知。
 - 业务提验沿用 5274 发布和健康验证。PR 创建前用 `task:assess -- summary <身份或逗号分隔的多任务>`，把返回的 `block` 放入 PR 描述。提交、主线或公开摘要变化后重新复核。CI 有结果时在实际任务工作区运行 `task:assess -- ci <身份> <PR号>`，将新增待发事件送回所属任务对话，再按现行入口合并。
 - 用 `show` 核对送达，用 `task:timing -- report <编号> --json` 核对实跑、复用、失败和耗时。

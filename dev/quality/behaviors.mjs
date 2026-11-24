@@ -11,6 +11,7 @@ export const behaviors = {
   inventory: [4, '库存或价格写入、重复处理与数据一致性', ['unit', 'backend', 'e2e']],
   deletion: [4, '误删、重复提交、部分失败及恢复', ['backend', 'e2e']],
   migration: [4, '历史数据、数据库绑定与恢复', ['backend', 'acceptance']],
+  irreversible: [4, '无法撤回的业务写入或外部副作用，核对执行边界、防重及失败恢复', ['unit', 'backend', 'e2e']],
   concurrency: [2, '并发顺序、重复请求、竞争和失败恢复', ['unit', 'e2e']],
   state: [2, '允许、拒绝的状态转换和失败后的状态', ['unit', 'e2e']],
   batch: [2, '批量部分失败、重复执行和结果一致性', ['unit', 'e2e']],
