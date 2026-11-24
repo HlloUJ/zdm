@@ -88,6 +88,11 @@ for (const surface of surfaces) {
     await expect(main.locator('.t-tabs__nav-item').first()).toHaveClass(/t-is-active/);
     await expect(main.getByRole('columnheader', { name: '创建人', exact: true })).toHaveCount(surface.client === 'store' ? 0 : 1);
     await expect(main.getByRole('columnheader', { name: '创建时间', exact: true })).toBeVisible();
+    if (surface.client === 'store') {
+      const keys = await main.locator('thead th').evaluateAll(headers => headers.map(h => h.getAttribute('data-colkey')));
+      const product = keys.indexOf('product');
+      expect(keys.slice(product, product + 5)).toEqual(['product', 'warehouseEntry', 'storeCategory', 'salePrice', 'createdAt']);
+    }
     for (const header of await main.locator('thead th').all())
       await expect(header).toHaveCSS('text-align', (await header.getByRole('checkbox').count()) ? 'center' : 'left');
     for (const cell of await main.locator('tbody tr').first().locator('td').all())

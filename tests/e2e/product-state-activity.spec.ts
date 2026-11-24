@@ -110,6 +110,11 @@ for (const surface of surfaces) {
     for (let index = 0; index < states.length; index++) {
       await main.locator('.t-tabs__nav-item').filter({ hasText: titles[index] }).click();
       await expect(main.getByRole('columnheader', { name: timeTitles[index], exact: true })).toBeVisible();
+      if (surface.client === 'store' && states[index] !== 'warehouse') {
+        const keys = await main.locator('thead th').evaluateAll(headers => headers.map(h => h.getAttribute('data-colkey')));
+        const product = keys.indexOf('product');
+        expect(keys.slice(product, product + 4)).toEqual(['product', 'storeCategory', 'salePrice', 'stateOperatedAt']);
+      }
       if (states[index] === 'warehouse') {
         await expect(main.locator('.zdm-admin-filter-form').getByText('入库类型', { exact: true })).toHaveCount(0);
         await expect(main.locator('.zdm-admin-filter-form').getByText('入库人', { exact: true })).toHaveCount(0);
@@ -119,7 +124,7 @@ for (const surface of surfaces) {
         const entryIndex = columnKeys.indexOf('warehouseEntry');
         expect(entryIndex).toBeGreaterThanOrEqual(0);
         const expected = surface.client === 'store'
-          ? ['warehouseEntry', 'stateOperatedAt']
+          ? ['warehouseEntry', 'storeCategory', 'salePrice', 'stateOperatedAt']
           : ['warehouseEntry', 'stateOperatorName', 'stateOperatedAt'];
         expect(columnKeys.slice(entryIndex, entryIndex + expected.length)).toEqual(expected);
       }

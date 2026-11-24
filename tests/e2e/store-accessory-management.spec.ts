@@ -173,7 +173,7 @@ test('store uses a direct menu, refreshes selected products, and edits only its 
   await expect(main.getByRole('cell', { name: '门店创建员工', exact: true })).toHaveCount(0);
   await expect(main.getByRole('cell', { name: '2026/10/08 12:34', exact: true })).toBeVisible();
   const columns = await main.locator('thead th').allTextContents();
-  expect(columns.slice(columns.indexOf('商品名称/ID'), columns.indexOf('商品名称/ID') + 3)).toEqual(['商品名称/ID', '商品分类', '商品价格']);
+  expect(columns.slice(columns.indexOf('商品名称/ID'), columns.indexOf('商品名称/ID') + 4)).toEqual(['商品名称/ID', '入库类型 / 详细说明', '商品分类', '商品价格']);
   await expect(main.locator('.product-code')).toHaveCSS('font-size', '12px');
   await expect(main.locator('th.t-table__th-operation')).toHaveCSS('width', '190px');
   await main.getByText(/已上架（0）/).click();

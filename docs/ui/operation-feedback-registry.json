@@ -661,7 +661,7 @@
       }
     },
     "src/pages/finished-stock/store/index.vue": {
-      "script": "f1b7faad23debaa2363fc388c9e22b8bff7ad834ab5d84eed858cce7f60136d6",
+      "script": "c53efd07754b84316fd05c2a515fc1aca3bffee44927bf1834909a5da84b062f",
       "actions": {
         "cancel → categoryDialog = false": "view",
         "cancel → closeEdit": "view",
@@ -2071,7 +2071,7 @@
     },
     "src/pages/finished-stock/store/index.vue": {
       "baseSha256": "f1f785011a4d1a96737a1b17627dcc8ec77f54e224bfaa60c4f21f79fd6df568",
-      "patchCount": 32,
+      "patchCount": 34,
       "patches": [
         {
           "stage": "before-migrations",
@@ -2250,6 +2250,18 @@
           "reason": "门店商品列表字段及批量设置分类",
           "before": "  Object.keys(dismissedPriceWarnings).forEach((id) => delete dismissedPriceWarnings[Number(id)]);\n  loading.value = true;\n  try {\n    const [products, categories] = await Promise.all([listStoreFinishedProducts(), listStoreFinishedCategories()]);\n    rows.value = products;\n    listCategories.value = categories;\n    if (!tabs.value.some((tab) => tab.value === activeTab.value)) activeTab.value = tabs.value[0]?.value ?? 'warehouse';\n",
           "after": "  Object.keys(dismissedPriceWarnings).forEach((id) => delete dismissedPriceWarnings[Number(id)]);\n  loading.value = true;\n  try {\n    const [products, categories] = await Promise.all([listStoreFinishedProducts(), listStoreCategories()]);\n    rows.value = products;\n    listCategories.value = categories;\n    if (!tabs.value.some((tab) => tab.value === activeTab.value)) activeTab.value = tabs.value[0]?.value ?? 'warehouse';\n"
+        },
+        {
+          "task": "010",
+          "reason": "按验收反馈将分类和价格列移到入库信息后",
+          "before": "  { colKey: 'imageUrl', title: '商品主图', width: 96 },\n  { colKey: 'product', title: '商品名称/ID', minWidth: 220 },\n  { colKey: 'storeCategory', title: '商品分类', minWidth: 120 },\n  { colKey: 'salePrice', title: '商品价格', minWidth: 110 },\n];\nconst operationWidths: Record<StoreFinishedTab, number> = {\n",
+          "after": "  { colKey: 'imageUrl', title: '商品主图', width: 96 },\n  { colKey: 'product', title: '商品名称/ID', minWidth: 220 },\n];\nconst operationWidths: Record<StoreFinishedTab, number> = {\n"
+        },
+        {
+          "task": "010",
+          "reason": "按验收反馈将分类和价格列移到入库信息后",
+          "before": "        ? [{ colKey: 'warehouseEntry', title: '入库类型 / 详细说明', minWidth: 140 }]\n        : []),\n      ...(activeTab.value === 'all'\n        ? productCreationColumns(toggleTimeSort).filter(column => column.colKey !== 'createdByName')\n",
+          "after": "        ? [{ colKey: 'warehouseEntry', title: '入库类型 / 详细说明', minWidth: 140 }]\n        : []),\n      { colKey: 'storeCategory', title: '商品分类', minWidth: 120 },\n      { colKey: 'salePrice', title: '商品价格', minWidth: 110 },\n      ...(activeTab.value === 'all'\n        ? productCreationColumns(toggleTimeSort).filter(column => column.colKey !== 'createdByName')\n"
         }
       ]
     },

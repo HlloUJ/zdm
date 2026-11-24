@@ -759,8 +759,6 @@ const baseColumns: PrimaryTableCol<TableRowData>[] = [
   { colKey: 'select', title: 'selectTitle', width: 52, align: 'center' },
   { colKey: 'imageUrl', title: '商品主图', width: 96 },
   { colKey: 'product', title: '商品名称/ID', minWidth: 220 },
-  { colKey: 'storeCategory', title: '商品分类', minWidth: 120 },
-  { colKey: 'salePrice', title: '商品价格', minWidth: 110 },
 ];
 const operationWidths: Record<StoreFinishedTab, number> = {
   all: 208,
@@ -776,6 +774,8 @@ const columns = computed<PrimaryTableCol<TableRowData>[]>(() =>
       ...(['all', 'warehouse'].includes(activeTab.value)
         ? [{ colKey: 'warehouseEntry', title: '入库类型 / 详细说明', minWidth: 140 }]
         : []),
+      { colKey: 'storeCategory', title: '商品分类', minWidth: 120 },
+      { colKey: 'salePrice', title: '商品价格', minWidth: 110 },
       ...(activeTab.value === 'all'
         ? productCreationColumns(toggleTimeSort).filter(column => column.colKey !== 'createdByName')
         : stateActivityColumns(activeTab.value, toggleTimeSort).filter(column => column.colKey !== 'stateOperatorName')),
