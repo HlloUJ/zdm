@@ -1329,7 +1329,9 @@ test('filters terminal allocation to shared and terminal-only modules and persis
     if (terminal === '城市合伙人门店管理后台') {
       await moduleList.getByText('商品管理', { exact: true }).click();
       await expect(matrix.getByText('一级菜单直达')).toHaveCount(0);
-      await expect(matrix.locator('tbody .permission-menu-cell')).toHaveText(['成品现货管理', '配件管理']);
+      await expect(matrix.locator('tbody .permission-menu-cell')).toHaveText(['成品现货管理', '配件管理', '服务管理']);
+      const services = matrix.locator('tbody tr').filter({ hasText: '服务管理页' });
+      await expect(services.locator('.permission-action-grid .t-checkbox')).toHaveText(['查看', '新增', '编辑', '启用/停用', '删除']);
       await expect(matrix.getByText('成品现货管理页', { exact: true })).toBeVisible();
       await expect(matrix.getByText('配件管理页', { exact: true })).toBeVisible();
       for (const tab of ['仓库中', '已上架', '已售完', '回收站']) {

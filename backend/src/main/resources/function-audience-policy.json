@@ -160,6 +160,10 @@
     "scope": "internal-management"
   },
   {
+    "prefix": "store.service-management",
+    "scope": "store-only"
+  },
+  {
     "prefix": "store.customer-management",
     "scope": "store-only"
   },
