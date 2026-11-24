@@ -350,6 +350,8 @@ test('ordinary published V1.1 entry automatically measures actual checks, cache 
   for (const file of ['quality-entry.mjs', 'quality.mjs', 'quality'])
     cpSync(resolve('dev', file), join(f.cwd, 'dev', file), { recursive: true });
   writeFileSync(join(f.cwd, 'docs/notes/work.md'), '# Project notes\n');
+  // This standalone repository models the activated release and has no project V1.1 history.
+  writeFileSync(join(f.cwd,'dev/quality/release.mjs'),'export const active = true;\n');
   git(f.cwd, 'add', '.');
   git(f.cwd, 'commit', '-qm', 'published quality');
   git(f.cwd, 'update-ref', 'refs/remotes/origin/main', 'HEAD');

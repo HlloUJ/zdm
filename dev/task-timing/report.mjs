@@ -1,3 +1,4 @@
+import { stateFor, view } from '../quality/assessment-store.mjs';
 import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { activated, read, rootFor, taskRecord } from '../quality/timing-events.mjs';
@@ -290,6 +291,7 @@ export function report(common, id, options = {}) {
   return {
     id,
     fullName: fullName(task),
+    assessment: view(stateFor(common,id)),
     type: task.type,
     status: task.status,
     batch: task.batch,

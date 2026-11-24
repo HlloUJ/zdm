@@ -1,6 +1,9 @@
 import { existsSync, readFileSync, realpathSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { assess, assessMissing, development, localTasks, saveBaselines } from './quality/assess-task.mjs';
+import { bindSummary, blockFor, eventBody, readSummary, summaryFor } from './quality/assessment-summary.mjs';
+import { mainPullRequest } from './quality/remote.mjs';
 import { checks } from './quality/policy.mjs';
 import { git, inspect } from './quality/repository.mjs';
 import { inputReader, fileDigest } from './quality/inputs.mjs';
@@ -9,6 +12,18 @@ import { nativeCommands, launch, runCheck } from './quality/commands.mjs';
 import { exportEvidence, loadPriorEvidence, mergeVerified } from './quality/remote.mjs';
 import { event, finish, observe, observer, ready } from './quality/timing-events.mjs';
 
+function snapshot(cwd, options, phase) {
+  const snap = inspect(cwd, options.baseRef, phase);
+  const missing=assessMissing(snap,phase);
+  if(missing.length) snap.plan.assessmentGap='开发中发现漏评，请从实际执行对话运行 task:assess start（late）并发通知：'+missing.join(',');
+  const tasks = localTasks(snap);
+  if (['plan','dev','assert-dev','run'].includes(phase) && !process.env.GITHUB_ACTIONS)
+    return development(snap,tasks);
+  const pr = eventBody() || (['main','plan'].includes(phase) ? mainPullRequest(snap) : null);
+  const candidate = pr?.head?.sha || snap.head;
+  const body = pr?.body ?? options.body ?? (tasks.length ? blockFor(summaryFor(snap,tasks,candidate)) : '');
+  return bindSummary(snap,readSummary(body,{base:snap.base,candidate,policy:snap.policy}));
+}
 function verifyReport(store, snap, phase) {
   const report = store.report(phase, snap);
   if (
@@ -18,12 +33,13 @@ function verifyReport(store, snap, phase) {
     report.policy !== snap.policy
   )
     throw Error('缺少当前候选和目标主线的完整验证记录。');
+  if (!(report.inherited || []).every(row => store.intact(row))) throw Error('前轮沿用的原始开发验证记录已失效。');
   const input = inputReader(snap);
   const expected = phase === 'dev' ? snap.plan.dev : snap.plan.delivery;
   if (report.results.length !== expected.length) throw Error('必测项数量与记录不一致。');
   for (const id of expected) {
     const proof = report.results.find((row) => row.id === id);
-    const now = input(id);
+    const now = input(id,snap.plan.scopes?.[id] || []);
     if (
       !proof ||
       proof.fingerprint !== now.fingerprint ||
@@ -45,6 +61,13 @@ function validate(snap, phase, options, rawId, args = []) {
     phase,
     standard: snap.plan.standard,
     risk: snap.plan.risk,
+    wholeRisk: snap.plan.wholeRisk || snap.plan.risk,
+    scopes: snap.plan.scopes,
+    assessments: snap.assessments || snap.summary?.tasks || [],
+    summaryFingerprint: snap.summary?.fingerprint || null,
+    assessmentStatus: snap.summary?.status,
+    assessmentGap: snap.plan.assessmentGap,
+    notifications: snap.tasks?.flatMap(s=>s.notifications.filter(n=>!s.receipts[n.key])) || [],
     head: snap.head,
     tree: snap.tree,
     base: snap.base,
@@ -57,7 +80,11 @@ function validate(snap, phase, options, rawId, args = []) {
     status: 'running',
     startedAt: Date.now(),
     results: [],
-    notApplicable: Object.keys(checks).filter((id) => !snap.plan.delivery.includes(id)),
+    inherited: snap.inherited || [],
+    notApplicable: Object.keys(checks).filter(id=>!snap.plan.delivery.includes(id)),
+    notApplicableReasons: Object.fromEntries(Object.keys(checks).filter(id=>!snap.plan.delivery.includes(id))
+      .map(id=>[id,'本候选已识别的行为不使用该检查族：'+snap.plan.reasons.join('、')])),
+    protections: {remote:'以目标分支当次 GitHub 规则集为准', local:'已发布规则、准确候选及本机签名回执'},
     pending: [...selected],
   };
   store.save(report);
@@ -74,7 +101,7 @@ function validate(snap, phase, options, rawId, args = []) {
     for (const id of selected) {
       activeCheck = timingRun + ':' + id;
       record(() => event(timing, 'start', activeCheck, 'validation', { ...timingFields, check: id }));
-      const checkArgs = rawId ? args : [];
+      const checkArgs = rawId ? args : snap.plan.scopes?.[id] || [];
       const input = readInput(id, checkArgs);
       const cached = input.reusable && !rawId ? store.cached(input) : null;
       let row;
@@ -102,12 +129,12 @@ function validate(snap, phase, options, rawId, args = []) {
         try {
           process.stderr.write(snap.plan.risk + ' ' + phase + ' · ' + id + '\n');
           const complete = runCheck(snap, id, checkArgs, log, Boolean(rawId && checkArgs.length));
-          const after = inspect(snap.cwd, options.baseRef, phase);
+          const after = snapshot(snap.cwd, options, phase);
           if (
             after.tree !== snap.tree ||
             after.head !== snap.head ||
             after.base !== snap.base ||
-            after.policy !== snap.policy
+            after.planId !== snap.planId || after.policy !== snap.policy
           )
             throw Error('验证期间候选、目标主线或标准发生变化。');
           const observed = inputReader(after)(id, checkArgs);
@@ -138,7 +165,7 @@ function validate(snap, phase, options, rawId, args = []) {
       report.pending.shift();
       store.save(report);
     }
-    const final = inspect(snap.cwd, options.baseRef, phase);
+    const final = snapshot(snap.cwd, options, phase);
     if (final.planId !== snap.planId || final.head !== snap.head)
       throw Error('最终候选或验证计划已变化。');
     report.status = report.results.every((row) => ['passed', 'reused'].includes(row.status))
@@ -154,6 +181,7 @@ function validate(snap, phase, options, rawId, args = []) {
     store.save(report);
     if (activeCheck) record(() => finish(timing, activeCheck, 'failed', { ref: run }));
     record(() => finish(timing, timingRun, report.status, { ref: run }));
+    if (phase === 'dev' && report.status === 'passed') saveBaselines(snap,report);
     if (phase === 'dev' && report.status === 'passed') record(() => ready(timing, 'verified', snap.head, run));
     if (options.exportDir) exportEvidence(snap, store, report, options.exportDir);
   }
@@ -164,14 +192,16 @@ function optionsFor(args, phase) {
   while (args.length) {
     const name = args.shift();
     const value = args.shift();
-    if (!value || !['--base', '--export'].includes(name)) throw Error('验证参数无效：' + name);
+    if (!value || !['--base', '--export', '--summary-file'].includes(name)) throw Error('验证参数无效：' + name);
     if (name === '--base') options.baseRef = value;
+    else if (name === '--summary-file') options.body=readFileSync(resolve(value),'utf8');
     else options.exportDir = resolve(value);
   }
   return options;
 }
 export function main(argv, cwd = process.cwd()) {
   let [phase, ...args] = argv;
+  if (phase === 'assess') return assess(args,cwd);
   if (phase === 'merge')
     return mergeVerified(cwd, args, (snap) =>
       verifyReport(new EvidenceStore(snap.common), snap, 'delivery'),
@@ -198,13 +228,13 @@ export function main(argv, cwd = process.cwd()) {
       return;
     }
     const options = optionsFor([], phase);
-    validate(inspect(cwd, options.baseRef, phase), phase, options, id, args);
+    validate(snapshot(cwd, options, phase), phase, options, id, args);
     return;
   }
   if (!['plan', 'dev', 'delivery', 'main', 'assert-dev', 'assert-delivery'].includes(phase))
     throw Error('用法：node dev/quality.mjs plan|dev|delivery|assert-delivery|main|merge|run');
   const options = optionsFor(args, phase);
-  const snap = inspect(cwd, options.baseRef, phase);
+  const snap = snapshot(cwd, options, phase);
   if (phase === 'plan')
     return {
       ...snap.plan,
@@ -213,6 +243,9 @@ export function main(argv, cwd = process.cwd()) {
       base: snap.base,
       planId: snap.planId,
       changed: snap.files,
+      assessments:snap.assessments || snap.summary?.tasks || [],
+      notifications:snap.tasks?.flatMap(s=>s.notifications.filter(n=>!s.receipts[n.key])) || [],
+      summaryStatus:snap.summary?.status,
     };
   return validate(snap, phase, options);
 }

@@ -1,3 +1,5 @@
+import { semanticPlan } from './semantic-plan.mjs';
+
 export const standard = 'V1.1';
 
 // This catalogue is used by planning, execution and evidence verification.
@@ -177,7 +179,7 @@ const scenarios = [
   ],
 ];
 
-export function planChanges(changes, fallback = false) {
+export function legacyPlan(changes, fallback = false) {
   const dev = new Set(['diff']);
   const delivery = new Set(['diff']);
   let level = 0;
@@ -226,4 +228,8 @@ export function planChanges(changes, fallback = false) {
     dev: ordered(dev),
     delivery: ordered(delivery),
   };
+}
+
+export function planChanges(changes, fallback = false, files = []) {
+  return semanticPlan(changes, fallback, files, checks, legacyPlan);
 }

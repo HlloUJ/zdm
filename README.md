@@ -41,7 +41,7 @@ npm run dev
 
 ## 构建与业务测试
 
-[V1.1 分级验证](docs/verification-v1.1.md)统一开发与合并前的清单。开发或返工运行 `npm run verify:dev`，正式合并使用 `npm run verify:merge -- <PR编号>`。
+[统一开发、交付与验证标准](docs/verification.md)统一开发与合并前的清单。开发或返工运行 `npm run verify:dev`，正式合并使用 `npm run verify:merge -- <PR编号>`。
 
 ```sh
 npm run build

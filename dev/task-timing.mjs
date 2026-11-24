@@ -116,6 +116,11 @@ function display(result) {
         duration(result.longestBlockMs),
       '返工 ' + result.rounds.length + ' 轮，未归因 ' + duration(result.unknownMs),
     ];
+    if (result.assessment) {
+      const a=result.assessment;
+      pieces.push('开工 '+a.initial.whole+'，整项 '+a.current.whole+'，本轮 '+a.current.round+'，待发 '+a.pending.length+' 项');
+      for (const h of a.history) pieces.push('判级修订 '+h.revision+' '+h.kind+' '+h.whole+'/'+h.round+' '+h.reason);
+    }
     for (const [stage, ms] of Object.entries(result.stageMs)) pieces.push(stage + ' ' + duration(ms));
     for (const r of result.rounds)
       pieces.push(
