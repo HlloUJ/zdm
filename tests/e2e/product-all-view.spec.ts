@@ -422,7 +422,11 @@ for (const surface of surfaces.filter(item => item.client === 'store')) {
     await expect(dialog.getByText('停用分类')).toHaveCount(0);
     await dialog.getByRole('button', { name: '桌椅' }).click();
     await expect(dialog.getByText('该分类未设置价格系数')).toBeVisible();
-    await expect(dialog.getByText('保留当前售价，并转为手工定价')).toBeVisible();
+    await expect(dialog.locator('.t-alert__description > div')).toHaveText([
+      '更换此分类，规格当前售价不变，但会转为手工定价。',
+      '以后更换设有价格系数的分类，需主动切回自动定价才会重新计算。',
+      '已有售价保留，未定价的规格继续留空。',
+    ]);
     await dialog.getByRole('button', { name: '沙发' }).click();
     await expect(dialog.getByText('该分类未设置价格系数')).toHaveCount(0);
     await dialog.getByRole('button', { name: '取消' }).click();

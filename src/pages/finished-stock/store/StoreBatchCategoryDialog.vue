@@ -19,8 +19,9 @@
     </div>
     <div v-if="path.length" class="category-picker-path">已选择：{{ path.map(id => byId.get(id)?.name).join(' > ') }}</div>
     <t-alert v-if="leaf && leaf.coefficient == null" theme="warning" title="该分类未设置价格系数">
-      <div>确认后，自动定价的规格将<strong>保留当前售价，并转为手工定价</strong>。以后更换到有系数的分类，需主动切回自动定价才会重新计算。</div>
-      <div>已有手工售价保留，未定价的规格继续留空。</div>
+      <div>更换此分类，规格<strong>当前售价不变，但会转为手工定价</strong>。</div>
+      <div>以后更换设有价格系数的分类，需主动切回自动定价才会重新计算。</div>
+      <div>已有售价保留，未定价的规格继续留空。</div>
     </t-alert>
   </AdminDialog>
 </template>
