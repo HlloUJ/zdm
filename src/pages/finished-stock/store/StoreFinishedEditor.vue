@@ -132,7 +132,7 @@
       </StoreProductDetail>
     </div>
     <AdminSectionCard class="form-submit-bar">
-      <t-button data-loading-button :theme="buttonTheme('submit')" :disabled="saving" :loading="saveIndicator" @click="save"
+      <t-button data-loading-button :theme="buttonTheme('submit')" :disabled="saving || !selectedLeaf" :loading="saveIndicator" @click="save"
         ><template #icon><t-icon name="check" /></template>{{ formConfirmationText('edit') }}</t-button
       >
       <t-button :theme="buttonTheme('cancel')" variant="base" :disabled="saving" @click="emit('cancel')">取消</t-button>
@@ -385,20 +385,20 @@ const categoryOptions = computed(() => {
       });
   return build(null, true, new Set());
 });
-const coefficient = computed(() => {
-  const category = categories.value.find((item) => item.id === form.categoryId);
-  if (!category || categories.value.some((item) => item.parentId === category.id)) return null;
+const selectedLeaf = computed(() => {
+  const byId = new Map(categories.value.map(item => [item.id, item]));
+  const category = form.categoryId == null ? undefined : byId.get(form.categoryId);
+  if (!category || categories.value.some((item) => item.parentId === category.id)) return undefined;
   const seen = new Set<number>();
-  for (
-    let current: StoreFinishedEditCategory | undefined = category;
-    current;
-    current = categories.value.find((item) => item.id === current?.parentId)
-  ) {
-    if (current.status !== 'enabled' || seen.has(current.id)) return null;
+  let current: StoreFinishedEditCategory | undefined = category;
+  while (current && current.status === 'enabled' && !seen.has(current.id)) {
+    if (current.parentId == null) return category;
     seen.add(current.id);
+    current = byId.get(current.parentId);
   }
-  return category.coefficient;
+  return undefined;
 });
+const coefficient = computed(() => selectedLeaf.value?.coefficient ?? null);
 const sku = (id: number) => props.product.skus.find((item) => item.skuId === id)!;
 const canFollow = (id: number) => ready.value && coefficient.value != null && sku(id).costPrice != null;
 function changeCategory() {
@@ -423,7 +423,7 @@ onMounted(async () => {
 const formOperation = useOperationPreflight(() => props.product.id);
 formOperation.onInvalidate(() => { saving.value = false; });
 async function save() {
-  if (saving.value || !ready.value) return;
+  if (saving.value || !ready.value || !selectedLeaf.value) return;
   const current = formOperation.capture();
   saving.value = true;
   try {
@@ -431,6 +431,8 @@ async function save() {
     const valid = await formRef.value?.validate();
     if (!current()) return;
     if (valid !== true) return rejectFormSubmission(productFormRoot.value);
+    const category = selectedLeaf.value;
+    if (!category) return;
     if (
       props.product.skus.some(
         (item) =>
@@ -439,7 +441,7 @@ async function save() {
     )
       return rejectFormSubmission(productFormRoot.value);
     const product = await saveStoreFinishedEdit(props.product.id, {
-      storeCategoryId: form.categoryId!,
+      storeCategoryId: category.id,
       skus: props.product.skus.map((item) => ({
         skuId: item.skuId,
         salePrice: drafts[item.skuId].price === '' ? null : Number(drafts[item.skuId].price),

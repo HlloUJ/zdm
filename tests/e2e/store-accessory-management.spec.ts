@@ -1,4 +1,5 @@
 import { registerStoreBatchSalePriceTests } from './store-batch-sale-price-cases';
+import { registerStoreCategoryAdjustmentTests } from './store-category-adjustment-cases';
 import { productWarehouseUrl } from './product-test-navigation';
 import { priceTableGeometry, expectPriceTableStable } from './price-table-feedback';
 import { checkDecimalEditing } from './decimal-editing';
@@ -1037,8 +1038,7 @@ test('store editor requires category, leaves missing prices empty, and follows o
   const input = main.locator('.store-sale-price-input input');
   await expect(input).toHaveValue('');
   await expect(main.getByText(/无法自动计算|缺失原因/)).toHaveCount(0);
-  await main.getByRole('button', { name: /^确认(?:新增|保存)$/, exact: true }).click();
-  await expect(main.getByText('请选择门店分类', { exact: true })).toBeVisible();
+  await expect(main.getByRole('button', { name: '确认保存', exact: true })).toBeDisabled();
   await main.locator('.t-cascader input').click();
   await page.locator('.t-cascader__item').filter({ hasText: '一级分类' }).hover();
   await page.locator('.t-cascader__item').filter({ hasText: '二级分类' }).hover();
@@ -1251,3 +1251,4 @@ test('single off shelf marks the existing required reason and keeps details opti
 });
 
 registerStoreBatchSalePriceTests('accessory-management', storeLogin, product());
+registerStoreCategoryAdjustmentTests('accessory-management', storeLogin, product);

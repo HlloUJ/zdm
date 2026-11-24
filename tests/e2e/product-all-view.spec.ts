@@ -396,8 +396,12 @@ for (const surface of surfaces.filter(item => item.client === 'store')) {
     });
   }
   test(`${surface.path} selects a leaf and shows the coefficient warning before a partial batch`, async ({ page }) => {
-    await setup(page, surface);
+    const records = await setup(page, surface);
     const base = '**/api/admin/' + surface.kind;
+    let assigned = false;
+    await page.route(base, route => route.fulfill({ json: { code: 0, data: records.map(record => ({
+      ...record, storeCategoryId: assigned && record.id === 900 ? 6 : 5,
+    })) } }));
     await page.route(base + '/list/categories', route => route.fulfill({ json: { code: 0, data: [
       { id: 5, parentId: null, name: '家具', status: 'enabled' },
       { id: 6, parentId: 5, name: '桌椅', status: 'enabled', coefficient: null },
@@ -407,11 +411,15 @@ for (const surface of surfaces.filter(item => item.client === 'store')) {
     const submissions: unknown[] = [];
     await page.route(base + '/batch-set-category', route => {
       submissions.push(route.request().postDataJSON());
+      assigned = true;
       return route.fulfill({ json: { code: 0, data: { total: 2, successCount: 1, failureCount: 1,
         failures: [{ id: 901, code: 'VALIDATION_FAILED', reason: '商品状态已变更' }] } } });
     });
     await page.reload();
     const main = page.getByRole('main');
+    await main.getByText('待调整分类', { exact: true }).click();
+    await main.getByRole('button', { name: '查询', exact: true }).click();
+    await expect(main.getByText('请调整分类', { exact: true })).toHaveCount(2);
     await main.locator('thead .t-checkbox').click();
     const action = main.getByRole('button', { name: '批量设置分类', exact: true });
     await action.click();
@@ -447,6 +455,9 @@ for (const surface of surfaces.filter(item => item.client === 'store')) {
     await confirm.click();
     await expect(dialog.getByText('成功设置分类1件，失败1件。')).toBeVisible();
     await expect(dialog.getByText('商品状态已变更')).toBeVisible();
+    await expect(main.locator('tbody tr')).toHaveCount(1);
+    await expect(main.locator('tbody tr').first()).toContainText('汇总商品-selling');
+    await expect(main.getByText('请调整分类', { exact: true })).toHaveCount(1);
     expect(submissions).toEqual([{ ids: expect.arrayContaining([900, 901]), tab: 'all', categoryId: 6 }]);
   });
 }

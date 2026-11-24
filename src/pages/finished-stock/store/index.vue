@@ -40,7 +40,7 @@
                     <t-form-item label="商品分类">
                       <t-select-input
                         :value="filter.category"
-                        :value-display="listCategories.find((item) => item.id === filter.category)?.name"
+                        :value-display="filter.category == null ? undefined : categoriesById.get(filter.category)?.name"
                         :popup-visible="listCategoryVisible"
                         :popup-props="{
                           placement: 'bottom-left',
@@ -58,14 +58,17 @@
                         <template #panel>
                           <t-cascader-panel
                             v-if="listCategoryVisible"
-                            :value="''"
+                            :value="filter.category ?? ''"
                             :options="listCategoryOptions"
-                            :check-strictly="false"
+                            check-strictly
                             trigger="hover"
                             @change="changeListCategory"
                           />
                         </template>
                       </t-select-input>
+                    </t-form-item>
+                    <t-form-item>
+                      <t-checkbox v-model="filter.needsCategoryAdjustment">待调整分类</t-checkbox>
                     </t-form-item>
                   </div>
                   <div class="filter-actions">
@@ -162,7 +165,15 @@
                       <t-icon v-else name="image-off" />
                     </button>
                   </template>
-                  <template #storeCategory="{ row }">{{ categoryNames.get(row.storeCategoryId) || '-' }}</template>
+                  <template #storeCategory="{ row }">
+                    <div>{{ categoriesById.get(row.storeCategoryId)?.name || '-' }}</div>
+                    <t-tooltip
+                      v-if="needsCategoryAdjustment(row)"
+                      content="该分类层级有变动，请重新设置该商品分类"
+                    >
+                      <t-tag theme="danger" variant="light" size="small">请调整分类</t-tag>
+                    </t-tooltip>
+                  </template>
                   <template #salePrice="{ row }">
                     <div v-for="line in storeSalePriceLines(row.skus)" :key="line">{{ line }}</div>
                   </template>
@@ -491,11 +502,17 @@ const rows = ref<StoreFinishedProduct[]>([]);
 const loading = ref(false);
 const page = ref(1);
 const pageSize = ref(10);
-const filter = reactive<{ keyword: string; category?: number }>({ keyword: '' });
-const appliedFilter = reactive<{ keyword: string; category?: number }>({ keyword: '' });
+interface StoreListFilter {
+  keyword: string;
+  category?: number;
+  needsCategoryAdjustment: boolean;
+}
+const filter = reactive<StoreListFilter>({ keyword: '', needsCategoryAdjustment: false });
+const appliedFilter = reactive<StoreListFilter>({ ...filter });
 type PoolCategoryOption = { value: number; label: string; children?: PoolCategoryOption[] };
 const listCategories = ref<StoreFinishedEditCategory[]>([]);
-const categoryNames = computed(() => new Map(listCategories.value.map(item => [item.id, item.name])));
+const categoriesById = computed(() => new Map(listCategories.value.map(item => [item.id, item])));
+const parentCategoryIds = computed(() => new Set(listCategories.value.map(item => item.parentId)));
 const listCategoryVisible = ref(false);
 const listCategoryOptions = computed(() => {
   const build = (parentId?: number, visited = new Set<number>()): PoolCategoryOption[] =>
@@ -513,8 +530,10 @@ function changeListCategory(value: unknown) {
   listCategoryVisible.value = false;
 }
 function searchList() {
+  if (appliedFilter.needsCategoryAdjustment !== filter.needsCategoryAdjustment) resetSelection();
   appliedFilter.keyword = filter.keyword.trim();
   appliedFilter.category = filter.category;
+  appliedFilter.needsCategoryAdjustment = filter.needsCategoryAdjustment;
   page.value = 1;
   listCategoryVisible.value = false;
 }
@@ -525,9 +544,15 @@ function matchesListCategory(categoryId?: number | null) {
   while (current != null && !visited.has(current)) {
     if (current === appliedFilter.category) return true;
     visited.add(current);
-    current = listCategories.value.find((item) => item.id === current)?.parentId;
+    current = categoriesById.value.get(current)?.parentId;
   }
   return false;
+}
+function needsCategoryAdjustment(row: StoreFinishedProduct) {
+  return isAllProductStatus(row.effectiveStatus) &&
+    row.storeCategoryId != null &&
+    categoriesById.value.has(row.storeCategoryId) &&
+    parentCategoryIds.value.has(row.storeCategoryId);
 }
 const selected = ref<number[]>([]);
 const shelfErrors = reactive<Record<number, string>>({});
@@ -565,7 +590,8 @@ const filteredRows = computed(() =>
         ? isAllProductStatus(row.effectiveStatus) && can(row.effectiveStatus, 'view')
         : row.effectiveStatus === activeTab.value) &&
       (!appliedFilter.keyword || `${row.name} ${row.productId}`.includes(appliedFilter.keyword)) &&
-      matchesListCategory(row.storeCategoryId),
+      matchesListCategory(row.storeCategoryId) &&
+      (!appliedFilter.needsCategoryAdjustment || needsCategoryAdjustment(row)),
   ),
 );
 const pageRows = computed(() =>
@@ -574,7 +600,9 @@ const pageRows = computed(() =>
 watch(
   () => filteredRows.value.length,
   (total) => {
-    if (activeTab.value === 'all') page.value = Math.min(page.value, Math.max(1, Math.ceil(total / pageSize.value)));
+    if (activeTab.value === 'all' || appliedFilter.needsCategoryAdjustment) {
+      page.value = Math.min(page.value, Math.max(1, Math.ceil(total / pageSize.value)));
+    }
   },
 );
 const selectablePageIds = computed(() => pageRows.value.filter((row) => !row.sourceUnavailable).map((row) => row.id));
@@ -811,6 +839,7 @@ function resetSelection() {
 function resetFilter() {
   filter.keyword = '';
   filter.category = undefined;
+  filter.needsCategoryAdjustment = false;
   searchList();
 }
 const availabilityReads = ref(0);
