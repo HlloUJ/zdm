@@ -644,7 +644,7 @@
       }
     },
     "src/pages/finished-stock/store/StoreFinishedEditor.vue": {
-      "script": "96cdae8a691e839cb8ec475021363da066a9798138dacd03b3fda8fe606a845f",
+      "script": "53496dec69e68a5d4cbd073a80a2fd9d4abbd514ae53d3445318f8465ad5ad4c",
       "actions": {
         "change → batchFilters[filter.key] = []": "query",
         "change → changeCategory": "form",
@@ -661,7 +661,7 @@
       }
     },
     "src/pages/finished-stock/store/index.vue": {
-      "script": "c53efd07754b84316fd05c2a515fc1aca3bffee44927bf1834909a5da84b062f",
+      "script": "b0a24070790b25ee5d0856336ceb795325d06479b27c3f9da5d762f003889d13",
       "actions": {
         "cancel → categoryDialog = false": "view",
         "cancel → closeEdit": "view",
@@ -2032,7 +2032,7 @@
     },
     "src/pages/finished-stock/store/StoreFinishedEditor.vue": {
       "baseSha256": "cc341a5a4c779bfd5b3ede7011809e763cf5a549996375dbdbf708dbc3e9faa7",
-      "patchCount": 6,
+      "patchCount": 11,
       "patches": [
         {
           "stage": "before-migrations",
@@ -2066,12 +2066,42 @@
         {
           "before": "  }\n}\n</script>\n\n",
           "after": "  }\n}\n\nconst saveIndicator = useDelayedLoading(() => Boolean(saving.value));\n</script>\n\n"
+        },
+        {
+          "task": "011",
+          "reason": "仅允许为本店商品保存已启用的末级分类",
+          "before": "    </div>\n    <AdminSectionCard class=\"form-submit-bar\">\n      <t-button data-loading-button :theme=\"buttonTheme('submit')\" :disabled=\"saving\" :loading=\"saveIndicator\" @click=\"save\"\n        ><template #icon><t-icon name=\"check\" /></template>{{ formConfirmationText('edit') }}</t-button\n      >\n",
+          "after": "    </div>\n    <AdminSectionCard class=\"form-submit-bar\">\n      <t-button data-loading-button :theme=\"buttonTheme('submit')\" :disabled=\"saving || !selectedLeaf\" :loading=\"saveIndicator\" @click=\"save\"\n        ><template #icon><t-icon name=\"check\" /></template>{{ formConfirmationText('edit') }}</t-button\n      >\n"
+        },
+        {
+          "task": "011",
+          "reason": "仅允许为本店商品保存已启用的末级分类",
+          "before": "  return build(null, true, new Set());\n});\nconst coefficient = computed(() => {\n  const category = categories.value.find((item) => item.id === form.categoryId);\n  if (!category || categories.value.some((item) => item.parentId === category.id)) return null;\n  const seen = new Set<number>();\n  for (\n    let current: StoreFinishedEditCategory | undefined = category;\n    current;\n    current = categories.value.find((item) => item.id === current?.parentId)\n  ) {\n    if (current.status !== 'enabled' || seen.has(current.id)) return null;\n    seen.add(current.id);\n  }\n  return category.coefficient;\n});\nconst sku = (id: number) => props.product.skus.find((item) => item.skuId === id)!;\nconst canFollow = (id: number) => ready.value && coefficient.value != null && sku(id).costPrice != null;\n",
+          "after": "  return build(null, true, new Set());\n});\nconst selectedLeaf = computed(() => {\n  const byId = new Map(categories.value.map(item => [item.id, item]));\n  const category = form.categoryId == null ? undefined : byId.get(form.categoryId);\n  if (!category || categories.value.some((item) => item.parentId === category.id)) return undefined;\n  const seen = new Set<number>();\n  let current: StoreFinishedEditCategory | undefined = category;\n  while (current && current.status === 'enabled' && !seen.has(current.id)) {\n    if (current.parentId == null) return category;\n    seen.add(current.id);\n    current = byId.get(current.parentId);\n  }\n  return undefined;\n});\nconst coefficient = computed(() => selectedLeaf.value?.coefficient ?? null);\nconst sku = (id: number) => props.product.skus.find((item) => item.skuId === id)!;\nconst canFollow = (id: number) => ready.value && coefficient.value != null && sku(id).costPrice != null;\n"
+        },
+        {
+          "task": "011",
+          "reason": "仅允许为本店商品保存已启用的末级分类",
+          "before": "formOperation.onInvalidate(() => { saving.value = false; });\nasync function save() {\n  if (saving.value || !ready.value) return;\n  const current = formOperation.capture();\n  saving.value = true;\n",
+          "after": "formOperation.onInvalidate(() => { saving.value = false; });\nasync function save() {\n  if (saving.value || !ready.value || !selectedLeaf.value) return;\n  const current = formOperation.capture();\n  saving.value = true;\n"
+        },
+        {
+          "task": "011",
+          "reason": "仅允许为本店商品保存已启用的末级分类",
+          "before": "    if (!current()) return;\n    if (valid !== true) return rejectFormSubmission(productFormRoot.value);\n    if (\n      props.product.skus.some(\n",
+          "after": "    if (!current()) return;\n    if (valid !== true) return rejectFormSubmission(productFormRoot.value);\n    const category = selectedLeaf.value;\n    if (!category) return;\n    if (\n      props.product.skus.some(\n"
+        },
+        {
+          "task": "011",
+          "reason": "仅允许为本店商品保存已启用的末级分类",
+          "before": "      return rejectFormSubmission(productFormRoot.value);\n    const product = await saveStoreFinishedEdit(props.product.id, {\n      storeCategoryId: form.categoryId!,\n      skus: props.product.skus.map((item) => ({\n        skuId: item.skuId,\n",
+          "after": "      return rejectFormSubmission(productFormRoot.value);\n    const product = await saveStoreFinishedEdit(props.product.id, {\n      storeCategoryId: category.id,\n      skus: props.product.skus.map((item) => ({\n        skuId: item.skuId,\n"
         }
       ]
     },
     "src/pages/finished-stock/store/index.vue": {
       "baseSha256": "f1f785011a4d1a96737a1b17627dcc8ec77f54e224bfaa60c4f21f79fd6df568",
-      "patchCount": 34,
+      "patchCount": 44,
       "patches": [
         {
           "stage": "before-migrations",
@@ -2262,6 +2292,66 @@
           "reason": "按验收反馈将分类和价格列移到入库信息后",
           "before": "        ? [{ colKey: 'warehouseEntry', title: '入库类型 / 详细说明', minWidth: 140 }]\n        : []),\n      ...(activeTab.value === 'all'\n        ? productCreationColumns(toggleTimeSort).filter(column => column.colKey !== 'createdByName')\n",
           "after": "        ? [{ colKey: 'warehouseEntry', title: '入库类型 / 详细说明', minWidth: 140 }]\n        : []),\n      { colKey: 'storeCategory', title: '商品分类', minWidth: 120 },\n      { colKey: 'salePrice', title: '商品价格', minWidth: 110 },\n      ...(activeTab.value === 'all'\n        ? productCreationColumns(toggleTimeSort).filter(column => column.colKey !== 'createdByName')\n"
+        },
+        {
+          "task": "011",
+          "reason": "允许按任意门店分类查询并按非末级直属商品筛选和提示",
+          "before": "                      <t-select-input\n                        :value=\"filter.category\"\n                        :value-display=\"listCategories.find((item) => item.id === filter.category)?.name\"\n                        :popup-visible=\"listCategoryVisible\"\n                        :popup-props=\"{\n",
+          "after": "                      <t-select-input\n                        :value=\"filter.category\"\n                        :value-display=\"filter.category == null ? undefined : categoriesById.get(filter.category)?.name\"\n                        :popup-visible=\"listCategoryVisible\"\n                        :popup-props=\"{\n"
+        },
+        {
+          "task": "011",
+          "reason": "允许按任意门店分类查询并按非末级直属商品筛选和提示",
+          "before": "                          <t-cascader-panel\n                            v-if=\"listCategoryVisible\"\n                            :value=\"''\"\n                            :options=\"listCategoryOptions\"\n                            :check-strictly=\"false\"\n                            trigger=\"hover\"\n                            @change=\"changeListCategory\"\n",
+          "after": "                          <t-cascader-panel\n                            v-if=\"listCategoryVisible\"\n                            :value=\"filter.category ?? ''\"\n                            :options=\"listCategoryOptions\"\n                            check-strictly\n                            trigger=\"hover\"\n                            @change=\"changeListCategory\"\n"
+        },
+        {
+          "task": "011",
+          "reason": "允许按任意门店分类查询并按非末级直属商品筛选和提示",
+          "before": "                      </t-select-input>\n                    </t-form-item>\n                  </div>\n                  <div class=\"filter-actions\">\n",
+          "after": "                      </t-select-input>\n                    </t-form-item>\n                    <t-form-item>\n                      <t-checkbox v-model=\"filter.needsCategoryAdjustment\">待调整分类</t-checkbox>\n                    </t-form-item>\n                  </div>\n                  <div class=\"filter-actions\">\n"
+        },
+        {
+          "task": "011",
+          "reason": "允许按任意门店分类查询并按非末级直属商品筛选和提示",
+          "before": "                    </button>\n                  </template>\n                  <template #storeCategory=\"{ row }\">{{ categoryNames.get(row.storeCategoryId) || '-' }}</template>\n                  <template #salePrice=\"{ row }\">\n                    <div v-for=\"line in storeSalePriceLines(row.skus)\" :key=\"line\">{{ line }}</div>\n",
+          "after": "                    </button>\n                  </template>\n                  <template #storeCategory=\"{ row }\">\n                    <div>{{ categoriesById.get(row.storeCategoryId)?.name || '-' }}</div>\n                    <t-tooltip\n                      v-if=\"needsCategoryAdjustment(row)\"\n                      content=\"该分类层级有变动，请重新设置该商品分类\"\n                    >\n                      <t-tag theme=\"danger\" variant=\"light\" size=\"small\">请调整分类</t-tag>\n                    </t-tooltip>\n                  </template>\n                  <template #salePrice=\"{ row }\">\n                    <div v-for=\"line in storeSalePriceLines(row.skus)\" :key=\"line\">{{ line }}</div>\n"
+        },
+        {
+          "task": "011",
+          "reason": "允许按任意门店分类查询并按非末级直属商品筛选和提示",
+          "before": "const page = ref(1);\nconst pageSize = ref(10);\nconst filter = reactive<{ keyword: string; category?: number }>({ keyword: '' });\nconst appliedFilter = reactive<{ keyword: string; category?: number }>({ keyword: '' });\ntype PoolCategoryOption = { value: number; label: string; children?: PoolCategoryOption[] };\nconst listCategories = ref<StoreFinishedEditCategory[]>([]);\nconst categoryNames = computed(() => new Map(listCategories.value.map(item => [item.id, item.name])));\nconst listCategoryVisible = ref(false);\nconst listCategoryOptions = computed(() => {\n",
+          "after": "const page = ref(1);\nconst pageSize = ref(10);\ninterface StoreListFilter {\n  keyword: string;\n  category?: number;\n  needsCategoryAdjustment: boolean;\n}\nconst filter = reactive<StoreListFilter>({ keyword: '', needsCategoryAdjustment: false });\nconst appliedFilter = reactive<StoreListFilter>({ ...filter });\ntype PoolCategoryOption = { value: number; label: string; children?: PoolCategoryOption[] };\nconst listCategories = ref<StoreFinishedEditCategory[]>([]);\nconst categoriesById = computed(() => new Map(listCategories.value.map(item => [item.id, item])));\nconst parentCategoryIds = computed(() => new Set(listCategories.value.map(item => item.parentId)));\nconst listCategoryVisible = ref(false);\nconst listCategoryOptions = computed(() => {\n"
+        },
+        {
+          "task": "011",
+          "reason": "允许按任意门店分类查询并按非末级直属商品筛选和提示",
+          "before": "}\nfunction searchList() {\n  appliedFilter.keyword = filter.keyword.trim();\n  appliedFilter.category = filter.category;\n  page.value = 1;\n  listCategoryVisible.value = false;\n",
+          "after": "}\nfunction searchList() {\n  if (appliedFilter.needsCategoryAdjustment !== filter.needsCategoryAdjustment) resetSelection();\n  appliedFilter.keyword = filter.keyword.trim();\n  appliedFilter.category = filter.category;\n  appliedFilter.needsCategoryAdjustment = filter.needsCategoryAdjustment;\n  page.value = 1;\n  listCategoryVisible.value = false;\n"
+        },
+        {
+          "task": "011",
+          "reason": "允许按任意门店分类查询并按非末级直属商品筛选和提示",
+          "before": "    if (current === appliedFilter.category) return true;\n    visited.add(current);\n    current = listCategories.value.find((item) => item.id === current)?.parentId;\n  }\n  return false;\n}\nconst selected = ref<number[]>([]);\nconst shelfErrors = reactive<Record<number, string>>({});\n",
+          "after": "    if (current === appliedFilter.category) return true;\n    visited.add(current);\n    current = categoriesById.value.get(current)?.parentId;\n  }\n  return false;\n}\nfunction needsCategoryAdjustment(row: StoreFinishedProduct) {\n  return isAllProductStatus(row.effectiveStatus) &&\n    row.storeCategoryId != null &&\n    categoriesById.value.has(row.storeCategoryId) &&\n    parentCategoryIds.value.has(row.storeCategoryId);\n}\nconst selected = ref<number[]>([]);\nconst shelfErrors = reactive<Record<number, string>>({});\n"
+        },
+        {
+          "task": "011",
+          "reason": "允许按任意门店分类查询并按非末级直属商品筛选和提示",
+          "before": "        : row.effectiveStatus === activeTab.value) &&\n      (!appliedFilter.keyword || `${row.name} ${row.productId}`.includes(appliedFilter.keyword)) &&\n      matchesListCategory(row.storeCategoryId),\n  ),\n);\n",
+          "after": "        : row.effectiveStatus === activeTab.value) &&\n      (!appliedFilter.keyword || `${row.name} ${row.productId}`.includes(appliedFilter.keyword)) &&\n      matchesListCategory(row.storeCategoryId) &&\n      (!appliedFilter.needsCategoryAdjustment || needsCategoryAdjustment(row)),\n  ),\n);\n"
+        },
+        {
+          "task": "011",
+          "reason": "允许按任意门店分类查询并按非末级直属商品筛选和提示",
+          "before": "  () => filteredRows.value.length,\n  (total) => {\n    if (activeTab.value === 'all') page.value = Math.min(page.value, Math.max(1, Math.ceil(total / pageSize.value)));\n  },\n);\n",
+          "after": "  () => filteredRows.value.length,\n  (total) => {\n    if (activeTab.value === 'all' || appliedFilter.needsCategoryAdjustment) {\n      page.value = Math.min(page.value, Math.max(1, Math.ceil(total / pageSize.value)));\n    }\n  },\n);\n"
+        },
+        {
+          "task": "011",
+          "reason": "允许按任意门店分类查询并按非末级直属商品筛选和提示",
+          "before": "  filter.keyword = '';\n  filter.category = undefined;\n  searchList();\n}\n",
+          "after": "  filter.keyword = '';\n  filter.category = undefined;\n  filter.needsCategoryAdjustment = false;\n  searchList();\n}\n"
         }
       ]
     },
