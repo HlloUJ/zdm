@@ -203,7 +203,7 @@ test('duplicate category names keep the original rejection and show its native f
   await expect(dialog).toBeHidden();
 });
 
-test('keeps the confirm button stable and moves feedback to the list after a status write', async ({ page }) => {
+test('expands the confirm button for its spinner and moves feedback to the list after a status write', async ({ page }) => {
   await setup(page, [prefix + '.finished.view', prefix + '.finished.toggle-status']);
   await page.goto('/store-category-management');
   const row = page.getByRole('row').filter({ hasText: '成品另一级' });
@@ -231,7 +231,7 @@ test('keeps the confirm button stable and moves feedback to the list after a sta
     await confirm.evaluate((button) => { const target = button as HTMLButtonElement; target.click(); target.click(); });
     await expect(confirm).toBeDisabled();
     await expect(confirm.locator('.t-loading')).toBeVisible();
-    expect(await confirm.evaluate((button) => (button as HTMLButtonElement).offsetWidth)).toBe(width);
+    expect(await confirm.evaluate((button) => (button as HTMLButtonElement).offsetWidth)).toBeGreaterThan(width);
     expect(writes).toBe(1);
     finishWrite();
     await expect(dialog).toBeHidden();
@@ -277,4 +277,49 @@ test('a fast category deletion never mounts a spinner in the closing button', as
   expect(writes).toBe(1);
   await expect(button).toBeHidden();
   expect(await page.locator('body').getAttribute('data-delete-spinner')).toBeNull();
+});
+
+test('delete link and confirm button reclaim their icon space when idle', async ({ page }) => {
+  await setup(page, [prefix + '.finished.view', prefix + '.finished.delete']);
+  let finishCheck!: () => void;
+  let finishDelete!: () => void;
+  const checkGate = new Promise<void>(resolve => { finishCheck = resolve; });
+  const deleteGate = new Promise<void>(resolve => { finishDelete = resolve; });
+  await page.route('**/api/admin/store-categories/5/delete-check?*', async route => {
+    await checkGate;
+    await route.fulfill({ json: { code: 0, data: true } });
+  });
+  await page.route('**/api/admin/store-categories/5?*', async route => {
+    if (route.request().method() !== 'DELETE') return route.fallback();
+    await deleteGate;
+    await route.fulfill({ json: { code: 0, data: false } });
+  });
+  await page.goto('/store-category-management');
+  const link = page.getByRole('row').filter({ hasText: '成品另一级' }).locator('.t-link').filter({ hasText: '删除' });
+  const prefixIcon = link.locator('.t-link__prefix-icon');
+  const width = (element: Element) => (element as HTMLElement).offsetWidth;
+  await expect(link).toBeVisible();
+  await expect(prefixIcon).toBeHidden();
+  const idleLink = await link.evaluate(width);
+  try {
+    await link.click();
+    await expect(prefixIcon.locator('.t-loading')).toBeVisible();
+    expect(await link.evaluate(width)).toBeGreaterThan(idleLink);
+    finishCheck();
+    const button = page.getByRole('button', { name: '确认删除', exact: true });
+    await expect(button).toBeVisible();
+    await expect(prefixIcon).toBeHidden();
+    expect(await link.evaluate(width)).toBe(idleLink);
+    const idleButton = await button.evaluate(width);
+    await button.click();
+    await expect(button.locator('.t-loading')).toBeVisible();
+    expect(await button.evaluate(width)).toBeGreaterThan(idleButton);
+    finishDelete();
+    await expect(button).toBeEnabled();
+    await expect(button.locator('.t-loading')).toHaveCount(0);
+    expect(await button.evaluate(width)).toBe(idleButton);
+  } finally {
+    finishCheck();
+    finishDelete();
+  }
 });

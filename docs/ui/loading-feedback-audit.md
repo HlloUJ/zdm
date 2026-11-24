@@ -20,5 +20,5 @@
 ## 验证入口
 
 - 公共计时与并发测试在 `src/composables/useDelayedLoading.test.ts`，检查 199 / 200 毫秒边界、请求被替换、不同记录并发、关闭、重试及卸载。
-- 门店分类端到端测试在 `tests/e2e/store-category-management.spec.ts`，用隔离接口响应检查快速删除、慢速停用、连点和按钮宽度，以及写入结束后独立的列表刷新。
+- 门店分类端到端测试在 `tests/e2e/store-category-management.spec.ts`，用隔离接口响应检查快速删除、慢速停用、连点、按钮和行内操作仅在显示图标时扩宽，以及写入结束后独立的列表刷新。
 - `npm run test:source-guards` 对运行时组件逐个核验脚本与事件登记。已有业务约束、原始指纹及拒绝反例继续通过项目原有检查验证。

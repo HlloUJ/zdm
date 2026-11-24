@@ -379,24 +379,12 @@ p {
   }
 }
 
-/* Reserve the native indicator's space before it appears. Existing icons already occupy it. */
-.t-button[data-loading-button]:has(> .t-button__text:not(:empty)):not(:has(> .t-icon, > .t-loading))::before {
-  content: '';
-  flex: none;
-  width: var(--loading-icon-size, var(--td-font-size-body-large));
-  margin-inline-end: 8px;
+/* TDesign adds a margin to the prefix wrapper even when its loading slot is empty. */
+.t-link .t-link__prefix-icon:has(> .row-loading-slot):not(:has(.t-loading)) {
+  display: none;
 }
-.t-button.t-size-s[data-loading-button] {
-  --loading-icon-size: var(--td-font-size-body-medium);
-}
-.t-button.t-size-l[data-loading-button] {
-  --loading-icon-size: var(--td-font-size-title-large);
-}
-
 .row-loading-slot {
   display: inline-flex;
-  width: 1em;
-  justify-content: center;
 }
 
 /* Native disabled buttons still block activation during the quiet interval. */
