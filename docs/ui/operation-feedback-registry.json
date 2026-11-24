@@ -661,7 +661,7 @@
       }
     },
     "src/pages/finished-stock/store/index.vue": {
-      "script": "b0a24070790b25ee5d0856336ceb795325d06479b27c3f9da5d762f003889d13",
+      "script": "de11b43c3501c9779d6153a4f6dfd67a050eec84fb6467e1b39d8f55be45d432",
       "actions": {
         "cancel → categoryDialog = false": "view",
         "cancel → closeEdit": "view",
@@ -2101,7 +2101,7 @@
     },
     "src/pages/finished-stock/store/index.vue": {
       "baseSha256": "f1f785011a4d1a96737a1b17627dcc8ec77f54e224bfaa60c4f21f79fd6df568",
-      "patchCount": 44,
+      "patchCount": 51,
       "patches": [
         {
           "stage": "before-migrations",
@@ -2352,6 +2352,48 @@
           "reason": "允许按任意门店分类查询并按非末级直属商品筛选和提示",
           "before": "  filter.keyword = '';\n  filter.category = undefined;\n  searchList();\n}\n",
           "after": "  filter.keyword = '';\n  filter.category = undefined;\n  filter.needsCategoryAdjustment = false;\n  searchList();\n}\n"
+        },
+        {
+          "task": "011",
+          "reason": "按 011 验收反馈对齐查询复选框，并限定其适用页签",
+          "before": "                      </t-select-input>\n                    </t-form-item>\n                    <t-form-item>\n                      <t-checkbox v-model=\"filter.needsCategoryAdjustment\">待调整分类</t-checkbox>\n                    </t-form-item>\n",
+          "after": "                      </t-select-input>\n                    </t-form-item>\n                    <t-form-item v-if=\"categoryAdjustmentAvailable\" label-width=\"0\">\n                      <t-checkbox v-model=\"filter.needsCategoryAdjustment\">待调整分类</t-checkbox>\n                    </t-form-item>\n"
+        },
+        {
+          "task": "011",
+          "reason": "按 011 验收反馈对齐查询复选框，并限定其适用页签",
+          "before": "});\nconst activeScope = computed(() => (activeTab.value === 'soldOut' ? 'sold-out' : activeTab.value));\nconst rows = ref<StoreFinishedProduct[]>([]);\nconst loading = ref(false);\n",
+          "after": "});\nconst activeScope = computed(() => (activeTab.value === 'soldOut' ? 'sold-out' : activeTab.value));\nconst categoryAdjustmentAvailable = computed(() => activeTab.value === 'all' || isAllProductStatus(activeTab.value));\nconst rows = ref<StoreFinishedProduct[]>([]);\nconst loading = ref(false);\n"
+        },
+        {
+          "task": "011",
+          "reason": "按 011 验收反馈对齐查询复选框，并限定其适用页签",
+          "before": "const filter = reactive<StoreListFilter>({ keyword: '', needsCategoryAdjustment: false });\nconst appliedFilter = reactive<StoreListFilter>({ ...filter });\ntype PoolCategoryOption = { value: number; label: string; children?: PoolCategoryOption[] };\nconst listCategories = ref<StoreFinishedEditCategory[]>([]);\n",
+          "after": "const filter = reactive<StoreListFilter>({ keyword: '', needsCategoryAdjustment: false });\nconst appliedFilter = reactive<StoreListFilter>({ ...filter });\nconst filterCategoryAdjustment = computed(() => categoryAdjustmentAvailable.value && appliedFilter.needsCategoryAdjustment);\ntype PoolCategoryOption = { value: number; label: string; children?: PoolCategoryOption[] };\nconst listCategories = ref<StoreFinishedEditCategory[]>([]);\n"
+        },
+        {
+          "task": "011",
+          "reason": "按 011 验收反馈对齐查询复选框，并限定其适用页签",
+          "before": "}\nfunction searchList() {\n  if (appliedFilter.needsCategoryAdjustment !== filter.needsCategoryAdjustment) resetSelection();\n  appliedFilter.keyword = filter.keyword.trim();\n  appliedFilter.category = filter.category;\n  appliedFilter.needsCategoryAdjustment = filter.needsCategoryAdjustment;\n  page.value = 1;\n  listCategoryVisible.value = false;\n",
+          "after": "}\nfunction searchList() {\n  if (categoryAdjustmentAvailable.value) {\n    if (appliedFilter.needsCategoryAdjustment !== filter.needsCategoryAdjustment) resetSelection();\n    appliedFilter.needsCategoryAdjustment = filter.needsCategoryAdjustment;\n  }\n  appliedFilter.keyword = filter.keyword.trim();\n  appliedFilter.category = filter.category;\n  page.value = 1;\n  listCategoryVisible.value = false;\n"
+        },
+        {
+          "task": "011",
+          "reason": "按 011 验收反馈对齐查询复选框，并限定其适用页签",
+          "before": "      (!appliedFilter.keyword || `${row.name} ${row.productId}`.includes(appliedFilter.keyword)) &&\n      matchesListCategory(row.storeCategoryId) &&\n      (!appliedFilter.needsCategoryAdjustment || needsCategoryAdjustment(row)),\n  ),\n);\n",
+          "after": "      (!appliedFilter.keyword || `${row.name} ${row.productId}`.includes(appliedFilter.keyword)) &&\n      matchesListCategory(row.storeCategoryId) &&\n      (!filterCategoryAdjustment.value || needsCategoryAdjustment(row)),\n  ),\n);\n"
+        },
+        {
+          "task": "011",
+          "reason": "按 011 验收反馈对齐查询复选框，并限定其适用页签",
+          "before": "  () => filteredRows.value.length,\n  (total) => {\n    if (activeTab.value === 'all' || appliedFilter.needsCategoryAdjustment) {\n      page.value = Math.min(page.value, Math.max(1, Math.ceil(total / pageSize.value)));\n    }\n",
+          "after": "  () => filteredRows.value.length,\n  (total) => {\n    if (activeTab.value === 'all' || filterCategoryAdjustment.value) {\n      page.value = Math.min(page.value, Math.max(1, Math.ceil(total / pageSize.value)));\n    }\n"
+        },
+        {
+          "task": "011",
+          "reason": "按 011 验收反馈对齐查询复选框，并限定其适用页签",
+          "before": "  filter.keyword = '';\n  filter.category = undefined;\n  filter.needsCategoryAdjustment = false;\n  searchList();\n}\n",
+          "after": "  filter.keyword = '';\n  filter.category = undefined;\n  if (categoryAdjustmentAvailable.value) filter.needsCategoryAdjustment = false;\n  searchList();\n}\n"
         }
       ]
     },

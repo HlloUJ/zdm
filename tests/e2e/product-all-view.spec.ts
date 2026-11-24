@@ -377,6 +377,57 @@ test('warehouse entry combines full reason and detail with two-line secondary te
 
 for (const surface of surfaces.filter(item => item.client === 'store')) {
   const p = prefix(surface);
+  test(`${surface.path} spaces the adjustment filter and limits it to adjustable statuses`, async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    const records = await setup(page, surface);
+    const base = '**/api/admin/' + surface.kind;
+    await page.route(base, route => route.fulfill({ json: { code: 0, data: records.map(record => ({
+      ...record, storeCategoryId: record.effectiveStatus === 'selling' ? 6 : 5,
+    })) } }));
+    await page.route(base + '/list/categories', route => route.fulfill({ json: { code: 0, data: [
+      { id: 5, parentId: null, name: '家具', status: 'enabled' },
+      { id: 6, parentId: 5, name: '桌椅', status: 'enabled' },
+    ] } }));
+    await page.reload();
+
+    const main = page.getByRole('main');
+    const checkbox = main.getByRole('checkbox', { name: '待调整分类' });
+    const label = main.getByText('待调整分类', { exact: true });
+    const category = main.locator('.filter-row .t-select-input');
+    const checkboxControl = main.locator('.filter-fields .t-checkbox');
+    await expect(checkboxControl).toBeVisible();
+    const categoryBox = (await category.boundingBox())!;
+    const checkboxBox = (await checkboxControl.boundingBox())!;
+    expect(checkboxBox.x - categoryBox.x - categoryBox.width).toBeCloseTo(24, 0);
+
+    await label.click();
+    await main.getByRole('button', { name: '查询', exact: true }).click();
+    const rows = main.locator('tbody tr');
+    await expect(rows).toHaveCount(1);
+    await expect(rows.first()).toContainText('汇总商品-warehouse');
+    for (const [tab, status] of [['已售完', 'soldOut'], ['回收站', 'recycle']]) {
+      await main.locator('.t-tabs__nav-item').filter({ hasText: tab }).click();
+      await expect(checkbox).toHaveCount(0);
+      await expect(rows.first()).toContainText(`汇总商品-${status}`);
+      await expect(rows.getByText('请调整分类', { exact: true })).toHaveCount(0);
+    }
+    for (const tab of ['仓库中', '已上架', '全部']) {
+      await main.locator('.t-tabs__nav-item').filter({ hasText: tab }).click();
+      await expect(checkbox).toBeChecked();
+    }
+    await expect(rows).toHaveCount(1);
+
+    // Querying on a tab without the checkbox must not apply an unsubmitted toggle.
+    await label.click();
+    await main.locator('.t-tabs__nav-item').filter({ hasText: '回收站' }).click();
+    await main.getByRole('button', { name: '查询', exact: true }).click();
+    await main.locator('.t-tabs__nav-item').filter({ hasText: '全部' }).click();
+    await expect(checkbox).not.toBeChecked();
+    await expect(rows).toHaveCount(1);
+    await main.getByRole('button', { name: '查询', exact: true }).click();
+    await expect(rows).toHaveCount(2);
+  });
+
   for (const granted of ['warehouse', 'selling', 'both']) {
     test(`${surface.path} grants category action per tab (${granted})`, async ({ page }) => {
       const states = ['warehouse', 'selling'];

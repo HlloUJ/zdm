@@ -67,7 +67,7 @@
                         </template>
                       </t-select-input>
                     </t-form-item>
-                    <t-form-item>
+                    <t-form-item v-if="categoryAdjustmentAvailable" label-width="0">
                       <t-checkbox v-model="filter.needsCategoryAdjustment">待调整分类</t-checkbox>
                     </t-form-item>
                   </div>
@@ -498,6 +498,7 @@ const { descending, tableSort, toggleTimeSort, onTimeSortChange } = useStateActi
   page.value = 1;
 });
 const activeScope = computed(() => (activeTab.value === 'soldOut' ? 'sold-out' : activeTab.value));
+const categoryAdjustmentAvailable = computed(() => activeTab.value === 'all' || isAllProductStatus(activeTab.value));
 const rows = ref<StoreFinishedProduct[]>([]);
 const loading = ref(false);
 const page = ref(1);
@@ -509,6 +510,7 @@ interface StoreListFilter {
 }
 const filter = reactive<StoreListFilter>({ keyword: '', needsCategoryAdjustment: false });
 const appliedFilter = reactive<StoreListFilter>({ ...filter });
+const filterCategoryAdjustment = computed(() => categoryAdjustmentAvailable.value && appliedFilter.needsCategoryAdjustment);
 type PoolCategoryOption = { value: number; label: string; children?: PoolCategoryOption[] };
 const listCategories = ref<StoreFinishedEditCategory[]>([]);
 const categoriesById = computed(() => new Map(listCategories.value.map(item => [item.id, item])));
@@ -530,10 +532,12 @@ function changeListCategory(value: unknown) {
   listCategoryVisible.value = false;
 }
 function searchList() {
-  if (appliedFilter.needsCategoryAdjustment !== filter.needsCategoryAdjustment) resetSelection();
+  if (categoryAdjustmentAvailable.value) {
+    if (appliedFilter.needsCategoryAdjustment !== filter.needsCategoryAdjustment) resetSelection();
+    appliedFilter.needsCategoryAdjustment = filter.needsCategoryAdjustment;
+  }
   appliedFilter.keyword = filter.keyword.trim();
   appliedFilter.category = filter.category;
-  appliedFilter.needsCategoryAdjustment = filter.needsCategoryAdjustment;
   page.value = 1;
   listCategoryVisible.value = false;
 }
@@ -591,7 +595,7 @@ const filteredRows = computed(() =>
         : row.effectiveStatus === activeTab.value) &&
       (!appliedFilter.keyword || `${row.name} ${row.productId}`.includes(appliedFilter.keyword)) &&
       matchesListCategory(row.storeCategoryId) &&
-      (!appliedFilter.needsCategoryAdjustment || needsCategoryAdjustment(row)),
+      (!filterCategoryAdjustment.value || needsCategoryAdjustment(row)),
   ),
 );
 const pageRows = computed(() =>
@@ -600,7 +604,7 @@ const pageRows = computed(() =>
 watch(
   () => filteredRows.value.length,
   (total) => {
-    if (activeTab.value === 'all' || appliedFilter.needsCategoryAdjustment) {
+    if (activeTab.value === 'all' || filterCategoryAdjustment.value) {
       page.value = Math.min(page.value, Math.max(1, Math.ceil(total / pageSize.value)));
     }
   },
@@ -839,7 +843,7 @@ function resetSelection() {
 function resetFilter() {
   filter.keyword = '';
   filter.category = undefined;
-  filter.needsCategoryAdjustment = false;
+  if (categoryAdjustmentAvailable.value) filter.needsCategoryAdjustment = false;
   searchList();
 }
 const availabilityReads = ref(0);
