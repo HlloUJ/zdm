@@ -190,6 +190,9 @@
 .platform-body {
   padding: 40px 0 64px;
 }
+.selection-content {
+  min-height: min(40vh, 240px);
+}
 .selection-center .product-grid {
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 32px 24px;
@@ -944,4 +947,14 @@
 }
 .media-thumbnails > .t-tag {
   justify-content: center;
+}
+
+.selection-center .basket-product {
+  position: relative;
+}
+.selection-center .detail-read-indicator {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
 }

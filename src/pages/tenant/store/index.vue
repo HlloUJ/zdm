@@ -60,7 +60,7 @@
           </template>
 
           <template #table>
-            <t-table row-key="id" :data="pageData" :columns="columns" :loading="loading" hover table-layout="fixed">
+            <t-table row-key="id" :data="pageData" :columns="columns" :loading="contentLoading" hover table-layout="fixed">
               <template #index="{ rowIndex }">
                 {{ (pagination.current - 1) * pagination.pageSize + rowIndex + 1 }}
               </template>
@@ -112,11 +112,19 @@
                     hover="color"
                     :disabled="operations.pending(`restore:${row.id}`)"
                     @click="openRestoreConfirm(row)"
-                    >恢复运营</t-link
+                    ><template #prefix-icon>
+                      <span class="row-loading-slot">
+                        <t-loading v-if="operations.checkingIndicator(`restore:${row.id}`)" size="small" />
+                      </span>
+                    </template>恢复运营</t-link
                   >
                   <t-link v-if="canDelete" :theme="buttonTheme('purge')" hover="color" :disabled="operations.pending(`delete:${row.id}`)"
                     @click="openDeleteConfirm(row)"
-                    >彻底删除</t-link
+                    ><template #prefix-icon>
+                      <span class="row-loading-slot">
+                        <t-loading v-if="operations.checkingIndicator(`delete:${row.id}`)" size="small" />
+                      </span>
+                    </template>彻底删除</t-link
                   >
                 </div>
               </template>
@@ -142,7 +150,8 @@
       dialog-class-name="zdm-admin-dialog zdm-admin-single-form"
       :header="dialogMode === 'create' ? '新增' : '编辑'"
       width="480px"
-      @confirm="handleSubmit"
+      :confirm-btn="{ loading: handleSubmitPending }"
+      @confirm="handleSubmitOnce"
       @cancel="closeFormDialog"
       @close="closeFormDialog"
     >
@@ -210,7 +219,8 @@
       header="门店级别"
       dialog-class-name="zdm-admin-single-form"
       width="480px"
-      @confirm="handleLevelSubmit"
+      :confirm-btn="{ loading: handleLevelSubmitPending }"
+      @confirm="handleLevelSubmitOnce"
       @cancel="closeLevelDialog"
       @close="closeLevelDialog"
     >
@@ -265,6 +275,8 @@
 </template>
 
 <script setup lang="ts">
+import { useContentRequest } from '@/composables/useContentRequest';
+import { usePendingAction } from '@/composables/usePendingAction';
 import { checkStoreRestore } from '@/services/stores';
 import { OperationBlockedError } from '@/services/http';
 import { useOperationPreflight, requireCondition } from '@/composables/useOperationPreflight';
@@ -383,7 +395,8 @@ const shopTypeLabel = (type: ShopType) => shopTypeOptions.find((item) => item.va
 const shopLevelLabel = (levelId: number) =>
   shopLevelOptions.value.find((item) => item.value === levelId)?.label ?? `级别#${levelId}`;
 const tableData = ref<StoreItem[]>([]);
-const loading = ref(false);
+const listRequest = useContentRequest();
+const loading = listRequest.pending;
 
 const columns = computed<PrimaryTableCol<TableRowData>[]>(() => [
   { colKey: 'index', title: '序号', width: 80, align: 'left' },
@@ -549,21 +562,23 @@ const toStorePayload = (storeLevelId: number, manager = ''): StorePayload => {
 };
 
 const loadStorePage = async () => {
-  loading.value = true;
+  const request = listRequest.start();
   try {
     const [tenants, levels, stores] = await Promise.all([
       listTenants(),
       listStoreLevelOptions(),
       listStores(activeTab.value),
     ]);
+    if (!request.current()) return;
     tenantOptions.value = tenants.map(toTenantOption);
     storeLevelRecords.value = levels;
     tableData.value = sortByCreatedAtDesc(stores).map(toStoreItem);
     ensureCurrentPage();
   } catch (error) {
+    if (!request.current()) return;
     adminFeedback.error(error instanceof Error ? error.message : '门店列表加载失败');
   } finally {
-    loading.value = false;
+    request.finish();
   }
 };
 
@@ -651,16 +666,17 @@ const handleSubmit = async () => {
   if (!formData.region) return;
   const action = dialogMode.value === 'create' ? '新增' : '编辑';
   const targetName = formData.shopName.trim();
+  let refresh = false;
   try {
     if (dialogMode.value === 'create') {
       if (!formData.storeLevelId) return;
       await createStore(toStorePayload(formData.storeLevelId));
-      await loadStorePage();
+      refresh = true;
       pagination.current = 1;
     } else if (editingId.value) {
       const current = tableData.value.find((item) => item.id === editingId.value);
       await updateStore(editingId.value, toStorePayload(current?.storeLevelId ?? 0, current?.manager ?? ''));
-      await loadStorePage();
+      refresh = true;
     }
 
     closeFormDialog();
@@ -669,6 +685,7 @@ const handleSubmit = async () => {
     } else {
       adminFeedback.actionSuccess({ action, target: targetName });
     }
+    if (refresh) void loadStorePage();
   } catch (error) {
     if (error instanceof Error && error.message === '店铺名称已存在') {
       formRef.value?.setValidateMessage({
@@ -814,6 +831,11 @@ operations.onInvalidate(() => {
   confirmDialogVisible.value = false;
   deletePlanHash.value = '';
 });
+
+const contentLoading = listRequest.indicator;
+
+const { pending: handleSubmitPending, run: handleSubmitOnce } = usePendingAction(handleSubmit);
+const { pending: handleLevelSubmitPending, run: handleLevelSubmitOnce } = usePendingAction(handleLevelSubmit);
 </script>
 
 <style scoped>

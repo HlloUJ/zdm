@@ -164,6 +164,7 @@
   </section>
 </template>
 <script setup lang="ts">
+import { useDelayedLoading } from '@/composables/useDelayedLoading';
 import { buttonTheme } from '@/components/foundation/actions/buttonFunctions';
 import AdminListToolbar from '../AdminListToolbar.vue';
 import { controlPlaceholder } from '@/utils/controlPlaceholder';
@@ -223,8 +224,10 @@ const { hasBatchActions, selectionColumns } = useListBatchSelection(
   () => props.activeTab,
   managesBatchSelection,
 );
+const tableIndicator = useDelayedLoading(() => Boolean(props.tableProps.loading));
 const selectableTableProps = computed<TableProps>(() => ({
   ...props.tableProps,
+  loading: tableIndicator.value ? props.tableProps.loading : false,
   columns: managesBatchSelection.value
     ? selectionColumns(props.tableProps.columns ?? [], props.selectionColumnKey)
     : props.tableProps.columns,

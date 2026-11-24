@@ -132,7 +132,7 @@
       </StoreProductDetail>
     </div>
     <AdminSectionCard class="form-submit-bar">
-      <t-button :theme="buttonTheme('submit')" :loading="saving" @click="save"
+      <t-button data-loading-button :theme="buttonTheme('submit')" :disabled="saving" :loading="saveIndicator" @click="save"
         ><template #icon><t-icon name="check" /></template>{{ formConfirmationText('edit') }}</t-button
       >
       <t-button :theme="buttonTheme('cancel')" variant="base" :disabled="saving" @click="emit('cancel')">取消</t-button>
@@ -211,6 +211,7 @@
   </t-drawer>
 </template>
 <script setup lang="ts">
+import { useDelayedLoading } from '@/composables/useDelayedLoading';
 import { useOperationPreflight } from '@/composables/useOperationPreflight';
 import { useCommodityModule } from '@/composables/useCommodityModule';
 const commodity = useCommodityModule();
@@ -456,6 +457,8 @@ async function save() {
     if (current()) saving.value = false;
   }
 }
+
+const saveIndicator = useDelayedLoading(() => Boolean(saving.value));
 </script>
 
 <style scoped>

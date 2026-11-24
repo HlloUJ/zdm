@@ -6,7 +6,7 @@
     :dialog-class-name="['zdm-admin-dialog', dialogClassName].filter(Boolean).join(' ')"
     placement="center"
     :prevent-scroll-through="false"
-    :confirm-btn="dialogButtonProps(confirmFunction, confirmation, confirmBtn)"
+    :confirm-btn="confirmButton"
     :cancel-btn="cancelButtonProps(cancelBtn)"
     @update:visible="emit('update:visible', $event)"
     @confirm="emit('confirm')"
@@ -20,11 +20,12 @@
 </template>
 
 <script setup lang="ts">
+import { useDialogLoading } from '@/composables/useDialogLoading';
 import { dialogButtonProps, type Confirmation, type ConfirmationButtonOptions } from './actions/confirmation';
 import type { ButtonProps } from 'tdesign-vue-next';
 import { cancelButtonProps, type ButtonFunction } from './actions/buttonFunctions';
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     visible: boolean;
     header: string;
@@ -41,6 +42,11 @@ withDefaults(
     confirmBtn: undefined,
     cancelBtn: '取消',
   },
+);
+
+const confirmButton = useDialogLoading(
+  () => props.visible,
+  () => dialogButtonProps(props.confirmFunction, props.confirmation, props.confirmBtn),
 );
 
 const emit = defineEmits<{

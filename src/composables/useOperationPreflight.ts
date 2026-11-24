@@ -1,3 +1,4 @@
+import { useDelayedKeys } from './useDelayedKeys';
 import { getCurrentScope, inject, onScopeDispose, reactive, watch } from 'vue';
 import { routeLocationKey } from 'vue-router';
 import { getLoginUser } from '@/services/auth';
@@ -13,6 +14,8 @@ export function requireCondition(result: boolean) {
 export function useOperationPreflight(tab: () => unknown = () => undefined) {
   const route = inject(routeLocationKey, undefined);
   const running = reactive(new Map<string, symbol>());
+  const indicator = useDelayedKeys(() => Array.from(running.keys()));
+  const checkingIndicator = (key: string) => indicator('check:' + key);
   const resets: (() => void)[] = [];
   let selection = '';
   let version = 0;
@@ -82,5 +85,5 @@ export function useOperationPreflight(tab: () => unknown = () => undefined) {
   }
   const onInvalidate = (reset: () => void) => { resets.push(reset); };
   const pending = (key: string) => running.has(key) || running.has('check:' + key);
-  return { check, execute, pending, select, invalidate, capture, onInvalidate };
+  return { check, execute, pending, indicator, checkingIndicator, select, invalidate, capture, onInvalidate };
 }

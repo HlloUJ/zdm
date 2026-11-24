@@ -9,18 +9,21 @@
         <section class="allocation-card">
           <t-tabs v-model="activeTerminal" class="terminal-tabs" :list="terminalTabs" @change="handleTerminalChange" />
 
+          <t-loading :loading="matrixIndicator">
           <PermissionAssignmentMatrix
             v-model="checkedValues"
             v-model:active-module="activeModuleValue"
             :modules="currentModules"
           />
 
+          </t-loading>
           <footer class="page-actions">
             <t-button
               v-if="canSave"
               :theme="buttonTheme('save')"
-              :loading="loading || operations.pending(`save:${activeTerminal}`)"
-              :disabled="!currentModules.length"
+              data-loading-button
+              :loading="saveIndicator"
+              :disabled="loading || savePending || !currentModules.length"
               @click="saveAllocation"
             >
               {{ formConfirmationText('edit') }}
@@ -36,6 +39,7 @@
 </template>
 
 <script setup lang="ts">
+import { useDelayedLoading } from '@/composables/useDelayedLoading';
 import { useOperationPreflight } from '@/composables/useOperationPreflight';
 import { formConfirmationText } from '@/components/foundation/actions/confirmation';
 import { buttonTheme } from '@/components/foundation/actions/buttonFunctions';
@@ -150,6 +154,9 @@ watch(
 onMounted(() => {
   if (canSave.value) void loadAllocation();
 });
+const savePending = computed(() => operations.pending(`save:${activeTerminal.value}`));
+const saveIndicator = useDelayedLoading(() => savePending.value);
+const matrixIndicator = useDelayedLoading(() => loading.value);
 </script>
 
 <style scoped>

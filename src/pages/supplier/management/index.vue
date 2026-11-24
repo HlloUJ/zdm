@@ -50,7 +50,7 @@
             </div></AdminListToolbar
           >
 
-          <t-table row-key="id" :data="pageData" :columns="columns" :loading="loading" hover table-layout="fixed">
+          <t-table row-key="id" :data="pageData" :columns="columns" :loading="contentLoading || preparation.indicator.value" hover table-layout="fixed">
             <template #index="{ rowIndex }">
               {{ (pagination.current - 1) * pagination.pageSize + rowIndex + 1 }}
             </template>
@@ -88,7 +88,11 @@
                   hover="color"
                   :disabled="operations.pending(`delete:${row.id}`)"
                     @click="openDeleteConfirm(row)"
-                >
+                ><template #prefix-icon>
+                  <span class="row-loading-slot">
+                    <t-loading v-if="operations.checkingIndicator(`delete:${row.id}`)" size="small" />
+                  </span>
+                </template>
                   删除
                 </t-link>
               </div>
@@ -112,7 +116,8 @@
       dialog-class-name="zdm-admin-dialog zdm-admin-single-form"
       width="480px"
       :header="dialogMode === 'create' ? '新增' : '编辑'"
-      @confirm="handleSubmit"
+      :confirm-btn="{ loading: handleSubmitPending }"
+      @confirm="handleSubmitOnce"
       @cancel="closeFormDialog"
       @close="closeFormDialog"
     >
@@ -166,6 +171,8 @@
 </template>
 
 <script setup lang="ts">
+import { useContentRequest } from '@/composables/useContentRequest';
+import { usePendingAction } from '@/composables/usePendingAction';
 import { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';
 import { checkSupplierDelete } from '@/services/suppliers';
 import { useOperationPreflight, requireCondition } from '@/composables/useOperationPreflight';
@@ -217,9 +224,12 @@ interface SupplierForm {
 }
 
 const operations = useOperationPreflight();
+const preparation = useContentRequest();
+operations.onInvalidate(preparation.cancel);
 const tableData = ref<SupplierItem[]>([]);
 const supplyTypes = ref<SupplierSupplyTypeRecord[]>([]);
-const loading = ref(false);
+const listRequest = useContentRequest();
+const loading = listRequest.pending;
 const supplierPermissionPrefix = 'admin.supplier-management';
 const loginUser = computed(() => getLoginUser());
 const canCreateSupplier = computed(() => hasPermission(loginUser.value, `${supplierPermissionPrefix}.create`));
@@ -355,15 +365,17 @@ const toSupplierPayload = (status: SupplierStatus): SupplierPayload => ({
 });
 
 const loadSuppliers = async () => {
-  loading.value = true;
+  const request = listRequest.start();
   try {
     const records = await listSuppliers();
+    if (!request.current()) return;
     tableData.value = records.map(toSupplierItem);
     ensureCurrentPage();
   } catch (error) {
+    if (!request.current()) return;
     adminFeedback.error(error instanceof Error ? error.message : '供应商列表加载失败');
   } finally {
-    loading.value = false;
+    request.finish();
   }
 };
 
@@ -415,19 +427,31 @@ const handleReset = () => {
 };
 
 const openCreateDialog = async () => {
-  await loadSupplyTypes();
-  dialogMode.value = 'create';
-  editingId.value = null;
-  resetFormData();
-  formDialogVisible.value = true;
+  const request = preparation.start();
+  try {
+    await loadSupplyTypes();
+    if (!request.current()) return;
+    dialogMode.value = 'create';
+    editingId.value = null;
+    resetFormData();
+    formDialogVisible.value = true;
+  } finally {
+    request.finish();
+  }
 };
 
 const openEditDialog = async (row: SupplierItem) => {
-  await loadSupplyTypes();
-  dialogMode.value = 'edit';
-  editingId.value = row.id;
-  fillFormData(row);
-  formDialogVisible.value = true;
+  const request = preparation.start();
+  try {
+    await loadSupplyTypes();
+    if (!request.current()) return;
+    dialogMode.value = 'edit';
+    editingId.value = row.id;
+    fillFormData(row);
+    formDialogVisible.value = true;
+  } finally {
+    request.finish();
+  }
 };
 
 const closeFormDialog = () => {
@@ -441,15 +465,16 @@ const handleSubmit = async () => {
 
   if (!formData.supplyTypeIds.length) return;
 
+  let refresh = false;
   try {
     if (dialogMode.value === 'create') {
       await createSupplier(toSupplierPayload('normal'));
-      await loadSuppliers();
+      refresh = true;
       pagination.current = 1;
     } else if (editingId.value) {
       const current = tableData.value.find((item) => item.id === editingId.value);
       await updateSupplier(editingId.value, toSupplierPayload(current?.status ?? 'normal'));
-      await loadSuppliers();
+      refresh = true;
     }
 
     closeFormDialog();
@@ -458,6 +483,7 @@ const handleSubmit = async () => {
     } else {
       adminFeedback.actionSuccess({ action: '修改' });
     }
+    if (refresh) void loadSuppliers();
   } catch (error) {
     adminFeedback.error(error instanceof Error ? error.message : '操作失败');
   }
@@ -533,6 +559,10 @@ const handleConfirm = async () => {
 onMounted(async () => {
   await Promise.all([loadSupplyTypes(), loadSuppliers()]);
 });
+
+const contentLoading = listRequest.indicator;
+
+const { pending: handleSubmitPending, run: handleSubmitOnce } = usePendingAction(handleSubmit);
 </script>
 
 <style scoped>

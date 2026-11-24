@@ -51,7 +51,7 @@
         </div>
 
         <t-form-item class="btn-container">
-          <t-button :theme="buttonTheme('login')" block size="large" type="submit" :loading="submitting">登录</t-button>
+          <t-button data-loading-button :theme="buttonTheme('login')" block size="large" type="submit" :disabled="submitting" :loading="submitIndicator">登录</t-button>
         </t-form-item>
       </t-form>
     </section>
@@ -59,6 +59,7 @@
 </template>
 
 <script setup lang="ts">
+import { useDelayedLoading } from '@/composables/useDelayedLoading';
 import { buttonTheme } from '@/components/foundation/actions/buttonFunctions';
 import { rejectFormSubmission } from '@/utils/submitValidation';
 import { adminFeedback } from '@/components/foundation';
@@ -149,6 +150,8 @@ const onSubmit = async (ctx: SubmitContext) => {
 };
 
 onBeforeUnmount(stopCounter);
+
+const submitIndicator = useDelayedLoading(() => Boolean(submitting.value));
 </script>
 
 <style scoped>

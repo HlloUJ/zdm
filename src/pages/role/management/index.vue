@@ -22,7 +22,7 @@
               row-key="id"
               :data="pageData"
               :columns="columns"
-              :loading="loading"
+              :loading="contentLoading"
               hover
               table-layout="fixed"
               class="role-table"
@@ -88,9 +88,9 @@
       width="480px"
       placement="center"
       :close-on-overlay-click="true"
-      :confirm-btn="dialogButtonProps('submit', formConfirmation(dialogMode))"
+      :confirm-btn="handleSubmitButton"
       :cancel-btn="cancelButtonProps('取消')"
-      @confirm="handleSubmit"
+      @confirm="handleSubmitOnce"
       @cancel="closeFormDialog"
       @close="closeFormDialog"
     >
@@ -124,9 +124,9 @@
       width="min(1560px, calc(100vw - 48px))"
       placement="center"
       :close-on-overlay-click="true"
-      :confirm-btn="dialogButtonProps('permissions', operationConfirmation('配置权限'))"
+      :confirm-btn="handlePermissionSaveButton"
       :cancel-btn="cancelButtonProps('取消')"
-      @confirm="handlePermissionSave"
+      @confirm="handlePermissionSaveOnce"
       @cancel="closePermissionDialog"
       @close="closePermissionDialog"
     >
@@ -140,6 +140,9 @@
 </template>
 
 <script setup lang="ts">
+import { useContentRequest } from '@/composables/useContentRequest';
+import { useDialogLoading } from '@/composables/useDialogLoading';
+import { usePendingAction } from '@/composables/usePendingAction';
 import { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';
 import { useOperationPreflight } from '@/composables/useOperationPreflight';
 import {
@@ -205,7 +208,8 @@ interface RolePermissionConfig {
 
 const operations = useOperationPreflight();
 const roles = ref<RoleItem[]>([]);
-const loading = ref(false);
+const listRequest = useContentRequest();
+const loading = listRequest.pending;
 const parsePermissions = (value?: string) => (value ? value.split(',').filter(Boolean) : []);
 
 const columns = computed<PrimaryTableCol<TableRowData>[]>(() => [
@@ -322,7 +326,7 @@ const isStoreManagerRole = (row: RoleItem) => row.builtinKey === 'STORE_MANAGER'
 const isSuperAdminRole = (row: RoleItem) => row.code === 'SUPER_ADMIN';
 
 const loadRoles = async () => {
-  loading.value = true;
+  const request = listRequest.start();
   try {
     const [records, scope] = await Promise.all([
       listRoles(managedClient.value),
@@ -330,14 +334,16 @@ const loadRoles = async () => {
         ? getRolePermissionScope(managedClient.value)
         : Promise.resolve<RolePermissionScope>({ audience: managedClient.value, functionPermissions: '' }),
     ]);
+    if (!request.current()) return;
     rolePermissionScope.value = scope;
     activePermissionModuleValue.value = permissionModules.value[0]?.value ?? '';
     roles.value = sortByCreatedAtDesc(records.filter((record) => record.status === 'enabled')).map(toRoleItem);
     ensureCurrentPage();
   } catch (error) {
+    if (!request.current()) return;
     adminFeedback.error(error instanceof Error ? error.message : '角色列表加载失败');
   } finally {
-    loading.value = false;
+    request.finish();
   }
 };
 
@@ -384,6 +390,7 @@ const handleSubmit = async () => {
   const roleName = formData.name.trim();
   const roleRemark = formData.remark.trim().slice(0, 100);
 
+  let refresh = false;
   try {
     if (dialogMode.value === 'create') {
       await createRole({
@@ -395,13 +402,13 @@ const handleSubmit = async () => {
         remark: roleRemark,
         functionPermissions: '',
       });
-      await loadRoles();
+      refresh = true;
       pagination.current = 1;
     } else if (editingId.value) {
       const target = roles.value.find((item) => item.id === editingId.value);
       if (target) {
         await updateRole(editingId.value, toRolePayload({ ...target, name: roleName, remark: roleRemark }));
-        await loadRoles();
+        refresh = true;
       }
     }
 
@@ -411,6 +418,7 @@ const handleSubmit = async () => {
     } else {
       adminFeedback.actionSuccess({ action: '修改' });
     }
+    if (refresh) void loadRoles();
   } catch (error) {
     adminFeedback.error(error instanceof Error ? error.message : '操作失败');
   }
@@ -496,6 +504,13 @@ const handlePermissionSave = async () => {
 onMounted(() => {
   void loadRoles();
 });
+
+const contentLoading = listRequest.indicator;
+
+const { pending: handleSubmitPending, run: handleSubmitOnce } = usePendingAction(handleSubmit);
+const handleSubmitButton = useDialogLoading(() => formDialogVisible.value, () => dialogButtonProps('submit', formConfirmation(dialogMode.value), { loading: handleSubmitPending.value }));
+const { pending: handlePermissionSavePending, run: handlePermissionSaveOnce } = usePendingAction(handlePermissionSave);
+const handlePermissionSaveButton = useDialogLoading(() => permissionDialogVisible.value, () => dialogButtonProps('permissions', operationConfirmation('配置权限'), { loading: handlePermissionSavePending.value }));
 </script>
 
 <style scoped>

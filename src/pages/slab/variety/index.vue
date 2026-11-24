@@ -43,7 +43,7 @@
             </t-button></AdminListToolbar
           >
 
-          <t-table row-key="id" :data="pageData" :columns="columns" :loading="loading" hover table-layout="fixed">
+          <t-table row-key="id" :data="pageData" :columns="columns" :loading="contentLoading" hover table-layout="fixed">
             <template #index="{ rowIndex }">
               {{ (pagination.current - 1) * pagination.pageSize + rowIndex + 1 }}
             </template>
@@ -71,7 +71,11 @@
                   hover="color"
                   :disabled="operations.pending(`delete:${row.id}`)"
                     @click="openDeleteConfirm(row)"
-                >
+                ><template #prefix-icon>
+                  <span class="row-loading-slot">
+                    <t-loading v-if="operations.checkingIndicator(`delete:${row.id}`)" size="small" />
+                  </span>
+                </template>
                   删除
                 </t-link>
               </div>
@@ -97,9 +101,9 @@
       :header="dialogMode === 'create' ? '新增品种' : '编辑品种'"
       width="480px"
       placement="center"
-      :confirm-btn="dialogButtonProps('submit', formConfirmation(dialogMode))"
+      :confirm-btn="handleSubmitButton"
       :cancel-btn="cancelButtonProps('取消')"
-      @confirm="handleSubmit"
+      @confirm="handleSubmitOnce"
       @cancel="closeFormDialog"
       @close="closeFormDialog"
     >
@@ -130,6 +134,9 @@
 </template>
 
 <script setup lang="ts">
+import { useContentRequest } from '@/composables/useContentRequest';
+import { useDialogLoading } from '@/composables/useDialogLoading';
+import { usePendingAction } from '@/composables/usePendingAction';
 import { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';
 import { checkSlabVarietyDelete } from '@/services/slabVarieties';
 import { useOperationPreflight, requireCondition } from '@/composables/useOperationPreflight';
@@ -174,7 +181,8 @@ interface VarietyForm {
 
 const operations = useOperationPreflight();
 const tableData = ref<VarietyItem[]>([]);
-const loading = ref(false);
+const listRequest = useContentRequest();
+const loading = listRequest.pending;
 const varietyPermissionPrefix = 'admin.product-data-center.slab-variety';
 const loginUser = computed(() => getLoginUser());
 const canCreateVariety = computed(() => hasPermission(loginUser.value, `${varietyPermissionPrefix}.create`));
@@ -288,15 +296,17 @@ const toVarietyPayload = (status: VarietyStatus): SlabVarietyPayload => ({
 });
 
 const loadVarieties = async () => {
-  loading.value = true;
+  const request = listRequest.start();
   try {
     const records = await listSlabVarieties();
+    if (!request.current()) return;
     tableData.value = sortByCreatedAtDesc(records).map(toVarietyItem);
     ensureCurrentPage();
   } catch (error) {
+    if (!request.current()) return;
     adminFeedback.error(error instanceof Error ? error.message : '品种列表加载失败');
   } finally {
-    loading.value = false;
+    request.finish();
   }
 };
 
@@ -350,15 +360,16 @@ const handleSubmit = async () => {
   const result = await formRef.value?.validate();
   if (result !== true) return rejectFormSubmission(formRef.value);
 
+  let refresh = false;
   try {
     if (dialogMode.value === 'create') {
       await createSlabVariety(toVarietyPayload('normal'));
-      await loadVarieties();
+      refresh = true;
       pagination.current = 1;
     } else if (editingId.value) {
       const current = tableData.value.find((item) => item.id === editingId.value);
       await updateSlabVariety(editingId.value, toVarietyPayload(current?.status ?? 'normal'));
-      await loadVarieties();
+      refresh = true;
     }
 
     const target = formData.name.trim();
@@ -368,6 +379,7 @@ const handleSubmit = async () => {
     } else {
       adminFeedback.actionSuccess({ action: '修改', target });
     }
+    if (refresh) void loadVarieties();
   } catch (error) {
     adminFeedback.error(error instanceof Error ? error.message : '操作失败');
   }
@@ -444,6 +456,11 @@ const handleConfirm = async () => {
 };
 
 onMounted(loadVarieties);
+
+const contentLoading = listRequest.indicator;
+
+const { pending: handleSubmitPending, run: handleSubmitOnce } = usePendingAction(handleSubmit);
+const handleSubmitButton = useDialogLoading(() => formDialogVisible.value, () => dialogButtonProps('submit', formConfirmation(dialogMode.value), { loading: handleSubmitPending.value }));
 </script>
 
 <style scoped>

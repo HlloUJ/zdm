@@ -6,7 +6,7 @@ import type { CenterDetail, CenterProduct } from '@/services/storeSelectionCente
 import { centerPrice, selectionLabel } from '@/services/storeSelectionCenter';
 import { selectionSalesModel, selectionAttributes } from '../selectionDetailModel';
 import HistoricalRichText from '@/pages/finished-stock/management/components/HistoricalRichText.vue';
-const props = defineProps<{ detail: CenterDetail | null }>();
+const props = defineProps<{ detail: CenterDetail | null; adding?: boolean; addingIndicator?: boolean }>();
 const emit = defineEmits<{ close: []; add: [product: CenterProduct] }>();
 const mode = ref<'video' | 'gallery'>('gallery');
 const index = ref(0);
@@ -113,7 +113,9 @@ onBeforeUnmount(unlock);
           <t-button
             v-if="!detail.product.soldOut && !detail.product.addedToStore && !detail.product.inSelection"
             :theme="buttonTheme('select-product')"
-            :disabled="!detail.product.canAdd"
+            data-loading-button
+            :loading="addingIndicator"
+            :disabled="!detail.product.canAdd || adding"
             @click="emit('add', detail.product)"
             >加入清单</t-button
           >

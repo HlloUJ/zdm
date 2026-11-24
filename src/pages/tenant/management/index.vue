@@ -43,7 +43,7 @@
           </template>
 
           <template #table>
-            <t-table row-key="id" :data="pageData" :columns="columns" :loading="loading" hover table-layout="fixed">
+            <t-table row-key="id" :data="pageData" :columns="columns" :loading="contentLoading" hover table-layout="fixed">
               <template #index="{ rowIndex }">
                 {{ (pagination.current - 1) * pagination.pageSize + rowIndex + 1 }}
               </template>
@@ -100,7 +100,11 @@
                     hover="color"
                     :disabled="operations.pending(`purge:${row.id}`)"
                     @click="openPurgeDialog(row)"
-                  >
+                  ><template #prefix-icon>
+                    <span class="row-loading-slot">
+                      <t-loading v-if="operations.checkingIndicator(`purge:${row.id}`)" size="small" />
+                    </span>
+                  </template>
                     彻底删除
                   </t-link>
                 </div>
@@ -126,9 +130,9 @@
       :header="dialogMode === 'create' ? '新增' : '编辑'"
       width="480px"
       placement="center"
-      :confirm-btn="dialogButtonProps('submit', formConfirmation(dialogMode))"
+      :confirm-btn="handleSubmitButton"
       :cancel-btn="cancelButtonProps('取消')"
-      @confirm="handleSubmit"
+      @confirm="handleSubmitOnce"
       @cancel="closeFormDialog"
       @close="closeFormDialog"
     >
@@ -156,9 +160,9 @@
       header="业务开通"
       width="520px"
       placement="center"
-      :confirm-btn="dialogButtonProps('activate-business', operationConfirmation('业务开通'))"
+      :confirm-btn="handleBusinessSubmitButton"
       :cancel-btn="cancelButtonProps('取消')"
-      @confirm="handleBusinessSubmit"
+      @confirm="handleBusinessSubmitOnce"
       @cancel="closeBusinessDialog"
       @close="closeBusinessDialog"
     >
@@ -224,6 +228,9 @@
 </template>
 
 <script setup lang="ts">
+import { useContentRequest } from '@/composables/useContentRequest';
+import { useDialogLoading } from '@/composables/useDialogLoading';
+import { usePendingAction } from '@/composables/usePendingAction';
 import { OperationBlockedError } from '@/services/http';
 import { useOperationPreflight } from '@/composables/useOperationPreflight';
 import {
@@ -296,7 +303,8 @@ const businessOptions: { label: string; value: BusinessType }[] = [
 const businessLabel = (type: BusinessType) => businessOptions.find((item) => item.value === type)?.label ?? '';
 
 const tableData = ref<TenantItem[]>([]);
-const loading = ref(false);
+const listRequest = useContentRequest();
+const loading = listRequest.pending;
 const currentUser = getLoginUser();
 const permissionPrefix = 'admin.tenant.tenant-management';
 const activeTab = ref<TenantTab>('unarchived');
@@ -451,15 +459,17 @@ const toTenantPayload = (status: TenantStatus, businesses: BusinessType[] = []):
 });
 
 const loadTenants = async () => {
-  loading.value = true;
+  const request = listRequest.start();
   try {
     const records = await listTenants();
+    if (!request.current()) return;
     tableData.value = sortByCreatedAtDesc(records).map(toTenantItem);
     ensureCurrentPage();
   } catch (error) {
+    if (!request.current()) return;
     adminFeedback.error(error instanceof Error ? error.message : '租户列表加载失败');
   } finally {
-    loading.value = false;
+    request.finish();
   }
 };
 
@@ -522,15 +532,16 @@ const handleSubmit = async () => {
 
   const targetName = formData.tenantName.trim();
   const action = dialogMode.value === 'create' ? '新增' : '保存';
+  let refresh = false;
   try {
     if (dialogMode.value === 'create') {
       await createTenant(toTenantPayload('normal'));
-      await loadTenants();
+      refresh = true;
       pagination.current = 1;
     } else if (editingId.value) {
       const current = tableData.value.find((item) => item.id === editingId.value);
       await updateTenant(editingId.value, toTenantPayload(current?.status ?? 'normal', current?.businesses));
-      await loadTenants();
+      refresh = true;
     }
 
     closeFormDialog();
@@ -539,6 +550,7 @@ const handleSubmit = async () => {
     } else {
       adminFeedback.actionSuccess({ action: '修改', target: targetName });
     }
+    if (refresh) void loadTenants();
   } catch (error) {
     adminFeedback.actionError({ action, target: targetName, error });
   }
@@ -682,6 +694,13 @@ operations.onInvalidate(() => {
   purgeConfirmationName.value = '';
   purgePreview.value = null;
 });
+
+const contentLoading = listRequest.indicator;
+
+const { pending: handleSubmitPending, run: handleSubmitOnce } = usePendingAction(handleSubmit);
+const handleSubmitButton = useDialogLoading(() => formDialogVisible.value, () => dialogButtonProps('submit', formConfirmation(dialogMode.value), { loading: handleSubmitPending.value }));
+const { pending: handleBusinessSubmitPending, run: handleBusinessSubmitOnce } = usePendingAction(handleBusinessSubmit);
+const handleBusinessSubmitButton = useDialogLoading(() => businessDialogVisible.value, () => dialogButtonProps('activate-business', operationConfirmation('业务开通'), { loading: handleBusinessSubmitPending.value }));
 </script>
 
 <style scoped>

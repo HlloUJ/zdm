@@ -17,7 +17,7 @@
             rowKey: 'id',
             data: rows,
             columns,
-            loading,
+            loading: loading || preparation.pending.value,
             selectedRowKeys: selected,
             hover: true,
             pagination,
@@ -151,8 +151,8 @@
       :cancel-btn="cancelButtonProps('关闭')"
       @cancel="detailVisible = false"
     >
-      <t-loading :loading="detailLoading">
-        <t-skeleton v-if="detailLoading" theme="paragraph" />
+      <t-loading v-if="detailIndicator && !detail" />
+      <t-loading v-else :loading="fileRequest.indicator.value">
         <template v-if="detail">
           <AdminDetailPage embedded bordered title="客户资料" :column="detailColumns" :items="detailItems">
             <t-typography-title level="h5">跟进记录</t-typography-title>
@@ -299,7 +299,8 @@
       :object-type="confirmObjectType"
       :object-name="confirmObjectName"
       :description="confirmDescription"
-      @confirm="confirmOperation"
+      :loading="confirmOperationPending"
+      @confirm="confirmOperationOnce"
     />
     <AdminDialog
       v-model:visible="imageVisible"
@@ -318,6 +319,9 @@
   </div>
 </template>
 <script setup lang="ts">
+import { useContentRequest } from '@/composables/useContentRequest';
+import { usePendingAction } from '@/composables/usePendingAction';
+import { useDelayedLoading } from '@/composables/useDelayedLoading';
 import { formConfirmation, operationConfirmation } from '@/components/foundation/actions/confirmation';
 import { buttonTheme, buttonFunctionFor, cancelButtonProps } from '@/components/foundation/actions/buttonFunctions';
 import { rejectFormSubmission } from '@/utils/submitValidation';
@@ -636,37 +640,45 @@ const submitButton = computed(() => ({
   loading: submitting.value || uploading.value > 0,
   disabled: submitting.value,
 }));
+const preparation = useContentRequest();
 async function openProfile(row?: Customer) {
-  const currentIdentity = user.value;
+  const request = preparation.start();
   try {
-    const [candidates, catalogue] = await Promise.all([
-      listCustomerOwnerCandidates(row?.id),
-      listCustomerContactRegions(row?.status ?? status.value),
-    ]);
-    if (user.value !== currentIdentity) return;
-    profileOwners.value = candidates.filter((owner) => owner.active);
-    contactCatalogue.value = catalogue;
-  } catch (error) {
-    return fail('查询归属人', error);
+    const currentIdentity = user.value;
+    try {
+      const [candidates, catalogue] = await Promise.all([
+        listCustomerOwnerCandidates(row?.id),
+        listCustomerContactRegions(row?.status ?? status.value),
+      ]);
+      if (!request.current()) return;
+      if (user.value !== currentIdentity) return;
+      profileOwners.value = candidates.filter((owner) => owner.active);
+      contactCatalogue.value = catalogue;
+    } catch (error) {
+      if (!request.current()) return;
+      return fail('查询归属人', error);
+    }
+    editingId.value = row?.id;
+    profile.value = row
+      ? {
+          name: row.name,
+          phone: row.phone,
+          nationality: row.nationality ?? '',
+          phoneRegion: row.phoneRegion ?? '',
+          wechat: row.wechat,
+          requirement: row.requirement,
+          remark: row.remark,
+        }
+      : emptyProfile();
+    profile.value.ownerAccountId =
+      row?.ownerAccountId ??
+      (profileOwners.value.some((owner) => owner.accountId === user.value.id) ? user.value.id : undefined);
+    originalContact.value = { phone: row?.phone ?? '', phoneRegion: row?.phoneRegion ?? '' };
+    nameError.value = '';
+    profileVisible.value = true;
+  } finally {
+    request.finish();
   }
-  editingId.value = row?.id;
-  profile.value = row
-    ? {
-        name: row.name,
-        phone: row.phone,
-        nationality: row.nationality ?? '',
-        phoneRegion: row.phoneRegion ?? '',
-        wechat: row.wechat,
-        requirement: row.requirement,
-        remark: row.remark,
-      }
-    : emptyProfile();
-  profile.value.ownerAccountId =
-    row?.ownerAccountId ??
-    (profileOwners.value.some((owner) => owner.accountId === user.value.id) ? user.value.id : undefined);
-  originalContact.value = { phone: row?.phone ?? '', phoneRegion: row?.phoneRegion ?? '' };
-  nameError.value = '';
-  profileVisible.value = true;
 }
 async function submitProfile() {
   if (submitting.value) return;
@@ -939,13 +951,20 @@ function displayFile(url: string, name: string, image: boolean) {
     link.click();
   }
 }
+const fileRequest = useContentRequest();
 async function previewAttachment(record: Followup, attachment: Attachment) {
   if (!detail.value) return;
+  const version = detailVersion;
+  const request = fileRequest.start();
   try {
     const blob = await loadAttachment(detail.value.customer.id, record.id, attachment.mediaId);
-    displayFile(blobUrl(blob), attachment.name, attachment.mediaType === 'image');
+    if (request.current() && version === detailVersion && detailVisible.value) {
+      displayFile(blobUrl(blob), attachment.name, attachment.mediaType === 'image');
+    }
   } catch (error) {
-    fail('查看附件', error);
+    if (request.current() && version === detailVersion && detailVisible.value) fail('查看附件', error);
+  } finally {
+    request.finish();
   }
 }
 async function previewUpload(value: AdminMediaValue | undefined, index: number) {
@@ -967,6 +986,10 @@ onBeforeUnmount(() => {
 });
 status.value = tabs.value[0]?.value ?? 'daily';
 void reload();
+
+const detailIndicator = useDelayedLoading(() => Boolean(detailLoading.value));
+
+const { pending: confirmOperationPending, run: confirmOperationOnce } = usePendingAction(confirmOperation);
 </script>
 
 <style>

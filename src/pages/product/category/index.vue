@@ -56,7 +56,7 @@
               row-key="key"
               :data="displayRows"
               :columns="columns"
-              :loading="loading || sorting"
+              :loading="tableIndicator"
               :drag-sort="canSortCategory && !hasSearch && !sorting ? 'row' : undefined"
               :drag-sort-options="categoryDragOptions"
               hover
@@ -126,7 +126,11 @@
                     :theme="buttonTheme('delete')"
                     :disabled="operations.pending(`delete:${row.node.id}`)"
                     @click="openDeleteDialog(row.node)"
-                    >删除</t-link
+                    ><template #prefix-icon>
+                      <span class="row-loading-slot">
+                        <t-loading v-if="operations.checkingIndicator(`delete:${row.node.id}`)" size="small" />
+                      </span>
+                    </template>删除</t-link
                   >
                   <span v-if="!hasVisibleRowAction(row)">-</span>
                 </div>
@@ -146,8 +150,8 @@
       width="480px"
       placement="center"
       :prevent-scroll-through="false"
-      :confirm-btn="dialogButtonProps('save', formConfirmation(formMode))"
-      @confirm="handleSubmit"
+      :confirm-btn="handleSubmitButton"
+      @confirm="handleSubmitOnce"
       @close="closeFormDialog"
       @opened="restorePageScroll"
       @closed="restorePageScroll"
@@ -186,7 +190,8 @@
       :action="statusTarget?.status === 'enabled' ? '停用' : '启用'"
       object-type="分类"
       :object-name="statusTarget?.name"
-      @confirm="handleStatusConfirm"
+      :loading="handleStatusConfirmPending"
+      @confirm="handleStatusConfirmOnce"
       @close="closeStatusConfirm"
       @opened="restorePageScroll"
       @closed="restorePageScroll"
@@ -197,6 +202,10 @@
 </template>
 
 <script setup lang="ts">
+import { useContentRequest } from '@/composables/useContentRequest';
+import { useDialogLoading } from '@/composables/useDialogLoading';
+import { usePendingAction } from '@/composables/usePendingAction';
+import { useDelayedLoading } from '@/composables/useDelayedLoading';
 import { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';
 import { OperationBlockedError } from '@/services/http';
 import { checkProductCategoryDelete } from '@/services/productCategories';
@@ -292,7 +301,8 @@ const canToggleCategoryStatus = computed(() => hasCategoryAction('toggle-status'
 const canDeleteCategory = computed(() => hasCategoryAction('delete'));
 
 const categoryData = ref<Record<Scope, CategoryNode[]>>({ finished: [], accessory: [] });
-const loading = ref(false);
+const listRequest = useContentRequest();
+const loading = listRequest.pending;
 
 const searchForm = reactive({ keyword: '', status: '' as Status | '' });
 const appliedSearch = reactive({ keyword: '', status: '' as Status | '' });
@@ -490,17 +500,19 @@ function toCategoryPayload(node: CategoryNode, parentId = node.parentId): Produc
   };
 }
 async function loadCategories() {
-  loading.value = true;
+  const request = listRequest.start();
   try {
     const records = await listProductCategories();
+    if (!request.current()) return;
     categoryData.value = {
       finished: buildCategoryTree(records, 'finished'),
       accessory: buildCategoryTree(records, 'accessory'),
     };
   } catch (error) {
+    if (!request.current()) return;
     adminFeedback.error(error instanceof Error ? error.message : '分类列表加载失败');
   } finally {
-    loading.value = false;
+    request.finish();
   }
 }
 function resetForm() {
@@ -580,8 +592,8 @@ async function handleSubmit() {
       }
       adminFeedback.actionSuccess({ action: '修改', target: name });
     }
-    await loadCategories();
     closeFormDialog();
+    await loadCategories();
   } catch (error) {
     adminFeedback.error(error instanceof Error ? error.message : '操作失败');
   }
@@ -752,6 +764,12 @@ operations.onInvalidate(() => {
   deleteVisible.value = false;
   deleteTarget.value = null;
 });
+
+const tableIndicator = useDelayedLoading(() => Boolean(loading.value || sorting.value));
+
+const { pending: handleSubmitPending, run: handleSubmitOnce } = usePendingAction(handleSubmit);
+const handleSubmitButton = useDialogLoading(() => formVisible.value, () => dialogButtonProps('save', formConfirmation(formMode.value), { loading: handleSubmitPending.value }));
+const { pending: handleStatusConfirmPending, run: handleStatusConfirmOnce } = usePendingAction(handleStatusConfirm);
 </script>
 
 <style scoped>

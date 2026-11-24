@@ -790,9 +790,11 @@ test('customer detail loading and authorized other-owner followups remain visibl
   await page.goto('/store/customer-management');
   await page.locator('tr').filter({ hasText: '王先生1' }).getByText('详情', { exact: true }).click();
   const detail = page.locator('.t-drawer__content-wrapper:visible').filter({ hasText: '客户详情' });
-  await expect(detail.locator('.t-skeleton')).toBeVisible();
+  await expect(detail.locator('.t-loading')).toBeVisible();
+  await expect(detail.locator('.t-skeleton')).toHaveCount(0);
   await detail.screenshot({ path: testInfo.outputPath('detail-loading.png'), animations: 'disabled' });
   release();
+  await expect(detail.locator('.t-loading')).toHaveCount(0);
   await expect(detail.getByText('暂无跟进记录', { exact: true })).toBeVisible();
   await detail.screenshot({ path: testInfo.outputPath('detail-empty-followups.png'), animations: 'disabled' });
   await detail.getByRole('button', { name: '关闭', exact: true }).click();

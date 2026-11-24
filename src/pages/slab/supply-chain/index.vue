@@ -139,7 +139,7 @@
                   :columns="columns"
                   :sort="tableSort"
                   :sort-icon="stateActivitySortIcon"
-                  :loading="loading"
+                  :loading="contentLoading || preparation.indicator.value || itemIndicator"
                   hover
                   table-layout="fixed"
                   @sort-change="onTimeSortChange"
@@ -227,7 +227,11 @@
                         hover="color"
                         :disabled="operations.pending(`${action.action}:${row.id}`)"
                         @click="handleRowAction(action.action, row)"
-                      >
+                      ><template #prefix-icon>
+                        <span class="row-loading-slot">
+                          <t-loading v-if="operations.checkingIndicator(`${action.action}:${row.id}`)" size="small" />
+                        </span>
+                      </template>
                         {{ action.label }}
                       </t-link>
                     </div>
@@ -555,14 +559,15 @@
     </div>
 
     <t-drawer
-      v-model:visible="detailDrawerVisible"
+      :visible="detailDrawerVisible || detailIndicator"
       header="大板详情"
       placement="right"
       size="min(1240px, 100%)"
       :footer="false"
       @close="closeDetailDrawer"
     >
-      <t-space v-if="detailDrawerRow" direction="vertical" size="large" class="slab-detail-drawer">
+      <t-loading v-if="detailIndicator" />
+      <t-space v-else-if="detailDrawerRow" direction="vertical" size="large" class="slab-detail-drawer">
         <t-card class="slab-detail-section" title="图文描述">
           <div class="slab-detail-media-grid">
             <button
@@ -888,14 +893,9 @@
       :header="reasonDialogTitle"
       width="520px"
       placement="center"
-      :confirm-btn="
-        dialogButtonProps(
-          'off-shelf',
-          operationConfirmation(reasonState.type === 'deleteExternal' ? '删除' : '下架', reasonState.isBatch),
-        )
-      "
+      :confirm-btn="handleReasonSubmitButton"
       :cancel-btn="cancelButtonProps('取消')"
-      @confirm="handleReasonSubmit"
+      @confirm="handleReasonSubmitOnce"
       @cancel="closeReasonDialog"
       @close="closeReasonDialog"
     >
@@ -963,6 +963,10 @@
 </template>
 
 <script setup lang="ts">
+import { useContentRequest } from '@/composables/useContentRequest';
+import { useDialogLoading } from '@/composables/useDialogLoading';
+import { usePendingAction } from '@/composables/usePendingAction';
+import { useDelayedLoading } from '@/composables/useDelayedLoading';
 import { useOperationPreflight, requireCondition } from '@/composables/useOperationPreflight';
 import { useListBatchSelection } from '@/components/foundation';
 import DecimalInput from '@/components/DecimalInput.vue';
@@ -1087,6 +1091,8 @@ type SalesNumberChangeContext = {
 };
 const activeTab = ref<SlabTab>(initialProductListTab(useRoute().query.tab));
 const operations = useOperationPreflight(() => activeTab.value);
+const preparation = useContentRequest();
+operations.onInvalidate(preparation.cancel);
 
 const { descending, tableSort, toggleTimeSort, onTimeSortChange } = useStateActivitySort(activeTab, () => {
   currentPagination.value.current = 1;
@@ -1760,31 +1766,43 @@ const openOperationLogMediaPreview = (media: OperationLogMediaValue, title: stri
   uploadPreviewType.value = media.mediaType;
   uploadPreviewDialogVisible.value = true;
 };
+const detailRequest = useContentRequest();
+const detailIndicator = detailRequest.indicator;
 const openDetailDrawer = async (row: SlabItem) => {
+  const request = detailRequest.start();
   try {
     const latest = toSlabItem(await getSlabDetail(row.id));
+    if (!request.current()) return;
     detailDrawerRow.value = latest;
     detailPriceRows.value = buildPriceRows(latest);
     detailDrawerVisible.value = true;
   } catch (error) {
-    adminFeedback.error(error instanceof Error ? error.message : '大板详情加载失败，请重试');
+    if (request.current()) adminFeedback.error(error instanceof Error ? error.message : '大板详情加载失败，请重试');
+  } finally {
+    request.finish();
   }
 };
 const openProductEditor = async (row: SlabItem) => {
+  const request = preparation.start();
   try {
     const [latest, options, configurations] = await Promise.all([
       getSlabDetail(row.id),
       getSlabPublishOptions(),
       Promise.resolve([]),
     ]);
+    if (!request.current()) return;
     Object.assign(publishOptions, options);
     markupConfigurations.value = configurations;
     openProductDialog('edit', toSlabItem(latest));
   } catch (error) {
+    if (!request.current()) return;
     adminFeedback.error(error instanceof Error ? error.message : '大板资料加载失败，请重试');
+  } finally {
+    request.finish();
   }
 };
 const closeDetailDrawer = () => {
+  detailRequest.cancel();
   detailDrawerVisible.value = false;
   detailDrawerRow.value = null;
   detailPriceRows.value = [];
@@ -2115,21 +2133,28 @@ const releasePendingUpload = (removed: AdminMediaValue) => {
     uploadPreviewType.value = 'image';
   }
 };
+const rereadingItems = ref(0);
+const itemIndicator = useDelayedLoading(() => rereadingItems.value > 0);
 const refreshSlabItems = async (ids: number[]) => {
-  const selected = new Set(ids);
-  const records = await listSlabs();
-  records.filter((record) => selected.has(record.id)).forEach(upsertSlabItem);
+  rereadingItems.value++;
+  try {
+    const selected = new Set(ids);
+    const records = await listSlabs();
+    records.filter((record) => selected.has(record.id)).forEach(upsertSlabItem);
+  } catch (error) {
+    adminFeedback.actionError({ action: '加载大板数据', error, fallback: '请稍后重试' });
+  } finally {
+    rereadingItems.value--;
+  }
 };
 const updateSlabStatus = async (id: number, status: SlabStatus | 'offShelf', reason?: string, detail?: string) => {
   const item = tableData.value.find((candidate) => candidate.id === id);
   if (!item) return;
   await updateSlabStatuses([id], status, reason, detail);
-  await refreshSlabItems([id]);
 };
 const updateSelectedSlabStatuses = async (status: SlabStatus | 'offShelf', reason?: string, detail?: string) => {
   const selectedIds = [...selectedKeys.value];
   await updateSlabStatuses(selectedIds, status, reason, detail);
-  await refreshSlabItems(selectedIds);
 };
 const shelfBlockingMessage = (row: SlabItem) => {
   if (!row.mainImageMediaId || !row.scanImageMediaId || !row.designImageMediaId) {
@@ -2265,12 +2290,12 @@ const handleConfirmSubmit = async () => {
   const row = confirmState.row;
   const selectedCount = selectedKeys.value.length;
   const recycleIds = tableData.value.filter((item) => item.status === 'recycle').map((item) => item.id);
+  const selectedIdsBeforeWrite = [...selectedKeys.value];
   saving.value = true;
   try {
     if (type === 'shelf' && row) await updateSlabStatus(row.id, 'selling');
     if (type === 'delete' && row) {
       await removeSlab(row.id);
-      await refreshSlabItems([row.id]);
     }
     if (type === 'restore' && row) await updateSlabStatus(row.id, 'warehouse');
     if (type === 'savePrice' && row) {
@@ -2333,6 +2358,8 @@ const handleConfirmSubmit = async () => {
     } else if (type === 'clearRecycle') {
       adminFeedback.actionSuccess({ action: '清空回收站', target: `${recycleIds.length} 个大板` });
     }
+    if (row && (type === 'delete' || type === 'shelf' || type === 'restore')) await refreshSlabItems([row.id]);
+    else if (type === 'batchRestore') await refreshSlabItems(selectedIdsBeforeWrite);
   } catch (error) {
     await loadSlabs();
     const isBatchAction = type === 'batchShelf' || type === 'batchRestore' || type === 'batchPurge';
@@ -2385,10 +2412,10 @@ const handleReasonSubmit = async () => {
     try {
       await updateSelectedSlabStatuses('offShelf', reasonForm.reason, reasonForm.detail.trim() || undefined);
       selectedKeys.value = [];
-      await loadSlabs();
-      ensureCurrentPage();
       closeReasonDialog();
       adminFeedback.actionSuccess({ action: '批量下架', target: `${selectedCount} 个大板` });
+      await loadSlabs();
+      ensureCurrentPage();
     } catch (error) {
       await loadSlabs();
       adminFeedback.actionError({
@@ -2406,11 +2433,11 @@ const handleReasonSubmit = async () => {
     saving.value = true;
     try {
       await updateSlabStatus(reasonState.row.id, 'offShelf', reasonForm.reason, reasonForm.detail.trim() || undefined);
-      await loadSlabs();
-      ensureCurrentPage();
       const targetName = reasonState.row.name;
       closeReasonDialog();
       adminFeedback.actionSuccess({ action: '下架', target: targetName });
+      await loadSlabs();
+      ensureCurrentPage();
     } catch (error) {
       await loadSlabs();
       adminFeedback.actionError({
@@ -2463,6 +2490,13 @@ const saveBatchPrice = async () => {
   }
 };
 operations.onInvalidate(closeConfirmDialog);
+
+const contentLoading = useDelayedLoading(() => Boolean(loading.value));
+
+const { pending: handleReasonSubmitPending, run: handleReasonSubmitOnce } = usePendingAction(handleReasonSubmit);
+const handleReasonSubmitButton = useDialogLoading(() => reasonDialogVisible.value, () => dialogButtonProps(
+          'off-shelf',
+          operationConfirmation(reasonState.type === 'deleteExternal' ? '删除' : '下架', reasonState.isBatch), { loading: handleReasonSubmitPending.value }));
 </script>
 
 <style scoped src="../shared/index.css"></style>

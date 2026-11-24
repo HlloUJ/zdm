@@ -65,6 +65,7 @@ describe('global execution button naming', () => {
   });
   for (const component of [AdminDialog, AdminFormDialog]) {
     it(`${component.__name} switches from create to edit without changing submission or state options`, async () => {
+      vi.useFakeTimers();
       const mode = ref<'create' | 'edit'>('create');
       const onConfirm = vi.fn();
       const Host = {
@@ -81,6 +82,8 @@ describe('global execution button naming', () => {
       };
       const wrapper = mount(Host, { global });
       const dialog = wrapper.findComponent(Dialog);
+      await vi.advanceTimersByTimeAsync(200);
+      vi.useRealTimers();
       expect(dialog.props('confirmBtn')).toMatchObject({
         content: '确认新增',
         loading: true,

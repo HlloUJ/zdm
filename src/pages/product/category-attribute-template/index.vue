@@ -55,7 +55,7 @@
                       ><template #prefix-icon><t-icon name="arrow-left" /></template>草稿箱</t-link
                     >
                   </div>
-                  <t-loading :loading="loading">
+                  <t-loading :loading="contentLoading || preparation.indicator.value">
                     <t-space direction="vertical" size="large" class="version-content">
                       <t-alert
                         v-if="!isDraft"
@@ -85,8 +85,10 @@
                           v-if="can('create')"
                           :theme="buttonTheme('publish-version')"
                           class="publish-draft"
-                          :disabled="busy || (dirty && !can('create'))"
-                          @click="preparePublish"
+                          data-loading-button
+                          :loading="publishingIndicator"
+                          :disabled="publishing || busy || (dirty && !can('create'))"
+                          @click="preparePublishOnce"
                           >发布新版本</t-button
                         >
                         <t-button
@@ -102,8 +104,10 @@
                           <t-button
                             v-if="!draft && can('create')"
                             :theme="buttonTheme('create')"
-                            :disabled="!categoryId || busy"
-                            @click="createDraft()"
+                            data-loading-button
+                            :loading="creatingIndicator"
+                            :disabled="!categoryId || busy || creating"
+                            @click="createDraftOnce()"
                             >创建新版本草稿</t-button
                           >
                           <t-button
@@ -400,9 +404,13 @@
               v-if="can('create')"
               hover="color"
               :theme="buttonTheme('copy-version')"
-              :disabled="busy"
+              :disabled="busy || operations.pending(`prepare-copy:${row.id}`)"
               @click="prepareCopy(row)"
-              >复制</t-link
+              ><template #prefix-icon>
+                <span class="row-loading-slot">
+                  <t-loading v-if="operations.indicator(`prepare-copy:${row.id}`)" size="small" />
+                </span>
+              </template>复制</t-link
             >
           </t-space>
         </template>
@@ -412,6 +420,9 @@
 </template>
 
 <script setup lang="ts">
+import { usePendingAction } from '@/composables/usePendingAction';
+import { useContentRequest } from '@/composables/useContentRequest';
+import { useDelayedLoading } from '@/composables/useDelayedLoading';
 import { checkTemplateCategory } from '@/services/templateVersions';
 import { useOperationPreflight, requireCondition } from '@/composables/useOperationPreflight';
 import { operationConfirmation, formConfirmation } from '@/components/foundation/actions/confirmation';
@@ -476,6 +487,8 @@ watch(versionLayout, (element, previous) => {
 });
 const categoryId = ref<number>();
 const operations = useOperationPreflight(() => categoryId.value);
+const preparation = useContentRequest();
+operations.onInvalidate(preparation.cancel);
 
 const keyword = ref('');
 const versions = ref<TemplateVersion[]>([]);
@@ -691,13 +704,15 @@ async function loadVersions() {
   }
 }
 async function loadScope() {
-  ++loadSequence;
+  const sequence = ++loadSequence;
   categoryId.value = undefined;
   versions.value = [];
   choose();
   loading.value = true;
   try {
-    categories.value = sortByCreatedAtDesc(await listTemplateCategories(scope.value));
+    const records = await listTemplateCategories(scope.value);
+    if (sequence !== loadSequence) return;
+    categories.value = sortByCreatedAtDesc(records);
     expandedCategories.value = categories.value.map((category) => category.id);
     const previousCategoryId = scopeSelections.get(scope.value)?.categoryId;
     categoryId.value = categories.value.some((c) => c.id === previousCategoryId)
@@ -707,8 +722,9 @@ async function loadScope() {
         )?.id;
     await loadVersions();
   } catch (e) {
+    if (sequence !== loadSequence) return;
     error(e);
-    loading.value = false;
+    if (sequence === loadSequence) loading.value = false;
   }
 }
 let navigationSequence = 0;
@@ -737,15 +753,21 @@ function selectCategory(ids: (string | number)[]) {
     void loadVersions();
   });
 }
+const { pending: creating, run: createDraftOnce } = usePendingAction(createDraft);
+const { pending: publishing, run: preparePublishOnce } = usePendingAction(preparePublish);
+const creatingIndicator = useDelayedLoading(() => creating.value);
+const publishingIndicator = useDelayedLoading(() => publishing.value);
 const copyTarget = ref<TemplateVersion>();
 let copyDraftSnapshot: { draftId: number; revision: number } | undefined;
 async function prepareCopy(version: TemplateVersion) {
   const id = version.categoryId;
   if (!id || busy.value) return;
-  await operations.check(`copy:${version.id}`, () => checkTemplateCategory(id, 'copy').then(requireCondition), async () => {
-    copyDraftSnapshot = draft.value ? { draftId: draft.value.id, revision: draft.value.revision } : undefined;
-    if (draft.value) copyTarget.value = version;
-    else await copyVersion(version);
+  await operations.execute(`prepare-copy:${version.id}`, async () => {
+    await operations.check(`copy:${version.id}`, () => checkTemplateCategory(id, 'copy').then(requireCondition), async () => {
+      copyDraftSnapshot = draft.value ? { draftId: draft.value.id, revision: draft.value.revision } : undefined;
+      if (draft.value) copyTarget.value = version;
+      else await copyVersion(version);
+    });
   });
 }
 async function copyVersion(version: TemplateVersion) {
@@ -911,17 +933,25 @@ function selectAddAttributes(keys: Array<string | number>) {
   addIds.value = [...new Set([...addIds.value.filter((id) => !pageIds.has(id)), ...keys.map(Number)])];
 }
 async function openAdd() {
-  if (!categoryId.value) return;
+  const request = preparation.start();
   try {
-    availableAttributes.value = (await listTemplateAttributes(categoryId.value)).filter(
-      (a) => !rows.value.some((r) => r.attributeId === a.id),
-    );
-    addIds.value = [];
-    addPage.value = 1;
-    attributeKeyword.value = '';
-    addVisible.value = true;
-  } catch (e) {
-    error(e);
+    if (!categoryId.value) return;
+    try {
+      const attributes = (await listTemplateAttributes(categoryId.value)).filter(
+        (a) => !rows.value.some((r) => r.attributeId === a.id),
+      );
+      if (!request.current()) return;
+      availableAttributes.value = attributes;
+      addIds.value = [];
+      addPage.value = 1;
+      attributeKeyword.value = '';
+      addVisible.value = true;
+    } catch (e) {
+      if (!request.current()) return;
+      error(e);
+    }
+  } finally {
+    request.finish();
   }
 }
 function addAttributes() {
@@ -972,16 +1002,24 @@ function selectValues(keys: Array<string | number>) {
   valueIds.value = [...new Set([...valueIds.value.filter((id) => !pageIds.has(id)), ...keys.map(Number)])];
 }
 async function openValues(row: TemplateAttribute) {
-  valueTarget.value = row;
-  valueKeyword.value = '';
-  valuePage.value = 1;
-  valueIds.value = row.options.map((v) => v.id);
+  const request = preparation.start();
   try {
-    valueOptions.value =
-      editable.value && categoryId.value ? await listTemplateValues(categoryId.value, row.attributeId) : [];
-    valuesVisible.value = true;
-  } catch (e) {
-    error(e);
+    valueTarget.value = row;
+    valueKeyword.value = '';
+    valuePage.value = 1;
+    valueIds.value = row.options.map((v) => v.id);
+    try {
+      const options =
+        editable.value && categoryId.value ? await listTemplateValues(categoryId.value, row.attributeId) : [];
+      if (!request.current()) return;
+      valueOptions.value = options;
+      valuesVisible.value = true;
+    } catch (e) {
+      if (!request.current()) return;
+      error(e);
+    }
+  } finally {
+    request.finish();
   }
 }
 function applyValues() {
@@ -1047,6 +1085,8 @@ operations.onInvalidate(() => {
   copyTarget.value = undefined;
   publishVisible.value = false;
 });
+
+const contentLoading = useDelayedLoading(() => Boolean(loading.value));
 </script>
 <style scoped>
 .publish-confirm-content {

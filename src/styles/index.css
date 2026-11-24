@@ -378,3 +378,30 @@ p {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* TDesign adds a margin to the prefix wrapper even when its loading slot is empty. */
+.t-link .t-link__prefix-icon:has(> .row-loading-slot):not(:has(.t-loading)) {
+  display: none;
+}
+.row-loading-slot {
+  display: inline-flex;
+}
+
+/* Native disabled buttons still block activation during the quiet interval. */
+.t-button[data-awaiting-feedback] {
+  --td-brand-color-disabled: var(--td-brand-color);
+  --td-error-color-disabled: var(--td-error-color);
+  --td-success-color-disabled: var(--td-success-color);
+  --td-warning-color-disabled: var(--td-warning-color);
+  --td-bg-color-component-disabled: var(--td-bg-color-component);
+}
+.t-button[data-awaiting-feedback]:hover {
+  --td-brand-color-disabled: var(--td-brand-color-hover);
+  --td-error-color-disabled: var(--td-error-color-hover);
+  --td-success-color-disabled: var(--td-success-color-hover);
+  --td-warning-color-disabled: var(--td-warning-color-hover);
+  --td-bg-color-component-disabled: var(--td-bg-color-component-hover);
+}
+.t-button[data-awaiting-feedback].t-button--variant-base.t-button--theme-default {
+  color: var(--td-text-color-primary);
+}

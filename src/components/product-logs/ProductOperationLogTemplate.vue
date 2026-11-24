@@ -71,7 +71,7 @@
         </div>
       </t-form>
       <div>
-        <t-table row-key="id" :data="records" :columns="columns" :loading="loading" hover>
+        <t-table row-key="id" :data="records" :columns="columns" :loading="contentLoading" hover>
           <template #subjectName="{ row }">
             <div>{{ row.subjectName }}</div>
             <div>ID：{{ row.subjectId }}</div>
@@ -135,6 +135,7 @@
 </template>
 
 <script setup lang="ts">
+import { useDelayedLoading } from '@/composables/useDelayedLoading';
 import { buttonTheme } from '@/components/foundation/actions/buttonFunctions';
 import { controlPlaceholder } from '@/utils/controlPlaceholder';
 import { computed } from 'vue';
@@ -201,4 +202,6 @@ const columns = computed<PrimaryTableCol<TableRowData>[]>(() => [
   { colKey: 'operatedAt', title: '操作时间', width: 180 },
   { colKey: 'operation', title: '操作', width: 76, fixed: 'right' },
 ]);
+
+const contentLoading = useDelayedLoading(() => Boolean(props.loading));
 </script>

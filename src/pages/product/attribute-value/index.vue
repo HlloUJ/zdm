@@ -58,7 +58,7 @@
             </div>
           </template>
           <template #table>
-            <t-table row-key="id" :data="pageData" :columns="columns" :loading="loading" hover table-layout="fixed">
+            <t-table row-key="id" :data="pageData" :columns="columns" :loading="contentLoading" hover table-layout="fixed">
               <template #attribute="{ row }">{{ attributeName[row.attribute] }}</template>
               <template #status="{ row }"
                 ><t-tag :theme="row.status === 'enabled' ? 'success' : 'danger'" variant="light">{{
@@ -103,7 +103,8 @@
       header="新增"
       width="480px"
       placement="center"
-      @confirm="submit"
+      :confirm-btn="{ loading: submitPending }"
+      @confirm="submitOnce"
       @close="closeFormDialog"
     >
       <t-form ref="formRef" :data="form" :rules="formRules" label-width="100px" colon>
@@ -134,6 +135,8 @@
 </template>
 
 <script setup lang="ts">
+import { useContentRequest } from '@/composables/useContentRequest';
+import { usePendingAction } from '@/composables/usePendingAction';
 import { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';
 import { useOperationPreflight } from '@/composables/useOperationPreflight';
 import { formConfirmation } from '@/components/foundation/actions/confirmation';
@@ -233,7 +236,8 @@ const sourceDescription = computed(
     })[activeScope.value],
 );
 const data = ref<Value[]>([]);
-const loading = ref(false);
+const listRequest = useContentRequest();
+const loading = listRequest.pending;
 const isStandardOptionAttribute = (item: AttributeOption, scope: Scope) =>
   item.scope === scope && item.valueType === 'select';
 const attributesInScope = computed(() =>
@@ -320,9 +324,10 @@ const toValue = (record: ProductAttributeValueRecord): Value => ({
 const createValueCode = (attributeId: string, name: string) =>
   `attr-value-${attributeId}-${name.trim().length}-${Date.now()}`;
 const loadValues = async () => {
-  loading.value = true;
+  const request = listRequest.start();
   try {
     const [attributes, values] = await Promise.all([listProductAttributeValueOptions(), listProductAttributeValues()]);
+    if (!request.current()) return;
     attributeOptions.value = attributes.map(toAttributeOption);
     data.value = values.map(toValue);
     if (searchForm.attribute && !attributesInScope.value.some((item) => item.code === searchForm.attribute)) {
@@ -331,9 +336,10 @@ const loadValues = async () => {
     }
     ensureCurrentPage();
   } catch (error) {
+    if (!request.current()) return;
     adminFeedback.error(error instanceof Error ? error.message : '属性值列表加载失败');
   } finally {
-    loading.value = false;
+    request.finish();
   }
 };
 const search = () => {
@@ -386,10 +392,10 @@ const submit = async () => {
       code: createValueCode(form.attribute, name),
       status: 'enabled',
     });
-    await loadValues();
     pagination.current = 1;
     closeFormDialog();
     adminFeedback.created(name);
+    void loadValues();
   } catch (error) {
     adminFeedback.error(error instanceof Error ? error.message : '操作失败');
   }
@@ -469,6 +475,10 @@ operations.onInvalidate(() => {
   confirmDialogVisible.value = false;
   confirmTarget.value = null;
 });
+
+const contentLoading = listRequest.indicator;
+
+const { pending: submitPending, run: submitOnce } = usePendingAction(submit);
 </script>
 
 <style scoped>

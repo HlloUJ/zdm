@@ -202,3 +202,124 @@ test('duplicate category names keep the original rejection and show its native f
   await dialog.getByRole('button', { name: /^确认(?:新增|保存|配置权限)$/, exact: true }).click();
   await expect(dialog).toBeHidden();
 });
+
+test('expands the confirm button for its spinner and moves feedback to the list after a status write', async ({ page }) => {
+  await setup(page, [prefix + '.finished.view', prefix + '.finished.toggle-status']);
+  await page.goto('/store-category-management');
+  const row = page.getByRole('row').filter({ hasText: '成品另一级' });
+  await row.getByText('停用', { exact: true }).click();
+  const confirm = page.getByRole('button', { name: '确认停用', exact: true });
+  const dialog = page.locator('.t-dialog:visible').filter({ has: confirm });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.locator('..')).not.toHaveClass(/enter-active/);
+  const width = await confirm.evaluate((button) => (button as HTMLButtonElement).offsetWidth);
+  let finishWrite!: () => void;
+  let finishRead!: () => void;
+  const writeGate = new Promise<void>((resolve) => { finishWrite = resolve; });
+  const readGate = new Promise<void>((resolve) => { finishRead = resolve; });
+  let writes = 0;
+  await page.route('**/api/admin/store-categories/**/status?*', async (route) => {
+    writes++;
+    await writeGate;
+    await route.fallback();
+  });
+  await page.route('**/api/admin/store-categories?*', async (route) => {
+    await readGate;
+    await route.fallback();
+  });
+  try {
+    await confirm.evaluate((button) => { const target = button as HTMLButtonElement; target.click(); target.click(); });
+    await expect(confirm).toBeDisabled();
+    await expect(confirm.locator('.t-loading')).toBeVisible();
+    expect(await confirm.evaluate((button) => (button as HTMLButtonElement).offsetWidth)).toBeGreaterThan(width);
+    expect(writes).toBe(1);
+    finishWrite();
+    await expect(dialog).toBeHidden();
+    await expect(page.locator('.t-table .t-loading').first()).toBeVisible();
+  } finally {
+    finishWrite();
+    finishRead();
+  }
+  await expect(page.locator('.t-table .t-loading')).toHaveCount(0);
+});
+
+test('a fast category deletion never mounts a spinner in the closing button', async ({ page }) => {
+  await setup(page, [prefix + '.finished.view', prefix + '.finished.delete']);
+  await page.route('**/api/admin/store-categories/5/delete-check?*', route =>
+    route.fulfill({ json: { code: 0, data: true } }));
+  let writes = 0;
+  await page.route('**/api/admin/store-categories/5?*', route => {
+    if (route.request().method() !== 'DELETE') return route.fallback();
+    writes++;
+    return route.fulfill({ json: { code: 0, data: true } });
+  });
+  await page.goto('/store-category-management');
+  await page.getByRole('row').filter({ hasText: '成品另一级' }).getByText('删除', { exact: true }).click();
+  const button = page.getByRole('button', { name: '确认删除', exact: true });
+  await expect(button).toBeVisible();
+  // Hold page timers still while the mocked HTTP response and Vue updates complete.
+  const now = new Date();
+  await page.clock.install({ time: now });
+  await page.clock.pauseAt(new Date(now.getTime() + 1000));
+  await button.evaluate(element => {
+    const observed = new MutationObserver(records => {
+      if (records.some(record => [...record.addedNodes].some(node =>
+        node instanceof Element && (node.matches('.t-loading') || node.querySelector('.t-loading'))))) {
+        document.body.dataset.deleteSpinner = 'seen';
+      }
+    });
+    observed.observe(element, { childList: true, subtree: true });
+    (element as HTMLButtonElement).click();
+    (element as HTMLButtonElement).click();
+  });
+  await expect(page.getByText('已删除“成品另一级”', { exact: true })).toBeVisible();
+  await page.clock.runFor(500);
+  expect(writes).toBe(1);
+  await expect(button).toBeHidden();
+  expect(await page.locator('body').getAttribute('data-delete-spinner')).toBeNull();
+});
+
+test('delete link and confirm button reclaim their icon space when idle', async ({ page }) => {
+  await setup(page, [prefix + '.finished.view', prefix + '.finished.delete']);
+  let finishCheck!: () => void;
+  let finishDelete!: () => void;
+  const checkGate = new Promise<void>(resolve => { finishCheck = resolve; });
+  const deleteGate = new Promise<void>(resolve => { finishDelete = resolve; });
+  await page.route('**/api/admin/store-categories/5/delete-check?*', async route => {
+    await checkGate;
+    await route.fulfill({ json: { code: 0, data: true } });
+  });
+  await page.route('**/api/admin/store-categories/5?*', async route => {
+    if (route.request().method() !== 'DELETE') return route.fallback();
+    await deleteGate;
+    await route.fulfill({ json: { code: 0, data: false } });
+  });
+  await page.goto('/store-category-management');
+  const link = page.getByRole('row').filter({ hasText: '成品另一级' }).locator('.t-link').filter({ hasText: '删除' });
+  const prefixIcon = link.locator('.t-link__prefix-icon');
+  const width = (element: Element) => (element as HTMLElement).offsetWidth;
+  await expect(link).toBeVisible();
+  await expect(prefixIcon).toBeHidden();
+  const idleLink = await link.evaluate(width);
+  try {
+    await link.click();
+    await expect(prefixIcon.locator('.t-loading')).toBeVisible();
+    expect(await link.evaluate(width)).toBeGreaterThan(idleLink);
+    finishCheck();
+    const button = page.getByRole('button', { name: '确认删除', exact: true });
+    await expect(button).toBeVisible();
+    await expect(prefixIcon).toBeHidden();
+    expect(await link.evaluate(width)).toBe(idleLink);
+    const idleButton = await button.evaluate(width);
+    await button.click();
+    await expect(button.locator('.t-loading')).toBeVisible();
+    expect(await button.evaluate(width)).toBeGreaterThan(idleButton);
+    finishDelete();
+    await expect(button).toBeEnabled();
+    await expect(button.locator('.t-loading')).toHaveCount(0);
+    expect(await button.evaluate(width)).toBe(idleButton);
+  } finally {
+    finishCheck();
+    finishDelete();
+  }
+});

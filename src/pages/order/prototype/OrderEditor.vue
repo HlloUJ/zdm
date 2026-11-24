@@ -8,7 +8,8 @@
     form-layout="custom"
     confirm-function="save"
     :confirmation="formConfirmation(editing ? 'edit' : 'create')"
-    @confirm="save"
+    :confirm-btn="{ loading: savePending || saving }"
+    @confirm="saveOnce"
   >
     <t-alert
       theme="info"
@@ -188,6 +189,7 @@
   </AdminFormDialog>
 </template>
 <script setup lang="ts">
+import { usePendingAction } from '@/composables/usePendingAction';
 import DecimalInput from '@/components/DecimalInput.vue';
 import { validateNumericControls } from '@/utils/numericInputValidation';
 import { computed, ref, watch } from 'vue';
@@ -197,7 +199,7 @@ import { buttonTheme } from '@/components/foundation/actions/buttonFunctions';
 import { rejectFormSubmission } from '@/utils/submitValidation';
 import { useFormFeedback } from '@/utils/formValidation';
 import { addProduct, clone, freeStock, money, pricing, type State, type Order, type Line } from './model';
-const props = defineProps<{ order: Order; state: State; editing: boolean }>();
+const props = defineProps<{ order: Order; state: State; editing: boolean; saving?: boolean }>();
 const emit = defineEmits<{ save: [order: Order, reason: string] }>();
 const visible = defineModel<boolean>('visible', { required: true });
 const draft = ref(clone(props.order));
@@ -297,4 +299,6 @@ async function save() {
   }
   emit('save', clone(draft.value), reason.value);
 }
+
+const { pending: savePending, run: saveOnce } = usePendingAction(save);
 </script>

@@ -66,11 +66,11 @@
                     @click="openBatch"
                     >批量设置</t-button
                   >
-                  <t-button
+                  <t-button data-loading-button
                     v-if="activeKind === 'price'"
                     :theme="buttonTheme('save')"
-                    :loading="saving"
-                    :disabled="loading"
+                    :loading="saveIndicator"
+                    :disabled="(loading) || saving"
                     @click="savePrices"
                     ><template #icon><t-icon name="save" /></template>{{ formConfirmationText('edit') }}</t-button
                   >
@@ -82,7 +82,7 @@
                 row-key="id"
                 :data="displayRows"
                 :columns="columns"
-                :loading="loading"
+                :loading="contentLoading"
                 hover
                 :selected-row-keys="selectedIds"
               >
@@ -248,7 +248,8 @@
       :action="discountActionLabel"
       object-type="折扣配置"
       :object-name="discountActionTarget?.targetName"
-      @confirm="applyDiscountAction"
+      :loading="applyDiscountActionPending"
+      @confirm="applyDiscountActionOnce"
       @cancel="discountConfirmVisible = false"
       @close="discountConfirmVisible = false"
     >
@@ -289,6 +290,8 @@
   </div>
 </template>
 <script setup lang="ts">
+import { usePendingAction } from '@/composables/usePendingAction';
+import { useDelayedLoading } from '@/composables/useDelayedLoading';
 import { useOperationPreflight } from '@/composables/useOperationPreflight';
 import { useListBatchSelection } from '@/components/foundation';
 import { formConfirmationText } from '@/components/foundation/actions/confirmation';
@@ -779,6 +782,11 @@ watch(
   },
   { immediate: true },
 );
+
+const saveIndicator = useDelayedLoading(() => Boolean(saving.value));
+const contentLoading = useDelayedLoading(() => Boolean(loading.value));
+
+const { pending: applyDiscountActionPending, run: applyDiscountActionOnce } = usePendingAction(applyDiscountAction);
 </script>
 <style scoped>
 .price-workspace {

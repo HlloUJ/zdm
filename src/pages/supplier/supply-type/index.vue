@@ -50,7 +50,7 @@
             </AdminListToolbar>
           </template>
           <template #table>
-            <t-table row-key="id" :data="pageRows" :columns="columns" :loading="loading" hover table-layout="fixed">
+            <t-table row-key="id" :data="pageRows" :columns="columns" :loading="contentLoading" hover table-layout="fixed">
               <template #index="{ rowIndex }">{{ (page - 1) * size + rowIndex + 1 }}</template>
               <template #createdAt="{ row }">{{ formatDateTime(row.createdAt) }}</template>
               <template #status="{ row }"
@@ -72,7 +72,11 @@
                   >
                   <t-link v-if="can('delete')" :theme="buttonTheme('delete')" hover="color" :disabled="operations.pending(`delete:${row.id}`)"
                     @click="openDelete(row)"
-                    >删除</t-link
+                    ><template #prefix-icon>
+                      <span class="row-loading-slot">
+                        <t-loading v-if="operations.checkingIndicator(`delete:${row.id}`)" size="small" />
+                      </span>
+                    </template>删除</t-link
                   >
                 </t-space></template
               >
@@ -138,6 +142,7 @@
   </div>
 </template>
 <script setup lang="ts">
+import { useContentRequest } from '@/composables/useContentRequest';
 import { checkSupplierSupplyTypeDelete } from '@/services/suppliers';
 import { useOperationPreflight, requireCondition } from '@/composables/useOperationPreflight';
 import { formConfirmation, operationConfirmation } from '@/components/foundation/actions/confirmation';
@@ -213,7 +218,8 @@ const columns = computed<PrimaryTableCol<TableRowData>[]>(() => [
     fixed: 'right',
   },
 ]);
-const loading = ref(false);
+const listRequest = useContentRequest();
+const loading = listRequest.pending;
 const saving = ref(false);
 const visible = ref(false);
 const editing = ref<SupplierSupplyTypeRecord>();
@@ -232,13 +238,16 @@ const closeStatusDialog = () => {
 const form = ref<FormInstanceFunctions>();
 const draft = reactive({ name: '' });
 const load = async () => {
-  loading.value = true;
+  const request = listRequest.start();
   try {
-    rows.value = await listSupplierSupplyTypes();
+    const records = await listSupplierSupplyTypes();
+    if (!request.current()) return;
+    rows.value = records;
   } catch (error) {
+    if (!request.current()) return;
     adminFeedback.actionError({ action: '加载', target: '供货类型列表', error });
   } finally {
-    loading.value = false;
+    request.finish();
   }
 };
 const openForm = (row?: SupplierSupplyTypeRecord) => {
@@ -302,4 +311,6 @@ const remove = async () => {
   }
 };
 onMounted(load);
+
+const contentLoading = listRequest.indicator;
 </script>

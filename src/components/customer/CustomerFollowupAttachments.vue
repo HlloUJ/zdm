@@ -37,7 +37,7 @@
             >{{ file.name }}</t-link
           >
           <span v-else class="t-upload__single-name">{{ file.name }}</span>
-          <t-loading v-if="file.status === 'progress'" size="small" />
+          <t-loading v-if="uploading && file.status === 'progress'" size="small" />
           <t-space v-else-if="file.mediaId" class="customer-followup-file-actions" align="center" size="small">
             <swap-icon
               size="0.8em"
@@ -71,6 +71,7 @@
   </div>
 </template>
 <script setup lang="ts">
+import { useDelayedLoading } from '@/composables/useDelayedLoading';
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { CloseIcon, SwapIcon } from 'tdesign-icons-vue-next';
 import type { UploadFile, UploadProps } from 'tdesign-vue-next';
@@ -95,6 +96,7 @@ watch(
   },
 );
 const pending = ref(0);
+const uploading = useDelayedLoading(() => pending.value > 0);
 const reserved = new Set<number>();
 const replacementInput = ref<HTMLInputElement>();
 const replacementIndex = ref<number>();
