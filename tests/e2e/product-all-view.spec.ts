@@ -409,7 +409,7 @@ for (const surface of surfaces.filter(item => item.client === 'store')) {
       await main.locator('.t-tabs__nav-item').filter({ hasText: tab }).click();
       await expect(checkbox).toHaveCount(0);
       await expect(rows.first()).toContainText(`汇总商品-${status}`);
-      await expect(rows.getByText('请调整分类', { exact: true })).toHaveCount(0);
+      await expect(rows.getByText(/^(分类层级调整|分类已停用)$/)).toHaveCount(0);
     }
     for (const tab of ['仓库中', '已上架', '全部']) {
       await main.locator('.t-tabs__nav-item').filter({ hasText: tab }).click();
@@ -470,7 +470,7 @@ for (const surface of surfaces.filter(item => item.client === 'store')) {
     const main = page.getByRole('main');
     await main.getByText('待调整分类', { exact: true }).click();
     await main.getByRole('button', { name: '查询', exact: true }).click();
-    await expect(main.getByText('请调整分类', { exact: true })).toHaveCount(2);
+    await expect(main.getByText('分类层级调整', { exact: true })).toHaveCount(2);
     await main.locator('thead .t-checkbox').click();
     const action = main.getByRole('button', { name: '批量设置分类', exact: true });
     await action.click();
@@ -508,7 +508,7 @@ for (const surface of surfaces.filter(item => item.client === 'store')) {
     await expect(dialog.getByText('商品状态已变更')).toBeVisible();
     await expect(main.locator('tbody tr')).toHaveCount(1);
     await expect(main.locator('tbody tr').first()).toContainText('汇总商品-selling');
-    await expect(main.getByText('请调整分类', { exact: true })).toHaveCount(1);
+    await expect(main.getByText('分类层级调整', { exact: true })).toHaveCount(1);
     expect(submissions).toEqual([{ ids: expect.arrayContaining([900, 901]), tab: 'all', categoryId: 6 }]);
   });
 }

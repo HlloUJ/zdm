@@ -661,7 +661,7 @@
       }
     },
     "src/pages/finished-stock/store/index.vue": {
-      "script": "de11b43c3501c9779d6153a4f6dfd67a050eec84fb6467e1b39d8f55be45d432",
+      "script": "eed6af1a24b562602abdd2db6a7f7b8395587f73babd4b55804b9313338d5eba",
       "actions": {
         "cancel → categoryDialog = false": "view",
         "cancel → closeEdit": "view",
@@ -2101,7 +2101,7 @@
     },
     "src/pages/finished-stock/store/index.vue": {
       "baseSha256": "f1f785011a4d1a96737a1b17627dcc8ec77f54e224bfaa60c4f21f79fd6df568",
-      "patchCount": 51,
+      "patchCount": 55,
       "patches": [
         {
           "stage": "before-migrations",
@@ -2394,6 +2394,30 @@
           "reason": "按 011 验收反馈对齐查询复选框，并限定其适用页签",
           "before": "  filter.keyword = '';\n  filter.category = undefined;\n  filter.needsCategoryAdjustment = false;\n  searchList();\n}\n",
           "after": "  filter.keyword = '';\n  filter.category = undefined;\n  if (categoryAdjustmentAvailable.value) filter.needsCategoryAdjustment = false;\n  searchList();\n}\n"
+        },
+        {
+          "task": "011",
+          "reason": "按 011 已修订的 PRD 展示分类层级调整与停用原因，并共用查询判定",
+          "before": "                    <div>{{ categoriesById.get(row.storeCategoryId)?.name || '-' }}</div>\n                    <t-tooltip\n                      v-if=\"needsCategoryAdjustment(row)\"\n                      content=\"该分类层级有变动，请重新设置该商品分类\"\n                    >\n                      <t-tag theme=\"danger\" variant=\"light\" size=\"small\">请调整分类</t-tag>\n                    </t-tooltip>\n                  </template>\n",
+          "after": "                    <div>{{ categoriesById.get(row.storeCategoryId)?.name || '-' }}</div>\n                    <t-tooltip\n                      v-if=\"categoryAdjustmentFor(row)\"\n                      :content=\"categoryAdjustmentFor(row)?.description\"\n                      placement=\"bottom\"\n                    >\n                      <t-tag theme=\"danger\" variant=\"light\" size=\"small\">{{ categoryAdjustmentFor(row)?.label }}</t-tag>\n                    </t-tooltip>\n                  </template>\n"
+        },
+        {
+          "task": "011",
+          "reason": "按 011 已修订的 PRD 展示分类层级调整与停用原因，并共用查询判定",
+          "before": "const listCategories = ref<StoreFinishedEditCategory[]>([]);\nconst categoriesById = computed(() => new Map(listCategories.value.map(item => [item.id, item])));\nconst parentCategoryIds = computed(() => new Set(listCategories.value.map(item => item.parentId)));\nconst listCategoryVisible = ref(false);\nconst listCategoryOptions = computed(() => {\n",
+          "after": "const listCategories = ref<StoreFinishedEditCategory[]>([]);\nconst categoriesById = computed(() => new Map(listCategories.value.map(item => [item.id, item])));\nconst categoryAdjustmentMessages = {\n  disabled: {\n    label: '分类已停用',\n    description: '该分类已停用，请重新选择分类，否则影响商品在用户端的展示。',\n  },\n  nonLeaf: {\n    label: '分类层级调整',\n    description: '该分类的层级有调整，请重新选择分类，否则影响商品在用户端的展示。',\n  },\n};\nconst categoryAdjustments = computed(() => {\n  const parents = new Set(listCategories.value.map(item => item.parentId));\n  const adjustments = new Map<number, { label: string; description: string }>();\n  for (const category of listCategories.value) {\n    if (category.status === 'disabled') {\n      adjustments.set(category.id, categoryAdjustmentMessages.disabled);\n    } else if (category.status === 'enabled' && parents.has(category.id)) {\n      adjustments.set(category.id, categoryAdjustmentMessages.nonLeaf);\n    }\n  }\n  return adjustments;\n});\nconst listCategoryVisible = ref(false);\nconst listCategoryOptions = computed(() => {\n"
+        },
+        {
+          "task": "011",
+          "reason": "按 011 已修订的 PRD 展示分类层级调整与停用原因，并共用查询判定",
+          "before": "  return false;\n}\nfunction needsCategoryAdjustment(row: StoreFinishedProduct) {\n  return isAllProductStatus(row.effectiveStatus) &&\n    row.storeCategoryId != null &&\n    categoriesById.value.has(row.storeCategoryId) &&\n    parentCategoryIds.value.has(row.storeCategoryId);\n}\nconst selected = ref<number[]>([]);\n",
+          "after": "  return false;\n}\nfunction categoryAdjustmentFor(row: StoreFinishedProduct) {\n  if (row.storeCategoryId == null || !isAllProductStatus(row.effectiveStatus)) return undefined;\n  return categoryAdjustments.value.get(row.storeCategoryId);\n}\nconst selected = ref<number[]>([]);\n"
+        },
+        {
+          "task": "011",
+          "reason": "按 011 已修订的 PRD 展示分类层级调整与停用原因，并共用查询判定",
+          "before": "      (!appliedFilter.keyword || `${row.name} ${row.productId}`.includes(appliedFilter.keyword)) &&\n      matchesListCategory(row.storeCategoryId) &&\n      (!filterCategoryAdjustment.value || needsCategoryAdjustment(row)),\n  ),\n);\n",
+          "after": "      (!appliedFilter.keyword || `${row.name} ${row.productId}`.includes(appliedFilter.keyword)) &&\n      matchesListCategory(row.storeCategoryId) &&\n      (!filterCategoryAdjustment.value || categoryAdjustmentFor(row)),\n  ),\n);\n"
         }
       ]
     },

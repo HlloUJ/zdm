@@ -168,10 +168,11 @@
                   <template #storeCategory="{ row }">
                     <div>{{ categoriesById.get(row.storeCategoryId)?.name || '-' }}</div>
                     <t-tooltip
-                      v-if="needsCategoryAdjustment(row)"
-                      content="该分类层级有变动，请重新设置该商品分类"
+                      v-if="categoryAdjustmentFor(row)"
+                      :content="categoryAdjustmentFor(row)?.description"
+                      placement="bottom"
                     >
-                      <t-tag theme="danger" variant="light" size="small">请调整分类</t-tag>
+                      <t-tag theme="danger" variant="light" size="small">{{ categoryAdjustmentFor(row)?.label }}</t-tag>
                     </t-tooltip>
                   </template>
                   <template #salePrice="{ row }">
@@ -514,7 +515,28 @@ const filterCategoryAdjustment = computed(() => categoryAdjustmentAvailable.valu
 type PoolCategoryOption = { value: number; label: string; children?: PoolCategoryOption[] };
 const listCategories = ref<StoreFinishedEditCategory[]>([]);
 const categoriesById = computed(() => new Map(listCategories.value.map(item => [item.id, item])));
-const parentCategoryIds = computed(() => new Set(listCategories.value.map(item => item.parentId)));
+const categoryAdjustmentMessages = {
+  disabled: {
+    label: '分类已停用',
+    description: '该分类已停用，请重新选择分类，否则影响商品在用户端的展示。',
+  },
+  nonLeaf: {
+    label: '分类层级调整',
+    description: '该分类的层级有调整，请重新选择分类，否则影响商品在用户端的展示。',
+  },
+};
+const categoryAdjustments = computed(() => {
+  const parents = new Set(listCategories.value.map(item => item.parentId));
+  const adjustments = new Map<number, { label: string; description: string }>();
+  for (const category of listCategories.value) {
+    if (category.status === 'disabled') {
+      adjustments.set(category.id, categoryAdjustmentMessages.disabled);
+    } else if (category.status === 'enabled' && parents.has(category.id)) {
+      adjustments.set(category.id, categoryAdjustmentMessages.nonLeaf);
+    }
+  }
+  return adjustments;
+});
 const listCategoryVisible = ref(false);
 const listCategoryOptions = computed(() => {
   const build = (parentId?: number, visited = new Set<number>()): PoolCategoryOption[] =>
@@ -552,11 +574,9 @@ function matchesListCategory(categoryId?: number | null) {
   }
   return false;
 }
-function needsCategoryAdjustment(row: StoreFinishedProduct) {
-  return isAllProductStatus(row.effectiveStatus) &&
-    row.storeCategoryId != null &&
-    categoriesById.value.has(row.storeCategoryId) &&
-    parentCategoryIds.value.has(row.storeCategoryId);
+function categoryAdjustmentFor(row: StoreFinishedProduct) {
+  if (row.storeCategoryId == null || !isAllProductStatus(row.effectiveStatus)) return undefined;
+  return categoryAdjustments.value.get(row.storeCategoryId);
 }
 const selected = ref<number[]>([]);
 const shelfErrors = reactive<Record<number, string>>({});
@@ -595,7 +615,7 @@ const filteredRows = computed(() =>
         : row.effectiveStatus === activeTab.value) &&
       (!appliedFilter.keyword || `${row.name} ${row.productId}`.includes(appliedFilter.keyword)) &&
       matchesListCategory(row.storeCategoryId) &&
-      (!filterCategoryAdjustment.value || needsCategoryAdjustment(row)),
+      (!filterCategoryAdjustment.value || categoryAdjustmentFor(row)),
   ),
 );
 const pageRows = computed(() =>
