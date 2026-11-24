@@ -64,7 +64,7 @@ for (const [client, path, resource] of surfaces) {
         },
         { client, prefix },
       );
-      for (const option of ['attribute-template-options', 'price-level-options', 'categories']) {
+      for (const option of ['attribute-template-options', 'price-level-options', resource.startsWith('store-') ? 'list/categories' : 'categories']) {
         await page.route(`**/api/admin/${resource}/${option}`, (route) => route.fulfill({ json: { code: 0, data: [] } }));
       }
       let writes = 0;

@@ -1951,7 +1951,33 @@ for (const [terminal, action, client, modules] of [
   });
 }
 
-test('store role uses terminal global product-center candidates and saves without hidden state or log grants', async ({
+const batchCategoryGrants = ['finished-stock-management', 'accessory-management'].flatMap(module =>
+  ['warehouse', 'selling'].map(state => `store.${module}.${state}.batch-set-category`));
+
+test('terminal allocation persists all four batch-category resources and reloads their checked state', async ({ page }) => {
+  let saved = '';
+  const policy = () => ({ terminal: 'store', functionPermissions: saved });
+  await page.route('**/api/admin/terminal-function-policies', route =>
+    route.fulfill({ json: { code: 0, data: [policy()] } }));
+  await page.route('**/api/admin/terminal-function-policies/store', route => {
+    saved = route.request().postDataJSON().functionPermissions;
+    return route.fulfill({ json: { code: 0, data: policy() } });
+  });
+  await page.goto('/terminal-function-allocation');
+  const main = page.getByRole('main');
+  const batch = main.getByRole('checkbox', { name: '批量设置分类', exact: true });
+  await expect(batch).toHaveCount(4);
+  for (const label of await main.getByText('批量设置分类', { exact: true }).all()) await label.click();
+  await main.getByRole('button', { name: /^确认(?:新增|保存|配置权限)$/ }).click();
+  await expect.poll(() => saved.split(',').filter(value => value.endsWith('.batch-set-category')).sort())
+    .toEqual([...batchCategoryGrants].sort());
+  await page.reload();
+  await expect(batch).toHaveCount(4);
+  for (const checkbox of await batch.all()) await expect(checkbox).toBeChecked();
+});
+
+for (const scope of ['selection center', 'batch category']) {
+test(`store role saves and reloads terminal ${scope} candidates without unrelated grants`, async ({
   page,
 }) => {
   await page.addInitScript(() =>
@@ -1970,7 +1996,8 @@ test('store role uses terminal global product-center candidates and saves withou
       }),
     ),
   );
-  const grant = 'store.finished-stock-management.select';
+  const category = scope === 'batch category';
+  const grant = category ? batchCategoryGrants.join(',') : 'store.finished-stock-management.select';
   let permissions = '';
   await page.route('**/api/admin/roles**', async (route) => {
     if (route.request().url().includes('permission-scope'))
@@ -2015,12 +2042,18 @@ test('store role uses terminal global product-center candidates and saves withou
   await open();
   const dialog = page.locator('.t-dialog:visible').filter({ hasText: '权限配置' });
   const matrix = dialog.locator('.permission-matrix');
-  await expect(matrix.locator('.permission-action-grid .t-checkbox')).toHaveText(['选品中心']);
-  await matrix.getByText('选品中心', { exact: true }).click();
+  const label = category ? '批量设置分类' : '选品中心';
+  const choices = matrix.getByRole('checkbox', { name: label, exact: true });
+  await expect(choices).toHaveCount(category ? 4 : 1);
+  if (!category) await expect(matrix.locator('.permission-action-grid .t-checkbox')).toHaveText(['选品中心']);
+  for (const target of await matrix.getByText(label, { exact: true }).all()) await target.click();
   await dialog.getByRole('button', { name: '确认配置权限', exact: true }).click();
   await expect(dialog).toBeHidden();
-  expect(permissions).toBe(grant);
+  const expected = category ? [...batchCategoryGrants, ...batchCategoryGrants.map(code => code.replace('batch-set-category', 'view'))] : [grant];
+  expect(permissions.split(',').sort()).toEqual(expected.sort());
   await open();
-  await expect(dialog.getByRole('checkbox', { name: '选品中心', exact: true })).toBeChecked();
-  await expect(matrix.locator('.permission-action-grid .t-checkbox')).toHaveText(['选品中心']);
+  await expect(choices).toHaveCount(category ? 4 : 1);
+  for (const checkbox of await choices.all()) await expect(checkbox).toBeChecked();
+  if (!category) await expect(matrix.locator('.permission-action-grid .t-checkbox')).toHaveText(['选品中心']);
 });
+}

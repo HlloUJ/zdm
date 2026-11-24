@@ -60,11 +60,11 @@ for (const [client, path, resource] of surfaces) {
         offShelfRecords: [],
         price: { cost: 10, guide: 20 },
       }));
-      for (const option of ['attribute-template-options', 'price-level-options', 'categories'])
+      for (const option of ['attribute-template-options', 'price-level-options', resource.startsWith('store-') ? 'list/categories' : 'categories'])
         await page.route(`**/api/admin/${resource}/${option}`, (route) =>
           route.fulfill({ json: { code: 0, data: [] } }),
         );
-      for (const option of ['attribute-template-options', 'price-level-options', 'categories'])
+      for (const option of ['attribute-template-options', 'price-level-options', resource.startsWith('store-') ? 'list/categories' : 'categories'])
         await page.route(`**/api/admin/${resource}/${option}`, (route) =>
           route.fulfill({ json: { code: 0, data: [] } }),
         );
@@ -174,7 +174,7 @@ for (const [client, path, resource] of surfaces) {
       markupPrices: [],
       offShelfRecords: [],
     }));
-    for (const option of ['attribute-template-options', 'price-level-options', 'categories'])
+    for (const option of ['attribute-template-options', 'price-level-options', resource.startsWith('store-') ? 'list/categories' : 'categories'])
       await page.route(`**/api/admin/${resource}/${option}`, (route) => route.fulfill({ json: { code: 0, data: [] } }));
     await page.route(`**/api/admin/${resource}`, (route) => route.fulfill({ json: { code: 0, data: products } }));
     await page.goto(`${path}?tab=all`);

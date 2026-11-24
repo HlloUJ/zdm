@@ -1430,6 +1430,51 @@ class StoreAccessoryProductServiceTest extends SpringContainerTestSupport {
 
   @Test
   @Transactional
+  void batchCategoryCalculatesEmptySkusAndFreezesOnlyAutomaticPrices() throws Exception {
+    Long id = salePriceFixture();
+    java.util.function.Consumer<String> warehouse = state -> assertThat(state).isEqualTo("warehouse");
+    products.setBatchCategory(id, 99602L, warehouse);
+    assertThat(products.detail(id).skus()).allSatisfy(sku -> assertThat(sku.salePrice()).isNull());
+    products.setBatchCategory(id, 99601L, warehouse);
+    assertThat(products.detail(id).skus()).extracting(sku -> sku.salePrice().toPlainString()).containsExactly("150.00", "300.00");
+    products.saveEdit(id, 99601L, List.of(saleInputs("auto").getFirst(), saleInputs("manual").getLast()));
+    products.setBatchCategory(id, 99602L, warehouse);
+    priceRules.savePriceBatch("accessory", List.of(99601L), new BigDecimal("2.00"));
+    products.setBatchCategory(id, 99601L, warehouse);
+    assertThat(products.detail(id).skus()).allSatisfy(sku -> assertThat(sku.priceMode()).isEqualTo("manual"));
+    assertThat(products.detail(id).skus()).extracting(sku -> sku.salePrice().toPlainString()).containsExactly("150.00", "250.00");
+    assertThatThrownBy(() -> products.setBatchCategory(id, 99603L, warehouse)).isInstanceOf(IllegalArgumentException.class);
+    identityWithPermissions(99601L, "store.accessory-management.all.view", "store.accessory-management.warehouse.batch-set-category");
+    mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/admin/store-accessory-products/batch-set-category")
+        .contentType("application/json").content("{\"categoryId\":99602,\"tab\":\"all\",\"ids\":[" + id + "]}"))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  @Transactional
+  void batchRepricesSellingSkusAndPreservesPriceWhenTierPriceIsMissing() throws Exception {
+    Long id = salePriceFixture();
+    jdbc.update("INSERT INTO accessory_product_guide_prices(accessory_product_id,sku_id,variant_label,price_coefficient,cost_price,price) VALUES(99601,99601,'规格一',3,10,30),(99601,99602,'规格二',3,20,60)");
+    sqlSession.clearCache();
+    products.setBatchCategory(id, 99601L, state -> assertThat(state).isEqualTo("warehouse"));
+    products.changeStatus(id, "selling", null, null);
+    priceRules.savePriceBatch("accessory", List.of(99602L), new BigDecimal("2.00"));
+    jdbc.update("DELETE FROM accessory_product_prices WHERE sku_id=99602");
+    sqlSession.clearCache();
+    identityWithPermissions(99601L, "store.accessory-management.selling.view", "store.accessory-management.selling.batch-set-category");
+    mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/admin/store-accessory-products/batch-set-category")
+        .contentType("application/json").content("{\"categoryId\":99602,\"tab\":\"selling\",\"ids\":[" + id + ",99999999]}"))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.data.successCount").value(1))
+        .andExpect(jsonPath("$.data.failureCount").value(1)).andExpect(jsonPath("$.data.failures[0].id").value(99999999));
+    var result = products.detail(id);
+    assertThat(result.storeCategoryId()).isEqualTo(99602L);
+    assertThat(result.status()).isEqualTo("selling");
+    assertThat(result.skus()).extracting(sku -> sku.priceMode()).containsExactly("auto", "manual");
+    assertThat(result.skus()).extracting(sku -> sku.salePrice().toPlainString()).containsExactly("200.00", "300.00");
+  }
+
+  @Test
+  @Transactional
   void saleModesFollowCurrentPricesAndFreezeBeforeRulesOrCategoriesDisappear() {
     Long id = salePriceFixture();
     products.saveEdit(id, 99601L, saleInputs("auto"));

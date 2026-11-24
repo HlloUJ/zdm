@@ -65,7 +65,7 @@ async function setup(page: Page, surface: Surface, permissions = ['all']) {
     attributeNames: {},
   }));
   await page.route(`**/api/admin/${surface.kind}`, (route) => route.fulfill({ json: { code: 0, data: records } }));
-  await page.route(`**/api/admin/${surface.kind}/categories`, (route) =>
+  await page.route(`**/api/admin/${surface.kind}/${surface.client === 'store' ? 'list/categories' : 'categories'}`, (route) =>
     route.fulfill({ json: { code: 0, data: [] } }),
   );
   await page.route(`**/api/admin/${surface.kind}/attribute-template-options`, (route) =>
@@ -86,7 +86,7 @@ for (const surface of surfaces) {
       '回收站（1）',
     ]);
     await expect(main.locator('.t-tabs__nav-item').first()).toHaveClass(/t-is-active/);
-    await expect(main.getByRole('columnheader', { name: '创建人', exact: true })).toBeVisible();
+    await expect(main.getByRole('columnheader', { name: '创建人', exact: true })).toHaveCount(surface.client === 'store' ? 0 : 1);
     await expect(main.getByRole('columnheader', { name: '创建时间', exact: true })).toBeVisible();
     for (const header of await main.locator('thead th').all())
       await expect(header).toHaveCSS('text-align', (await header.getByRole('checkbox').count()) ? 'center' : 'left');
@@ -99,7 +99,8 @@ for (const surface of surfaces) {
     await expect(rows).toHaveCount(2);
     await expect(rows.first()).toContainText('汇总商品-selling');
     await expect(rows.last()).toContainText('汇总商品-warehouse');
-    await expect(rows.first()).toContainText('真实创建人');
+    if (surface.client === 'store') await expect(rows.first()).not.toContainText('真实创建人');
+    else await expect(rows.first()).toContainText('真实创建人');
     await expect(rows.first()).not.toContainText('本次状态操作人');
     await expect(main.locator('thead').getByRole('checkbox')).toHaveCount(1);
     await expect(main.getByRole('button', { name: '批量上架', exact: true })).toHaveCount(1);
@@ -368,3 +369,65 @@ test('warehouse entry combines full reason and detail with two-line secondary te
     page.locator('.t-popup__content:visible').getByText('价格调整；调整后上架', { exact: true }),
   ).toHaveCount(0);
 });
+
+for (const surface of surfaces.filter(item => item.client === 'store')) {
+  const p = prefix(surface);
+  for (const granted of ['warehouse', 'selling', 'both']) {
+    test(`${surface.path} grants category action per tab (${granted})`, async ({ page }) => {
+      const states = ['warehouse', 'selling'];
+      const grants = states.filter(state => granted === 'both' || granted === state);
+      await setup(page, surface, [
+        p + '.all.view', ...states.map(state => p + '.' + state + '.view'),
+        ...grants.map(state => p + '.' + state + '.batch-set-category'),
+      ]);
+      const main = page.getByRole('main');
+      const action = main.getByRole('button', { name: '批量设置分类', exact: true });
+      await expect(action).toHaveCount(granted === 'both' ? 1 : 0);
+      for (const [state, label] of [['warehouse', '仓库中'], ['selling', '已上架']]) {
+        await main.locator('.t-tabs__nav-item').filter({ hasText: label }).click();
+        await expect(action).toHaveCount(grants.includes(state) ? 1 : 0);
+        if (grants.includes(state)) await expect(action).toBeDisabled();
+      }
+    });
+  }
+  test(`${surface.path} selects a leaf and shows the coefficient warning before a partial batch`, async ({ page }) => {
+    await setup(page, surface);
+    const base = '**/api/admin/' + surface.kind;
+    await page.route(base + '/list/categories', route => route.fulfill({ json: { code: 0, data: [
+      { id: 5, parentId: null, name: '家具', status: 'enabled' },
+      { id: 6, parentId: 5, name: '桌椅', status: 'enabled', coefficient: null },
+      { id: 7, parentId: 5, name: '沙发', status: 'enabled', coefficient: 1.5 },
+      { id: 8, parentId: 5, name: '停用分类', status: 'disabled' },
+    ] } }));
+    const submissions: unknown[] = [];
+    await page.route(base + '/batch-set-category', route => {
+      submissions.push(route.request().postDataJSON());
+      return route.fulfill({ json: { code: 0, data: { total: 2, successCount: 1, failureCount: 1,
+        failures: [{ id: 901, code: 'VALIDATION_FAILED', reason: '商品状态已变更' }] } } });
+    });
+    await page.reload();
+    const main = page.getByRole('main');
+    await main.locator('thead .t-checkbox').click();
+    const action = main.getByRole('button', { name: '批量设置分类', exact: true });
+    await action.click();
+    const dialog = page.locator('.t-dialog:visible');
+    await dialog.getByRole('button', { name: '家具' }).click();
+    const confirm = dialog.getByRole('button', { name: '确认批量设置分类' });
+    await expect(confirm).toBeDisabled();
+    await expect(dialog.getByText('停用分类')).toHaveCount(0);
+    await dialog.getByRole('button', { name: '桌椅' }).click();
+    await expect(dialog.getByText('该分类未设置价格系数')).toBeVisible();
+    await expect(dialog.getByText('保留当前售价，并转为手工定价')).toBeVisible();
+    await dialog.getByRole('button', { name: '沙发' }).click();
+    await expect(dialog.getByText('该分类未设置价格系数')).toHaveCount(0);
+    await dialog.getByRole('button', { name: '取消' }).click();
+    expect(submissions).toEqual([]);
+    await action.click();
+    await dialog.getByRole('button', { name: '家具' }).click();
+    await dialog.getByRole('button', { name: '桌椅' }).click();
+    await confirm.click();
+    await expect(dialog.getByText('成功设置分类1件，失败1件。')).toBeVisible();
+    await expect(dialog.getByText('商品状态已变更')).toBeVisible();
+    expect(submissions).toEqual([{ ids: expect.arrayContaining([900, 901]), tab: 'all', categoryId: 6 }]);
+  });
+}

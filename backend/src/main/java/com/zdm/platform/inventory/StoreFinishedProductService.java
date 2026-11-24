@@ -477,6 +477,65 @@ public class StoreFinishedProductService {
     return null;
   }
 
+  public List<StoreFinishedSalePriceService.Category> storeCategories() {
+    var store = scopes.require();
+    return List.copyOf(salePrices.context(store.storeId(), List.of()).categories().values());
+  }
+
+  @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
+  public void setBatchCategory(Long id, Long categoryId, java.util.function.Consumer<String> authorize) {
+    var store = scopes.require();
+    var listing = listing(store, id, false);
+    var source = source(number(listing.get("finished_product_id")), true);
+    salePrices.lockCategories(store.storeId());
+    listing = listing(store, id, true);
+    String status = (String) listing.get("status");
+    authorize.accept("selling".equals(status) && stock(source) == 0 ? "soldOut" : status);
+    requirePriceEditable(listing, source);
+    var context = salePrices.context(store.storeId(), List.of(id));
+    salePrices.requireCategory(context, categoryId);
+    var product = publicProduct(number(listing.get("finished_product_id")));
+    Long previousCategory = number(listing.get("store_category_id"));
+    BigDecimal coefficient = context.coefficient(categoryId);
+    var before = salesEditSnapshot(detail(id), store.storeLevelId());
+    var variants = product.getVariants() == null ? List.<FinishedProductVariant>of() : product.getVariants();
+    boolean complete = !variants.isEmpty();
+    for (var variant : variants) {
+      Long sku = variant.getId();
+      var saved = context.prices().get(new StoreFinishedSalePriceService.Key(id, sku));
+      if (saved != null && "manual".equals(saved.mode()) && saved.amount() != null) continue;
+      BigDecimal basePrice = partnerPrice(store, product, sku);
+      BigDecimal next = StoreFinishedSalePriceService.calculate(basePrice, coefficient);
+      if (next != null) {
+        requirePrice(next);
+        salePrices.save(id, sku, new StoreFinishedSalePriceService.Price(next, "auto", coefficient), store.accountId());
+      } else if (saved != null && "auto".equals(saved.mode())) {
+        var previous = context.effective(id, sku, previousCategory, basePrice);
+        var amount = previous.amount() != null ? previous.amount() : saved.amount();
+        salePrices.save(id, sku, new StoreFinishedSalePriceService.Price(amount, "manual", previous.amount() == null ? saved.coefficient() : previous.coefficient()), store.accountId());
+        if (amount == null) complete = false;
+      } else {
+        complete = false;
+      }
+    }
+    jdbc.update("UPDATE store_finished_products SET store_category_id=?, sale_price_attention=IF(?,FALSE,sale_price_attention) WHERE id=? AND tenant_id=? AND store_id=?",
+        categoryId, complete, id, store.tenantId(), store.storeId());
+    Map<String, Object> changes = new LinkedHashMap<>();
+    if (!Objects.equals(previousCategory, categoryId)) {
+      changes.put("门店分类", change(context.categoryName(previousCategory), context.categoryName(categoryId)));
+    }
+    var after = salesEditSnapshot(detail(id), store.storeLevelId());
+    before.forEach((field, value) -> {
+      if (!Objects.equals(json.valueToTree(value), json.valueToTree(after.get(field)))) {
+        changes.put(field, change(value, after.get(field)));
+      }
+    });
+    if (!changes.isEmpty()) {
+      operationLogs.retainChangedVariants(before, after, changes);
+      log(store, id, product.getId(), product.getName(), "UPDATE", "批量设置分类", status, status, changes);
+    }
+  }
+
   public List<StoreFinishedSalePriceService.Category> editCategories(Long id) {
     var store = scopes.require(); listing(store, id, false);
     return List.copyOf(salePrices.context(store.storeId(), List.of()).categories().values());

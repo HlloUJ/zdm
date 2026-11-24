@@ -201,8 +201,8 @@ describe('full function catalog', () => {
     const storeValues = getFunctionCatalogPermissionValues(terminalFunctionTrees.store);
     expect(storeValues).toContain('store.finished-stock-management.select');
     expect(stock.menus[0].pages[0].tabs.slice(1, 3).map((tab) => tab.actions.map((action) => action.label))).toEqual([
-      ['查看', '上架', '编辑', '删除'],
-      ['查看', '下架', '编辑', '删除'],
+      ['查看', '上架', '编辑', '批量设置分类', '删除'],
+      ['查看', '下架', '编辑', '批量设置分类', '删除'],
     ]);
     expect(storeValues).toContain('store.finished-stock-management.selling.off-shelf');
     expect(storeValues).toContain('store.finished-stock-management.selling.delete');

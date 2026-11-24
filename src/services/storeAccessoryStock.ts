@@ -113,6 +113,13 @@ export interface StoreFinishedEditCategory {
   status: string;
   coefficient: number | null;
 }
+export const listStoreCategories = () => request<StoreFinishedEditCategory[]>(`${base}/list/categories`);
+export const setStoreCategories = (ids: number[], categoryId: number, tab: string) =>
+  request<import('./operationsBatchShelf').BatchShelfResult>(`${base}/batch-set-category`, {
+    method: 'POST',
+    body: json({ ids, categoryId, tab }),
+  });
+
 export const listStoreFinishedEditCategories = (id: number) =>
   request<StoreFinishedEditCategory[]>(`${base}/${id}/edit-categories`);
 export const saveStoreFinishedEdit = (
