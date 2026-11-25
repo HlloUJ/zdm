@@ -296,8 +296,10 @@
       }
     },
     "src/components/foundation/AdminMediaPreviewDialog.vue": {
-      "script": "1395d55a6319d3f292cae3d1cae87728d434a0c9ead08299defdf880cdef0dc7",
-      "actions": {}
+      "script": "f1e0aa59df57993d5b66b690eec277c6af54c2e0a54028b96b59206f1fb8a4cb",
+      "actions": {
+        "update:visible → emit('update:visible', $event)": "view"
+      }
     },
     "src/components/foundation/AdminListLayout.vue": {
       "script": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",

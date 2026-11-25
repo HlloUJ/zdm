@@ -10,6 +10,7 @@
     show-overlay
     close-on-overlay-click
     :footer="false"
+    @update:visible="emit('update:visible', $event)"
   >
     <slot />
   </AdminDialog>
@@ -19,6 +20,7 @@
 import AdminDialog from './AdminDialog.vue';
 
 defineProps<{ visible: boolean; header: string }>();
+const emit = defineEmits<{ 'update:visible': [visible: boolean] }>();
 </script>
 
 <style>
