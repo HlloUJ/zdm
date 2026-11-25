@@ -92,7 +92,12 @@ public class StoreAccessoryProductService {
       records = List.copyOf(records);
     }
   }
-  public record SalePriceInput(Long skuId, BigDecimal salePrice, String priceMode, BigDecimal saleCoefficient) {}
+  public record SalePriceInput(Long skuId, BigDecimal salePrice, String priceMode, BigDecimal saleCoefficient,
+      boolean preservePricing) {
+    public SalePriceInput(Long skuId, BigDecimal salePrice, String priceMode, BigDecimal saleCoefficient) {
+      this(skuId, salePrice, priceMode, saleCoefficient, false);
+    }
+  }
 
   @org.springframework.beans.factory.annotation.Autowired
   private AccessoryStateActivityService stateActivities;
@@ -502,21 +507,20 @@ public class StoreAccessoryProductService {
     boolean complete = !variants.isEmpty();
     for (var variant : variants) {
       Long sku = variant.getId();
-      var saved = context.prices().get(new StoreAccessorySalePriceService.Key(id, sku));
-      if (saved != null && "manual".equals(saved.mode()) && saved.amount() != null) continue;
       BigDecimal basePrice = partnerPrice(store, product, sku);
-      BigDecimal next = StoreAccessorySalePriceService.calculate(basePrice, coefficient);
-      if (next != null) {
-        requirePrice(next);
-        salePrices.save(id, sku, new StoreAccessorySalePriceService.Price(next, "auto", coefficient), store.accountId());
-      } else if (saved != null && "auto".equals(saved.mode())) {
-        var previous = context.effective(id, sku, previousCategory, basePrice);
-        var amount = previous.amount() != null ? previous.amount() : saved.amount();
-        salePrices.save(id, sku, new StoreAccessorySalePriceService.Price(amount, "manual", previous.amount() == null ? saved.coefficient() : previous.coefficient()), store.accountId());
-        if (amount == null) complete = false;
-      } else {
-        complete = false;
+      var previous = context.effective(id, sku, previousCategory, basePrice);
+      var price = previous;
+      if ("auto".equals(previous.mode())) {
+        BigDecimal amount = StoreAccessorySalePriceService.calculate(basePrice, coefficient);
+        if (amount != null) {
+          requirePrice(amount);
+          price = new StoreAccessorySalePriceService.Price(amount, "auto", coefficient);
+        }
       }
+      if (!price.sameValues(context.prices().get(new StoreAccessorySalePriceService.Key(id, sku)))) {
+        salePrices.save(id, sku, price, store.accountId());
+      }
+      if (price.amount() == null || price.coefficient() == null) complete = false;
     }
     jdbc.update("UPDATE store_accessory_products SET store_category_id=?, sale_price_attention=IF(?,FALSE,sale_price_attention) WHERE id=? AND tenant_id=? AND store_id=?",
         categoryId, complete, id, store.tenantId(), store.storeId());
@@ -541,7 +545,7 @@ public class StoreAccessoryProductService {
     return List.copyOf(salePrices.context(store.storeId(), List.of()).categories().values());
   }
 
-  @Transactional
+  @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
   public ProductView saveEdit(Long id, Long categoryId, List<SalePriceInput> inputs) {
     var store = scopes.require();
     Map<String, Object> listing = listing(store, id, false);
@@ -567,23 +571,35 @@ public class StoreAccessoryProductService {
     for (SalePriceInput input : inputs) {
       if (!List.of("auto", "manual").contains(Objects.toString(input.priceMode(), ""))) { throw new IllegalArgumentException("商品售价模式不正确"); }
       BigDecimal partner = partnerPrice(store, product, input.skuId());
-      BigDecimal amount = "auto".equals(input.priceMode()) ? StoreAccessorySalePriceService.calculate(partner, context.coefficient(categoryId)) : input.salePrice();
-      if (amount == null && "auto".equals(input.priceMode())) { throw new IllegalArgumentException("价格配置已变化，请刷新后重新填写商品售价"); }
-      if (amount == null) { throw new IllegalArgumentException("请输入商品售价"); }
-      requirePrice(amount);
-      BigDecimal coefficient = "auto".equals(input.priceMode()) ? context.coefficient(categoryId) : input.saleCoefficient();
-      if (coefficient == null) { throw new IllegalArgumentException("请输入系数"); }
-      requirePrice(coefficient);
       var before = context.effective(id, input.skuId(), previousCategory, partner);
-      boolean coefficientChanged = before.coefficient() == null || before.coefficient().compareTo(coefficient) != 0;
-      boolean amountChanged = before.amount() == null || before.amount().compareTo(amount) != 0;
-      if (!Objects.equals(before.mode(), input.priceMode()) || amountChanged || coefficientChanged) {
-        salesChanged = true;
+      StoreAccessorySalePriceService.Price next;
+      String mode = input.preservePricing() ? before.mode() : input.priceMode();
+      if ("auto".equals(mode)) {
+        BigDecimal coefficient = context.coefficient(categoryId);
+        BigDecimal amount = StoreAccessorySalePriceService.calculate(partner, coefficient);
+        if (amount != null) {
+          requirePrice(amount);
+          next = new StoreAccessorySalePriceService.Price(amount, "auto", coefficient);
+        } else if ("auto".equals(before.mode())) {
+          next = before;
+        } else {
+          throw new IllegalArgumentException("价格配置已变化，请刷新后重新填写商品售价");
+        }
+      } else {
+        next = input.preservePricing() ? before : new StoreAccessorySalePriceService.Price(input.salePrice(), "manual", input.saleCoefficient());
+        boolean carryOnCategoryChange = !Objects.equals(previousCategory, categoryId) && before.sameValues(next);
+        if (next.amount() != null) requirePrice(next.amount());
+        else if (!carryOnCategoryChange) throw new IllegalArgumentException("请输入商品售价");
+        if (next.coefficient() != null) requirePrice(next.coefficient());
+        else if (!carryOnCategoryChange) throw new IllegalArgumentException("请输入系数");
       }
-      prepared.put(input.skuId(), new StoreAccessorySalePriceService.Price(amount, input.priceMode(), coefficient));
+      if (!before.sameValues(next)) salesChanged = true;
+      prepared.put(input.skuId(), next);
     }
     prepared.forEach((skuId, price) -> salePrices.save(id, skuId, price, store.accountId()));
-    jdbc.update("UPDATE store_accessory_products SET store_category_id=?, sale_price_attention=FALSE WHERE id=? AND tenant_id=? AND store_id=?", categoryId, id, store.tenantId(), store.storeId());
+    boolean complete = !prepared.isEmpty() && prepared.values().stream().allMatch(price -> price.amount() != null && price.coefficient() != null);
+    jdbc.update("UPDATE store_accessory_products SET store_category_id=?, sale_price_attention=IF(?,FALSE,sale_price_attention) WHERE id=? AND tenant_id=? AND store_id=?",
+        categoryId, complete, id, store.tenantId(), store.storeId());
     ProductView updated = detail(id);
     if (salesChanged) {
       Map<String, Object> afterSales = salesEditSnapshot(updated, store.storeLevelId());

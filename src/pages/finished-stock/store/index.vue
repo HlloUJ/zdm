@@ -400,6 +400,7 @@ import { deleteProductsBatch } from '@/services/productBatchDelete';
 import { canBatchDelete } from '@/services/productBatchPermissions';
 import { batchRequestError } from '@/services/productBatchFeedback';
 import StoreBatchCategoryDialog from './StoreBatchCategoryDialog.vue';
+import { storeCategoryTree } from './storeCategoryTree';
 import { storeSalePriceLines } from './storeSalePriceLines';
 import OperationsBatchShelfResult from '@/components/OperationsBatchShelfResult.vue';
 import { shelfProductsFromAll } from '@/services/productAllBatchShelf';
@@ -526,12 +527,12 @@ const categoryAdjustmentMessages = {
   },
 };
 const categoryAdjustments = computed(() => {
-  const parents = new Set(listCategories.value.map(item => item.parentId));
+  const tree = storeCategoryTree(listCategories.value);
   const adjustments = new Map<number, { label: string; description: string }>();
   for (const category of listCategories.value) {
     if (category.status === 'disabled') {
       adjustments.set(category.id, categoryAdjustmentMessages.disabled);
-    } else if (category.status === 'enabled' && parents.has(category.id)) {
+    } else if (tree.enabledIds.has(category.id) && !tree.leafIds.has(category.id)) {
       adjustments.set(category.id, categoryAdjustmentMessages.nonLeaf);
     }
   }

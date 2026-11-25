@@ -96,6 +96,7 @@ export function registerStoreCategoryAdjustmentTests(
     await login(page);
     const tree = [
       ...categories.map(item => ({ ...item, status: item.id === 7 ? 'enabled' : 'disabled' })),
+      { id: 11, parentId: 7, name: '另一个子分类', status: 'enabled', coefficient: null },
       { id: 10, parentId: null, name: '正常末级', status: 'enabled', coefficient: null },
     ];
     const records = [
@@ -136,6 +137,13 @@ export function registerStoreCategoryAdjustmentTests(
       await expect(rows.getByText(name, { exact: true })).toHaveCount(1);
     }
 
+    tree.find(item => item.id === 11)!.status = 'disabled';
+    await page.reload();
+    await applyAdjustmentFilter();
+    await expect(rows).toHaveCount(2);
+    await expect(levelTags).toHaveCount(0);
+    await expect(disabledTags).toHaveCount(2);
+
     for (const category of tree) category.status = 'enabled';
     await page.reload();
     await applyAdjustmentFilter();
@@ -149,7 +157,8 @@ export function registerStoreCategoryAdjustmentTests(
     const record = product({ storeCategoryId: 7, storeCategoryName: '休闲椅' });
     await page.route(api, (route) => route.fulfill({ json: ok([record]) }));
     await page.route(`${api}/41`, (route) => route.fulfill({ json: ok(record) }));
-    await page.route(`${api}/41/edit-categories`, (route) => route.fulfill({ json: ok(categories) }));
+    const tree = categories.map(item => ({ ...item }));
+    await page.route(`${api}/41/edit-categories`, (route) => route.fulfill({ json: ok(tree) }));
     await page.goto(productWarehouseUrl(`/store/${module}/41/edit`));
     const main = page.getByRole('main');
     const save = main.locator('.form-submit-bar').getByRole('button', { name: '确认保存', exact: true });
@@ -161,5 +170,11 @@ export function registerStoreCategoryAdjustmentTests(
     await expect(save).toBeDisabled();
     await panel.getByText('木质单人椅', { exact: true }).click();
     await expect(save).toBeEnabled();
+    for (const node of tree.filter(item => item.parentId != null)) node.status = 'disabled';
+    await page.reload();
+    await expect(save).toBeEnabled();
+    await main.locator('.t-cascader input').click();
+    await expect(panel.getByText('休闲椅', { exact: true })).toBeVisible();
+    await expect(panel.getByText('单人椅', { exact: true })).toHaveCount(0);
   });
 }

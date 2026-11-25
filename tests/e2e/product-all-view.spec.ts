@@ -457,7 +457,7 @@ for (const surface of surfaces.filter(item => item.client === 'store')) {
       { id: 5, parentId: null, name: '家具', status: 'enabled' },
       { id: 6, parentId: 5, name: '桌椅', status: 'enabled', coefficient: null },
       { id: 7, parentId: 5, name: '沙发', status: 'enabled', coefficient: 1.5 },
-      { id: 8, parentId: 5, name: '停用分类', status: 'disabled' },
+      { id: 8, parentId: 6, name: '停用分类', status: 'disabled' },
     ] } }));
     const submissions: unknown[] = [];
     await page.route(base + '/batch-set-category', route => {
@@ -482,20 +482,16 @@ for (const surface of surfaces.filter(item => item.client === 'store')) {
     await dialog.getByRole('button', { name: '桌椅' }).click();
     await expect(dialog.getByText('该分类未设置价格系数')).toBeVisible();
     const description = dialog.locator('.category-warning-description');
-    await expect(description.locator(':scope > div')).toHaveText([
-      '更换此分类，规格当前售价不变，但会转为手工定价。',
-      '再次更换有价格系数的分类时，需主动切回“跟随价格配置浮动”，才会自动重新计算价格。',
-      '已有售价保留，未定价的规格继续留空。',
-    ]);
+    await expect(description).toHaveText('跟随价格配置浮动的规格将保留原有效系数和售价，恢复有效计算条件后自动重算。手动价格保留原售价，原本为空的继续留空。');
+    await expect(confirm).toBeEnabled();
+    await expect(dialog.getByText('停用分类')).toHaveCount(0);
     const secondary = await dialog.locator('.category-picker-path').evaluate(element => {
       const style = getComputedStyle(element);
       return { font: style.font, color: style.color };
     });
-    for (const element of await description.locator('*').all()) {
-      await expect(element).toHaveCSS('font', secondary.font);
-      await expect(element).toHaveCSS('color', secondary.color);
-      await expect(element).toHaveCSS('font-weight', '400');
-    }
+    await expect(description).toHaveCSS('font', secondary.font);
+    await expect(description).toHaveCSS('color', secondary.color);
+    await expect(description).toHaveCSS('font-weight', '400');
     await dialog.getByRole('button', { name: '沙发' }).click();
     await expect(dialog.getByText('该分类未设置价格系数')).toHaveCount(0);
     await dialog.getByRole('button', { name: '取消' }).click();

@@ -90,6 +90,7 @@
                           placeholder="请输入系数"
                           label="系数"
                           :submitted="submitted"
+                          :optional="mayCarryIncomplete(sku(row.skuId)) && sku(row.skuId).saleCoefficient == null"
                           @change="editDraftCoefficient(drafts[row.skuId], $event, sku(row.skuId).costPrice)"
                         />
                         <SpecPriceInput
@@ -99,6 +100,7 @@
                           label="商品售价"
                           placeholder="请输入商品售价"
                           :submitted="submitted"
+                          :optional="mayCarryIncomplete(sku(row.skuId)) && sku(row.skuId).salePrice == null"
                           @change="editDraftPrice(drafts[row.skuId], $event, sku(row.skuId).costPrice)"
                         />
                         <PriceSourceToggle
@@ -230,11 +232,13 @@ import {
 const { listStoreFinishedEditCategories, saveStoreFinishedEdit } = commodity.store;
 import StoreProductDetail from '../shared/StoreFinishedStockDetailAdapter.vue';
 import SpecPriceInput from '../management/components/SpecPriceInput.vue';
+import { storeCategoryTree } from './storeCategoryTree';
 import PriceSourceToggle from '../management/components/PriceSourceToggle.vue';
 import { isValidSpecPriceNumber } from '../management/priceValidation';
 import {
   calculateSalePrice,
   changeDraftCategory,
+  carriesPrice,
   createSalePriceDraft,
   editDraftPrice,
   editDraftCoefficient,
@@ -371,33 +375,25 @@ function applyBatchSalePrice() {
 interface CategoryOption {
   label: string;
   value: number;
-  disabled: boolean;
   children?: CategoryOption[];
 }
+const tree = computed(() => storeCategoryTree(categories.value));
 const categoryOptions = computed(() => {
-  const build = (parentId: number | null, parentEnabled: boolean, visited: Set<number>): CategoryOption[] =>
-    categories.value
-      .filter((item) => item.parentId === parentId && !visited.has(item.id))
-      .map((item) => {
-        const enabled = parentEnabled && item.status === 'enabled';
-        const children = build(item.id, enabled, new Set([...visited, item.id]));
-        return { label: item.name, value: item.id, disabled: !enabled, ...(children.length ? { children } : {}) };
-      });
-  return build(null, true, new Set());
+  const options = (parentId: number | null): CategoryOption[] =>
+    (tree.value.children.get(parentId) ?? []).map((item) => ({
+      label: item.name,
+      value: item.id,
+      ...(tree.value.leafIds.has(item.id) ? {} : { children: options(item.id) }),
+    }));
+  return options(null);
 });
-const selectedLeaf = computed(() => {
-  const byId = new Map(categories.value.map(item => [item.id, item]));
-  const category = form.categoryId == null ? undefined : byId.get(form.categoryId);
-  if (!category || categories.value.some((item) => item.parentId === category.id)) return undefined;
-  const seen = new Set<number>();
-  let current: StoreFinishedEditCategory | undefined = category;
-  while (current && current.status === 'enabled' && !seen.has(current.id)) {
-    if (current.parentId == null) return category;
-    seen.add(current.id);
-    current = byId.get(current.parentId);
-  }
-  return undefined;
-});
+const selectedLeaf = computed(() =>
+  categories.value.find(item => item.id === form.categoryId && tree.value.leafIds.has(item.id)),
+);
+function mayCarryIncomplete(item: StoreSkuPrice) {
+  return (form.categoryId !== props.product.storeCategoryId || item.priceMode === 'auto') &&
+    carriesPrice(drafts[item.skuId], item);
+}
 const coefficient = computed(() => selectedLeaf.value?.coefficient ?? null);
 const sku = (id: number) => props.product.skus.find((item) => item.skuId === id)!;
 const canFollow = (id: number) => ready.value && coefficient.value != null && sku(id).costPrice != null;
@@ -436,7 +432,8 @@ async function save() {
     if (
       props.product.skus.some(
         (item) =>
-          !isValidSpecPriceNumber(drafts[item.skuId].price) || !isValidSpecPriceNumber(drafts[item.skuId].coefficient),
+          !mayCarryIncomplete(item) &&
+          (!isValidSpecPriceNumber(drafts[item.skuId].price) || !isValidSpecPriceNumber(drafts[item.skuId].coefficient)),
       )
     )
       return rejectFormSubmission(productFormRoot.value);
@@ -444,6 +441,10 @@ async function save() {
       storeCategoryId: category.id,
       skus: props.product.skus.map((item) => ({
         skuId: item.skuId,
+        ...(category.id !== props.product.storeCategoryId &&
+          drafts[item.skuId].mode === item.priceMode &&
+          (item.priceMode === 'auto' || carriesPrice(drafts[item.skuId], item))
+          ? { preservePricing: true } : {}),
         salePrice: drafts[item.skuId].price === '' ? null : Number(drafts[item.skuId].price),
         priceMode: drafts[item.skuId].mode,
         saleCoefficient: drafts[item.skuId].coefficient === '' ? null : Number(drafts[item.skuId].coefficient),

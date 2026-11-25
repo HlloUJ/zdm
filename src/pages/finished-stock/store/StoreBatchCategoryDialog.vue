@@ -20,15 +20,14 @@
     <div v-if="path.length" class="category-picker-path">已选择：{{ path.map(id => byId.get(id)?.name).join(' > ') }}</div>
     <t-alert v-if="leaf && leaf.coefficient == null" theme="warning" title="该分类未设置价格系数">
       <div class="category-warning-description">
-        <div>更换此分类，规格当前售价不变，但会转为手工定价。</div>
-        <div>再次更换有价格系数的分类时，需主动切回“跟随价格配置浮动”，才会自动重新计算价格。</div>
-        <div>已有售价保留，未定价的规格继续留空。</div>
+        跟随价格配置浮动的规格将保留原有效系数和售价，恢复有效计算条件后自动重算。手动价格保留原售价，原本为空的继续留空。
       </div>
     </t-alert>
   </AdminDialog>
 </template>
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import { storeCategoryTree } from './storeCategoryTree';
 import type { StoreFinishedEditCategory as Category } from '@/services/storeFinishedStock';
 import { AdminDialog } from '@/components/foundation';
 import { operationConfirmation } from '@/components/foundation/actions/confirmation';
@@ -36,31 +35,14 @@ const props = defineProps<{ categories: Category[]; busy: boolean }>();
 const emit = defineEmits<{ submit: [id: number]; cancel: [] }>();
 const path = ref<number[]>([]);
 const byId = computed(() => new Map(props.categories.map(c => [c.id, c])));
-const parents = computed(() => new Set(props.categories.map(category => category.parentId)));
-const available = computed(() => {
-  const result = new Set<number>();
-  // Keep only enabled paths ending in a real leaf, including shallow categories.
-  for (const item of props.categories) {
-    if (hasChildren(item.id)) continue;
-    const ancestors = new Set<number>();
-    let node: Category | undefined = item;
-    while (node && node.status === 'enabled' && !ancestors.has(node.id)) {
-      ancestors.add(node.id);
-      if (node.parentId == null) {
-        ancestors.forEach(id => result.add(id));
-        break;
-      }
-      node = byId.value.get(node.parentId);
-    }
-  }
-  return props.categories.filter(c => result.has(c.id));
-});
-function hasChildren(id: number) { return parents.value.has(id); }
+const tree = computed(() => storeCategoryTree(props.categories));
+const available = computed(() => props.categories.filter(item => tree.value.enabledIds.has(item.id)));
+function hasChildren(id: number) { return !tree.value.leafIds.has(id); }
 const columns = computed(() => [null, path.value[0], path.value[1]].map(parent =>
-  parent === undefined ? [] : available.value.filter(item => item.parentId === parent)));
+  parent === undefined ? [] : tree.value.children.get(parent) ?? []));
 const leaf = computed(() => {
-  const item = available.value.find(c => c.id === path.value.at(-1));
-  return item && !hasChildren(item.id) ? item : undefined;
+  const id = path.value.at(-1);
+  return id != null && tree.value.leafIds.has(id) ? byId.value.get(id) : undefined;
 });
 </script>
 <style scoped>
