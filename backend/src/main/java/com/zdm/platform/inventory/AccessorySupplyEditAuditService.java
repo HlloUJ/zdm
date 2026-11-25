@@ -92,7 +92,7 @@ public class AccessorySupplyEditAuditService {
     for (StoreSnapshot store : context.stores()) {
       if (!exitTargets.lockStore(store.storeId())) { continue; }
       Long level = jdbc.queryForObject("SELECT store_level_id FROM stores WHERE id=?", Long.class, store.storeId());
-      String nextStatus = sales ? salePrices.synchronizeSupplyEdit(store.id(), after, actor.accountId(), storeTime) : store.status();
+      String nextStatus = sales ? salePrices.synchronizeSupplyEdit(store.id(), store.snapshot(), after, actor.accountId()) : store.status();
       JsonNode next = storeSnapshot(after, store.id(), level);
       ObjectNode changes = changes(store.snapshot(), next, changed, sales, event);
       if (!Objects.equals(store.status(), nextStatus)) {

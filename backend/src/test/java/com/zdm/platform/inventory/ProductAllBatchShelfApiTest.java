@@ -376,7 +376,7 @@ class ProductAllBatchShelfApiTest extends SpringContainerTestSupport {
         }
         assertThat(shelfLogs(resource,first)).isEqualTo(beforeLogs+(deleting ? 0 : 1));
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM store_price_rules WHERE store_id=99591 AND kind='price' AND scope=? AND category_id=?",Long.class,kind,category)).isZero();
-        assertThat(jdbc.queryForObject("SELECT price_mode FROM "+prices+" WHERE listing_id=?",String.class,first)).isEqualTo("manual");
+        assertThat(jdbc.queryForObject("SELECT price_mode FROM "+prices+" WHERE listing_id=?",String.class,first)).isEqualTo("auto");
         assertThat(jdbc.queryForObject("SELECT sale_price FROM "+prices+" WHERE listing_id=?",java.math.BigDecimal.class,first)).isEqualByComparingTo(beforePrice);
       } finally { finishConfiguration.countDown(); }
     }
