@@ -1569,14 +1569,13 @@
       }
     },
     "src/pages/store-services/index.vue": {
-      "script": "f30310b43f81a9cb9fe3ae4a07d1ded30776116f270dfb8e1e40c79280b88925",
+      "script": "de7aca54d30204b71ed0761c6c6fd9865fb4eecab8553bdf7316a61c76aba40e",
       "actions": {
         "action → openCreate": "form",
         "blur → priceTouched = true": "form",
         "click → check(row, '删除')": "single",
         "click → check(row, row.status === 'enabled' ? '停用' : '启用')": "single",
         "click → openEdit(row)": "form",
-        "click → replaceImage": "form",
         "click → uploadError = ''": "form",
         "close → preview = ''": "view",
         "confirm → confirmAction": "single",

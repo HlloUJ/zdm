@@ -92,8 +92,15 @@ test('新增与编辑使用必填标记、字段错误及精确金额输入', as
   await expect(dialog.getByText('请输入服务名称', { exact: true })).toBeVisible();
   await expect(dialog.getByText('请输入价格', { exact: true })).toBeVisible();
   expect(writes).toEqual([]);
-  await name.fill('这是一条超过十个字符的服务名称');
-  await expect(dialog.getByText('服务名称最多输入10个字符')).toBeVisible();
+  const fullName = '岩板餐桌安装费🪨AB';
+  await name.fill(fullName + '超长');
+  await expect(name).toHaveValue(fullName);
+  await name.press('End');
+  await name.pressSequentially('C');
+  await expect(name).toHaveValue(fullName);
+  await name.press('Backspace');
+  await name.pressSequentially('C');
+  await expect(name).toHaveValue('岩板餐桌安装费🪨AC');
   await name.fill('量尺');
   await price.pressSequentially('00.509');
   await expect(price).toHaveValue('0.50');
@@ -115,6 +122,8 @@ test('新增与编辑使用必填标记、字段错误及精确金额输入', as
   await page.getByText('编辑', { exact: true }).click();
   await expect(page.getByPlaceholder('请输入服务名称')).toHaveValue('量尺');
   await expect(page.getByPlaceholder('请输入价格')).toHaveValue('0.50');
+  await page.getByPlaceholder('请输入服务名称').fill(fullName + '超长');
+  await expect(page.getByPlaceholder('请输入服务名称')).toHaveValue(fullName);
 });
 
 test('主图上传、原生卡片预览、替换与删除保留表单草稿', async ({ page }) => {
@@ -162,10 +171,16 @@ test('主图上传、原生卡片预览、替换与删除保留表单草稿', as
   await expect(card.locator('img')).toHaveAttribute('src', original!);
   expect(released).toEqual([]);
   refuseReplacement = false;
-  const selecting = page.waitForEvent('filechooser');
-  await editor.getByText('更换主图').click();
-  await (await selecting).setFiles({ ...file, name: '安装.png' });
+  await expect(editor.getByText('更换主图')).toHaveCount(0);
+  await card.hover();
+  await card.locator('.t-icon-delete').click();
   await expect.poll(() => released).toEqual([1]);
+  await expect(card).toHaveCount(0);
+  const selecting = page.waitForEvent('filechooser');
+  await editor.getByText('封面图', { exact: true }).click();
+  await (await selecting).setFiles({ ...file, name: '安装.png' });
+  await expect(card.locator('img')).toBeVisible();
+  await expect(card.locator('img')).not.toHaveAttribute('src', original!);
   await card.hover();
   await card.locator('.t-icon-delete').click();
   await expect.poll(() => released).toEqual([1, 2]);

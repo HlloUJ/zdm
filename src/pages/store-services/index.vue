@@ -64,24 +64,25 @@
     @confirm="save"
   >
     <t-form-item label="服务主图">
-      <t-space size="small" align="start">
+      <t-space size="small" break-line align="start">
         <AdminMediaUpload
           :key="dialogKey"
           v-model="mainImage"
-          title="服务主图"
+          title="封面图"
+          accept="image/*"
           :upload="upload"
           :disabled="saving || uploading"
           :error-message="uploadError"
           @removed="removed"
           @preview="(img) => (preview = img?.url || '')"
         />
-        <t-link v-if="mainImage" theme="primary" :disabled="saving || uploading" @click="replaceImage">更换主图</t-link>
       </t-space>
       <t-link v-if="uploadError" @click="uploadError = ''">取消本次上传</t-link>
     </t-form-item>
     <t-form-item label="服务名称" name="name" required-mark>
       <t-input
         v-model="form.name"
+        :maxlength="10"
         :disabled="saving"
         aria-required="true"
         placeholder="请输入服务名称"
@@ -148,13 +149,14 @@ import { computed, onScopeDispose, reactive, ref, watch } from 'vue';
 import AdminTopNav from '@/components/AdminTopNav.vue';
 import AdminSideMenu from '@/components/AdminSideMenu.vue';
 import {
+  AdminMediaUpload,
+  type AdminMediaValue,
   AdminListPage,
   AdminFormDialog,
   AdminConfirmDialog,
   AdminDialog,
   adminFeedback,
 } from '@/components/foundation';
-import AdminMediaUpload, { type AdminMediaValue } from '@/components/foundation/AdminMediaUpload.vue';
 import { buttonTheme } from '@/components/foundation/actions/buttonFunctions';
 import { formConfirmation } from '@/components/foundation/actions/confirmation';
 import { useOperationPreflight } from '@/composables/useOperationPreflight';
@@ -211,9 +213,6 @@ const priceError = computed(() => {
   if (!form.price) return '请输入价格';
   return numericError(form.price) || serverFeedback.field('price', form.price).tips || '';
 });
-function replaceImage() {
-  editor.value?.getFormElement()?.querySelector<HTMLInputElement>('input[type=file]')?.showPicker();
-}
 const mainImage = ref<AdminMediaValue>(),
   uploadError = ref(''),
   preview = ref('');
