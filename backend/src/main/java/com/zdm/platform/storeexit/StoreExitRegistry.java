@@ -22,6 +22,7 @@ public final class StoreExitRegistry {
     all.add(new SqlModule("selection", List.of("store_selection_items", "store_selection_batches"),
         List.of("selection-batch-items"), scope -> new Clause("tenant_id=? AND store_id=?",
             new Object[]{scope.tenantId(), scope.storeId()})));
+    all.add(sql("store-services", List.of("store_services")));
     all.add(sql("payment", List.of("store_payment_name_events", "store_payment_names")));
     all.add(indirect("customer-followups", "store_customer_followups", "customer_id", "store_customers"));
     all.add(sql("customers", List.of("store_customers"), List.of("customer-followups")));

@@ -1,7 +1,9 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
 export async function expectMediaToFit(preview: Locator, media: Locator) {
-  await expect(media).toBeVisible();
+  await expect(preview).toBeInViewport({ ratio: 1 });
+  await expect(media).toBeInViewport({ ratio: 1 });
+  await expect(preview.locator('.t-dialog__close')).toBeInViewport({ ratio: 1 });
   await expect(media).toHaveCSS('object-fit', 'contain');
   await expect.poll(() => media.evaluate((element) => {
     const card = element.closest('.t-dialog')!;

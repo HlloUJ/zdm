@@ -91,6 +91,11 @@ const router = createRouter({
       meta: { permissionPrefix: 'store.finished-stock-management' },
     },
     {
+      path: '/store/service-management',
+      name: 'storeServiceManagement',
+      component: () => import('@/pages/store-services/index.vue'),
+    },
+    {
       path: '/store/customer-management',
       name: 'storeCustomerManagement',
       component: () => import('@/pages/customer/index.vue'),

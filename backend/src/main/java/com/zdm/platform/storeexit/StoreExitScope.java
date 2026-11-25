@@ -12,7 +12,7 @@ public record StoreExitScope(long storeId, long tenantId, Map<String, List<Long>
 
   public static StoreExitScope capture(JdbcTemplate jdbc, long storeId, long tenantId) {
     Map<String, List<Long>> ids = new java.util.LinkedHashMap<>();
-    for (String table : List.of("store_customers", "store_finished_products", "store_accessory_products",
+    for (String table : List.of("store_services", "store_customers", "store_finished_products", "store_accessory_products",
         "account_identities", "roles", "employee_invites", "suppliers",
         "store_finished_operation_logs", "store_accessory_operation_logs")) {
       ids.put(table, List.copyOf(jdbc.queryForList("SELECT id FROM " + table + " WHERE store_id=? ORDER BY id",
