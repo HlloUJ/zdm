@@ -9635,6 +9635,31 @@
           "reason": "按已确认的操作校验与反馈整改方案接入本页登记的操作",
           "before": "  },\n);\nonMounted(loadCategories);\n</script>\n\n<style scoped>\n",
           "after": "  },\n);\nonMounted(loadCategories);\noperations.onInvalidate(() => {\n  deleteVisible.value = false;\n  deleteTarget.value = null;\n});\n</script>\n\n<style scoped>\n"
+        },
+        {
+          "task": "015",
+          "before": "                  row.status === 'enabled' ? '启用' : '停用'\n                }}</t-tag></template\n              >\n              <template #sort=\"{ row }\">{{ row.sort }}</template>\n              <template #createdAt=\"{ row }\">{{ row.createdAt }}</template>\n              <template #operation=\"{ row }\">\n                <div class=\"table-actions\">",
+          "after": "                  row.status === 'enabled' ? '启用' : '停用'\n                }}</t-tag></template\n              >\n              <template #createdAt=\"{ row }\">{{ row.createdAt }}</template>\n              <template #operation=\"{ row }\">\n                <div class=\"table-actions\">"
+        },
+        {
+          "task": "015",
+          "before": "  name: string;\n  status: Status;\n  productCount: number;\n  sort: number;\n  createdByName: string;\n  createdByAccountId?: number;\n  createdAt: string;",
+          "after": "  name: string;\n  status: Status;\n  productCount: number;\n  createdByName: string;\n  createdByAccountId?: number;\n  createdAt: string;"
+        },
+        {
+          "task": "015",
+          "before": "\nconst columns = computed<PrimaryTableCol<TableRowData>[]>(() => [\n  ...(canSortCategory.value ? [{ colKey: 'drag', title: 'dragTitle', width: 28 }] : []),\n  { colKey: 'name', title: '分类名称', minWidth: 240, align: 'left' },\n  { colKey: 'level', title: '分类级别', width: 120, align: 'left' },\n  { colKey: 'productCount', title: '关联商品', width: 120 },\n  { colKey: 'status', title: '状态', width: 100 },\n  { colKey: 'sort', title: '排序', width: 100 },\n  { colKey: 'createdByName', title: '创建人', width: 120 },\n  { colKey: 'createdAt', title: '创建时间', width: 200 },\n  {\n    colKey: 'operation',\n    title: '操作',",
+          "after": "\nconst columns = computed<PrimaryTableCol<TableRowData>[]>(() => [\n  ...(canSortCategory.value ? [{ colKey: 'drag', title: 'dragTitle', width: 28 }] : []),\n  { colKey: 'name', title: '分类名称', minWidth: 280, align: 'left' },\n  { colKey: 'level', title: '分类级别', width: 130, align: 'left' },\n  { colKey: 'productCount', title: '关联商品', width: 130 },\n  { colKey: 'status', title: '状态', width: 100 },\n  { colKey: 'createdByName', title: '创建人', width: 140 },\n  { colKey: 'createdAt', title: '创建时间', width: 220 },\n  {\n    colKey: 'operation',\n    title: '操作',"
+        },
+        {
+          "task": "015",
+          "before": "  rows: CategoryRow[],\n  forceVisible: boolean,\n) {\n  nodes.forEach((node, index) => {\n    const selfMatches = nodeMatches(node);\n    const descendantMatches = hasMatchingDescendant(node);\n    const visible = !hasSearch.value || forceVisible || selfMatches || descendantMatches;",
+          "after": "  rows: CategoryRow[],\n  forceVisible: boolean,\n) {\n  nodes.forEach((node) => {\n    const selfMatches = nodeMatches(node);\n    const descendantMatches = hasMatchingDescendant(node);\n    const visible = !hasSearch.value || forceVisible || selfMatches || descendantMatches;"
+        },
+        {
+          "task": "015",
+          "before": "      name: node.name,\n      status: node.status,\n      productCount: node.productCount,\n      sort: index + 1,\n      createdByName: node.createdByName,\n      createdByAccountId: node.createdByAccountId,\n      createdAt: formatDateTime(node.createdAt),",
+          "after": "      name: node.name,\n      status: node.status,\n      productCount: node.productCount,\n      createdByName: node.createdByName,\n      createdByAccountId: node.createdByAccountId,\n      createdAt: formatDateTime(node.createdAt),"
         }
       ]
     },
@@ -14318,6 +14343,31 @@
           "reason": "按已确认的操作校验与反馈整改方案接入本页登记的操作",
           "before": "  },\n  { immediate: true },\n);\n</script>\n\n<style scoped>\n",
           "after": "  },\n  { immediate: true },\n);\noperations.onInvalidate(() => {\n  deleteVisible.value = false;\n  deleteTarget.value = null;\n});\n</script>\n\n<style scoped>\n"
+        },
+        {
+          "task": "015",
+          "before": "                  {{ row.status === 'enabled' ? '启用' : '停用' }}\n                </t-tag>\n              </template>\n              <template #sort=\"{ row }\">{{ row.sort }}</template>\n              <template #createdByName=\"{ row }\">{{ row.createdByName }}</template>\n              <template #createdAt=\"{ row }\">{{ row.createdAt }}</template>\n              <template #operation=\"{ row }\">",
+          "after": "                  {{ row.status === 'enabled' ? '启用' : '停用' }}\n                </t-tag>\n              </template>\n              <template #createdByName=\"{ row }\">{{ row.createdByName }}</template>\n              <template #createdAt=\"{ row }\">{{ row.createdAt }}</template>\n              <template #operation=\"{ row }\">"
+        },
+        {
+          "task": "015",
+          "before": "  level: 1 | 2 | 3;\n  name: string;\n  status: CategoryStatus;\n  sort: number;\n  productCount: number;\n  createdByName: string;\n  createdAt: string;",
+          "after": "  level: 1 | 2 | 3;\n  name: string;\n  status: CategoryStatus;\n  productCount: number;\n  createdByName: string;\n  createdAt: string;"
+        },
+        {
+          "task": "015",
+          "before": "\nconst columns = computed<PrimaryTableCol<TableRowData>[]>(() => [\n  ...(canSortCategory.value ? [{ colKey: 'drag', title: 'dragTitle', width: 28 }] : []),\n  { colKey: 'name', title: '分类名称', minWidth: 240, align: 'left' },\n  { colKey: 'level', title: '分类级别', width: 120, align: 'left' },\n  { colKey: 'productCount', title: '关联商品', width: 120 },\n  { colKey: 'status', title: '状态', width: 100 },\n  { colKey: 'sort', title: '排序', width: 100 },\n  { colKey: 'createdByName', title: '创建人', width: 120 },\n  { colKey: 'createdAt', title: '创建时间', width: 200 },\n  {\n    colKey: 'operation',\n    title: '操作',",
+          "after": "\nconst columns = computed<PrimaryTableCol<TableRowData>[]>(() => [\n  ...(canSortCategory.value ? [{ colKey: 'drag', title: 'dragTitle', width: 28 }] : []),\n  { colKey: 'name', title: '分类名称', minWidth: 280, align: 'left' },\n  { colKey: 'level', title: '分类级别', width: 130, align: 'left' },\n  { colKey: 'productCount', title: '关联商品', width: 130 },\n  { colKey: 'status', title: '状态', width: 100 },\n  { colKey: 'createdByName', title: '创建人', width: 140 },\n  { colKey: 'createdAt', title: '创建时间', width: 220 },\n  {\n    colKey: 'operation',\n    title: '操作',"
+        },
+        {
+          "task": "015",
+          "before": "  const subtreeMatches = (node: CategoryNode): boolean => matches(node) || node.children.some(subtreeMatches);\n  const rows: CategoryRow[] = [];\n  const appendNodes = (nodes: CategoryNode[], forceDescendants = false) => {\n    nodes.forEach((node, position) => {\n      const nodeMatches = matches(node);\n      if (hasFilter && !forceDescendants && !subtreeMatches(node)) return;\n      rows.push({",
+          "after": "  const subtreeMatches = (node: CategoryNode): boolean => matches(node) || node.children.some(subtreeMatches);\n  const rows: CategoryRow[] = [];\n  const appendNodes = (nodes: CategoryNode[], forceDescendants = false) => {\n    nodes.forEach((node) => {\n      const nodeMatches = matches(node);\n      if (hasFilter && !forceDescendants && !subtreeMatches(node)) return;\n      rows.push({"
+        },
+        {
+          "task": "015",
+          "before": "        level: node.level,\n        name: node.name,\n        status: node.status,\n        sort: position + 1,\n        productCount: node.productCount,\n        createdByName: node.createdByName,\n        createdAt: formatDateTime(node.createdAt),",
+          "after": "        level: node.level,\n        name: node.name,\n        status: node.status,\n        productCount: node.productCount,\n        createdByName: node.createdByName,\n        createdAt: formatDateTime(node.createdAt),"
         }
       ]
     },
