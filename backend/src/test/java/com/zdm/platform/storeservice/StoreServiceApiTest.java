@@ -55,6 +55,10 @@ class StoreServiceApiTest extends SpringContainerTestSupport {
     long id = snapshot.id();
     service.status(id,false);
     org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.save(null,new StoreServiceCatalog.Input("vip安装","0",null)))
+        .isInstanceOfSatisfying(com.zdm.platform.common.FieldValidationException.class, error -> {
+          assertThat(error.field()).isEqualTo("name");
+          assertThat(error.hint()).isEqualTo("服务名称已存在，请更换名称");
+        })
         .hasMessageContaining("同名");
     assertThat(service.list(true)).isEmpty();
     assertThat(service.lookup(id,true).status()).isEqualTo("disabled");

@@ -644,7 +644,7 @@
       }
     },
     "src/pages/finished-stock/store/StoreFinishedEditor.vue": {
-      "script": "5e7d5313f3ea38a6a3577c62b21afe63ad6eab25c73d95744ac61009c4baeb6f",
+      "script": "673a5f7c4ae88f68f9f4bf17b116db9f3ef7312c7c3c30d93d66acbaeb26b4b2",
       "actions": {
         "change → batchFilters[filter.key] = []": "query",
         "change → changeCategory": "form",
@@ -2222,7 +2222,7 @@
     },
     "src/pages/finished-stock/store/StoreFinishedEditor.vue": {
       "baseSha256": "cc341a5a4c779bfd5b3ede7011809e763cf5a549996375dbdbf708dbc3e9faa7",
-      "patchCount": 12,
+      "patchCount": 13,
       "patches": [
         {
           "stage": "before-migrations",
@@ -2274,12 +2274,16 @@
           "after": "</template>\n<script setup lang=\"ts\">\nimport { useBoundServerFields } from '@/utils/serverFieldValidation';\nimport { useDelayedLoading } from '@/composables/useDelayedLoading';\nimport { useOperationPreflight } from '@/composables/useOperationPreflight';\n"
         },
         {
-          "before": "const formOperation = useOperationPreflight(() => props.product.id);\nformOperation.onInvalidate(() => { saving.value = false; });\nasync function save() {\n  if (saving.value || !ready.value) return;\n  const current = formOperation.capture();\n",
-          "after": "const formOperation = useOperationPreflight(() => props.product.id);\nformOperation.onInvalidate(() => { saving.value = false; });\nconst serverFeedback = useBoundServerFields(ready, productFormRoot, () => {\n  const fields: Record<string, unknown> = { storeCategoryId: form.categoryId };\n  for (const [id, draft] of Object.entries(drafts)) {\n    fields[`skus.${id}.salePrice`] = draft.price;\n    fields[`skus.${id}.saleCoefficient`] = draft.coefficient;\n  }\n  return fields;\n});\nasync function save() {\n  const reportFieldError = serverFeedback.begin();\n  if (saving.value || !ready.value) return;\n  const current = formOperation.capture();\n"
+          "before": "const formOperation = useOperationPreflight(() => props.product.id);\nformOperation.onInvalidate(() => { saving.value = false; });\nasync function save() {\n  if (saving.value || !ready.value) return;\n  const current = formOperation.capture();\n  saving.value = true;\n  try {\n",
+          "after": "const formOperation = useOperationPreflight(() => props.product.id);\nformOperation.onInvalidate(() => { saving.value = false; });\nconst serverFeedback = useBoundServerFields(ready, productFormRoot, () => {\n  const fields: Record<string, unknown> = { storeCategoryId: form.categoryId };\n  for (const [id, draft] of Object.entries(drafts)) {\n    fields[`skus.${id}.salePrice`] = draft.price;\n    fields[`skus.${id}.saleCoefficient`] = draft.coefficient;\n  }\n  return fields;\n});\nasync function save() {\n  if (saving.value || !ready.value) return;\n  const current = formOperation.capture();\n  let reportFieldError: ReturnType<typeof serverFeedback.begin> | undefined;\n  saving.value = true;\n  try {\n"
+        },
+        {
+          "before": "    )\n      return rejectFormSubmission(productFormRoot.value);\n    const product = await saveStoreFinishedEdit(props.product.id, {\n      storeCategoryId: form.categoryId!,\n",
+          "after": "    )\n      return rejectFormSubmission(productFormRoot.value);\n    reportFieldError = serverFeedback.begin();\n    const product = await saveStoreFinishedEdit(props.product.id, {\n      storeCategoryId: form.categoryId!,\n"
         },
         {
           "before": "  } catch (error) {\n    if (!current()) return;\n    adminFeedback.error(getSafeErrorMessage(error, '保存商品失败'));\n  } finally {\n",
-          "after": "  } catch (error) {\n    if (!current()) return;\n    if (await reportFieldError(error)) return;\n    adminFeedback.error(getSafeErrorMessage(error, '保存商品失败'));\n  } finally {\n"
+          "after": "  } catch (error) {\n    if (!current()) return;\n    if (await reportFieldError?.(error)) return;\n    adminFeedback.error(getSafeErrorMessage(error, '保存商品失败'));\n  } finally {\n"
         }
       ]
     },

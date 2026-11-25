@@ -434,9 +434,9 @@ const serverFeedback = useBoundServerFields(ready, productFormRoot, () => {
   return fields;
 });
 async function save() {
-  const reportFieldError = serverFeedback.begin();
   if (saving.value || !ready.value) return;
   const current = formOperation.capture();
+  let reportFieldError: ReturnType<typeof serverFeedback.begin> | undefined;
   saving.value = true;
   try {
     submitted.value = true;
@@ -450,6 +450,7 @@ async function save() {
       )
     )
       return rejectFormSubmission(productFormRoot.value);
+    reportFieldError = serverFeedback.begin();
     const product = await saveStoreFinishedEdit(props.product.id, {
       storeCategoryId: form.categoryId!,
       skus: props.product.skus.map((item) => ({
@@ -464,7 +465,7 @@ async function save() {
     emit('saved', product);
   } catch (error) {
     if (!current()) return;
-    if (await reportFieldError(error)) return;
+    if (await reportFieldError?.(error)) return;
     adminFeedback.error(getSafeErrorMessage(error, '保存商品失败'));
   } finally {
     if (current()) saving.value = false;
