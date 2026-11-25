@@ -135,6 +135,7 @@
 </template>
 
 <script setup lang="ts">
+import { useServerFieldValidation } from '@/utils/serverFieldValidation';
 import { useContentRequest } from '@/composables/useContentRequest';
 import { usePendingAction } from '@/composables/usePendingAction';
 import { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';
@@ -292,9 +293,14 @@ const handleDragSort = async (context: { current: LevelItem; target: LevelItem }
     sorting.value = false;
   }
 };
+const beginSubmitLevelFeedback = useServerFieldValidation(
+  () => formVisible.value, formRef,
+  () => ({ name: formData.name, remark: formData.remark }),
+);
 const submitLevel = async () => {
   if ((await formRef.value?.validate()) !== true) return rejectFormSubmission(formRef.value);
   const payload: StoreLevelPayload = { name: formData.name.trim(), status: 'enabled', remark: formData.remark.trim() };
+  const reportFieldError = beginSubmitLevelFeedback();
   try {
     if (editingId.value) await updateStoreLevel(editingId.value, payload);
     else await createStoreLevel(payload);
@@ -304,6 +310,7 @@ const submitLevel = async () => {
     if (editingId.value) adminFeedback.actionSuccess({ action: '修改', target });
     else adminFeedback.created(target);
   } catch (error) {
+    if (await reportFieldError(error)) return;
     adminFeedback.error(error instanceof Error ? error.message : '操作失败');
   }
 };

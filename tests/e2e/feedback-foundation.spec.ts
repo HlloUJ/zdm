@@ -1259,6 +1259,7 @@ test('shows the duplicate store name error on the edit form', async ({ page }) =
     await route.fulfill({
       status: 400,
       contentType: 'application/json',
+      headers: { 'X-Zdm-Invalid-Field': 'name' },
       body: JSON.stringify({ code: 400, message: '店铺名称已存在', data: null }),
     });
   });
@@ -1280,7 +1281,7 @@ test('shows the duplicate store name error on the edit form', async ({ page }) =
     .click();
 
   await expect(dialog.locator('.t-form__item').filter({ hasText: '门店名称' })).toContainText('门店名称已存在');
-  await expect(page.getByText('编辑“已归档门店”失败：门店名称已存在', { exact: true })).toBeVisible();
+  await expect(page.locator('.zdm-admin-feedback')).toHaveText('表单校验未通过，请检查标红字段');
   await expect(dialog).toBeVisible();
 });
 

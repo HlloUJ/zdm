@@ -373,7 +373,8 @@ import { useDelayedLoading } from '@/composables/useDelayedLoading';
 import { useContentRequest } from '@/composables/useContentRequest';
 import { usePendingAction } from '@/composables/usePendingAction';
 import { useOperationPreflight } from '@/composables/useOperationPreflight';
-import { ApiFieldError, OperationBlockedError } from '@/services/http';
+import { useServerFields } from '@/utils/serverFieldValidation';
+import { OperationBlockedError } from '@/services/http';
 import { orderConfirmationBlock, requireOrderField } from './model';
 import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useRoute } from 'vue-router';
@@ -1026,6 +1027,11 @@ function openSetting(row?: StorePaymentName) {
   settingName.value = row?.name ?? '';
   settingVisible.value = true;
 }
+const beginSettingFeedback = useServerFields(
+  () => settingVisible.value, settingDialog, () => ({ name: settingName.value }),
+  (field, message) => settingFeedback.reject(field, settingName.value, message),
+  undefined, field => settingFeedback.clearField(field),
+);
 async function addSetting() {
   if (settingsSaving.value || !canSetting(editingSettingId.value ? 'edit' : 'create')) return;
   const name = settingName.value.trim();
@@ -1034,6 +1040,7 @@ async function addSetting() {
     await rejectFormSubmission(settingDialog.value);
     return;
   }
+  const reportFieldError = beginSettingFeedback();
   const scope = key.value,
     editing = Boolean(editingSettingId.value);
   settingsSaving.value = true;
@@ -1046,10 +1053,7 @@ async function addSetting() {
     await loadSettings();
   } catch (error) {
     if (scope !== key.value) return;
-    if (error instanceof ApiFieldError && error.field === 'name') {
-      settingFeedback.reject('name', settingName.value, error.message);
-      await rejectFormSubmission(settingDialog.value);
-    } else {
+    if (!(await reportFieldError(error))) {
       adminFeedback.actionError({ action: editing ? '修改' : '新增', error });
     }
     await loadSettings();

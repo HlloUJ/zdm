@@ -142,6 +142,7 @@
   </div>
 </template>
 <script setup lang="ts">
+import { useServerFieldValidation } from '@/utils/serverFieldValidation';
 import { useContentRequest } from '@/composables/useContentRequest';
 import { checkSupplierSupplyTypeDelete } from '@/services/suppliers';
 import { useOperationPreflight, requireCondition } from '@/composables/useOperationPreflight';
@@ -255,12 +256,17 @@ const openForm = (row?: SupplierSupplyTypeRecord) => {
   draft.name = row?.name ?? '';
   visible.value = true;
 };
+const beginSaveFeedback = useServerFieldValidation(
+  () => visible.value, form,
+  () => ({ name: draft.name }),
+);
 const save = async () => {
   if (saving.value) return;
   if ((await form.value?.validate()) !== true) return rejectFormSubmission(form.value);
   saving.value = true;
   const target = draft.name.trim();
   const action = editing.value ? '保存' : '新增';
+  const reportFieldError = beginSaveFeedback();
   try {
     const payload = { name: target };
     if (editing.value) await updateSupplierSupplyType(editing.value.id, payload);
@@ -270,6 +276,7 @@ const save = async () => {
     else adminFeedback.actionSuccess({ action: '修改', target });
     await load();
   } catch (error) {
+    if (await reportFieldError(error)) return;
     adminFeedback.actionError({ action, target, error });
   } finally {
     saving.value = false;

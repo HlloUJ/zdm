@@ -30,6 +30,7 @@ const props = defineProps<{
   disabled?: boolean;
   formLayout?: boolean;
   validationDeferred?: boolean;
+  serverError?: string;
 }>();
 const emit = defineEmits<{ 'update:modelValue': [value: string]; change: [value: string]; commit: [] }>();
 const touched = ref(false);
@@ -66,6 +67,7 @@ const handleBlur = () => {
   focused.value = false;
 };
 const error = computed(() => {
+  if (props.serverError) return props.serverError;
   if (props.validationDeferred) return '';
   if (!touched.value && !props.submitted) return '';
   if (!String(props.modelValue ?? '').trim()) return props.optional ? '' : `请输入${props.label}`;

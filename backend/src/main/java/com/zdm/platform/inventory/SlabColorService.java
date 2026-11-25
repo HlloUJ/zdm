@@ -1,5 +1,6 @@
 package com.zdm.platform.inventory;
 
+import com.zdm.platform.common.FieldValidationException;
 import com.zdm.platform.common.OperationBlockedException;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -149,7 +150,7 @@ public class SlabColorService extends CreatorAwareService<SlabColorMapper, SlabC
       query.ne(SlabColor::getId, excludedId);
     }
     if (query.count() > 0) {
-      throw new IllegalArgumentException("色系名称已存在");
+      throw new FieldValidationException("name", "色系名称已存在");
     }
   }
 
@@ -161,7 +162,7 @@ public class SlabColorService extends CreatorAwareService<SlabColorMapper, SlabC
       query.ne(SlabColorCategory::getId, excludedId);
     }
     if (categoryMapper.selectCount(query) > 0) {
-      throw new IllegalArgumentException("色系分类名称已存在");
+      throw new FieldValidationException("name", "色系分类名称已存在");
     }
   }
 

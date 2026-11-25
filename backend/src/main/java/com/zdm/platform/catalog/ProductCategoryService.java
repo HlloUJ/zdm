@@ -1,5 +1,6 @@
 package com.zdm.platform.catalog;
 
+import com.zdm.platform.common.FieldValidationException;
 import com.zdm.platform.common.OperationBlockedException;
 
 import com.zdm.platform.account.CreatorAwareService;
@@ -58,7 +59,7 @@ public class ProductCategoryService extends CreatorAwareService<ProductCategoryM
     try {
       save(category);
     } catch (DuplicateKeyException exception) {
-      throw new IllegalArgumentException(DUPLICATE_NAME_MESSAGE, exception);
+      throw new FieldValidationException("name", DUPLICATE_NAME_MESSAGE, exception);
     }
     return category;
   }
@@ -77,7 +78,7 @@ public class ProductCategoryService extends CreatorAwareService<ProductCategoryM
     try {
       updateById(payload);
     } catch (DuplicateKeyException exception) {
-      throw new IllegalArgumentException(DUPLICATE_NAME_MESSAGE, exception);
+      throw new FieldValidationException("name", DUPLICATE_NAME_MESSAGE, exception);
     }
     return listNewestFirst(List.of(existing.getScope())).stream()
         .filter(category -> java.util.Objects.equals(category.getId(), id))
@@ -174,7 +175,7 @@ public class ProductCategoryService extends CreatorAwareService<ProductCategoryM
       duplicateQuery.ne(ProductCategory::getId, excludedCategoryId);
     }
     if (duplicateQuery.count() > 0) {
-      throw new IllegalArgumentException(DUPLICATE_NAME_MESSAGE);
+      throw new FieldValidationException("name", DUPLICATE_NAME_MESSAGE);
     }
   }
 

@@ -282,7 +282,8 @@
                 <div>
                   <h1>{{ formPageTitle }}</h1>
                   <div class="selected-category">
-                    当前分类：{{ selectedCategoryPath }}
+                    <t-form-item v-if="productFieldErrors.field('categoryId').status" v-bind="productFieldErrors.field('categoryId')">当前分类：{{ selectedCategoryPath }}</t-form-item>
+                    <template v-else>当前分类：{{ selectedCategoryPath }}</template>
                     <t-button
                       v-if="formPageMode === 'create'"
                       :theme="buttonTheme('switch-category')"
@@ -324,7 +325,7 @@
                       v-model="mainImageSlots[index]"
                       :title="index === 0 ? '封面图' : `商品主图${index + 1}`"
                       accept="image/*"
-                      :error-message="submitAttempted && !mainImageMedia && index === 0 ? '请上传图片' : ''"
+                      :error-message="index === 0 ? productFieldErrors.field('mainImageMediaIds').tips || (submitAttempted && !mainImageMedia ? '请上传图片' : '') : ''"
                       :upload="(file) => uploadProductMedia(file, 'image')"
                       @preview="openProductMediaPreview($event, 'image')"
                       @removed="releasePendingProductMedia"
@@ -337,7 +338,7 @@
                     title="商品视频"
                     accept="video/*"
                     media-type="video"
-                    :error-message="submitAttempted && !videoMedia ? '请上传视频' : ''"
+                    :error-message="productFieldErrors.field('videoMediaId').tips || (submitAttempted && !videoMedia ? '请上传视频' : '')"
                     :upload="(file) => uploadProductMedia(file, 'video')"
                     @preview="openProductMediaPreview($event, 'video')"
                     @removed="releasePendingProductMedia"
@@ -346,7 +347,7 @@
                 <t-form-item
                   label="宝贝详情"
                   required-mark
-                  v-bind="requiredFieldFeedback(productForm.detail, '宝贝详情', submitAttempted)"
+                  v-bind="productFieldErrors.field('detail', requiredFieldFeedback(productForm.detail, '宝贝详情', submitAttempted))"
                 >
                   <ProductRichEditor
                     v-model="productForm.detail"
@@ -371,7 +372,7 @@
                 <t-form-item label="商品名称" required-mark>
                   <t-input
                     v-model="productForm.name"
-                    v-bind="requiredFieldFeedback(productForm.name, '商品名称', submitAttempted)"
+                    v-bind="productFieldErrors.field('name', requiredFieldFeedback(productForm.name, '商品名称', submitAttempted))"
                     clearable
                     placeholder="请输入商品名称"
                     :maxlength="60"
@@ -428,7 +429,7 @@
               <t-form class="supplier-form" :data="productForm" label-width="100px" colon>
                 <t-form-item label="供应商" required-mark>
                   <t-select
-                    v-bind="requiredFieldFeedback(productForm.supplier, '供应商', submitAttempted, true)"
+                    v-bind="productFieldErrors.field('supplierId', requiredFieldFeedback(productForm.supplier, '供应商', submitAttempted, true))"
                     v-model="productForm.supplier"
                     clearable
                     placeholder="请选择供应商"
@@ -446,7 +447,9 @@
                   label="销售规格"
                   required-mark
                   v-bind="
-                    !specRows.length
+                    productFieldErrors.field('variants').status
+                      ? productFieldErrors.field('variants')
+                      : !specRows.length
                       ? fieldFeedback(submitAttempted, '请创建销售规格')
                       : salesSpecificationFeedback.field('specifications', [
                           confirmedSpecMode,
@@ -1032,7 +1035,7 @@
             <t-option v-for="item in offShelfReasons" :key="item" :label="item" :value="item" />
           </t-select>
         </t-form-item>
-        <t-form-item label="详细说明">
+        <t-form-item label="详细说明" v-bind="reasonFeedback.field('detail', reasonForm.detail)">
           <t-textarea v-model="reasonForm.detail" :maxlength="100" placeholder="请输入详细说明" :autosize="{}" />
         </t-form-item>
       </t-form>
@@ -1105,6 +1108,7 @@
 </template>
 
 <script setup lang="ts">
+import { useServerFields, useBoundServerFields } from '@/utils/serverFieldValidation';
 import { useContentRequest } from '@/composables/useContentRequest';
 import { useDialogLoading } from '@/composables/useDialogLoading';
 import { usePendingAction } from '@/composables/usePendingAction';
@@ -2823,6 +2827,20 @@ const rejectProductForm = (issues: ReturnType<typeof finishedStockFormIssues>) =
     },
   });
 };
+const productFieldErrors = useBoundServerFields(formPageVisible, productFormRoot, () => ({
+  ...(formPageMode.value === 'create' ? { categoryId: selectedCategoryId.value } : {}),
+  name: productForm.name,
+  detail: productForm.detail,
+  supplierId: productForm.supplier,
+  mainImageMediaIds: mainImageSlots.value.map(item => item?.mediaId),
+  videoMediaId: videoMedia.value?.mediaId,
+  variants: specRows.value,
+}), {
+  reveal: field => {
+    const section = field.closest('[id^="finished-product-"]')?.id.replace('finished-product-', '');
+    if (section === 'base' || section === 'sales' || section === 'description') activeFormSection.value = section;
+  },
+});
 const submitProductForm = async () => {
   newSpecsAwaitingSubmit.value = false;
   submitAttempted.value = true;
@@ -2853,6 +2871,7 @@ const submitProductForm = async () => {
   }
   const issues = validateProductForm();
   if (issues.length) return rejectProductForm(issues);
+  const reportFieldError = productFieldErrors.begin();
   const isCreate = formPageMode.value !== 'edit' || !editingProduct.value;
   saving.value = true;
   try {
@@ -2875,6 +2894,7 @@ const submitProductForm = async () => {
       adminFeedback.actionSuccess({ action: '修改' });
     }
   } catch (error) {
+    if (await reportFieldError(error)) return;
     adminFeedback.error(error instanceof Error ? error.message : '商品提交失败');
   } finally {
     saving.value = false;
@@ -2890,11 +2910,16 @@ const openReasonDialog = (_type: 'offShelf', product: StockItem | null, isBatch:
 const closeReasonDialog = () => {
   reasonDialogVisible.value = false;
 };
+const beginReasonFeedback = useServerFields(
+  () => reasonDialogVisible.value, reasonFormRoot, () => ({ ...reasonForm }),
+  (key, message) => reasonFeedback.reject(key, reasonForm[key as keyof typeof reasonForm], message),
+);
 const submitReason = async () => {
   if (!reasonForm.reason) {
     reasonFeedback.reject('reason', reasonForm.reason, '请选择下架原因');
     return rejectFormSubmission(reasonFormRoot.value);
   }
+  const reportFieldError = beginReasonFeedback();
   saving.value = true;
   try {
     if (reasonState.isBatch) {
@@ -2908,10 +2933,12 @@ const submitReason = async () => {
       await updateProductStatus(reasonState.product.id, 'offShelf', reasonForm.reason, reasonForm.detail.trim());
       adminFeedback.success('商品已下架');
     }
+    closeReasonDialog();
   } catch (error) {
+    if (await reportFieldError(error)) return;
+    closeReasonDialog();
     adminFeedback.error(error instanceof Error ? error.message : '操作失败');
   } finally {
-    closeReasonDialog();
     saving.value = false;
   }
 };

@@ -1,6 +1,7 @@
 package com.zdm.platform.inventory;
 
 import com.zdm.platform.common.OperationBlockedException;
+import com.zdm.platform.common.FieldValidationException;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -364,7 +365,7 @@ public class StoreAccessoryProductService {
     }
     checkTransition(store, id, listing, source, target);
     if ("offShelf".equals(target) && (reason == null || reason.isBlank())) {
-      throw new IllegalArgumentException("请选择下架原因");
+      throw new FieldValidationException("reason", "请选择下架原因");
     }
     if (reason != null && reason.length() > 80 || detail != null && detail.length() > 500) {
       throw new IllegalArgumentException("下架说明超出长度限制");
@@ -549,7 +550,11 @@ public class StoreAccessoryProductService {
     salePrices.lockCategories(store.storeId());
     listing = listing(store, id, true); requirePriceEditable(listing, source);
     var context = salePrices.context(store.storeId(), List.of(id));
-    salePrices.requireCategory(context, categoryId);
+    try {
+      salePrices.requireCategory(context, categoryId);
+    } catch (OperationBlockedException ex) {
+      throw new FieldValidationException("storeCategoryId", ex.getMessage(), ex);
+    }
     AccessoryProduct product = publicProduct(number(source.get("id")));
     var variants = product.getVariants() == null ? List.<AccessoryProductVariant>of() : product.getVariants();
     if (inputs == null || inputs.size() != variants.size() || inputs.stream().anyMatch(Objects::isNull)
@@ -569,11 +574,19 @@ public class StoreAccessoryProductService {
       BigDecimal partner = partnerPrice(store, product, input.skuId());
       BigDecimal amount = "auto".equals(input.priceMode()) ? StoreAccessorySalePriceService.calculate(partner, context.coefficient(categoryId)) : input.salePrice();
       if (amount == null && "auto".equals(input.priceMode())) { throw new IllegalArgumentException("价格配置已变化，请刷新后重新填写商品售价"); }
-      if (amount == null) { throw new IllegalArgumentException("请输入商品售价"); }
-      requirePrice(amount);
+      if (amount == null) { throw new FieldValidationException("skus." + input.skuId() + ".salePrice", "请输入商品售价"); }
+      try {
+        requirePrice(amount);
+      } catch (IllegalArgumentException ex) {
+        throw new FieldValidationException("skus." + input.skuId() + ".salePrice", ex.getMessage(), ex);
+      }
       BigDecimal coefficient = "auto".equals(input.priceMode()) ? context.coefficient(categoryId) : input.saleCoefficient();
-      if (coefficient == null) { throw new IllegalArgumentException("请输入系数"); }
-      requirePrice(coefficient);
+      if (coefficient == null) { throw new FieldValidationException("skus." + input.skuId() + ".saleCoefficient", "请输入系数"); }
+      try {
+        requirePrice(coefficient);
+      } catch (IllegalArgumentException ex) {
+        throw new FieldValidationException("skus." + input.skuId() + ".saleCoefficient", ex.getMessage(), ex);
+      }
       var before = context.effective(id, input.skuId(), previousCategory, partner);
       boolean coefficientChanged = before.coefficient() == null || before.coefficient().compareTo(coefficient) != 0;
       boolean amountChanged = before.amount() == null || before.amount().compareTo(amount) != 0;

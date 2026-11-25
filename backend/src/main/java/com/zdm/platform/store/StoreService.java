@@ -1,5 +1,6 @@
 package com.zdm.platform.store;
 
+import com.zdm.platform.common.FieldValidationException;
 import com.zdm.platform.common.OperationBlockedException;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -183,7 +184,7 @@ public class StoreService extends ServiceImpl<StoreMapper, Store> {
         tenantId,
         storeType);
     if (count == null || count == 0) {
-      throw new IllegalArgumentException("该租户未启用对应业务，不能创建或变更为该类型门店");
+      throw new FieldValidationException("type", "该租户未启用对应业务，不能创建或变更为该类型门店");
     }
   }
 
@@ -205,7 +206,7 @@ public class StoreService extends ServiceImpl<StoreMapper, Store> {
       duplicateQuery.ne(Store::getId, excludedStoreId);
     }
     if (duplicateQuery.count() > 0) {
-      throw new IllegalArgumentException(DUPLICATE_NAME_MESSAGE);
+      throw new FieldValidationException("name", DUPLICATE_NAME_MESSAGE);
     }
   }
 

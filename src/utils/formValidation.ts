@@ -22,6 +22,7 @@ export function useFormFeedback(visible?: Ref<boolean>) {
   if (visible) watch(visible, clear, { flush: 'sync' });
   return {
     clear,
+    clearField(key: string) { delete errors[key]; },
     reject(key: string, value: unknown, message: string) {
       errors[key] = { value: snapshot(value), message };
     },

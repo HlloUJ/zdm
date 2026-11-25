@@ -1,5 +1,6 @@
 package com.zdm.platform.customer;
 
+import com.zdm.platform.common.FieldValidationException;
 import com.zdm.platform.media.MediaAsset;
 import com.zdm.platform.media.MediaAssetService;
 import com.zdm.platform.media.MediaCleanupService;
@@ -138,7 +139,7 @@ public class CustomerService {
   public Customer create(CustomerRequests.Profile p) {
     permission("daily","create"); CurrentIdentity i = identity();
     if (validOwnerCandidates(i).stream().noneMatch(o -> Objects.equals(o.accountId(),p.ownerAccountId()))) {
-      throw new IllegalArgumentException("请选择当前门店有效的归属人");
+      throw new FieldValidationException("ownerAccountId", "请选择当前门店有效的归属人");
     }
     String callingCode=validateContact(p,null);
     long id = insert("INSERT INTO store_customers(tenant_id,store_id,name,phone,wechat,requirement,remark,owner_account_id,created_by_account_id,nationality,phone_region,calling_code) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
@@ -151,7 +152,7 @@ public class CustomerService {
   public Customer update(Long id, CustomerRequests.Profile p) {
     Customer c=accessible(id,true); permission(c.status(),"edit");
     if (validOwnerCandidates(identity()).stream().noneMatch(o -> Objects.equals(o.accountId(),p.ownerAccountId()))) {
-      throw new IllegalArgumentException("请选择当前门店有效的归属人");
+      throw new FieldValidationException("ownerAccountId", "请选择当前门店有效的归属人");
     }
     String callingCode=validateContact(p,c);
     jdbc.update("UPDATE store_customers SET name=?,phone=?,wechat=?,requirement=?,remark=?,owner_account_id=?,nationality=?,phone_region=?,calling_code=? WHERE id=?",
@@ -173,8 +174,8 @@ public class CustomerService {
     boolean unchangedLegacy=previous!=null && text(previous.phoneRegion()).isEmpty()
         && region.isEmpty() && Objects.equals(phone,previous.phone());
     if (!phone.isEmpty() && !unchangedLegacy) {
-      if (!phone.matches("[0-9]+")) { throw new IllegalArgumentException("联系电话仅允许输入数字"); }
-      if (region.isEmpty()) { throw new IllegalArgumentException("请选择号码归属地"); }
+      if (!phone.matches("[0-9]+")) { throw new FieldValidationException("phone", "联系电话仅允许输入数字"); }
+      if (region.isEmpty()) { throw new FieldValidationException("phoneRegion", "请选择号码归属地"); }
     }
     return callingCode;
   }
@@ -247,7 +248,7 @@ public class CustomerService {
     }
     if ("assign".equals(request.action()) && owners(request.status()).stream()
         .noneMatch(o -> o.active() && Objects.equals(o.accountId(),request.ownerAccountId()))) {
-      throw new IllegalArgumentException("请选择本门店有效的归属人");
+      throw new FieldValidationException("ownerAccountId", "请选择本门店有效的归属人");
     }
     if ("archive".equals(request.action()) && !"daily".equals(request.status())
         || List.of("restore","purge").contains(request.action()) && !"archived".equals(request.status())) {
@@ -272,16 +273,16 @@ public class CustomerService {
   @Transactional
   public void saveFollowup(Long customerId, Long id, CustomerRequests.Followup p) {
     Customer c=accessible(customerId,true); permission(c.status(),id == null ? "followup" : "detail");
-    if (p.mediaIds().stream().distinct().count()!=p.mediaIds().size()) { throw new IllegalArgumentException("附件不能重复"); }
+    if (p.mediaIds().stream().distinct().count()!=p.mediaIds().size()) { throw new FieldValidationException("mediaIds", "附件不能重复"); }
     for (Long mediaId:p.mediaIds()) {
       MediaAsset a=media.requireAvailableForUpdate(mediaId);
       if (!"private".equals(a.getAccessLevel()) || a.getFileSize()>FILE_LIMIT
           || !Objects.equals(a.getStoreId(),c.storeId()) || !Objects.equals(a.getTenantId(),c.tenantId())) {
-        throw new IllegalArgumentException("附件不可用");
+        throw new FieldValidationException("mediaIds", "附件不可用");
       }
       boolean linked= id!=null && attachments(id).stream().anyMatch(x -> x.mediaId().equals(mediaId));
       if (!linked && (!Objects.equals(a.getCreatedByAccountId(),identity().accountId()) || !"temporary".equals(a.getStatus()))) {
-        throw new IllegalArgumentException("附件不可用");
+        throw new FieldValidationException("mediaIds", "附件不可用");
       }
     }
     if (id==null) {

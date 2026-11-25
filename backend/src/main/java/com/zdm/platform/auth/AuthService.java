@@ -1,5 +1,6 @@
 package com.zdm.platform.auth;
 
+import com.zdm.platform.common.FieldValidationException;
 import com.zdm.platform.config.SecurityProperties;
 import com.zdm.platform.security.EffectivePermissionResolver;
 import com.zdm.platform.security.SessionTokenService;
@@ -32,7 +33,7 @@ public class AuthService {
 
   public LoginResponse login(LoginRequest request) {
     if (!validVerificationCode(request.verifyCode())) {
-      throw new IllegalArgumentException("验证码错误");
+      throw new FieldValidationException("verifyCode", "验证码错误");
     }
     AuthAccount account = authAccountMapper.findByPhone(request.phone());
     if (account != null && recovery.blocks(account.getStoreId())) {

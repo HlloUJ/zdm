@@ -1,5 +1,6 @@
 package com.zdm.platform.role;
 
+import com.zdm.platform.common.FieldValidationException;
 import com.zdm.platform.account.CreatorAwareService;
 import com.zdm.platform.common.FunctionPermissionNormalizer;
 import com.zdm.platform.security.CurrentIdentity;
@@ -88,7 +89,7 @@ public class RoleService extends CreatorAwareService<RoleMapper, Role> {
     if (role.getBuiltinKey() != null || StoreBuiltinRoleService.MANAGER_KEY.equals(role.getCode())
         || role.getCode().startsWith("BUILTIN_STORE_MANAGER_")
         || (scope.storeId() != null && StoreBuiltinRoleService.MANAGER_NAME.equals(role.getName().trim()))) {
-      throw new IllegalArgumentException("店长是门店内置角色，不可重复创建");
+      throw new FieldValidationException("name", "店长是门店内置角色，不可重复创建");
     }
     normalizeAndValidateRoleName(role, null);
     role.setFunctionPermissions(FunctionPermissionNormalizer.normalizeCsv(role.getFunctionPermissions()));
@@ -120,7 +121,7 @@ public class RoleService extends CreatorAwareService<RoleMapper, Role> {
     } else {
       if (payload.getBuiltinKey() != null) { throw new IllegalArgumentException("不可将普通角色改为内置角色"); }
       if (existing.getStoreId() != null && StoreBuiltinRoleService.MANAGER_NAME.equals(payload.getName().trim())) {
-        throw new IllegalArgumentException("店长是门店内置角色，不可重复创建");
+        throw new FieldValidationException("name", "店长是门店内置角色，不可重复创建");
       }
       authorizeUpdate(existing, payload);
     }
@@ -221,7 +222,7 @@ public class RoleService extends CreatorAwareService<RoleMapper, Role> {
       duplicateQuery.ne(Role::getId, excludedRoleId);
     }
     if (duplicateQuery.count() > 0) {
-      throw new IllegalArgumentException("当前组织已存在同名角色");
+      throw new FieldValidationException("name", "当前组织已存在同名角色");
     }
   }
 

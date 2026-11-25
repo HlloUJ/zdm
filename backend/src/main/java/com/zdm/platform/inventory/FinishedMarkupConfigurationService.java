@@ -1,5 +1,6 @@
 package com.zdm.platform.inventory;
 
+import com.zdm.platform.common.FieldValidationException;
 import com.zdm.platform.common.OperationBlockedException;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -66,7 +67,7 @@ public class FinishedMarkupConfigurationService {
     try {
       mapper.insert(payload);
     } catch (DuplicateKeyException exception) {
-      throw new IllegalArgumentException(DUPLICATE_LEVEL_MESSAGE, exception);
+      throw new FieldValidationException("storeLevelId", DUPLICATE_LEVEL_MESSAGE, exception);
     }
     FinishedMarkupConfiguration created = requireConfiguration(payload.getId());
     priceSyncService.backfillMissingPrices(created);
@@ -85,7 +86,7 @@ public class FinishedMarkupConfigurationService {
     payload.setCreatedByAccountId(existing.getCreatedByAccountId());
     validateUniqueStoreLevel(payload.getStoreLevelId(), id);
     try { mapper.updateById(payload); } catch (DuplicateKeyException exception) {
-      throw new IllegalArgumentException(DUPLICATE_LEVEL_MESSAGE, exception);
+      throw new FieldValidationException("storeLevelId", DUPLICATE_LEVEL_MESSAGE, exception);
     }
     FinishedMarkupConfiguration updated = requireConfiguration(id);
     priceSyncService.refreshAutoPrices(updated);
@@ -169,7 +170,7 @@ public class FinishedMarkupConfigurationService {
       query.ne(FinishedMarkupConfiguration::getId, excludedId);
     }
     if (mapper.selectCount(query) > 0) {
-      throw new IllegalArgumentException(DUPLICATE_LEVEL_MESSAGE);
+      throw new FieldValidationException("storeLevelId", DUPLICATE_LEVEL_MESSAGE);
     }
   }
 

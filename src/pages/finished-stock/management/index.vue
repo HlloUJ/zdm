@@ -351,6 +351,7 @@
                           <div class="price-pair with-source">
                             <SpecPriceInput
                               v-model="row.markupPrices[configuration.id].coefficient"
+                              :server-error="priceFeedback.field(`skus.${row.skuId}.markupPrices.${configuration.id}.priceCoefficient`).tips"
                               placeholder="请输入系数"
                               label="系数"
                               :submitted="submitAttempted"
@@ -359,6 +360,7 @@
                             />
                             <SpecPriceInput
                               v-model="row.markupPrices[configuration.id].price"
+                              :server-error="priceFeedback.field(`skus.${row.skuId}.markupPrices.${configuration.id}.price`).tips"
                               placeholder="请输入价格"
                               label="价格"
                               :submitted="submitAttempted"
@@ -379,6 +381,7 @@
                         <div class="price-pair with-source">
                           <SpecPriceInput
                             v-model="row.guideCoefficient"
+                              :server-error="priceFeedback.field(`skus.${row.skuId}.guide.priceCoefficient`).tips"
                             placeholder="请输入系数"
                             label="系数"
                             :submitted="submitAttempted"
@@ -387,6 +390,7 @@
                           />
                           <SpecPriceInput
                             v-model="row.guide"
+                              :server-error="priceFeedback.field(`skus.${row.skuId}.guide.price`).tips"
                             placeholder="请输入价格"
                             label="价格"
                             :submitted="submitAttempted"
@@ -611,7 +615,7 @@
             <t-option v-for="item in offShelfReasons" :key="item" :label="item" :value="item" />
           </t-select>
         </t-form-item>
-        <t-form-item label="详细说明">
+        <t-form-item label="详细说明" v-bind="reasonFeedback.field('detail', reasonForm.detail)">
           <t-textarea v-model="reasonForm.detail" :maxlength="100" placeholder="请输入详细说明" :autosize="{}" />
         </t-form-item>
       </t-form>
@@ -684,6 +688,7 @@
 </template>
 
 <script setup lang="ts">
+import { useBoundServerFields, useServerFields } from '@/utils/serverFieldValidation';
 import { useContentRequest } from '@/composables/useContentRequest';
 import { useDialogLoading } from '@/composables/useDialogLoading';
 import { usePendingAction } from '@/composables/usePendingAction';
@@ -1905,17 +1910,30 @@ const rejectProductForm = (issues: ReturnType<typeof finishedStockFormIssues>) =
     },
   });
 };
+const priceFeedback = useBoundServerFields(formPageVisible, productFormRoot, () => Object.fromEntries(
+  specRows.value.flatMap(row => {
+    const prefix = `skus.${row.skuId}`;
+    return [
+      [`${prefix}.guide.priceCoefficient`, row.guideCoefficient], [`${prefix}.guide.price`, row.guide],
+      ...Object.entries(row.markupPrices).flatMap(([id, price]) => [
+        [`${prefix}.markupPrices.${id}.priceCoefficient`, price.coefficient], [`${prefix}.markupPrices.${id}.price`, price.price],
+      ]),
+    ];
+  }),
+));
 const submitProductForm = async () => {
   if (!editingProduct.value) return;
   submitAttempted.value = true;
   const issues = validateProductForm();
   if (issues.length) return rejectProductForm(issues);
   saving.value = true;
+  const reportFieldError = priceFeedback.begin();
   try {
     upsertStockItem(await updateFinishedProduct(editingProduct.value.id, buildOperationsPricePayload()));
     formPageVisible.value = false;
     adminFeedback.actionSuccess({ action: '修改' });
   } catch (error) {
+    if (await reportFieldError(error)) return;
     adminFeedback.error(getSafeErrorMessage(error, '商品价格保存失败'));
   } finally {
     saving.value = false;
@@ -1931,11 +1949,16 @@ const openReasonDialog = (_type: 'offShelf', product: StockItem | null, isBatch:
 const closeReasonDialog = () => {
   reasonDialogVisible.value = false;
 };
+const beginReasonFeedback = useServerFields(
+  () => reasonDialogVisible.value, reasonFormRoot, () => ({ ...reasonForm }),
+  (key, message) => reasonFeedback.reject(key, reasonForm[key as keyof typeof reasonForm], message),
+);
 const submitReason = async () => {
   if (!reasonForm.reason) {
     reasonFeedback.reject('reason', reasonForm.reason, '请选择下架原因');
     return rejectFormSubmission(reasonFormRoot.value);
   }
+  const reportFieldError = beginReasonFeedback();
   saving.value = true;
   try {
     if (reasonState.isBatch) {
@@ -1950,10 +1973,12 @@ const submitReason = async () => {
       await updateProductStatus(reasonState.product.id, 'offShelf', reasonForm.reason, reasonForm.detail.trim());
       adminFeedback.success('商品已下架');
     }
+    closeReasonDialog();
   } catch (error) {
+    if (await reportFieldError(error)) return;
+    closeReasonDialog();
     adminFeedback.error(error instanceof Error ? error.message : '操作失败');
   } finally {
-    closeReasonDialog();
     saving.value = false;
   }
 };

@@ -202,6 +202,7 @@
 </template>
 
 <script setup lang="ts">
+import { useServerFieldValidation } from '@/utils/serverFieldValidation';
 import { useContentRequest } from '@/composables/useContentRequest';
 import { usePendingAction } from '@/composables/usePendingAction';
 import { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';
@@ -400,6 +401,10 @@ const closeColorForm = () => {
   formVisible.value = false;
   formRef.value?.clearValidate();
 };
+const beginSubmitColorFeedback = useServerFieldValidation(
+  () => formVisible.value, formRef,
+  () => ({ name: formData.name, categoryId: formData.categoryId, remark: formData.remark }),
+);
 const submitColor = async () => {
   if ((await formRef.value?.validate()) !== true || !formData.categoryId) return rejectFormSubmission(formRef.value);
   const payload: SlabColorPayload = {
@@ -408,6 +413,7 @@ const submitColor = async () => {
     status: 'enabled',
     remark: formData.remark.trim(),
   };
+  const reportFieldError = beginSubmitColorFeedback();
   try {
     if (editingId.value) await updateSlabColor(editingId.value, payload);
     else await createSlabColor(payload);
@@ -417,6 +423,7 @@ const submitColor = async () => {
     if (editingId.value) adminFeedback.actionSuccess({ action: '修改', target });
     else adminFeedback.created(target);
   } catch (error) {
+    if (await reportFieldError(error)) return;
     adminFeedback.error(error instanceof Error ? error.message : '操作失败');
   }
 };
@@ -490,9 +497,14 @@ const closeCategoryForm = () => {
   categoryFormVisible.value = false;
   categoryFormRef.value?.clearValidate();
 };
+const beginSubmitCategoryFeedback = useServerFieldValidation(
+  () => categoryFormVisible.value, categoryFormRef,
+  () => ({ name: categoryForm.name, remark: categoryForm.remark }),
+);
 const submitCategory = async () => {
   if ((await categoryFormRef.value?.validate()) !== true) return rejectFormSubmission(categoryFormRef.value);
   const payload = { name: categoryForm.name.trim(), remark: categoryForm.remark.trim() };
+  const reportFieldError = beginSubmitCategoryFeedback();
   try {
     if (editingCategoryId.value) await updateSlabColorCategory(editingCategoryId.value, payload);
     else await createSlabColorCategory(payload);
@@ -501,6 +513,7 @@ const submitCategory = async () => {
     else adminFeedback.created(payload.name);
     void loadCategories();
   } catch (error) {
+    if (await reportFieldError(error)) return;
     adminFeedback.error(error instanceof Error ? error.message : '操作失败');
   }
 };

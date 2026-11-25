@@ -202,6 +202,7 @@
 </template>
 
 <script setup lang="ts">
+import { useServerFieldValidation } from '@/utils/serverFieldValidation';
 import { useContentRequest } from '@/composables/useContentRequest';
 import { useDialogLoading } from '@/composables/useDialogLoading';
 import { usePendingAction } from '@/composables/usePendingAction';
@@ -565,6 +566,10 @@ function openEditDialog(row: CategoryRow) {
 function closeFormDialog() {
   formVisible.value = false;
 }
+const beginHandleSubmitFeedback = useServerFieldValidation(
+  () => formVisible.value, formRef,
+  () => ({ name: formData.name }),
+);
 async function handleSubmit() {
   const result = await formRef.value?.validate();
   if (result !== true) return rejectFormSubmission(formRef.value);
@@ -573,6 +578,7 @@ async function handleSubmit() {
     return rejectFormSubmission(formRef.value);
   }
   const name = formData.name.trim();
+  const reportFieldError = beginHandleSubmitFeedback();
   try {
     if (formMode.value === 'create') {
       const siblings = formData.parentId ? (findNode(formData.parentId)?.children ?? []) : activeNodes.value;
@@ -595,6 +601,7 @@ async function handleSubmit() {
     closeFormDialog();
     await loadCategories();
   } catch (error) {
+    if (await reportFieldError(error)) return;
     adminFeedback.error(error instanceof Error ? error.message : '操作失败');
   }
 }

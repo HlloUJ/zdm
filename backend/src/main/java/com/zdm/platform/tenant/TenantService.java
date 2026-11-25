@@ -1,5 +1,6 @@
 package com.zdm.platform.tenant;
 
+import com.zdm.platform.common.FieldValidationException;
 import com.zdm.platform.account.CreatorAwareService;
 import com.zdm.platform.security.CurrentIdentityProvider;
 import java.util.Arrays;
@@ -57,7 +58,7 @@ public class TenantService extends CreatorAwareService<TenantMapper, Tenant> {
       tenant.setAccountId(accountId);
       save(tenant);
     } catch (DuplicateKeyException exception) {
-      throw new IllegalArgumentException("该手机号已存在", exception);
+      throw new FieldValidationException("contactPhone", "该手机号已存在", exception);
     }
     syncBusinesses(tenant.getId(), businesses);
     syncTenantAdminIdentity(tenant, accountId);
@@ -88,7 +89,7 @@ public class TenantService extends CreatorAwareService<TenantMapper, Tenant> {
           payload.getName(),
           ownerAccountId);
     } catch (DuplicateKeyException exception) {
-      throw new IllegalArgumentException("该手机号已存在", exception);
+      throw new FieldValidationException("contactPhone", "该手机号已存在", exception);
     }
     return getById(id);
   }
@@ -285,7 +286,7 @@ public class TenantService extends CreatorAwareService<TenantMapper, Tenant> {
   private void requireAvailablePhone(String phone, Long ownerAccountId) {
     findAccountId(phone).ifPresent(accountId -> {
       if (!accountId.equals(ownerAccountId)) {
-        throw new IllegalArgumentException("该手机号已属于其他账号");
+        throw new FieldValidationException("contactPhone", "该手机号已属于其他账号");
       }
     });
   }
@@ -297,7 +298,7 @@ public class TenantService extends CreatorAwareService<TenantMapper, Tenant> {
         : jdbcTemplate.queryForObject(
             "SELECT COUNT(*) FROM tenants t JOIN accounts a ON a.id=t.account_id WHERE a.phone = ? AND t.id <> ?", Integer.class, phone, tenantId);
     if (count != null && count > 0) {
-      throw new IllegalArgumentException("该手机号已存在");
+      throw new FieldValidationException("contactPhone", "该手机号已存在");
     }
   }
 

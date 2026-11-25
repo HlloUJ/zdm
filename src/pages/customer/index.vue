@@ -95,7 +95,7 @@
       :confirm-btn="submitButton"
       @confirm="submitProfile"
     >
-      <t-form-item label="归属人" required-mark v-bind="profileFeedback.field('owner', profile.ownerAccountId)">
+      <t-form-item label="归属人" required-mark v-bind="profileFeedback.field('ownerAccountId', profile.ownerAccountId)">
         <t-select
           v-model="profile.ownerAccountId"
           filterable
@@ -104,10 +104,10 @@
           :options="profileOwners.map((owner) => ({ value: owner.accountId, label: owner.name }))"
         />
       </t-form-item>
-      <t-form-item label="客户姓名" required-mark v-bind="fieldFeedback(nameError, nameError)"
+      <t-form-item label="客户姓名" required-mark v-bind="nameError ? fieldFeedback(true, nameError) : profileFeedback.field('name', profile.name)"
         ><t-input v-model="profile.name" :maxlength="80" clearable placeholder="请输入客户姓名"
       /></t-form-item>
-      <t-form-item label="客户国籍">
+      <t-form-item label="客户国籍" v-bind="profileFeedback.field('nationality', profile.nationality)">
         <t-select
           v-model="profile.nationality"
           :options="nationalityOptions"
@@ -132,13 +132,13 @@
       <t-form-item label="联系电话" v-bind="profileFeedback.field('phone', profile.phone)">
         <AdminPhoneInput v-model="profile.phone" :calling-code="phoneCallingCode" />
       </t-form-item>
-      <t-form-item label="微信号"
+      <t-form-item label="微信号" v-bind="profileFeedback.field('wechat', profile.wechat)"
         ><t-input v-model="profile.wechat" :maxlength="100" clearable placeholder="请输入微信号"
       /></t-form-item>
-      <t-form-item label="客户需求"
+      <t-form-item label="客户需求" v-bind="profileFeedback.field('requirement', profile.requirement)"
         ><t-textarea v-model="profile.requirement" :maxlength="100" :autosize="{}" placeholder="请输入客户需求"
       /></t-form-item>
-      <t-form-item label="客户备注"
+      <t-form-item label="客户备注" v-bind="profileFeedback.field('remark', profile.remark)"
         ><t-textarea v-model="profile.remark" :maxlength="100" :autosize="{}" placeholder="请输入客户备注"
       /></t-form-item>
     </AdminFormDialog>
@@ -225,7 +225,7 @@
       @confirm="submitFollowup"
       @closed="cleanupUploads"
     >
-      <t-form-item label="跟进时间" required-mark v-bind="followFeedback.field('time', followForm.followedAt)"
+      <t-form-item label="跟进时间" required-mark v-bind="followFeedback.field('followedAt', followForm.followedAt)"
         ><t-date-picker
           v-model="followForm.followedAt"
           placeholder="请选择日期时间"
@@ -244,7 +244,7 @@
           placeholder="请输入跟进内容"
         />
       </t-form-item>
-      <t-form-item label="下次跟进时间"
+      <t-form-item label="下次跟进时间" v-bind="followFeedback.field('nextFollowAt', followForm.nextFollowAt)"
         ><t-date-picker
           v-model="followForm.nextFollowAt"
           placeholder="请选择日期时间"
@@ -254,14 +254,14 @@
           value-type="YYYY-MM-DD HH:mm"
           :time-picker-props="{ format: 'HH:mm' }"
       /></t-form-item>
-      <t-form-item label="下次跟进事项"
+      <t-form-item label="下次跟进事项" v-bind="followFeedback.field('nextFollowTask', followForm.nextFollowTask)"
         ><t-textarea
           v-model="followForm.nextFollowTask"
           :maxlength="100"
           :autosize="{}"
           placeholder="请输入下次跟进事项"
       /></t-form-item>
-      <t-form-item label="附件">
+      <t-form-item label="附件" v-bind="followFeedback.field('mediaIds', uploads.map(item => item?.mediaId))">
         <CustomerFollowupAttachments v-if="followVisible" v-model="uploads" :upload="upload" @preview="previewUpload" />
       </t-form-item>
     </AdminFormDialog>
@@ -319,6 +319,7 @@
   </div>
 </template>
 <script setup lang="ts">
+import { useServerFields } from '@/utils/serverFieldValidation';
 import { useContentRequest } from '@/composables/useContentRequest';
 import { usePendingAction } from '@/composables/usePendingAction';
 import { useDelayedLoading } from '@/composables/useDelayedLoading';
@@ -604,6 +605,7 @@ const profileVisible = ref(false);
 const editingId = ref<number>();
 const nameError = ref('');
 const profileOwners = ref<Owner[]>([]);
+const profileDialog = ref<InstanceType<typeof AdminFormDialog>>();
 const profileFeedback = useFormFeedback(profileVisible);
 const emptyProfile = (): CustomerProfile => ({
   name: '',
@@ -680,6 +682,14 @@ async function openProfile(row?: Customer) {
     request.finish();
   }
 }
+const submitProfileFields = (): Record<string, unknown> => ({ ...profile.value });
+const beginSubmitProfileFeedback = useServerFields(
+  () => profileVisible.value, profileDialog, submitProfileFields,
+  (field, message) => {
+    const values = submitProfileFields();
+    profileFeedback.reject(field, values[field], message);
+  },
+);
 async function submitProfile() {
   if (submitting.value) return;
   let invalid = false;
@@ -688,7 +698,7 @@ async function submitProfile() {
     invalid = true;
   }
   if (!profileOwners.value.some((owner) => owner.accountId === profile.value.ownerAccountId)) {
-    profileFeedback.reject('owner', profile.value.ownerAccountId, '请选择归属人');
+    profileFeedback.reject('ownerAccountId', profile.value.ownerAccountId, '请选择归属人');
     invalid = true;
   }
   if (profile.value.phone && !unchangedLegacyPhone.value) {
@@ -703,12 +713,14 @@ async function submitProfile() {
   }
   if (invalid) return rejectFormSubmission(profileDialog.value);
   submitting.value = true;
+  const reportFieldError = beginSubmitProfileFeedback();
   try {
     await saveCustomer(profile.value, editingId.value);
     profileVisible.value = false;
     adminFeedback.actionSuccess({ action: editingId.value ? '修改' : '新增' });
     await reload();
   } catch (error) {
+    if (await reportFieldError(error)) return;
     fail('保存', error);
   } finally {
     submitting.value = false;
@@ -743,7 +755,6 @@ const pending = ref<{ ids: number[]; status: CustomerStatus; action: CustomerAct
   batch: false,
 });
 const assignVisible = ref(false);
-const profileDialog = ref<InstanceType<typeof AdminFormDialog>>();
 const followDialog = ref<InstanceType<typeof AdminFormDialog>>();
 const assignDialog = ref<InstanceType<typeof AdminFormDialog>>();
 const assignFeedback = useFormFeedback(assignVisible);
@@ -779,6 +790,14 @@ function prepareAction(action: CustomerAction, ids: number[], batch: boolean) {
     assignVisible.value = true;
   } else confirmVisible.value = true;
 }
+const submitActionFields = (): Record<string, unknown> => ({ ownerAccountId: newOwner.value });
+const beginSubmitActionFeedback = useServerFields(
+  () => assignVisible.value, assignDialog, submitActionFields,
+  (field, message) => {
+    const values = submitActionFields();
+    assignFeedback.reject('owner', values[field], message);
+  },
+);
 async function submitAction() {
   if (submitting.value) return;
   if (pending.value.action === 'assign' && !newOwner.value) {
@@ -786,6 +805,7 @@ async function submitAction() {
     return rejectFormSubmission(assignDialog.value);
   }
   submitting.value = true;
+  const reportFieldError = beginSubmitActionFeedback();
   try {
     await actOnCustomers(
       pending.value.ids,
@@ -800,6 +820,7 @@ async function submitAction() {
     adminFeedback.actionSuccess({ action: actionLabels[pending.value.action] });
     await reload();
   } catch (error) {
+    if (await reportFieldError(error)) return;
     fail(actionLabels[pending.value.action], error);
     await reload();
   } finally {
@@ -903,14 +924,23 @@ async function cleanupUploads() {
   }
   uploads.value = [];
 }
+const submitFollowupFields = (): Record<string, unknown> => ({ ...followForm.value, mediaIds: uploads.value.map(item => item?.mediaId) });
+const beginSubmitFollowupFeedback = useServerFields(
+  () => followVisible.value, followDialog, submitFollowupFields,
+  (field, message) => {
+    const values = submitFollowupFields();
+    followFeedback.reject(field, values[field], message);
+  },
+);
 async function submitFollowup() {
   if (!followCustomer.value || submitting.value || uploading.value > 0) return;
   if (!followForm.value.followedAt || !followForm.value.content.trim()) {
-    if (!followForm.value.followedAt) followFeedback.reject('time', followForm.value.followedAt, '请选择跟进时间');
+    if (!followForm.value.followedAt) followFeedback.reject('followedAt', followForm.value.followedAt, '请选择跟进时间');
     if (!followForm.value.content.trim()) followFeedback.reject('content', followForm.value.content, '请输入跟进内容');
     return rejectFormSubmission(followDialog.value);
   }
   submitting.value = true;
+  const reportFieldError = beginSubmitFollowupFeedback();
   try {
     const ids = uploads.value.flatMap((a) => (a?.mediaId ? [a.mediaId] : []));
     await saveFollowup(
@@ -933,6 +963,7 @@ async function submitFollowup() {
     await reload();
     adminFeedback.actionSuccess({ action: followId.value ? '修改' : '保存跟进' });
   } catch (error) {
+    if (await reportFieldError(error)) return;
     fail('保存跟进', error);
   } finally {
     submitting.value = false;

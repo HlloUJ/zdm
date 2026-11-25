@@ -4,6 +4,7 @@ export interface ApiResponse<T> {
   code: number;
   message: string;
   data: T;
+  fieldErrors?: { field: string; message: string }[];
 }
 
 export class ApiError extends Error {
@@ -21,7 +22,12 @@ export class OperationBlockedError extends ApiError {
 }
 
 export class ApiFieldError extends ApiError {
-  constructor(public readonly field: string, message: string, body?: unknown) { super(message, 400, body); }
+  constructor(
+    public readonly field: string,
+    message: string,
+    body?: unknown,
+    public readonly fields = [{ field, message }],
+  ) { super(message, 400, body); }
 }
 
 export const SESSION_EXPIRED_MESSAGE = '登录已失效，请重新登录';
@@ -77,6 +83,10 @@ export async function request<T>(path: string, init: RequestInit = {}): Promise<
       // A delayed response from an old session must not clear a newer login.
       if (getAuthToken() === token || !getAuthToken()) clearExpiredLoginSession();
       throw new SessionExpiredError(body);
+    }
+    if (response.status === 400 && Array.isArray(body?.fieldErrors)) {
+      const fields = body.fieldErrors.filter(item => typeof item?.field === 'string' && typeof item.message === 'string' && item.message);
+      if (fields.length) throw new ApiFieldError(fields[0].field, fields[0].message, body, fields);
     }
     const field = response.headers?.get('X-Zdm-Invalid-Field');
     if (response.status === 400 && field && body?.message) throw new ApiFieldError(field, body.message, body);

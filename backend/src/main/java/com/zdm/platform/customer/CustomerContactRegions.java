@@ -1,5 +1,6 @@
 package com.zdm.platform.customer;
 
+import com.zdm.platform.common.FieldValidationException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.text.Collator;
@@ -46,13 +47,13 @@ public final class CustomerContactRegions {
   public Catalogue catalogue() { return catalogue; }
   public String nationality(String code) {
     String value=code==null ? "" : code;
-    if (!value.isEmpty() && !nationalityCodes.contains(value)) { throw new IllegalArgumentException("请选择有效的客户国籍"); }
+    if (!value.isEmpty() && !nationalityCodes.contains(value)) { throw new FieldValidationException("nationality", "请选择有效的客户国籍"); }
     return value;
   }
   public String callingCode(String region) {
     if (region==null || region.isEmpty()) { return ""; }
     String value=callingCodes.get(region);
-    if (value==null) { throw new IllegalArgumentException("请选择有效的号码归属地"); }
+    if (value==null) { throw new FieldValidationException("phoneRegion", "请选择有效的号码归属地"); }
     return value;
   }
 }
