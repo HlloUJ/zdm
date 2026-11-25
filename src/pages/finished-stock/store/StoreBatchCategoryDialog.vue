@@ -17,7 +17,7 @@
         </div>
       </div>
     </div>
-    <t-space v-if="path.length" direction="vertical" size="large" class="category-selection-summary">
+    <t-space v-if="path.length" direction="vertical" size="medium" class="category-selection-summary">
       <div class="category-picker-path">已选择：{{ path.map(id => byId.get(id)?.name).join(' > ') }}</div>
       <t-alert v-if="leaf" theme="warning">
         <div class="category-warning-description">

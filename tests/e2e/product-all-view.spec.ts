@@ -494,7 +494,7 @@ for (const surface of surfaces.filter(item => item.client === 'store')) {
     await expect(description).toHaveText('所选分类未设置价格系数，商品移入该分类，售价保持不变');
     await expect(confirm).toBeEnabled();
     await expect(dialog.getByText('停用分类')).toHaveCount(0);
-    await expect.poll(() => verticalGap(selectedPath, banner)).toBeCloseTo(24, 0);
+    await expect.poll(() => verticalGap(selectedPath, banner)).toBeCloseTo(16, 0);
     await expect.poll(() => verticalGap(banner, confirm)).toBeCloseTo(32, 0);
     const secondary = await selectedPath.evaluate(element => {
       const style = getComputedStyle(element);
