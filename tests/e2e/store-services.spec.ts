@@ -50,6 +50,7 @@ test('门店可新增无图的零元服务，并查看和停用它', async ({ pa
   await page.getByRole('button', { name: '确认新增' }).click();
   const row = page.getByRole('row').filter({ hasText: '上门安装' });
   await expect(row).toContainText('0.00');
+  await expect(row.locator('.t-tag')).toHaveClass(/t-tag--success/);
   await expect(row.getByAltText('默认图片')).toBeVisible();
   await expect(row.getByAltText('默认图片')).toHaveCSS('width', '64px');
   await expect(row.getByAltText('默认图片')).toHaveCSS('height', '64px');
@@ -66,7 +67,36 @@ test('门店可新增无图的零元服务，并查看和停用它', async ({ pa
   await row.getByText('停用', { exact: true }).click();
   await page.getByRole('button', { name: '确认停用' }).click();
   await expect(row.locator('.t-tag')).toHaveText('停用');
+  await expect(row.locator('.t-tag')).toHaveClass(/t-tag--danger/);
 });
+
+for (const [width, height] of [[1600, 900], [1536, 1536], [900, 1800]]) {
+  test(`服务主图完整显示并保持原比例 ${width}×${height}`, async ({ page }) => {
+    await page.setViewportSize({ width: 1694, height: 860 });
+    const service = {
+      id: 1, name: '上门量尺', price: '10.00', imageId: 7,
+      status: 'enabled', creatorName: '店员', createdAt: '2026-11-25T06:00:00Z',
+    };
+    await page.route('**/api/admin/**', (route) => {
+      const path = new URL(route.request().url()).pathname;
+      if (path.endsWith('/1/images/7')) {
+        return route.fulfill({
+          contentType: 'image/svg+xml',
+          body: `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="100%" height="100%" fill="teal"/></svg>`,
+        });
+      }
+      return route.fulfill({ json: { code: 0, data: path.endsWith('/store-services') ? [service] : [] } });
+    });
+    await page.goto('/store/service-management');
+    await page.getByRole('button', { name: '预览上门量尺主图' }).click();
+    const preview = page.locator('.t-dialog').filter({ has: page.getByAltText('服务主图', { exact: true }) });
+    const image = preview.locator('img');
+    await expect.poll(() => image.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBe(width);
+    const box = (await image.boundingBox())!;
+    expect(box.width / box.height).toBeCloseTo(width / height, 2);
+    await expectStandardImagePreviewAndDismiss(page, preview, true);
+  });
+}
 
 test('新增与编辑使用必填标记、字段错误及精确金额输入', async ({ page }) => {
   const item = {
@@ -104,7 +134,7 @@ test('新增与编辑使用必填标记、字段错误及精确金额输入', as
   const preview = page
     .locator('.t-dialog')
     .filter({ has: page.locator('.t-dialog__header').filter({ hasText: '服务主图' }) });
-  await expectStandardImagePreviewAndDismiss(page, preview);
+  await expectStandardImagePreviewAndDismiss(page, preview, true);
   await page.getByRole('button', { name: '新增', exact: true }).click();
   const dialog = page.locator('.t-dialog').filter({ hasText: '新增服务' });
   await expect(dialog.locator('.t-form__label--required')).toHaveCount(2);
@@ -185,7 +215,7 @@ test('主图上传、原生卡片预览、替换与删除保留表单草稿', as
   const preview = page
     .locator('.t-dialog')
     .filter({ has: page.locator('.t-dialog__header').filter({ hasText: '服务主图' }) });
-  await expectStandardImagePreviewAndDismiss(page, preview);
+  await expectStandardImagePreviewAndDismiss(page, preview, true);
   await editor.locator('.admin-media-upload').press('Enter');
   await expect(preview).toBeVisible();
   await page.keyboard.press('Escape');

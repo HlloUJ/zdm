@@ -17,7 +17,7 @@
         >
           <template #image="{ row }"><ServiceImage :service="row" @preview="preview = $event" /></template>
           <template #status="{ row }"
-            ><t-tag :theme="row.status === 'enabled' ? 'success' : 'default'" variant="light">
+            ><t-tag :theme="row.status === 'enabled' ? 'success' : 'danger'" variant="light">
               {{ row.status === 'enabled' ? '启用' : '停用' }}</t-tag
             ></template
           >
@@ -149,7 +149,7 @@
       }
     "
   >
-    <img v-if="preview" :src="preview" alt="服务主图" style="max-width: 100%" />
+    <img v-if="preview" :src="preview" alt="服务主图" class="service-preview-image" />
   </AdminDialog>
 </template>
 <script setup lang="ts">
@@ -434,3 +434,14 @@ async function confirmAction() {
   }
 }
 </script>
+
+<style scoped>
+.service-preview-image {
+  /* TDesign reserves 48px above and below its centered dialog, plus a 1px border. */
+  --dialog-spacing: calc(49px + var(--td-comp-paddingTB-xxl) + var(--td-comp-paddingTB-l));
+  display: block;
+  margin-inline: auto;
+  max-width: 100%;
+  max-height: max(1px, calc(100dvh - 2 * var(--dialog-spacing) - var(--td-line-height-title-medium)));
+}
+</style>
