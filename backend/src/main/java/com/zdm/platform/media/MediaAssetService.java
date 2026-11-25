@@ -32,6 +32,15 @@ public class MediaAssetService extends ServiceImpl<MediaAssetMapper, MediaAsset>
   }
 
   @Transactional
+  public MediaUploadResponse uploadStoreServiceImage(MultipartFile file) {
+    identityProvider.require();
+    if (file.getContentType() == null || !java.util.Set.of("image/jpeg", "image/png", "image/gif", "image/webp").contains(file.getContentType())) {
+      throw new IllegalArgumentException("请选择 JPG、PNG、GIF 或 WEBP 图片");
+    }
+    return saveUpload(file, storageService.store(file, MediaStorageService.defaultImageSizeLimit()), "store-service");
+  }
+
+  @Transactional
   public MediaUploadResponse uploadAttachment(MultipartFile file, long limit) {
     identityProvider.require();
     return saveUpload(file, storageService.storeAttachment(file, limit), "private");

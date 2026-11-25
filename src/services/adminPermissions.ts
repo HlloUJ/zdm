@@ -45,6 +45,7 @@ export const adminMenuEntries: AdminMenuEntry[] = [
         path: '/store/accessory-management',
         permissionPrefix: 'store.accessory-management',
       },
+      { label: '服务管理', path: '/store/service-management', permissionPrefix: 'store.service-management' },
     ],
   },
   {
