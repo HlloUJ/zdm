@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { clickOpenedDialogConfirmation } from './dialog-confirmation';
 import { installAdminApiMocks } from './admin-api-mocks';
 import { installAdminApiMocks as installAccessoryApiMocks } from './accessory-api-mocks';
 const surfaces = [
@@ -106,7 +107,7 @@ for (const surface of surfaces)
       await expect(main.locator('tbody tr')).toHaveCount(tab === 'all' ? 5 : 4);
       await main.locator('thead .t-checkbox__input').click();
       await batch.click();
-      await page.locator('.t-dialog:visible').getByRole('button', { name: '确认批量上架', exact: true }).click();
+      await clickOpenedDialogConfirmation(page.locator('.t-dialog:visible'), '确认批量上架');
       const result = page.locator('.t-dialog:visible').filter({ hasText: '批量上架结果' });
       await expect(result).toContainText(`成功上架1件，失败${tab === 'all' ? 4 : 3}件。`);
       await expect(result.getByRole('columnheader')).toHaveText(['商品ID', '失败原因']);
