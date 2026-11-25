@@ -187,6 +187,16 @@ class CategoryProductCountRollupTest extends SpringContainerTestSupport {
     assertThat(storeCount(9602102, scope)).isEqualTo(2);
     jdbc.update("DELETE FROM store_" + scope + "_products WHERE id=9602403");
     assertThat(storeCount(9602101, scope)).isEqualTo(4);
+
+    // Moving the last listing to its parent leaves an old count on the child.
+    jdbc.update("UPDATE store_" + scope + "_products SET store_category_id=9602102 WHERE id=9602404");
+    assertThat(storeCount(9602103, scope)).isZero();
+    assertThat(jdbc.queryForObject("SELECT product_count FROM store_categories WHERE id=9602103", Integer.class)).isPositive();
+    assertThat(storeCategories.deleteCategoryCheck(9602103L, scope).getId()).isEqualTo(9602103L);
+    storeCategories.deleteCategory(9602103L, scope);
+    assertThat(storeCategories.listOrdered(scope)).extracting(StoreCategory::getId).doesNotContain(9602103L);
+    assertThat(storeCount(9602102, scope)).isEqualTo(2);
+
     identity(9602002L);
     assertThat(storeCount(9602201, scope)).isEqualTo(1);
   }

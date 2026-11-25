@@ -172,7 +172,7 @@
                       :content="categoryAdjustmentFor(row)?.description"
                       placement="bottom"
                     >
-                      <t-tag theme="danger" variant="light" size="small">{{ categoryAdjustmentFor(row)?.label }}</t-tag>
+                      <t-tag theme="danger" variant="light" size="small" title="">{{ categoryAdjustmentFor(row)?.label }}</t-tag>
                     </t-tooltip>
                   </template>
                   <template #salePrice="{ row }">

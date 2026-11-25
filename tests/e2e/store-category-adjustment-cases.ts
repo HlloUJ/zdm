@@ -118,6 +118,8 @@ export function registerStoreCategoryAdjustmentTests(
     await expect(rows.filter({ hasText: '直属停用父分类' }).getByText(levelLabel, { exact: true })).toHaveCount(0);
     for (const [tag, text] of [[levelTags.first(), levelTip], [disabledTags.first(), disabledTip]] as const) {
       await tag.hover();
+      const nativeTitle = await tag.evaluate(element => element.closest('[title]')?.getAttribute('title') ?? '');
+      expect(nativeTitle).toBe('');
       const popup = page.getByText(text, { exact: true });
       await expect(popup).toBeVisible();
       await expect.poll(async () => {

@@ -1435,7 +1435,7 @@
       }
     },
     "src/pages/store-category/management/index.vue": {
-      "script": "6dd6212cfd0980a3b50f609e7bbab8e2c5b2e1a559b7a8a00fe2da82836ef849",
+      "script": "0b47e91966e13a9a9eda6fe94802bea1ee9392000927e177820eac0efaa2a862",
       "actions": {
         "click → handleReset": "query",
         "click → handleSearch": "query",
@@ -1615,7 +1615,7 @@
     "backend/src/main/java/com/zdm/platform/media/MediaAssetService.java": "7d8d2317b155fe20044dd128f16ab28a00a7c7ab06665482428a6e7a9d647b82",
     "backend/src/main/java/com/zdm/platform/payment/StorePaymentNameService.java": "00714ae86d7be38ac16e999455de262fa51b9f9272ddfb79f48788c4ff275f1a",
     "backend/src/main/java/com/zdm/platform/store/StoreCategoryController.java": "9173414206b0b2b9162ee664943c9c77b3f7620e64e8cd7d38f9f3a89e7909aa",
-    "backend/src/main/java/com/zdm/platform/store/StoreCategoryService.java": "59a84675269e8b0e4a30d40551759ee6cb71c619e9d337264f5682db346c63a8",
+    "backend/src/main/java/com/zdm/platform/store/StoreCategoryService.java": "d6cf94a98af611fa9f23e13922171372bbb19c0b49e4fa94ecc17fd0373424e6",
     "backend/src/main/java/com/zdm/platform/store/StoreController.java": "8c26cd07e8bcf4dc1b783cad9d8501c87def0b3bdc795d737c2314c10ff672f3",
     "backend/src/main/java/com/zdm/platform/store/StoreLevelService.java": "0d87b637ad6bfd42d7dd73fadc6bda3738280a767b1799ee463bb2855832f119",
     "backend/src/main/java/com/zdm/platform/store/StoreService.java": "d3c0a827b592c365cc00bb6b70090090ff874b8af142aad379c33d164426637b",
@@ -2145,7 +2145,7 @@
     },
     "src/pages/finished-stock/store/index.vue": {
       "baseSha256": "f1f785011a4d1a96737a1b17627dcc8ec77f54e224bfaa60c4f21f79fd6df568",
-      "patchCount": 57,
+      "patchCount": 58,
       "patches": [
         {
           "stage": "before-migrations",
@@ -2474,6 +2474,12 @@
           "reason": "待调整分类按实际启用路径和可用末级查询与显示",
           "before": "};\nconst categoryAdjustments = computed(() => {\n  const parents = new Set(listCategories.value.map(item => item.parentId));\n  const adjustments = new Map<number, { label: string; description: string }>();\n  for (const category of listCategories.value) {\n    if (category.status === 'disabled') {\n      adjustments.set(category.id, categoryAdjustmentMessages.disabled);\n    } else if (category.status === 'enabled' && parents.has(category.id)) {\n      adjustments.set(category.id, categoryAdjustmentMessages.nonLeaf);\n    }\n",
           "after": "};\nconst categoryAdjustments = computed(() => {\n  const tree = storeCategoryTree(listCategories.value);\n  const adjustments = new Map<number, { label: string; description: string }>();\n  for (const category of listCategories.value) {\n    if (category.status === 'disabled') {\n      adjustments.set(category.id, categoryAdjustmentMessages.disabled);\n    } else if (tree.enabledIds.has(category.id) && !tree.leafIds.has(category.id)) {\n      adjustments.set(category.id, categoryAdjustmentMessages.nonLeaf);\n    }\n"
+        },
+        {
+          "task": "011",
+          "reason": "分类异常标签悬停时仅显示下方说明气泡",
+          "before": "                      <t-tag theme=\"danger\" variant=\"light\" size=\"small\">{{ categoryAdjustmentFor(row)?.label }}</t-tag>\n",
+          "after": "                      <t-tag theme=\"danger\" variant=\"light\" size=\"small\" title=\"\">{{ categoryAdjustmentFor(row)?.label }}</t-tag>\n"
         }
       ]
     },
@@ -4484,7 +4490,7 @@
     },
     "src/pages/store-category/management/index.vue": {
       "baseSha256": "e6db3a2a43404453ba0ed901036e24385ca44997bdc3755c825742efef8e94df",
-      "patchCount": 22,
+      "patchCount": 23,
       "patches": [
         {
           "stage": "before-migrations",
@@ -4603,6 +4609,12 @@
           "reason": "新增首个可用下级时沿用原确认并显示实际受影响的分类",
           "before": "    }\n    if (formMode.value === 'create') {\n      if (\n        formData.parentId &&\n        !confirmPriceRemoval &&\n        (await checkStoreCategoryChildCreation(formData.parentId, activeScope.value))\n      ) {\n        priceRemovalVisible.value = true;\n        return;\n      }\n      await createStoreCategory({\n",
           "after": "    }\n    if (formMode.value === 'create') {\n      if (formData.parentId && formData.status === 'enabled' && !confirmPriceRemoval) {\n        const ancestors: CategoryNode[] = [];\n        for (let node = formParent.value; node; node = node.parent) ancestors.push(node);\n        const configured = await Promise.all(\n          ancestors.map((node) => checkStoreCategoryChildCreation(node.id, activeScope.value)),\n        );\n        const names = ancestors.filter((_, index) => configured[index]).map((node) => node.name);\n        if (names.length) {\n          priceRemovalNames.value = names.join('、');\n          priceRemovalVisible.value = true;\n          return;\n        }\n      }\n      await createStoreCategory({\n"
+        },
+        {
+          "task": "011",
+          "reason": "删除分类时以服务端当前商品关联数预检",
+          "before": "    if (node.productCount) throw new OperationBlockedError('该分类已关联商品，不能删除，请先停用该分类');\n    requireCondition(await checkStoreCategoryDelete(node.id, activeScope.value));\n",
+          "after": "    requireCondition(await checkStoreCategoryDelete(node.id, activeScope.value));\n"
         }
       ]
     },

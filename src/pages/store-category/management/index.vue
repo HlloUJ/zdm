@@ -678,7 +678,6 @@ async function handleCategoryDragSort(context: { current: CategoryRow }) {
 const openDeleteDialog = (node: CategoryNode) => {
   return operations.check(`delete:${node.id}`, async () => {
     if (node.children.length) throw new OperationBlockedError('该分类包含下级分类，请先删除或转移下级分类');
-    if (node.productCount) throw new OperationBlockedError('该分类已关联商品，不能删除，请先停用该分类');
     requireCondition(await checkStoreCategoryDelete(node.id, activeScope.value));
   }, () => {
     deleteTarget.value = node;

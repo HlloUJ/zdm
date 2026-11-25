@@ -18,9 +18,11 @@
       </div>
     </div>
     <div v-if="path.length" class="category-picker-path">已选择：{{ path.map(id => byId.get(id)?.name).join(' > ') }}</div>
-    <t-alert v-if="leaf && leaf.coefficient == null" theme="warning" title="该分类未设置价格系数">
+    <t-alert v-if="leaf" theme="warning">
       <div class="category-warning-description">
-        跟随价格配置浮动的规格将保留原有效系数和售价，恢复有效计算条件后自动重算。手动价格保留原售价，原本为空的继续留空。
+        {{ leaf.coefficient == null
+          ? '所选分类未设置价格系数，商品移入该分类，售价保持不变'
+          : '所选分类已设置价格系数，商品移入该分类，售价将跟随该分类所设置系数，自动重算（手动设置的售价不变，不参与重算）。' }}
       </div>
     </t-alert>
   </AdminDialog>

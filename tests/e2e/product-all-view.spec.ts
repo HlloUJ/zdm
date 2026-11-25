@@ -475,14 +475,16 @@ for (const surface of surfaces.filter(item => item.client === 'store')) {
     const action = main.getByRole('button', { name: '批量设置分类', exact: true });
     await action.click();
     const dialog = page.locator('.t-dialog:visible');
+    const description = dialog.locator('.category-warning-description');
+    await expect(description).toHaveCount(0);
     await dialog.getByRole('button', { name: '家具' }).click();
     const confirm = dialog.getByRole('button', { name: '确认批量设置分类' });
     await expect(confirm).toBeDisabled();
+    await expect(description).toHaveCount(0);
     await expect(dialog.getByText('停用分类')).toHaveCount(0);
     await dialog.getByRole('button', { name: '桌椅' }).click();
-    await expect(dialog.getByText('该分类未设置价格系数')).toBeVisible();
-    const description = dialog.locator('.category-warning-description');
-    await expect(description).toHaveText('跟随价格配置浮动的规格将保留原有效系数和售价，恢复有效计算条件后自动重算。手动价格保留原售价，原本为空的继续留空。');
+    await expect(description).toBeVisible();
+    await expect(description).toHaveText('所选分类未设置价格系数，商品移入该分类，售价保持不变');
     await expect(confirm).toBeEnabled();
     await expect(dialog.getByText('停用分类')).toHaveCount(0);
     const secondary = await dialog.locator('.category-picker-path').evaluate(element => {
@@ -493,7 +495,8 @@ for (const surface of surfaces.filter(item => item.client === 'store')) {
     await expect(description).toHaveCSS('color', secondary.color);
     await expect(description).toHaveCSS('font-weight', '400');
     await dialog.getByRole('button', { name: '沙发' }).click();
-    await expect(dialog.getByText('该分类未设置价格系数')).toHaveCount(0);
+    await expect(description).toBeVisible();
+    await expect(description).toHaveText('所选分类已设置价格系数，商品移入该分类，售价将跟随该分类所设置系数，自动重算（手动设置的售价不变，不参与重算）。');
     await dialog.getByRole('button', { name: '取消' }).click();
     expect(submissions).toEqual([]);
     await action.click();

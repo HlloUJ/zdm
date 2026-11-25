@@ -274,7 +274,7 @@ public class StoreCategoryService extends CreatorAwareService<StoreCategoryMappe
     return listOrdered(request.scope());
   }
 
-  @Transactional
+  @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
   public void deleteCategory(Long id, String scope) {
     if ("finished".equals(scope)) { salePrices.lockCategories(requireStoreId()); }
     if ("accessory".equals(scope)) { accessorySalePrices.lockCategories(requireStoreId()); }
@@ -295,8 +295,7 @@ public class StoreCategoryService extends CreatorAwareService<StoreCategoryMappe
       throw new OperationBlockedException("该分类包含下级分类，请先删除或转移下级分类");
     }
     Long associatedProducts = jdbc.queryForObject("SELECT COUNT(*) FROM " + ("accessory".equals(scope) ? "store_accessory_products" : "store_finished_products") + " WHERE store_id=? AND store_category_id=?", Long.class, category.getStoreId(), id);
-    if (category.getProductCount() != null && category.getProductCount() > 0
-        || associatedProducts != null && associatedProducts > 0) {
+    if (associatedProducts != null && associatedProducts > 0) {
       throw new OperationBlockedException("该分类已关联商品，不能删除，请先停用该分类");
     }
     return category;
