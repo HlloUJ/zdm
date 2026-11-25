@@ -17,14 +17,16 @@
         </div>
       </div>
     </div>
-    <div v-if="path.length" class="category-picker-path">已选择：{{ path.map(id => byId.get(id)?.name).join(' > ') }}</div>
-    <t-alert v-if="leaf" theme="warning">
-      <div class="category-warning-description">
-        {{ leaf.coefficient == null
-          ? '所选分类未设置价格系数，商品移入该分类，售价保持不变'
-          : '所选分类已设置价格系数，商品移入该分类，售价将跟随该分类所设置系数，自动重算（手动设置的售价不变，不参与重算）。' }}
-      </div>
-    </t-alert>
+    <t-space v-if="path.length" direction="vertical" size="large" class="category-selection-summary">
+      <div class="category-picker-path">已选择：{{ path.map(id => byId.get(id)?.name).join(' > ') }}</div>
+      <t-alert v-if="leaf" theme="warning">
+        <div class="category-warning-description">
+          {{ leaf.coefficient == null
+            ? '所选分类未设置价格系数，商品移入该分类，售价保持不变'
+            : '所选分类已设置价格系数，商品移入该分类，售价将跟随该分类所设置系数，自动重算（手动设置的售价不变，不参与重算）。' }}
+        </div>
+      </t-alert>
+    </t-space>
   </AdminDialog>
 </template>
 <script setup lang="ts">
@@ -49,6 +51,10 @@ const leaf = computed(() => {
 </script>
 <style scoped>
 @import url('../shared/category-picker.css');
+
+.category-selection-summary {
+  display: flex;
+}
 
 .category-warning-description {
   font: var(--td-font-body-small);

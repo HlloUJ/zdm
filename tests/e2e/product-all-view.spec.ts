@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { installAdminApiMocks } from './admin-api-mocks';
 import { installAdminApiMocks as installAccessoryApiMocks } from './accessory-api-mocks';
 const surfaces = [
@@ -475,19 +475,28 @@ for (const surface of surfaces.filter(item => item.client === 'store')) {
     const action = main.getByRole('button', { name: '批量设置分类', exact: true });
     await action.click();
     const dialog = page.locator('.t-dialog:visible');
+    const selectedPath = dialog.locator('.category-picker-path');
+    const banner = dialog.locator('.t-alert');
+    const verticalGap = async (above: Locator, below: Locator) => {
+      const [upper, lower] = await Promise.all([above.boundingBox(), below.boundingBox()]);
+      return lower!.y - (upper!.y + upper!.height);
+    };
     const description = dialog.locator('.category-warning-description');
     await expect(description).toHaveCount(0);
     await dialog.getByRole('button', { name: '家具' }).click();
     const confirm = dialog.getByRole('button', { name: '确认批量设置分类' });
     await expect(confirm).toBeDisabled();
     await expect(description).toHaveCount(0);
+    await expect.poll(() => verticalGap(selectedPath, confirm)).toBeCloseTo(32, 0);
     await expect(dialog.getByText('停用分类')).toHaveCount(0);
     await dialog.getByRole('button', { name: '桌椅' }).click();
     await expect(description).toBeVisible();
     await expect(description).toHaveText('所选分类未设置价格系数，商品移入该分类，售价保持不变');
     await expect(confirm).toBeEnabled();
     await expect(dialog.getByText('停用分类')).toHaveCount(0);
-    const secondary = await dialog.locator('.category-picker-path').evaluate(element => {
+    await expect.poll(() => verticalGap(selectedPath, banner)).toBeCloseTo(24, 0);
+    await expect.poll(() => verticalGap(banner, confirm)).toBeCloseTo(32, 0);
+    const secondary = await selectedPath.evaluate(element => {
       const style = getComputedStyle(element);
       return { font: style.font, color: style.color };
     });
