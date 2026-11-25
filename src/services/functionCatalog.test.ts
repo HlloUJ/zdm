@@ -165,12 +165,13 @@ describe('full function catalog', () => {
     const grants = getFunctionCatalogPermissionValues([products]);
     expect(new Set(grants).size).toBe(grants.length);
     expect(normalizeTerminalPermissions('store', grants)).toEqual(grants);
-    expect(grants.every((value) => /^store\.(finished-stock-management|accessory-management)\./.test(value))).toBe(
+    expect(grants.every((value) => /^store\.(finished-stock-management|accessory-management|service-management)\./.test(value))).toBe(
       true,
     );
     expect(collectFunctionCatalogRows(products).map((row) => row.menuLabel)).toEqual([
       ...Array(6).fill('成品现货管理'),
       ...Array(6).fill('配件管理'),
+      '服务管理',
     ]);
     for (const scope of ['finished-stock-management', 'accessory-management']) {
       const assigned = [`store.${scope}.warehouse.view`, `store.${scope}.warehouse.edit`];
@@ -189,6 +190,7 @@ describe('full function catalog', () => {
     expect(stock.menus.map((menu) => [menu.label, menu.value, menu.direct])).toEqual([
       ['成品现货管理', 'store.finished-stock-management.menu', false],
       ['配件管理', 'store.accessory-management.menu', false],
+      ['服务管理', 'store.service-management.menu', false],
     ]);
     expect(stock.menus[0].direct).toBe(false);
     expect(stock.menus[0].pages[0].tabs.map((tab) => tab.label)).toEqual([
