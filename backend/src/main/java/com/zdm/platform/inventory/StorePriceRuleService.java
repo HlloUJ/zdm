@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class StorePriceRuleService {
   public record Rule(Long id, String scope, Long categoryId, Long roleId, String targetName,
       BigDecimal coefficient, String createdByName, LocalDateTime createdAt, String status) {}
-  public record CategoryOption(Long id, Long parentId, String scope, String name, String status) {}
+  public record CategoryOption(Long id, Long parentId, String scope, String name, String status) implements StoreCategoryEligibility.Node {}
   public record RoleOption(Long id, String name, String status) {}
 
   @org.springframework.beans.factory.annotation.Autowired
@@ -40,6 +40,7 @@ public class StorePriceRuleService {
         LEFT JOIN roles role ON role.id = rule.role_id AND role.store_id = rule.store_id
         LEFT JOIN accounts account ON account.id = rule.created_by_account_id
         WHERE rule.tenant_id = ? AND rule.store_id = ? AND rule.kind = ? AND rule.scope = ?
+          AND (rule.kind <> 'price' OR category.id IS NOT NULL)
         ORDER BY rule.created_at DESC, rule.id DESC
         """, (row, index) -> new Rule(row.getLong("id"), row.getString("scope"),
         row.getObject("category_id", Long.class), row.getObject("role_id", Long.class),
@@ -58,7 +59,7 @@ public class StorePriceRuleService {
     var store = scopes.require();
     return jdbc.query("""
         SELECT id, parent_id, scope, name, status FROM store_categories WHERE store_id = ? AND scope = ?
-        ORDER BY sort_order, id
+        ORDER BY sort_order, created_at DESC, id DESC
         """ + (lock ? " FOR UPDATE" : ""), (row, index) -> new CategoryOption(row.getLong("id"), row.getObject("parent_id", Long.class),
         row.getString("scope"), row.getString("name"), row.getString("status")), store.storeId(), scope);
   }
@@ -154,7 +155,7 @@ public class StorePriceRuleService {
     return list("discount", scope);
   }
 
-  @Transactional
+  @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
   public List<Rule> savePriceBatch(String scope, List<Long> targetIds, BigDecimal coefficient) {
     requireType("price", scope);
     var store = scopes.require();
@@ -169,18 +170,18 @@ public class StorePriceRuleService {
           coefficient,created_by_account_id,target_key,scope) VALUES (?,?,?,?,?,?,?,?,?)
         ON DUPLICATE KEY UPDATE coefficient = ?
         """, arguments);
+    snapshotPrices(scope, store.storeId(), targetIds);
     return list("price", scope);
   }
 
-  @Transactional
+  @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
   public List<Rule> clearPriceBatch(String scope, List<Long> targetIds) {
     requireType("price", scope);
     var store = scopes.require();
     if ("finished".equals(scope)) { salePrices.lockCategories(store.storeId()); }
     if ("accessory".equals(scope)) { accessorySalePrices.lockCategories(store.storeId()); }
     validateTargets("price", scope, targetIds);
-    if ("finished".equals(scope)) { salePrices.freezeCategories(store.storeId(), targetIds); }
-    if ("accessory".equals(scope)) { accessorySalePrices.freezeCategories(store.storeId(), targetIds); }
+    snapshotPrices(scope, store.storeId(), targetIds);
     var arguments = targetIds.stream()
         .map(id -> new Object[] {store.tenantId(), store.storeId(), scope, id}).toList();
     jdbc.batchUpdate("""
@@ -192,7 +193,7 @@ public class StorePriceRuleService {
 
   public record PriceChange(Long categoryId, BigDecimal coefficient) {}
 
-  @Transactional
+  @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
   public List<Rule> savePrices(String scope, List<PriceChange> changes) {
     requireType("price", scope);
     var store = scopes.require();
@@ -219,12 +220,7 @@ public class StorePriceRuleService {
           ON DUPLICATE KEY UPDATE coefficient = ?
           """, writes);
     }
-    if ("finished".equals(scope)) {
-      salePrices.freezeCategories(store.storeId(), changes.stream().filter(change -> change.coefficient() == null).map(PriceChange::categoryId).toList());
-    }
-    if ("accessory".equals(scope)) {
-      accessorySalePrices.freezeCategories(store.storeId(), changes.stream().filter(change -> change.coefficient() == null).map(PriceChange::categoryId).toList());
-    }
+    snapshotPrices(scope, store.storeId(), changes.stream().map(PriceChange::categoryId).toList());
     var clears = changes.stream().filter(change -> change.coefficient() == null)
         .map(change -> new Object[] {store.tenantId(), store.storeId(), scope, change.categoryId()}).toList();
     if (!clears.isEmpty()) {
@@ -236,6 +232,11 @@ public class StorePriceRuleService {
     return list("price", scope);
   }
 
+  private void snapshotPrices(String scope, Long storeId, List<Long> categoryIds) {
+    if ("finished".equals(scope)) salePrices.freezeCategories(storeId, categoryIds);
+    else accessorySalePrices.freezeCategories(storeId, categoryIds);
+  }
+
   private void validateTargets(String kind, String scope, List<Long> targetIds) {
     if (targetIds == null || targetIds.isEmpty() || targetIds.size() > 200
         || targetIds.stream().anyMatch(Objects::isNull)
@@ -244,10 +245,8 @@ public class StorePriceRuleService {
     }
     boolean price = "price".equals(kind);
     var categoryOptions = price ? categoryOptions(scope, true) : List.<CategoryOption>of();
-    List<Long> allowed = price
-        ? categoryOptions.stream().filter(item -> "enabled".equals(item.status()))
-            .filter(item -> categoryOptions.stream().noneMatch(child -> item.id().equals(child.parentId())))
-            .map(CategoryOption::id).toList()
+    java.util.Collection<Long> allowed = price
+        ? StoreCategoryEligibility.usableLeaves(categoryOptions)
         : roles().stream().filter(item -> "enabled".equals(item.status())).map(RoleOption::id).toList();
     if (!allowed.containsAll(targetIds)) {
       throw new IllegalArgumentException(price ? "请选择本门店当前类型的已启用末级分类"

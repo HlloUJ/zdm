@@ -82,19 +82,20 @@ for (const [client, path, resource] of surfaces) {
       stockTest(`hides selection without a batch permission on ${tab}`, async ({ page, inventory: main }) => {
         await page.goto(`${path}?tab=${tab}`);
         await expect(main.getByText(`选择规则商品${tab === 'all' ? 'warehouse' : tab}`, { exact: true })).toBeVisible();
-        await expect(main.getByRole('checkbox')).toHaveCount(0);
+        await expect(main.locator('thead, tbody').getByRole('checkbox')).toHaveCount(0);
       });
     }
 
     stockTest('granting warehouse deletion enables selection and changing tabs clears it', async ({ page, inventory: main }) => {
       await page.goto(`${path}?tab=warehouse`);
       await expect(main.getByText('选择规则商品warehouse', { exact: true })).toBeVisible();
-      await expect(main.getByRole('checkbox')).toHaveCount(0);
+      const tableSelection = main.locator('thead, tbody').getByRole('checkbox');
+      await expect(tableSelection).toHaveCount(0);
       await page.evaluate(() => localStorage.setItem('selection-test-granted', 'yes'));
       await page.goto(`${path}?tab=warehouse`);
       const batchDelete = main.getByRole('button', { name: '批量删除', exact: true });
       await expect(batchDelete).toBeDisabled();
-      await expect(main.getByRole('checkbox')).toHaveCount(2);
+      await expect(tableSelection).toHaveCount(2);
       await main.locator('tbody .t-checkbox__input').click();
       await expect(main.locator('tbody input[type=checkbox]:checked')).toHaveCount(1);
       await expect(batchDelete).toBeEnabled();
@@ -103,7 +104,7 @@ for (const [client, path, resource] of surfaces) {
         .locator('.t-tabs__nav-item')
         .filter({ hasText: /^已上架/ })
         .click();
-      await expect(main.getByRole('checkbox')).toHaveCount(0);
+      await expect(tableSelection).toHaveCount(0);
       await expect(main.getByText('已选 1 项', { exact: true })).toHaveCount(0);
       await main
         .locator('.t-tabs__nav-item')
@@ -129,16 +130,17 @@ for (const [client, path, resource] of surfaces) {
       });
 
       stockTest('hides selection on all and recycle and honors a revoked permission after reload', async ({ page, inventory: main }) => {
+        const tableSelection = main.locator('thead, tbody').getByRole('checkbox');
         for (const tab of ['all', 'recycle']) {
           await page.goto(`${path}?tab=${tab}`);
           await expect(main.getByText(`选择规则商品${tab === 'all' ? 'warehouse' : tab}`, { exact: true })).toBeVisible();
-          await expect(main.getByRole('checkbox')).toHaveCount(0);
+          await expect(tableSelection).toHaveCount(0);
         }
         await expect(main.getByRole('button', { name: '清空回收站', exact: true })).toBeEnabled();
         await page.evaluate(() => localStorage.removeItem('selection-test-granted'));
         await page.goto(`${path}?tab=warehouse`);
         await expect(main.getByText('选择规则商品warehouse', { exact: true })).toBeVisible();
-        await expect(main.getByRole('checkbox')).toHaveCount(0);
+        await expect(tableSelection).toHaveCount(0);
       });
 
       if (client === 'store') {

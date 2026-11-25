@@ -126,7 +126,7 @@ export const saveStoreFinishedEdit = (
   id: number,
   payload: {
     storeCategoryId: number;
-    skus: { skuId: number; salePrice: number | null; priceMode: 'auto' | 'manual'; saleCoefficient: number | null }[];
+    skus: { skuId: number; salePrice: number | null; priceMode: 'auto' | 'manual'; saleCoefficient: number | null; preservePricing?: boolean }[];
   },
 ) => request<StoreFinishedProduct>(`${base}/${id}`, { method: 'PUT', body: json(payload) });
 export interface StoreFinishedLogFilter {

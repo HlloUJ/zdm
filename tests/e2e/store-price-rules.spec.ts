@@ -169,9 +169,13 @@ async function setup(page: Page, grants: string[], extendedTree = false) {
   return requests;
 }
 const menu = (page: Page) => page.locator('.price-menu');
+const expandTables = (page: Page) =>
+  page.getByRole('row').filter({ hasText: '本店餐桌' }).getByRole('button', { name: '展开下级分类' }).click();
+
 test('category list has only explicit coefficients and no derived values or maintenance actions', async ({ page }) => {
   const requests = await setup(page, ['price.finished.view']);
   await page.goto('/store/price-configuration');
+  await expandTables(page);
   await expect(menu(page).locator('.t-menu-group .t-menu__item')).toHaveText(['成品现货']);
   await expect(page.locator('thead th')).toHaveText(['分类名称', '价格系数']);
   const parent = page.getByRole('row').filter({ hasText: '本店餐桌' });
@@ -190,6 +194,7 @@ test('category list has only explicit coefficients and no derived values or main
 test('price batch fills selected inputs locally and only Save writes configuration', async ({ page }) => {
   const requests = await setup(page, ['price.finished.view', 'price.finished.batch-set']);
   await page.goto('/store/price-configuration');
+  await expandTables(page);
   const batch = page.getByRole('button', { name: '批量设置', exact: true });
   await expect(page.getByRole('row').filter({ hasText: '本店餐桌' })).toBeVisible();
   await checkDecimalEditing(page.locator('tbody .t-input-number input').first());
@@ -228,6 +233,39 @@ test('price batch fills selected inputs locally and only Save writes configurati
         { categoryId: 14, coefficient: 2.2 },
       ],
     },
+  });
+});
+
+test('a parent with only disabled children is configurable and only disabled nodes carry the tag', async ({ page }) => {
+  const requests = await setup(page, ['price.finished.view', 'price.finished.batch-set']);
+  await page.route('**/api/admin/store-price-rules/price/categories?scope=finished', route => route.fulfill({
+    json: { code: 0, message: 'ok', data: [
+      { id: 31, parentId: null, scope: 'finished', name: '休闲椅', status: 'enabled' },
+      { id: 12, parentId: 31, scope: 'finished', name: '单人椅', status: 'disabled' },
+    ] },
+  }));
+  await page.goto('/store/price-configuration');
+  const parent = page.getByRole('row').filter({ hasText: '休闲椅' });
+  const child = page.getByRole('row').filter({ hasText: '单人椅' });
+  await expect(parent.getByText('停用', { exact: true })).toHaveCount(0);
+  await expect(parent.locator('input:not([type=checkbox])')).toBeEnabled();
+  await parent.getByRole('button', { name: '展开下级分类' }).click();
+  await expect(child.getByText('停用', { exact: true })).toBeVisible();
+  await expect(child.locator('input:not([type=checkbox])')).toBeDisabled();
+  await expect(child.locator('input:not([type=checkbox])')).toHaveValue('2.00');
+  await expect(child.getByRole('checkbox')).toBeDisabled();
+  await page.locator('.t-checkbox').filter({ hasText: '仅看未配置分类' }).click();
+  await page.getByRole('button', { name: '查询', exact: true }).click();
+  await expect(child).toHaveCount(0);
+  await page.locator('thead .t-checkbox').click();
+  await page.getByRole('button', { name: '批量设置', exact: true }).click();
+  const dialog = page.locator('.t-dialog:visible');
+  await dialog.locator('.t-input-number input').fill('1.8');
+  await dialog.getByRole('button', { name: '确认批量设置', exact: true }).click();
+  await page.getByRole('button', { name: '确认保存', exact: true }).click();
+  await expect(page.getByText('修改成功', { exact: true })).toBeVisible();
+  expect(requests.find(request => request.method === 'POST')?.body).toEqual({
+    changes: [{ categoryId: 31, coefficient: 1.8 }],
   });
 });
 
@@ -276,6 +314,7 @@ test('historical unscoped grants do not grant the product-specific settings', as
 test('query and reset preserve drafts; blur never saves and mixed edits save together', async ({ page }) => {
   const requests = await setup(page, ['price.finished.view', 'price.finished.batch-set']);
   await page.goto('/store/price-configuration');
+  await expandTables(page);
   const parent = page.getByRole('row').filter({ hasText: '本店餐桌' });
   const firstLeaf = page.getByRole('row').filter({ hasText: '石材餐桌' });
   const input = firstLeaf.locator('input:not([type=checkbox])');
@@ -390,6 +429,7 @@ test('failed save retains draft for retry and product switching preserves unsave
     await route.fulfill({ json: { code: 400, message: '保存失败，请重试', data: null } });
   });
   await page.goto('/store/price-configuration');
+  await expandTables(page);
   const parentInput = page.getByRole('row').filter({ hasText: '石材餐桌' }).locator('input:not([type=checkbox])');
   await parentInput.fill('2.5');
   await menu(page).getByText('配件', { exact: true }).click();
@@ -411,6 +451,7 @@ test('failed save retains draft for retry and product switching preserves unsave
     body: { changes: [{ categoryId: 13, coefficient: 1.5 }] },
   });
   await menu(page).getByText('成品现货', { exact: true }).click();
+  await expandTables(page);
   await expect(parentInput).toHaveValue('2.50');
 });
 
@@ -437,6 +478,7 @@ test('blank batch is required and leaves category inputs unchanged; inline clear
 }) => {
   const requests = await setup(page, ['price.finished.view', 'price.finished.batch-set']);
   await page.goto('/store/price-configuration');
+  await expandTables(page);
   await page.getByRole('row').filter({ hasText: '石材餐桌' }).locator('.t-checkbox').click();
   await page.getByRole('button', { name: '批量设置' }).click();
   const dialog = page.locator('.t-dialog:visible');
@@ -463,6 +505,7 @@ test('blank batch is required and leaves category inputs unchanged; inline clear
     body: { changes: [{ categoryId: 12, coefficient: null }] },
   });
   await page.reload();
+  await expandTables(page);
   const input = page.getByRole('row').filter({ hasText: '石材餐桌' }).locator('input:not([type=checkbox])');
   await expect(input).toHaveValue('');
   await input.focus();
@@ -475,6 +518,7 @@ test('price table columns stay stable after loading and reloading with coefficie
   await page.setViewportSize({ width: 1368, height: 858 });
   await page.goto('/store/price-configuration');
   for (let attempt = 0; attempt < 2; attempt++) {
+    await expandTables(page);
     await expect(page.getByRole('row').filter({ hasText: '石材餐桌' })).toBeVisible();
     const positions = await page.locator('.t-table__th-coefficient').evaluate(async (cell) => {
       const samples: number[] = [];
@@ -507,6 +551,7 @@ test('price table columns stay stable after loading and reloading with coefficie
 test('category expansion uses a button without hover underline and supports keyboard toggling', async ({ page }) => {
   await setup(page, ['price.finished.view']);
   await page.goto('/store/price-configuration');
+  await expandTables(page);
   const parent = page.getByRole('row').filter({ hasText: '本店餐桌' });
   const toggle = parent.getByRole('button', { name: '收起下级分类' });
   await toggle.hover();
@@ -519,12 +564,16 @@ test('category expansion uses a button without hover underline and supports keyb
   await expect(page.getByText('石材餐桌', { exact: true })).toBeVisible();
 });
 
-test('first root expands fully; cascade selection includes collapsed descendants and batch writes only leaves', async ({
+test('roots start collapsed; cascade selection includes collapsed descendants and batch writes only leaves', async ({
   page,
 }) => {
   const requests = await setup(page, ['price.finished.view', 'price.finished.batch-set'], true);
   await page.goto('/store/price-configuration');
   const row = (name: string) => page.getByRole('row').filter({ hasText: name });
+  await expect(page.getByText('本店餐桌', { exact: true })).toBeVisible();
+  await expect(page.getByText('深层分类', { exact: true })).toHaveCount(0);
+  await expandTables(page);
+  await row('深层分类').getByRole('button', { name: '展开下级分类' }).click();
   await expect(page.getByText('深层末级分类', { exact: true })).toBeVisible();
   await expect(page.getByText('另一二级分类', { exact: true })).toHaveCount(0);
   await row('另一一级分类').locator('.t-checkbox').click();
@@ -566,6 +615,7 @@ test('unconfigured filter uses saved leaf coefficients, preserves paths and draf
 }) => {
   const requests = await setup(page, ['price.finished.view', 'price.finished.batch-set', 'price.accessory.view'], true);
   await page.goto('/store/price-configuration');
+  await expandTables(page);
   const filter = page.getByRole('checkbox', { name: '仅看未配置分类', exact: true });
   await expect(filter).not.toBeChecked();
   await page.locator('.t-checkbox').filter({ hasText: '仅看未配置分类' }).click();
@@ -752,6 +802,7 @@ test('discount audit fields and permission-controlled edit, disable, enable and 
 test('multiline coefficient feedback grows the real price row and restores its compact height', async ({ page }) => {
   await setup(page, ['price.finished.view', 'price.finished.batch-set']);
   await page.goto('/store/price-configuration');
+  await expandTables(page);
   const row = page.getByRole('row').filter({ hasText: '石材餐桌' });
   const field = row.locator('.price-coefficient-field');
   await expect(field).toBeVisible();
@@ -789,6 +840,7 @@ test('multiline coefficient feedback grows the real price row and restores its c
 test('coefficient feedback keeps its exact row budget across inherited line boxes', async ({ page }) => {
   await setup(page, ['price.finished.view', 'price.finished.batch-set']);
   await page.goto('/store/price-configuration');
+  await expandTables(page);
   const row = page.getByRole('row').filter({ hasText: '石材餐桌' });
   const field = row.locator('.price-coefficient-field');
   const input = row.locator('input:not([type=checkbox])');

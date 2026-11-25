@@ -91,6 +91,7 @@
                           placeholder="请输入系数"
                           label="系数"
                           :submitted="submitted"
+                          :optional="mayCarryIncomplete(sku(row.skuId)) && sku(row.skuId).saleCoefficient == null"
                           @change="editDraftCoefficient(drafts[row.skuId], $event, sku(row.skuId).costPrice)"
                         />
                         <SpecPriceInput
@@ -101,6 +102,7 @@
                           label="商品售价"
                           placeholder="请输入商品售价"
                           :submitted="submitted"
+                          :optional="mayCarryIncomplete(sku(row.skuId)) && sku(row.skuId).salePrice == null"
                           @change="editDraftPrice(drafts[row.skuId], $event, sku(row.skuId).costPrice)"
                         />
                         <PriceSourceToggle
@@ -134,7 +136,7 @@
       </StoreProductDetail>
     </div>
     <AdminSectionCard class="form-submit-bar">
-      <t-button data-loading-button :theme="buttonTheme('submit')" :disabled="saving" :loading="saveIndicator" @click="save"
+      <t-button data-loading-button :theme="buttonTheme('submit')" :disabled="saving || !selectedLeaf" :loading="saveIndicator" @click="save"
         ><template #icon><t-icon name="check" /></template>{{ formConfirmationText('edit') }}</t-button
       >
       <t-button :theme="buttonTheme('cancel')" variant="base" :disabled="saving" @click="emit('cancel')">取消</t-button>
@@ -233,11 +235,13 @@ import {
 const { listStoreFinishedEditCategories, saveStoreFinishedEdit } = commodity.store;
 import StoreProductDetail from '../shared/StoreFinishedStockDetailAdapter.vue';
 import SpecPriceInput from '../management/components/SpecPriceInput.vue';
+import { storeCategoryTree } from './storeCategoryTree';
 import PriceSourceToggle from '../management/components/PriceSourceToggle.vue';
 import { isValidSpecPriceNumber } from '../management/priceValidation';
 import {
   calculateSalePrice,
   changeDraftCategory,
+  carriesPrice,
   createSalePriceDraft,
   editDraftPrice,
   editDraftCoefficient,
@@ -374,34 +378,26 @@ function applyBatchSalePrice() {
 interface CategoryOption {
   label: string;
   value: number;
-  disabled: boolean;
   children?: CategoryOption[];
 }
+const tree = computed(() => storeCategoryTree(categories.value));
 const categoryOptions = computed(() => {
-  const build = (parentId: number | null, parentEnabled: boolean, visited: Set<number>): CategoryOption[] =>
-    categories.value
-      .filter((item) => item.parentId === parentId && !visited.has(item.id))
-      .map((item) => {
-        const enabled = parentEnabled && item.status === 'enabled';
-        const children = build(item.id, enabled, new Set([...visited, item.id]));
-        return { label: item.name, value: item.id, disabled: !enabled, ...(children.length ? { children } : {}) };
-      });
-  return build(null, true, new Set());
+  const options = (parentId: number | null): CategoryOption[] =>
+    (tree.value.children.get(parentId) ?? []).map((item) => ({
+      label: item.name,
+      value: item.id,
+      ...(tree.value.leafIds.has(item.id) ? {} : { children: options(item.id) }),
+    }));
+  return options(null);
 });
-const coefficient = computed(() => {
-  const category = categories.value.find((item) => item.id === form.categoryId);
-  if (!category || categories.value.some((item) => item.parentId === category.id)) return null;
-  const seen = new Set<number>();
-  for (
-    let current: StoreFinishedEditCategory | undefined = category;
-    current;
-    current = categories.value.find((item) => item.id === current?.parentId)
-  ) {
-    if (current.status !== 'enabled' || seen.has(current.id)) return null;
-    seen.add(current.id);
-  }
-  return category.coefficient;
-});
+const selectedLeaf = computed(() =>
+  categories.value.find(item => item.id === form.categoryId && tree.value.leafIds.has(item.id)),
+);
+function mayCarryIncomplete(item: StoreSkuPrice) {
+  return (form.categoryId !== props.product.storeCategoryId || item.priceMode === 'auto') &&
+    carriesPrice(drafts[item.skuId], item);
+}
+const coefficient = computed(() => selectedLeaf.value?.coefficient ?? null);
 const sku = (id: number) => props.product.skus.find((item) => item.skuId === id)!;
 const canFollow = (id: number) => ready.value && coefficient.value != null && sku(id).costPrice != null;
 function changeCategory() {
@@ -434,7 +430,7 @@ const serverFeedback = useBoundServerFields(ready, productFormRoot, () => {
   return fields;
 });
 async function save() {
-  if (saving.value || !ready.value) return;
+  if (saving.value || !ready.value || !selectedLeaf.value) return;
   const current = formOperation.capture();
   let reportFieldError: ReturnType<typeof serverFeedback.begin> | undefined;
   saving.value = true;
@@ -443,18 +439,25 @@ async function save() {
     const valid = await formRef.value?.validate();
     if (!current()) return;
     if (valid !== true) return rejectFormSubmission(productFormRoot.value);
+    const category = selectedLeaf.value;
+    if (!category) return;
     if (
       props.product.skus.some(
         (item) =>
-          !isValidSpecPriceNumber(drafts[item.skuId].price) || !isValidSpecPriceNumber(drafts[item.skuId].coefficient),
+          !mayCarryIncomplete(item) &&
+          (!isValidSpecPriceNumber(drafts[item.skuId].price) || !isValidSpecPriceNumber(drafts[item.skuId].coefficient)),
       )
     )
       return rejectFormSubmission(productFormRoot.value);
     reportFieldError = serverFeedback.begin();
     const product = await saveStoreFinishedEdit(props.product.id, {
-      storeCategoryId: form.categoryId!,
+      storeCategoryId: category.id,
       skus: props.product.skus.map((item) => ({
         skuId: item.skuId,
+        ...(category.id !== props.product.storeCategoryId &&
+          drafts[item.skuId].mode === item.priceMode &&
+          (item.priceMode === 'auto' || carriesPrice(drafts[item.skuId], item))
+          ? { preservePricing: true } : {}),
         salePrice: drafts[item.skuId].price === '' ? null : Number(drafts[item.skuId].price),
         priceMode: drafts[item.skuId].mode,
         saleCoefficient: drafts[item.skuId].coefficient === '' ? null : Number(drafts[item.skuId].coefficient),

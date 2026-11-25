@@ -90,7 +90,7 @@
                   <t-checkbox
                     :checked="categorySelection().checked"
                     :indeterminate="categorySelection().indeterminate"
-                    :disabled="loading || saving"
+                    :disabled="loading || saving || !tree.leafIds.size"
                     aria-label="全选所有分类"
                     @change="(checked: boolean) => selectCategory(checked)"
                   />
@@ -99,7 +99,7 @@
                   <t-checkbox
                     :checked="categorySelection(row.id).checked"
                     :indeterminate="categorySelection(row.id).indeterminate"
-                    :disabled="loading || saving"
+                    :disabled="loading || saving || !categoryLeafIds(row.id).length"
                     :aria-label="`选择${row.name}`"
                     @change="(checked: boolean) => selectCategory(checked, row.id)"
                   />
@@ -122,12 +122,13 @@
                     </t-button>
                     <span v-else class="tree-toggle-placeholder"><t-icon name="minus" /></span>
                     <span>{{ row.name }}</span>
+                    <t-tag v-if="row.status === 'disabled'" size="small" variant="light">停用</t-tag>
                   </div>
                   <span v-else>{{ row.name }}</span>
                 </template>
                 <template #coefficient="{ row }">
                   <div
-                    v-if="activeKind === 'price' && !row.hasChildren"
+                    v-if="activeKind === 'price' && (row.status === 'disabled' || tree.leafIds.has(row.id))"
                     class="price-coefficient-field"
                     :class="{ 'price-coefficient-field--invalid': coefficientErrors[row.id] }"
                   >
@@ -333,6 +334,7 @@ import {
   type StorePriceCategory,
   type StorePriceRole,
 } from '@/services/storePriceRules';
+import { storeCategoryTree } from './storeCategoryTree';
 import { formatStoreRuleDateTime } from '@/utils/formatStoreRuleDateTime';
 interface DisplayRow extends TableRowData {
   id: number;
@@ -371,6 +373,7 @@ const can = (action: string) => hasPermission(user.value, `store.price-configura
 const rules = ref<StorePriceRule[]>([]);
 const categories = ref<StorePriceCategory[]>([]);
 const roles = ref<StorePriceRole[]>([]);
+const tree = computed(() => storeCategoryTree(categories.value));
 const keyword = ref('');
 const searchForm = reactive({ keyword: '', onlyUnconfigured: false });
 const onlyUnconfigured = ref(false);
@@ -419,7 +422,7 @@ const displayRows = computed<DisplayRow[]>(() => {
   const matches = (node: StorePriceCategory, depth = 0): boolean =>
     (node.name.includes(query) &&
       (!onlyUnconfigured.value ||
-        (!categories.value.some((child) => child.parentId === node.id) && !ruleFor(node.id)))) ||
+        (tree.value.leafIds.has(node.id) && !ruleFor(node.id)))) ||
     (depth < 3 && categories.value.some((child) => child.parentId === node.id && matches(child, depth + 1)));
   const visit = (parentId: number | null, depth: number) => {
     if (depth >= 3) return;
@@ -459,14 +462,11 @@ const columns = computed<PrimaryTableCol<TableRowData>[]>(() => [
       ]
     : []),
 ]);
-function isLeafCategory(id: number) {
-  return !categories.value.some((category) => category.parentId === id);
-}
 function categoryLeafIds(id?: number): number[] {
-  if (id == null)
-    return categories.value.filter((category) => isLeafCategory(category.id)).map((category) => category.id);
-  const children = categories.value.filter((category) => category.parentId === id);
-  return children.length ? children.flatMap((child) => categoryLeafIds(child.id)) : [id];
+  if (id == null) return [...tree.value.leafIds];
+  if (!tree.value.enabledIds.has(id)) return [];
+  if (tree.value.leafIds.has(id)) return [id];
+  return (tree.value.children.get(id) ?? []).flatMap(child => categoryLeafIds(child.id));
 }
 function categorySelection(id?: number) {
   const ids = categoryLeafIds(id);
@@ -479,12 +479,7 @@ function selectCategory(checked: boolean, id?: number) {
     ? [...new Set([...selectedIds.value, ...ids])]
     : selectedIds.value.filter((key) => !ids.includes(key));
 }
-const selectedEditableLeafIds = computed(() =>
-  selectedIds.value.filter(
-    (id) =>
-      categories.value.some((category) => category.id === id && category.status === 'enabled') && isLeafCategory(id),
-  ),
-);
+const selectedEditableLeafIds = computed(() => selectedIds.value.filter(id => tree.value.leafIds.has(id)));
 function isExpanded(id: number) {
   return (onlyUnconfigured.value ? filterExpandedIds.value : expandedIds.value).includes(id);
 }
@@ -523,19 +518,14 @@ async function load() {
     rules.value = data;
     if (activeKind.value === 'price') {
       categories.value = targets as StorePriceCategory[];
-      const firstRoot = categories.value.find((category) => category.parentId == null);
-      const expandBranch = (id: number): number[] => {
-        const children = categories.value.filter((category) => category.parentId === id);
-        return children.length ? [id, ...children.flatMap((child) => expandBranch(child.id))] : [];
-      };
-      expandedIds.value = firstRoot ? expandBranch(firstRoot.id) : [];
+      expandedIds.value = [];
       coefficientDrafts.value = Object.fromEntries(
         categories.value.map((category) => {
           const rule = ruleFor(category.id);
           const cached = draftCache.get(key);
           return [
             category.id,
-            cached && Object.hasOwn(cached, category.id)
+            tree.value.leafIds.has(category.id) && cached && Object.hasOwn(cached, category.id)
               ? cached[category.id]
               : rule
                 ? Number(rule.coefficient).toFixed(2)
@@ -581,7 +571,7 @@ function validateCoefficient(id: number) {
 }
 async function savePrices() {
   if (saving.value || loading.value || !can('batch-set')) return;
-  const editable = categories.value.filter((category) => category.status === 'enabled' && isLeafCategory(category.id));
+  const editable = categories.value.filter((category) => tree.value.leafIds.has(category.id));
   const valid = editable.map((category) => validateCoefficient(category.id)).every(Boolean);
   if (!valid) {
     return rejectFormSubmission(priceFormRoot.value);

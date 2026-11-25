@@ -245,6 +245,11 @@ test('expands the confirm button for its spinner and moves feedback to the list 
 
 test('a fast category deletion never mounts a spinner in the closing button', async ({ page }) => {
   await setup(page, [prefix + '.finished.view', prefix + '.finished.delete']);
+  // A listing can move to another category after the page has loaded.
+  await page.route('**/api/admin/store-categories?scope=finished', route => route.fulfill({ json: {
+    code: 0,
+    data: [{ id: 5, scope: 'finished', parentId: null, name: '成品另一级', sortOrder: 1, productCount: 1, status: 'enabled' }],
+  } }));
   await page.route('**/api/admin/store-categories/5/delete-check?*', route =>
     route.fulfill({ json: { code: 0, data: true } }));
   let writes = 0;

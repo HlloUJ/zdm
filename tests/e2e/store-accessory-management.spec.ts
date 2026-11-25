@@ -1,4 +1,5 @@
 import { registerStoreBatchSalePriceTests } from './store-batch-sale-price-cases';
+import { registerStoreCategoryAdjustmentTests } from './store-category-adjustment-cases';
 import { productWarehouseUrl } from './product-test-navigation';
 import { priceTableGeometry, expectPriceTableStable } from './price-table-feedback';
 import { checkDecimalEditing } from './decimal-editing';
@@ -1037,8 +1038,7 @@ test('store editor requires category, leaves missing prices empty, and follows o
   const input = main.locator('.store-sale-price-input input');
   await expect(input).toHaveValue('');
   await expect(main.getByText(/无法自动计算|缺失原因/)).toHaveCount(0);
-  await main.getByRole('button', { name: /^确认(?:新增|保存)$/, exact: true }).click();
-  await expect(main.getByText('请选择门店分类', { exact: true })).toBeVisible();
+  await expect(main.getByRole('button', { name: '确认保存', exact: true })).toBeDisabled();
   await main.locator('.t-cascader input').click();
   await page.locator('.t-cascader__item').filter({ hasText: '一级分类' }).hover();
   await page.locator('.t-cascader__item').filter({ hasText: '二级分类' }).hover();
@@ -1047,6 +1047,9 @@ test('store editor requires category, leaves missing prices empty, and follows o
   await leaf.hover();
   await expect(input).toHaveValue('');
   await leaf.click();
+  await expect(input).toHaveValue('');
+  await main.getByRole('button', { name: '手工价格，点击切换跟随配置' }).click();
+  await page.locator('.t-dialog:visible').getByRole('button', { name: '确认更改价格浮动方式', exact: true }).click();
   await expect(input).toHaveValue('150.00');
   const coefficientInput = main.locator('.store-sale-coefficient-input input');
   await checkDecimalEditing(coefficientInput);
@@ -1064,7 +1067,7 @@ test('store editor requires category, leaves missing prices empty, and follows o
   await main.locator('.t-cascader input').click();
   await page.locator('.t-cascader__item').filter({ hasText: '无系数分类' }).click();
   await expect(input).toHaveValue('150.00');
-  await expect(main.getByRole('button', { name: '手工价格', exact: true })).toBeDisabled();
+  await expect(main.getByRole('button', { name: '跟随配置，点击切换手工价格' })).toBeEnabled();
   await expect(page.locator('.t-dialog:visible')).toHaveCount(0);
   const table = main.locator('.spec-table-block .t-table');
   const geometry = await priceTableGeometry(table);
@@ -1074,6 +1077,7 @@ test('store editor requires category, leaves missing prices empty, and follows o
   await expect(main.getByText('请输入系数', { exact: true })).toBeVisible();
   await expectPriceTableStable(table, geometry);
   await expect(page).toHaveURL(/\/41\/edit$/);
+  await coefficientInput.fill('1.6');
   await input.fill('');
   await main.getByRole('button', { name: /^确认(?:新增|保存)$/, exact: true }).click();
   await expect(main.locator('.store-sale-price-input .t-input')).toHaveClass(/t-is-error/);
@@ -1251,3 +1255,4 @@ test('single off shelf marks the existing required reason and keeps details opti
 });
 
 registerStoreBatchSalePriceTests('accessory-management', storeLogin, product());
+registerStoreCategoryAdjustmentTests('accessory-management', storeLogin, product);
