@@ -24,15 +24,23 @@
           <template #createdAt="{ row }">{{ row.createdAt.replace('T', ' ').slice(0, 19) }}</template>
           <template #operation="{ row }">
             <div class="table-actions">
-              <t-link v-if="can('edit')" :theme="buttonTheme('edit')" @click="openEdit(row)">编辑</t-link>
+              <t-link v-if="can('edit')" :theme="buttonTheme('edit')" @click="openEdit(row)"
+                ><t-loading v-if="operations.checkingIndicator('edit:' + row.id)" size="small" />编辑</t-link
+              >
               <t-link
                 v-if="can('toggle-status')"
                 :theme="buttonTheme(row.status === 'enabled' ? 'disable' : 'enable')"
                 @click="check(row, row.status === 'enabled' ? '停用' : '启用')"
               >
+                <t-loading
+                  v-if="operations.checkingIndicator((row.status === 'enabled' ? '停用' : '启用') + row.id)"
+                  size="small"
+                />
                 {{ row.status === 'enabled' ? '停用' : '启用' }}</t-link
               >
-              <t-link v-if="can('delete')" :theme="buttonTheme('delete')" @click="check(row, '删除')">删除</t-link>
+              <t-link v-if="can('delete')" :theme="buttonTheme('delete')" @click="check(row, '删除')"
+                ><t-loading v-if="operations.checkingIndicator('删除' + row.id)" size="small" />删除</t-link
+              >
             </div>
           </template>
         </AdminListPage>
@@ -40,12 +48,14 @@
     </div>
   </div>
   <AdminFormDialog
+    ref="editor"
     :visible="visible"
     @update:visible="
       (v) => {
-        if (!saving) visible = v;
+        if (!saving && !preview) visible = v;
       }
     "
+    :close-on-esc-keydown="!preview"
     :data="form"
     :header="editId ? '编辑服务' : '新增服务'"
     :confirmation="formConfirmation(editId ? 'edit' : 'create')"
@@ -54,22 +64,44 @@
     @confirm="save"
   >
     <t-form-item label="服务主图">
-      <AdminMediaUpload
-        :key="dialogKey"
-        v-model="mainImage"
-        title="服务主图"
-        :upload="upload"
-        :disabled="saving || uploading"
-        :error-message="uploadError"
-        @removed="removed"
-        @preview="(img) => (preview = img?.url || '')"
-      />
+      <t-space size="small" align="start">
+        <AdminMediaUpload
+          :key="dialogKey"
+          v-model="mainImage"
+          title="服务主图"
+          :upload="upload"
+          :disabled="saving || uploading"
+          :error-message="uploadError"
+          @removed="removed"
+          @preview="(img) => (preview = img?.url || '')"
+        />
+        <t-link v-if="mainImage" theme="primary" :disabled="saving || uploading" @click="replaceImage">更换主图</t-link>
+      </t-space>
       <t-link v-if="uploadError" @click="uploadError = ''">取消本次上传</t-link>
     </t-form-item>
-    <t-form-item label="服务名称" required><t-input v-model="form.name" placeholder="请输入服务名称" /></t-form-item>
-    <t-form-item label="价格" required
-      ><t-input v-model="form.price" placeholder="请输入价格" suffix="元" @blur="formatPrice"
-    /></t-form-item>
+    <t-form-item label="服务名称" name="name" required-mark>
+      <t-input
+        v-model="form.name"
+        :disabled="saving"
+        aria-required="true"
+        placeholder="请输入服务名称"
+        v-bind="fieldFeedback(nameError, nameError)"
+      />
+    </t-form-item>
+    <t-form-item label="价格" name="price" required-mark>
+      <DecimalInput
+        v-model="form.price"
+        :disabled="saving"
+        plain
+        large-number
+        aria-required="true"
+        inputmode="decimal"
+        placeholder="请输入价格"
+        suffix="元"
+        v-bind="fieldFeedback(priceError, priceError)"
+        @blur="priceTouched = true"
+      />
+    </t-form-item>
   </AdminFormDialog>
   <AdminConfirmDialog
     v-if="confirmation"
@@ -95,6 +127,8 @@
     :visible="!!preview"
     confirm-function="close"
     :confirmation="{ kind: 'none' }"
+    mode="modal"
+    show-overlay
     close-on-overlay-click
     @close="preview = ''"
     header="图片预览"
@@ -126,7 +160,12 @@ import { formConfirmation } from '@/components/foundation/actions/confirmation';
 import { useOperationPreflight } from '@/composables/useOperationPreflight';
 import { getLoginUser } from '@/services/auth';
 import { hasPermission } from '@/services/adminPermissions';
-import { request } from '@/services/http';
+import { ApiError, request } from '@/services/http';
+import DecimalInput from '@/components/DecimalInput.vue';
+import { fieldFeedback, useFormFeedback } from '@/utils/formValidation';
+import { rejectFormSubmission } from '@/utils/submitValidation';
+import { numericError } from '@/utils/numericInput';
+import { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';
 import {
   formatServicePrice,
   listServices,
@@ -157,6 +196,24 @@ const columns = [
 const can = (action: string) => hasPermission(getLoginUser(), 'store.service-management.' + action);
 const editId = ref<number | null>(null);
 const form = reactive({ name: '', price: '' });
+const editor = ref<InstanceType<typeof AdminFormDialog>>();
+const submitted = ref(false);
+const priceTouched = ref(false);
+const serverFeedback = useFormFeedback(visible);
+const nameError = computed(() => {
+  const name = form.name.trim();
+  if (submitted.value && !name) return '请输入服务名称';
+  if (submitted.value && Array.from(name).length > 10) return '服务名称最多输入10个字符';
+  return serverFeedback.field('name', name).tips || '';
+});
+const priceError = computed(() => {
+  if (!priceTouched.value && !submitted.value) return '';
+  if (!form.price) return '请输入价格';
+  return numericError(form.price) || serverFeedback.field('price', form.price).tips || '';
+});
+function replaceImage() {
+  editor.value?.getFormElement()?.querySelector<HTMLInputElement>('input[type=file]')?.showPicker();
+}
 const mainImage = ref<AdminMediaValue>(),
   uploadError = ref(''),
   preview = ref('');
@@ -169,7 +226,7 @@ let generation = 0,
   listGeneration = 0;
 const dialogKey = ref(0);
 function failure(error: unknown) {
-  adminFeedback.error(error instanceof Error ? error.message : '操作失败');
+  adminFeedback.error(getSafeErrorMessage(error, '操作失败，请稍后重试'));
 }
 async function refresh() {
   const token = ++listGeneration;
@@ -188,6 +245,7 @@ function release(id: number) {
   void request(servicePath + '/images/' + id, { method: 'DELETE' }).catch(() => {});
 }
 function removed(image: AdminMediaValue) {
+  uploadError.value = '';
   if (image.mediaId && temporary.has(image.mediaId)) release(image.mediaId);
 }
 function resetForm() {
@@ -199,6 +257,9 @@ function resetForm() {
   mainImage.value = undefined;
   uploadError.value = '';
   uploading.value = false;
+  submitted.value = false;
+  priceTouched.value = false;
+  serverFeedback.clear();
 }
 watch(
   visible,
@@ -264,10 +325,6 @@ async function openEdit(row: StoreService) {
     },
   );
 }
-function formatPrice() {
-  const price = formatServicePrice(form.price);
-  if (price !== null) form.price = price;
-}
 async function upload(file: File) {
   const token = dialogGeneration,
     identity = generation;
@@ -286,7 +343,10 @@ async function upload(file: File) {
     urls.add(url);
     return { name: file.name, mediaId: id, url };
   } catch (e) {
-    if (token === dialogGeneration) uploadError.value = '上传失败，请重新选择图片';
+    if (token === dialogGeneration) {
+      uploadError.value = getSafeErrorMessage(e, '上传失败，请重新选择图片');
+      dialogKey.value++;
+    }
     throw e;
   } finally {
     if (token === dialogGeneration) uploading.value = false;
@@ -294,18 +354,11 @@ async function upload(file: File) {
 }
 async function save() {
   if (saving.value || uploading.value) return;
-  const price = formatServicePrice(form.price),
-    name = form.name.trim();
-  if (!name || Array.from(name).length > 10) {
-    adminFeedback.warning('服务名称须为 1 至 10 个字符');
-    return;
-  }
-  if (price === null) {
-    adminFeedback.warning('请填写非负价格，最多两位小数');
-    return;
-  }
-  if (uploadError.value) {
-    adminFeedback.warning(uploadError.value);
+  submitted.value = true;
+  const name = form.name.trim();
+  const price = formatServicePrice(form.price);
+  if (nameError.value || price === null || priceError.value || uploadError.value) {
+    await rejectFormSubmission(editor.value);
     return;
   }
   const imageId = mainImage.value?.mediaId ?? null;
@@ -319,10 +372,20 @@ async function save() {
     if (token !== generation) return;
     if (imageId) temporary.delete(imageId);
     visible.value = false;
-    adminFeedback.success('服务已保存');
+    adminFeedback.actionSuccess({ action: editId.value ? '编辑' : '新增', target: name });
     await refresh();
   } catch (e) {
-    if (token === generation) failure(e);
+    if (token !== generation) return;
+    if (e instanceof ApiError && e.status === 400) {
+      if (e.message === '本店已有同名服务') serverFeedback.reject('name', name, e.message);
+      else if (e.message === '金额超出可精确保存的范围') serverFeedback.reject('price', form.price, e.message);
+      else if (e.message === '服务主图不可用') uploadError.value = '服务主图不可用，请重新选择图片';
+      else {
+        failure(e);
+        return;
+      }
+      await rejectFormSubmission(editor.value);
+    } else failure(e);
   } finally {
     if (token === generation) saving.value = false;
   }
@@ -353,7 +416,7 @@ async function confirmAction() {
       await request(path + '/status', { method: 'PUT', body: JSON.stringify({ enabled: target.action === '启用' }) });
     if (token !== generation) return;
     confirmation.value = null;
-    adminFeedback.success('服务已' + target.action);
+    adminFeedback.actionSuccess({ action: target.action, target: target.row.name });
     await refresh();
   } catch (e) {
     if (token === generation) failure(e);

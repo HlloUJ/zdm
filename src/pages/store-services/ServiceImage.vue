@@ -6,6 +6,11 @@
     :width="48"
     :height="48"
     fit="contain"
+    role="button"
+    tabindex="0"
+    :aria-label="'预览' + service.name + '主图'"
+    @keydown.enter.prevent="$emit('preview', url)"
+    @keydown.space.prevent="$emit('preview', url)"
     @click="$emit('preview', url)"
   />
   <img v-else :src="defaultImage" width="48" height="48" :alt="service.imageId ? '服务主图' : '默认图片'" />

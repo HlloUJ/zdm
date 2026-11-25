@@ -1569,13 +1569,14 @@
       }
     },
     "src/pages/store-services/index.vue": {
-      "script": "d892463724cbfc3c0a2e420288a7a51b490dd4c1c87c12cad6edaac519421c37",
+      "script": "f30310b43f81a9cb9fe3ae4a07d1ded30776116f270dfb8e1e40c79280b88925",
       "actions": {
         "action → openCreate": "form",
-        "blur → formatPrice": "form",
+        "blur → priceTouched = true": "form",
         "click → check(row, '删除')": "single",
         "click → check(row, row.status === 'enabled' ? '停用' : '启用')": "single",
         "click → openEdit(row)": "form",
+        "click → replaceImage": "form",
         "click → uploadError = ''": "form",
         "close → preview = ''": "view",
         "confirm → confirmAction": "single",
@@ -1584,7 +1585,7 @@
         "preview → (img) => (preview = img?.url || '')": "view",
         "preview → preview = $event": "view",
         "removed → removed": "form",
-        "update:visible → (v) => { if (!saving) visible = v; }": "form",
+        "update:visible → (v) => { if (!saving && !preview) visible = v; }": "form",
         "update:visible → (v) => { if (!v) confirmation = null; }": "view",
         "update:visible → (v) => { if (!v) preview = ''; }": "view"
       }
@@ -1592,7 +1593,8 @@
     "src/pages/store-services/ServiceImage.vue": {
       "script": "182784a0534f3f041f34360561ed481a35d0f4faef0fa40dab558e3fbf4ed777",
       "actions": {
-        "click → $emit('preview', url)": "view"
+        "click → $emit('preview', url)": "view",
+        "keydown → $emit('preview', url)": "view"
       }
     }
   },
@@ -1680,7 +1682,7 @@
     "src/services/productBatchFeedback.ts": "1fbc6bc81362257c4caf08559614018de4027781013f9f38f8cc349e59a4e894",
     "src/pages/finished-stock/store/storeSalePriceLines.ts": "030022d460fdabcf0397b23b3203de0648a710a09022db3f2e56687d866447e0",
     "backend/src/main/java/com/zdm/platform/inventory/StoreBatchCategoryRequest.java": "4c0cdf1704dcf94c4be915c1283f555c649e0efee6a680fdd9b3597ea93f693f",
-    "src/services/storeServices.ts": "8730b4c3f7b8fec1cfa622e3bd1d6bfd4b7466380f2f1ae09780e2bc9eee924d"
+    "src/services/storeServices.ts": "1fd2049c39c5363eface2e56f0a66b95017efa38507c02ed39442dba2b54be86"
   },
   "approvedChanges": {
     "src/components/AdminTopNav.vue": {

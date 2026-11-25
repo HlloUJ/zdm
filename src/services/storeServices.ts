@@ -1,3 +1,4 @@
+import { normalizeNumeric, numericError } from '@/utils/numericInput';
 import { getAuthToken, request } from './http';
 
 export interface StoreService {
@@ -11,8 +12,7 @@ export interface StoreService {
 }
 export const servicePath = '/admin/store-services';
 export function formatServicePrice(value: string) {
-  const match = /^(\d+)(?:\.(\d{1,2}))?$/.exec(value);
-  return match ? match[1].replace(/^0+(?=\d)/, '') + '.' + (match[2] ?? '').padEnd(2, '0') : null;
+  return value && !numericError(value) ? normalizeNumeric(value) : null;
 }
 export async function loadServiceImage(service: StoreService) {
   const base = import.meta.env.VITE_API_BASE_URL ?? '/api';
