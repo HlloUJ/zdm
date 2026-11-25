@@ -251,6 +251,13 @@ class StoreExitIntegrationTest extends SpringContainerTestSupport {
     long target=restoredRetiredStore(),other=store();
     var parents=new java.util.LinkedHashMap<String,List<Long>>();
     parents.put("STORE_CUSTOMER_FOLLOWUP",List.of(previewFollowup(target),previewFollowup(other)));
+    List<Long> services = new java.util.ArrayList<>();
+    for (long owner : List.of(target, other)) {
+      long service = IDS.incrementAndGet();
+      jdbc.update("INSERT INTO store_services(id,tenant_id,store_id,name,price,created_by_account_id,creator_name) VALUES (?,1,?,'安装',100,1,'店员')", service, owner);
+      services.add(service);
+    }
+    parents.put("STORE_SERVICE_IMAGE", services);
     for(String kind:List.of("finished","accessory")) {
       long product=supplyListings(kind,target,other);
       parents.put("STORE_"+kind.toUpperCase(java.util.Locale.ROOT)+"_INVALIDATION",List.of(target,other));
@@ -441,6 +448,7 @@ class StoreExitIntegrationTest extends SpringContainerTestSupport {
   @Test void allCustomerStatesAndPaymentHistoryAreRemovedWithoutTouchingAnotherStore() {
     long target = store(); long other = store();
     for (long id : List.of(target, other)) {
+      jdbc.update("INSERT INTO store_services(tenant_id,store_id,name,price,created_by_account_id,creator_name,deleted_at) VALUES(1,?,'旧安装',100,1,'店员',NOW())", id);
       jdbc.update("INSERT INTO store_payment_names(id,tenant_id,store_id,name,deleted_at) VALUES (?,1,?,'旧定金',CURRENT_TIMESTAMP)", id, id);
       jdbc.update("INSERT INTO store_payment_name_events(tenant_id,store_id,payment_name_id,action,operator_name) VALUES (1,?,?,'create','操作人')", id, id);
       jdbc.update("""
@@ -456,6 +464,8 @@ class StoreExitIntegrationTest extends SpringContainerTestSupport {
     assertEquals(0, count("stores", "id", target));
     assertEquals(0, count("store_customers", "store_id", target));
     assertEquals(0, count("store_customer_followups", "customer_id", target));
+    assertEquals(0, count("store_services", "store_id", target));
+    assertEquals(1, count("store_services", "store_id", other));
     assertEquals(0, count("store_payment_names", "store_id", target));
     assertEquals(0, count("store_payment_name_events", "store_id", target));
     assertEquals(1, count("stores", "id", other));

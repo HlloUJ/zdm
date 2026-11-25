@@ -222,7 +222,23 @@ export const storeProducts: FunctionModule = {
   label: '商品管理',
   value: 'store.products',
   audiences: ['store'],
-  menus: [...storeFinishedStock.menus, ...storeAccessoryStock.menus],
+  menus: [
+    ...storeFinishedStock.menus,
+    ...storeAccessoryStock.menus,
+    {
+      label: '服务管理',
+      value: 'store.service-management.menu',
+      direct: false,
+      pages: [{
+        label: '服务管理页',
+        value: 'store.service-management',
+        actions: [
+          ['create', '新增'], ['edit', '编辑'], ['toggle-status', '启用/停用'], ['delete', '删除'],
+        ].map(([key, label]) => ({ label, value: `store.service-management.${key}` })),
+        tabs: [],
+      }],
+    },
+  ],
 };
 
 export const storePriceConfiguration: FunctionModule = {

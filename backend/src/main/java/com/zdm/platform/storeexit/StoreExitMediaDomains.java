@@ -5,6 +5,7 @@ import java.util.Map;
 /** Shared by reference-write fences and exit cleanup; uploader scope is not used as ownership. */
 public final class StoreExitMediaDomains {
   public static final Map<String, String> PARENTS = Map.of(
+      "STORE_SERVICE_IMAGE", "store_services",
       "STORE_CUSTOMER_FOLLOWUP", "store_customer_followups",
       "STORE_FINISHED_INVALIDATION", "store_finished_products",
       "STORE_ACCESSORY_INVALIDATION", "store_accessory_products",
