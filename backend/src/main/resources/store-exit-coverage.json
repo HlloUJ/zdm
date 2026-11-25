@@ -1156,6 +1156,24 @@
       "disposition": "module",
       "basis": "V1.3第三章；按目标门店关系处理，范围外记录不处理"
     },
+    "store_services": {
+      "columns": [
+        "created_at",
+        "created_by_account_id",
+        "creator_name",
+        "deleted_at",
+        "enabled",
+        "id",
+        "image_id",
+        "live_name",
+        "name",
+        "price",
+        "store_id",
+        "tenant_id"
+      ],
+      "disposition": "module",
+      "basis": "V1.3第三章；按目标门店关系处理，范围外记录不处理"
+    },
     "store_price_rules": {
       "columns": [
         "category_id",
@@ -1369,6 +1387,7 @@
     "store_price_rules/role_id/roles/id/CASCADE",
     "store_price_rules/store_id/stores/id/CASCADE",
     "store_selection_batch_items/batch_id/store_selection_batches/id/NO ACTION",
+    "store_services/store_id/stores/id/NO ACTION",
     "stores/store_level_id/store_levels/id/NO ACTION",
     "stores/tenant_id/tenants/id/NO ACTION",
     "supplier_supply_type_links/supplier_id/suppliers/id/CASCADE",
@@ -1432,6 +1451,11 @@
     "STORE_ACCESSORY_PRODUCT_LOG": {
       "disposition": "module",
       "parent": "store_accessory_operation_logs",
+      "basis": "V1.3第六章：随明确业务域和父对象释放对应引用"
+    },
+    "STORE_SERVICE_IMAGE": {
+      "disposition": "module",
+      "parent": "store_services",
       "basis": "V1.3第六章：随明确业务域和父对象释放对应引用"
     },
     "STORE_CUSTOMER_FOLLOWUP": {
@@ -1696,6 +1720,10 @@
       "basis": "V1.3：当前业务归属、维护关系或有效责任；退出范围外的引用保留主体"
     },
     "store_payment_name_events.operator_account_id": {
+      "kind": "live",
+      "basis": "V1.3：当前业务归属、维护关系或有效责任；退出范围外的引用保留主体"
+    },
+    "store_services.created_by_account_id": {
       "kind": "live",
       "basis": "V1.3：当前业务归属、维护关系或有效责任；退出范围外的引用保留主体"
     },

@@ -1567,6 +1567,34 @@
         "close → !busy && emit('cancel')": "view",
         "confirm → leaf && !busy && emit('submit', leaf.id)": "@perItem"
       }
+    },
+    "src/pages/store-services/index.vue": {
+      "script": "f1bc22c6363d78c687e76756c5d878b2e2e9bfff64f827ab7bf2e59f4800b0ed",
+      "actions": {
+        "action → openCreate": "form",
+        "blur → priceTouched = true": "form",
+        "click → check(row, '删除')": "single",
+        "click → check(row, row.status === 'enabled' ? '停用' : '启用')": "single",
+        "click → openEdit(row)": "form",
+        "click → uploadError = ''": "form",
+        "close → preview = ''": "view",
+        "confirm → confirmAction": "single",
+        "confirm → save": "form",
+        "page-change → (p) => { page = p.current; pageSize = p.pageSize; }": "query",
+        "preview → (img) => (preview = img?.url || '')": "view",
+        "preview → preview = $event": "view",
+        "removed → removed": "form",
+        "update:visible → (v) => { if (!saving && !preview) visible = v; }": "form",
+        "update:visible → (v) => { if (!v) confirmation = null; }": "view",
+        "update:visible → (v) => { if (!v) preview = ''; }": "view"
+      }
+    },
+    "src/pages/store-services/ServiceImage.vue": {
+      "script": "182784a0534f3f041f34360561ed481a35d0f4faef0fa40dab558e3fbf4ed777",
+      "actions": {
+        "click → $emit('preview', url)": "view",
+        "keydown → $emit('preview', url)": "view"
+      }
     }
   },
   "dependencies": {
@@ -1612,7 +1640,7 @@
     "backend/src/main/java/com/zdm/platform/inventory/StoreCategoryEligibility.java": "56e6c605a7cd2199ae8eb3f6cc288a178b85cd0f675039e02cea1f54125ea813",
     "backend/src/main/java/com/zdm/platform/inventory/StoreFinishedProductService.java": "033c329a50c2c2b344edc083131e935f2995800a9a3bcef68a095628b19aaec5",
     "backend/src/main/java/com/zdm/platform/inventory/StoreFinishedSalePriceService.java": "1d98034389addb8578b18cfa71d70cc0ce16e437bfa759804c7d844809872281",
-    "backend/src/main/java/com/zdm/platform/media/MediaAssetService.java": "7d8d2317b155fe20044dd128f16ab28a00a7c7ab06665482428a6e7a9d647b82",
+    "backend/src/main/java/com/zdm/platform/media/MediaAssetService.java": "9a97d570e93790dabbb4fc0c87232a039699bc047c857bc403ec2f94b61c1ea9",
     "backend/src/main/java/com/zdm/platform/payment/StorePaymentNameService.java": "00714ae86d7be38ac16e999455de262fa51b9f9272ddfb79f48788c4ff275f1a",
     "backend/src/main/java/com/zdm/platform/store/StoreCategoryController.java": "9173414206b0b2b9162ee664943c9c77b3f7620e64e8cd7d38f9f3a89e7909aa",
     "backend/src/main/java/com/zdm/platform/store/StoreCategoryService.java": "d6cf94a98af611fa9f23e13922171372bbb19c0b49e4fa94ecc17fd0373424e6",
@@ -1628,7 +1656,7 @@
     "src/composables/useOperationPreflight.ts": "12de93cda33177aee7b390d8359c9705d34070c1c2dacb9126f57d1a6862623a",
     "src/modules/accessory/routes.ts": "65f3669d222a2414d5cb8504146f15b32aa83a4f97f9068f7b947a0158afaacf",
     "src/pages/order/prototype/model.ts": "4654bbcfe84a5ac3f4a0dba6f63fe418277c4236fc1e1f988f91954d78f77b15",
-    "src/router/index.ts": "c4f572de359d27df385816024f4a6f8c207b90ddd24e40028dcf7fa0992b8751",
+    "src/router/index.ts": "6aba22d82f3e06bf0986b7b8547fda9a52b5e83277d0a009a0917040c934250f",
     "src/services/accessoryMarkupConfigurations.ts": "a06cb7cf4f7e652a1e59d668054d52f80fb3c5c5466f68f0965a54e4e991cace",
     "src/services/accessoryProducts.ts": "fa9e67b2daa51e4f4feb84f06591e93e89d9c7d210e99b393eaee6e83bb6192c",
     "src/services/finishedMarkupConfigurations.ts": "3d370a6342211b898d24ab0c825a44e79f81727b83dde8bbb26364643be5bc3a",
@@ -1654,7 +1682,8 @@
     "src/utils/submitValidation.ts": "9c992f808de42cf274883ec1df1c857d3594fc912056070c335b03f783182d81",
     "src/services/productBatchFeedback.ts": "1fbc6bc81362257c4caf08559614018de4027781013f9f38f8cc349e59a4e894",
     "src/pages/finished-stock/store/storeSalePriceLines.ts": "030022d460fdabcf0397b23b3203de0648a710a09022db3f2e56687d866447e0",
-    "backend/src/main/java/com/zdm/platform/inventory/StoreBatchCategoryRequest.java": "4c0cdf1704dcf94c4be915c1283f555c649e0efee6a680fdd9b3597ea93f693f"
+    "backend/src/main/java/com/zdm/platform/inventory/StoreBatchCategoryRequest.java": "4c0cdf1704dcf94c4be915c1283f555c649e0efee6a680fdd9b3597ea93f693f",
+    "src/services/storeServices.ts": "1fd2049c39c5363eface2e56f0a66b95017efa38507c02ed39442dba2b54be86"
   },
   "approvedChanges": {
     "src/components/AdminTopNav.vue": {
