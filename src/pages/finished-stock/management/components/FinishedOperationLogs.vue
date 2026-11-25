@@ -45,16 +45,9 @@
       />
     </template>
   </ProductOperationLogTemplate>
-  <AdminDialog
-    :confirmation="{ kind: 'none' }"
-    confirm-function="close"
+  <AdminMediaPreviewDialog
     :visible="!!preview"
     header="历史媒体"
-    mode="modal"
-    show-overlay
-    close-on-overlay-click
-    width="min(960px, 94vw)"
-    :footer="false"
     @close="preview = null"
     @cancel="preview = null"
     @update:visible="!$event && (preview = null)"
@@ -64,9 +57,9 @@
         v-if="preview.mediaType === 'video'"
         :src="preview.url"
         controls
-        class="history-large-media" /><img v-else :src="preview.url" alt="历史图片" style="max-width: 100%"
+        class="history-large-media" /><img v-else :src="preview.url" alt="历史图片"
     /></template>
-  </AdminDialog>
+  </AdminMediaPreviewDialog>
 </template>
 <script setup lang="ts">
 import { useCommodityModule } from '@/composables/useCommodityModule';
@@ -76,7 +69,7 @@ import { computed, reactive, ref, watch } from 'vue';
 import DOMPurify from 'dompurify';
 import { formatProductDateTime } from '@/utils/formatProductDateTime';
 import { getLoginUser } from '@/services/auth';
-import { AdminDialog, adminFeedback } from '@/components/foundation';
+import { AdminMediaPreviewDialog, adminFeedback } from '@/components/foundation';
 import ProductOperationLogTemplate from '@/components/product-logs/ProductOperationLogTemplate.vue';
 import {
   finishedProductOperationSummary,
@@ -294,12 +287,6 @@ const time = formatProductDateTime;
   width: 100%;
   height: 100%;
   object-fit: contain;
-}
-.history-large-media {
-  display: block;
-  max-width: 100%;
-  max-height: 70vh;
-  margin: auto;
 }
 .history-rich-text {
   overflow-wrap: anywhere;

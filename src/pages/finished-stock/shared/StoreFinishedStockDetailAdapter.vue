@@ -13,21 +13,14 @@
     <template v-if="$slots.sales" #sales="slotProps"><slot name="sales" v-bind="slotProps" /></template>
     <template v-if="$slots.sale" #sale="slotProps"><slot name="sale" v-bind="slotProps" /></template>
   </ProductDetail>
-  <AdminDialog
-    :confirmation="{ kind: 'none' }"
-    confirm-function="close"
+  <AdminMediaPreviewDialog
     :visible="Boolean(preview)"
     header="商品媒体"
-    mode="modal"
-    show-overlay
-    close-on-overlay-click
     attach="body"
-    width="min(960px, 94vw)"
-    :footer="false"
     @close="preview = null"
     @update:visible="!$event && (preview = null)"
   >
-    <img v-if="preview?.kind === 'image'" :src="preview.url" alt="商品图片" style="max-width: 100%" />
+    <img v-if="preview?.kind === 'image'" :src="preview.url" alt="商品图片" />
     <video
       v-if="preview?.kind === 'video'"
       :src="preview.url"
@@ -37,12 +30,12 @@
       aria-label="商品视频播放器"
       class="product-video-preview"
     />
-  </AdminDialog>
+  </AdminMediaPreviewDialog>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { AdminDialog } from '@/components/foundation';
+import { AdminMediaPreviewDialog } from '@/components/foundation';
 import ProductDetail from '../management/components/ProductDetail.vue';
 import type { StoreFinishedProduct } from '@/services/storeFinishedStock';
 import type { FinishedProductGuidePrice } from '@/services/finishedProducts';
@@ -101,12 +94,3 @@ const detail = computed(() => ({
   salePrices: props.product.skus.map((sku) => ({ skuId: sku.skuId, price: sku.salePrice, mode: sku.priceMode })),
 }));
 </script>
-
-<style scoped>
-.product-video-preview {
-  display: block;
-  width: min(900px, 100%);
-  height: min(760px, calc(100vh - 220px));
-  object-fit: contain;
-}
-</style>

@@ -59,7 +59,7 @@ vi.mock('@/services/finishedOperationLogs', async (original) => ({
   }),
 }));
 vi.mock('@/components/foundation', () => ({
-  AdminDialog: { template: '<div><slot /></div>' },
+  AdminMediaPreviewDialog: { template: '<div><slot /></div>' },
   AdminPagination: { template: '<div />' },
   adminFeedback: { error: vi.fn() },
 }));
@@ -82,7 +82,7 @@ describe('finished operation logs', () => {
       props: { visible: false },
       shallow: true,
       global: {
-        stubs: { 't-space': { template: '<div><slot /></div>' }, AdminDialog: { template: '<div><slot /></div>' } },
+        stubs: { 't-space': { template: '<div><slot /></div>' }, AdminMediaPreviewDialog: { template: '<div><slot /></div>' } },
       },
     });
     await wrapper.setProps({ visible: true });

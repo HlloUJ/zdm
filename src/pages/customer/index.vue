@@ -302,20 +302,13 @@
       :loading="confirmOperationPending"
       @confirm="confirmOperationOnce"
     />
-    <AdminDialog
+    <AdminMediaPreviewDialog
       v-model:visible="imageVisible"
-      :confirmation="{ kind: 'none' }"
-      confirm-function="close"
       header="图片预览"
-      width="min(960px, 94vw)"
-      mode="modal"
-      show-overlay
-      close-on-overlay-click
-      :footer="false"
       @close="imageVisible = false"
     >
-      <img v-if="imageVisible" :src="previewImages[0]" alt="附件图片" style="max-width: 100%" />
-    </AdminDialog>
+      <img v-if="imageVisible" :src="previewImages[0]" alt="附件图片" />
+    </AdminMediaPreviewDialog>
   </div>
 </template>
 <script setup lang="ts">
@@ -331,7 +324,7 @@ import type { PageInfo, TableProps } from 'tdesign-vue-next';
 import AdminTopNav from '@/components/AdminTopNav.vue';
 import CustomerFollowupAttachments from '@/components/customer/CustomerFollowupAttachments.vue';
 import AdminSideMenu from '@/components/AdminSideMenu.vue';
-import AdminDialog from '@/components/foundation/AdminDialog.vue';
+import { AdminMediaPreviewDialog } from '@/components/foundation';
 import {
   AdminListPage,
   AdminFormDialog,

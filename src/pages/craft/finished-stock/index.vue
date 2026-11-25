@@ -193,31 +193,23 @@
       {{ confirmState.content }}
     </AdminConfirmDialog>
 
-    <AdminDialog
+    <AdminMediaPreviewDialog
       v-model:visible="imagePreviewVisible"
       :header="previewCraftName"
       :prevent-scroll-through="true"
-      width="min(960px, 94vw)"
-      :confirmation="{ kind: 'none' }"
-      confirm-function="close"
-      mode="modal"
-      show-overlay
-      close-on-overlay-click
-      :footer="false"
       @close="imagePreviewVisible = false"
     >
-      <div class="image-preview">
+      <div class="image-preview zdm-media-preview__group">
         <img
           v-if="previewImageUrl"
           class="image-preview__img"
-          style="max-width: 100%"
           :src="previewImageUrl"
           alt="工艺大图"
         />
         <div v-else class="image-preview__empty">暂无图片</div>
         <div>统一3D工艺图</div>
       </div>
-    </AdminDialog>
+    </AdminMediaPreviewDialog>
   </div>
 </template>
 
@@ -229,7 +221,7 @@ import { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedb
 import { useOperationPreflight } from '@/composables/useOperationPreflight';
 import DecimalInput from '@/components/DecimalInput.vue';
 import { numericError } from '@/utils/numericInput';
-import { AdminDialog } from '@/components/foundation';
+import { AdminMediaPreviewDialog } from '@/components/foundation';
 import { formConfirmation, dialogButtonProps } from '@/components/foundation/actions/confirmation';
 import { buttonTheme, buttonFunctionFor, cancelButtonProps } from '@/components/foundation/actions/buttonFunctions';
 import { rejectFormSubmission } from '@/utils/submitValidation';
