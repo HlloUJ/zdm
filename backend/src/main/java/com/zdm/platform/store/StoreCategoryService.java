@@ -6,7 +6,15 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.zdm.platform.account.CreatorAwareService;
 import com.zdm.platform.common.CategoryProductCounts;
 import com.zdm.platform.security.CurrentIdentityProvider;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.List;
 import java.util.Objects;
 import org.springframework.dao.DuplicateKeyException;
@@ -102,7 +110,7 @@ public class StoreCategoryService extends CreatorAwareService<StoreCategoryMappe
     return count != null && count > 0;
   }
 
-  @Transactional
+  @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
   public StoreCategory createCategory(StoreCategoryCreateRequest request) {
     requireScope(request.scope());
     Long storeId = requireStoreId();
@@ -112,24 +120,20 @@ public class StoreCategoryService extends CreatorAwareService<StoreCategoryMappe
       jdbc.queryForList("SELECT id FROM store_categories WHERE store_id = ? AND scope = ? AND id = ? FOR UPDATE",
           storeId, request.scope(), request.parentId());
       StoreCategory parent = requireCategory(request.parentId(), request.scope());
-      // Read the current rule after acquiring the category lock, not an earlier MySQL snapshot.
-      boolean hasPrice = !jdbc.queryForList("""
-          SELECT id FROM store_price_rules
-          WHERE tenant_id = ? AND store_id = ? AND kind = 'price' AND scope = ? AND category_id = ? FOR UPDATE
-          """, Long.class, identityProvider.require().tenantId(), storeId, request.scope(), parent.getId()).isEmpty();
-      if (hasPrice && !request.confirmPriceRemoval()) {
-        throw new IllegalArgumentException("该分类已设置价格系数，请确认新增下级分类并清除原价格系数");
-      }
       if (parent.getParentId() != null
           && requireCategory(parent.getParentId(), request.scope()).getParentId() != null) {
         throw new IllegalArgumentException("门店分类最多支持三级");
       }
     }
-    if ("finished".equals(request.scope()) && request.parentId() != null) {
-      salePrices.freezeCategories(storeId, List.of(request.parentId()));
-    }
-    if ("accessory".equals(request.scope()) && request.parentId() != null) {
-      accessorySalePrices.freezeCategories(storeId, List.of(request.parentId()));
+    if (request.parentId() != null && "enabled".equals(request.status())) {
+      var categories = categoryIndex(storeId, request.scope());
+      var ancestors = ancestorIds(categories.get(request.parentId()), categories);
+      var clear = configuredCategories(storeId, request.scope(), ancestors);
+      if (!clear.isEmpty() && !request.confirmPriceRemoval()) {
+        throw new IllegalArgumentException("该分类已设置价格系数，请确认新增下级分类并清除原价格系数");
+      }
+      preserveAndClear(storeId, request.scope(), clear);
+      setFamilyStatus(storeId, request.scope(), ancestors, "enabled");
     }
     requireUniqueName(request.scope(), request.parentId(), request.name().trim(), null);
     for (StoreCategory sibling : listSiblings(request.scope(), request.parentId())) {
@@ -150,16 +154,10 @@ public class StoreCategoryService extends CreatorAwareService<StoreCategoryMappe
     } catch (DuplicateKeyException exception) {
       throw new IllegalArgumentException(DUPLICATE_NAME_MESSAGE, exception);
     }
-    if (request.parentId() != null) {
-      jdbc.update("""
-          DELETE FROM store_price_rules
-          WHERE tenant_id = ? AND store_id = ? AND kind = 'price' AND scope = ? AND category_id = ?
-          """, identityProvider.require().tenantId(), storeId, request.scope(), request.parentId());
-    }
     return requireCategory(category.getId(), request.scope());
   }
 
-  @Transactional
+  @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
   public StoreCategory updateCategory(Long id, String scope, StoreCategoryUpdateRequest request) {
     if ("finished".equals(scope)) { salePrices.lockCategories(requireStoreId()); }
     if ("accessory".equals(scope)) { accessorySalePrices.lockCategories(requireStoreId()); }
@@ -177,33 +175,83 @@ public class StoreCategoryService extends CreatorAwareService<StoreCategoryMappe
     return countedCategory(id, scope);
   }
 
-  @Transactional
+  @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
   public StoreCategory updateStatus(Long id, String scope, String status) {
     if ("finished".equals(scope)) { salePrices.lockCategories(requireStoreId()); }
     if ("accessory".equals(scope)) { accessorySalePrices.lockCategories(requireStoreId()); }
     StoreCategory category = requireCategory(id, scope);
-    var familyIds = new HashSet<Long>();
-    familyIds.add(id);
-    var categories = listOrdered(scope);
-    boolean changed;
-    do {
-      changed = false;
-      for (StoreCategory child : categories) {
-        if (child.getParentId() != null && familyIds.contains(child.getParentId()) && familyIds.add(child.getId())) {
-          changed = true;
-        }
-      }
-    } while (changed);
-    if ("finished".equals(scope) && "disabled".equals(status)) {
-      salePrices.freezeCategories(category.getStoreId(), List.copyOf(familyIds));
+    Long storeId = category.getStoreId();
+    Map<Long, StoreCategory> categories = categoryIndex(storeId, scope);
+    Set<Long> affected = descendantsIncluding(id, categories.values());
+    if ("enabled".equals(status)) {
+      affected.addAll(ancestorIds(category, categories));
+      // Every parent of a node being enabled will have an enabled direct child.
+      var parents = affected.stream().map(categories::get).map(StoreCategory::getParentId)
+          .filter(Objects::nonNull).distinct().toList();
+      preserveAndClear(storeId, scope, configuredCategories(storeId, scope, parents));
+    } else {
+      snapshotPrices(storeId, scope, List.copyOf(affected));
     }
-    if ("accessory".equals(scope) && "disabled".equals(status)) {
-      accessorySalePrices.freezeCategories(category.getStoreId(), List.copyOf(familyIds));
-    }
-    update(Wrappers.<StoreCategory>lambdaUpdate()
-        .eq(StoreCategory::getStoreId, category.getStoreId()).eq(StoreCategory::getScope, scope)
-        .in(StoreCategory::getId, familyIds).set(StoreCategory::getStatus, status));
+    setFamilyStatus(storeId, scope, affected, status);
+    if ("enabled".equals(status)) snapshotPrices(storeId, scope, List.copyOf(affected));
     return countedCategory(id, scope);
+  }
+
+  private Map<Long, StoreCategory> categoryIndex(Long storeId, String scope) {
+    var index = new HashMap<Long, StoreCategory>();
+    lambdaQuery().eq(StoreCategory::getStoreId, storeId).eq(StoreCategory::getScope, scope)
+        .list().forEach(node -> index.put(node.getId(), node));
+    return index;
+  }
+
+  private Set<Long> ancestorIds(StoreCategory node, Map<Long, StoreCategory> categories) {
+    var path = new LinkedHashSet<Long>();
+    while (node != null && path.add(node.getId())) node = categories.get(node.getParentId());
+    return path;
+  }
+
+  private Set<Long> descendantsIncluding(Long id, Collection<StoreCategory> categories) {
+    var children = new HashMap<Long, List<Long>>();
+    for (var node : categories) {
+      children.computeIfAbsent(node.getParentId(), key -> new ArrayList<>()).add(node.getId());
+    }
+    var family = new HashSet<Long>();
+    var queue = new ArrayDeque<Long>();
+    queue.add(id);
+    while (!queue.isEmpty()) {
+      Long current = queue.remove();
+      if (family.add(current)) queue.addAll(children.getOrDefault(current, List.of()));
+    }
+    return family;
+  }
+
+  private void setFamilyStatus(Long storeId, String scope, Collection<Long> ids, String status) {
+    update(Wrappers.<StoreCategory>lambdaUpdate()
+        .eq(StoreCategory::getStoreId, storeId).eq(StoreCategory::getScope, scope)
+        .in(StoreCategory::getId, ids).set(StoreCategory::getStatus, status));
+  }
+
+  private List<Long> configuredCategories(Long storeId, String scope, Collection<Long> ids) {
+    if (ids.isEmpty()) return List.of();
+    var args = new ArrayList<Object>(List.of(identityProvider.require().tenantId(), storeId, scope));
+    args.addAll(ids);
+    String placeholders = String.join(",", Collections.nCopies(ids.size(), "?"));
+    return jdbc.queryForList("SELECT category_id FROM store_price_rules WHERE tenant_id=? AND store_id=? "
+        + "AND scope=? AND kind='price' AND category_id IN (" + placeholders + ") FOR UPDATE", Long.class, args.toArray());
+  }
+
+  private void snapshotPrices(Long storeId, String scope, List<Long> ids) {
+    if ("finished".equals(scope)) salePrices.freezeCategories(storeId, ids);
+    else accessorySalePrices.freezeCategories(storeId, ids);
+  }
+
+  private void preserveAndClear(Long storeId, String scope, List<Long> clear) {
+    if (clear.isEmpty()) return;
+    snapshotPrices(storeId, scope, clear);
+    Long tenantId = identityProvider.require().tenantId();
+    var args = clear.stream().map(id -> new Object[] {tenantId, storeId, scope, id}).toList();
+    jdbc.batchUpdate("DELETE FROM store_price_rules WHERE tenant_id=? AND store_id=? AND scope=? "
+        + "AND category_id=? AND kind='price'", args);
   }
 
   @Transactional
@@ -226,7 +274,7 @@ public class StoreCategoryService extends CreatorAwareService<StoreCategoryMappe
     return listOrdered(request.scope());
   }
 
-  @Transactional
+  @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
   public void deleteCategory(Long id, String scope) {
     if ("finished".equals(scope)) { salePrices.lockCategories(requireStoreId()); }
     if ("accessory".equals(scope)) { accessorySalePrices.lockCategories(requireStoreId()); }
@@ -247,8 +295,7 @@ public class StoreCategoryService extends CreatorAwareService<StoreCategoryMappe
       throw new OperationBlockedException("该分类包含下级分类，请先删除或转移下级分类");
     }
     Long associatedProducts = jdbc.queryForObject("SELECT COUNT(*) FROM " + ("accessory".equals(scope) ? "store_accessory_products" : "store_finished_products") + " WHERE store_id=? AND store_category_id=?", Long.class, category.getStoreId(), id);
-    if (category.getProductCount() != null && category.getProductCount() > 0
-        || associatedProducts != null && associatedProducts > 0) {
+    if (associatedProducts != null && associatedProducts > 0) {
       throw new OperationBlockedException("该分类已关联商品，不能删除，请先停用该分类");
     }
     return category;

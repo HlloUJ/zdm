@@ -952,11 +952,15 @@ class StoreAccessoryProductServiceTest extends SpringContainerTestSupport {
   void priceWritesRejectNonLeafCategoriesAtEveryEndpointWithoutPartialChanges() throws Exception {
     priceRuleFixture();
     priceRules.savePriceBatch("accessory", List.of(99961L), BigDecimal.ONE);
-    // A disabled child still makes its parent a non-leaf category.
-    jdbc.update("UPDATE store_categories SET status = 'disabled' WHERE id IN (99961,99962)");
+    storeCategories.updateStatus(99961L, "accessory", "disabled");
     assertThatThrownBy(() -> priceRules.savePriceBatch("accessory", List.of(99966L), BigDecimal.ONE))
         .isInstanceOf(IllegalArgumentException.class);
-    jdbc.update("UPDATE store_categories SET status = 'enabled' WHERE id IN (99961,99962)");
+    storeCategories.updateStatus(99962L, "accessory", "disabled");
+    priceRules.savePriceBatch("accessory", List.of(99966L), BigDecimal.ONE);
+    assertThat(storeCategories.hasPriceCoefficient(99966L, "accessory")).isTrue();
+    storeCategories.updateStatus(99961L, "accessory", "enabled");
+    assertThat(storeCategories.hasPriceCoefficient(99966L, "accessory")).isFalse();
+    storeCategories.updateStatus(99962L, "accessory", "enabled");
     identityWithPermissions(99961L, "store.price-configuration.price.accessory.batch-set");
     for (String path : List.of("batch", "batch-clear")) {
       mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post(
@@ -1003,7 +1007,7 @@ class StoreAccessoryProductServiceTest extends SpringContainerTestSupport {
     priceRules.savePriceBatch("accessory", List.of(99963L), BigDecimal.ONE);
     storeCategories.createCategory(new com.zdm.platform.store.StoreCategoryCreateRequest(
         "finished", 99965L, "新配件下级", "disabled", true));
-    assertThat(priceRules.list("price", "finished")).isEmpty();
+    assertThat(priceRules.list("price", "finished")).hasSize(1);
     assertThat(priceRules.list("price", "accessory")).hasSize(1);
   }
 
@@ -1293,6 +1297,30 @@ class StoreAccessoryProductServiceTest extends SpringContainerTestSupport {
 
   @Test
   @Transactional
+  void supplySyncPreservesExistingManualEmptySkuAndLastEffectivePriceWhenTierIsRemoved() {
+    Long listing = salePriceFixture();
+    products.saveEdit(listing, 99601L, saleInputs("auto"));
+    jdbc.update("DELETE FROM store_accessory_sale_prices WHERE listing_id=? AND sku_id=99602", listing);
+    jdbc.update("UPDATE accessory_product_prices SET price=120 WHERE sku_id=99601");
+    sqlSession.clearCache();
+    var event = addSupplySku();
+    jdbc.update("DELETE FROM accessory_product_prices WHERE sku_id=99601");
+    sqlSession.clearCache();
+    var target = org.springframework.test.util.AopTestUtils.<AccessoryProductService>getUltimateTargetObject(accessoryProducts);
+    AccessoryProduct updated = org.springframework.test.util.ReflectionTestUtils.invokeMethod(target, "attachDetails", accessoryProducts.getById(99601L));
+    supplyEditAudit.record(updated, event.context(), accessoryLogs.snapshot(updated, false));
+    identity(99601L);
+    var skus = products.detail(listing).skus();
+    assertThat(skus).extracting(sku -> sku.priceMode()).containsExactly("auto", "manual", "auto");
+    assertThat(skus.getFirst().salePrice()).isEqualByComparingTo("180");
+    assertThat(skus.getFirst().saleCoefficient()).isEqualByComparingTo("1.50");
+    assertThat(skus.get(1).salePrice()).isNull();
+    assertThat(skus.get(1).saleCoefficient()).isNull();
+    assertThat(skus.getLast().salePrice()).isEqualByComparingTo("450");
+  }
+
+  @Test
+  @Transactional
   void supplySynchronizationRollsBackNewSkuPricesStatusAttentionAndLogsTogether() throws Exception {
     Long listing = salePriceFixture();
     products.saveEdit(listing, 99601L, saleInputs("manual"));
@@ -1430,19 +1458,30 @@ class StoreAccessoryProductServiceTest extends SpringContainerTestSupport {
 
   @Test
   @Transactional
-  void batchCategoryCalculatesEmptySkusAndFreezesOnlyAutomaticPrices() throws Exception {
+  void batchCategoryPreservesManualEmptyPricesAndResumesFollowingAtConfiguredLeaf() throws Exception {
     Long id = salePriceFixture();
     java.util.function.Consumer<String> warehouse = state -> assertThat(state).isEqualTo("warehouse");
     products.setBatchCategory(id, 99602L, warehouse);
-    assertThat(products.detail(id).skus()).allSatisfy(sku -> assertThat(sku.salePrice()).isNull());
+    var empty = List.of(new StoreAccessoryProductService.SalePriceInput(99601L, null, "manual", null),
+        new StoreAccessoryProductService.SalePriceInput(99602L, null, "manual", null));
+    products.saveEdit(id, 99601L, empty);
+    products.setBatchCategory(id, 99602L, warehouse);
     products.setBatchCategory(id, 99601L, warehouse);
-    assertThat(products.detail(id).skus()).extracting(sku -> sku.salePrice().toPlainString()).containsExactly("150.00", "300.00");
+    assertThat(products.detail(id).skus()).allSatisfy(sku -> {
+      assertThat(sku.salePrice()).isNull();
+      assertThat(sku.saleCoefficient()).isNull();
+      assertThat(sku.priceMode()).isEqualTo("manual");
+    });
     products.saveEdit(id, 99601L, List.of(saleInputs("auto").getFirst(), saleInputs("manual").getLast()));
     products.setBatchCategory(id, 99602L, warehouse);
+    var frozen = products.detail(id).skus().getFirst();
+    assertThat(frozen.priceMode()).isEqualTo("auto");
+    assertThat(frozen.salePrice()).isEqualByComparingTo("150");
+    assertThat(frozen.saleCoefficient()).isEqualByComparingTo("1.50");
     priceRules.savePriceBatch("accessory", List.of(99601L), new BigDecimal("2.00"));
     products.setBatchCategory(id, 99601L, warehouse);
-    assertThat(products.detail(id).skus()).allSatisfy(sku -> assertThat(sku.priceMode()).isEqualTo("manual"));
-    assertThat(products.detail(id).skus()).extracting(sku -> sku.salePrice().toPlainString()).containsExactly("150.00", "250.00");
+    assertThat(products.detail(id).skus()).extracting(sku -> sku.priceMode()).containsExactly("auto", "manual");
+    assertThat(products.detail(id).skus()).extracting(sku -> sku.salePrice().toPlainString()).containsExactly("200.00", "250.00");
     assertThatThrownBy(() -> products.setBatchCategory(id, 99603L, warehouse)).isInstanceOf(IllegalArgumentException.class);
     identityWithPermissions(99601L, "store.accessory-management.all.view", "store.accessory-management.warehouse.batch-set-category");
     mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/admin/store-accessory-products/batch-set-category")
@@ -1452,11 +1491,27 @@ class StoreAccessoryProductServiceTest extends SpringContainerTestSupport {
 
   @Test
   @Transactional
+  void categoryOnlyEditUsesTheLatestSkuPricesAndModes() {
+    Long listing = salePriceFixture();
+    products.saveEdit(listing, 99601L, List.of(saleInputs("manual").getFirst(), saleInputs("auto").getLast()));
+    // An earlier editor session still shows the opposite pricing modes.
+    products.saveEdit(listing, 99602L, List.of(
+        new StoreAccessoryProductService.SalePriceInput(99601L, BigDecimal.ONE, "auto", BigDecimal.ONE, true),
+        new StoreAccessoryProductService.SalePriceInput(99602L, BigDecimal.ONE, "manual", BigDecimal.ONE, true)));
+    var skus = products.detail(listing).skus();
+    assertThat(skus).extracting(item -> item.priceMode()).containsExactly("manual", "auto");
+    assertThat(skus).extracting(item -> item.salePrice().toPlainString()).containsExactly("125.00", "300.00");
+    assertThat(skus).extracting(item -> item.saleCoefficient().toPlainString()).containsExactly("1.25", "1.50");
+  }
+
+  @Test
+  @Transactional
   void batchRepricesSellingSkusAndPreservesPriceWhenTierPriceIsMissing() throws Exception {
     Long id = salePriceFixture();
     jdbc.update("INSERT INTO accessory_product_guide_prices(accessory_product_id,sku_id,variant_label,price_coefficient,cost_price,price) VALUES(99601,99601,'规格一',3,10,30),(99601,99602,'规格二',3,20,60)");
     sqlSession.clearCache();
     products.setBatchCategory(id, 99601L, state -> assertThat(state).isEqualTo("warehouse"));
+    products.saveEdit(id, 99601L, saleInputs("auto"));
     products.changeStatus(id, "selling", null, null);
     priceRules.savePriceBatch("accessory", List.of(99602L), new BigDecimal("2.00"));
     jdbc.update("DELETE FROM accessory_product_prices WHERE sku_id=99602");
@@ -1469,7 +1524,8 @@ class StoreAccessoryProductServiceTest extends SpringContainerTestSupport {
     var result = products.detail(id);
     assertThat(result.storeCategoryId()).isEqualTo(99602L);
     assertThat(result.status()).isEqualTo("selling");
-    assertThat(result.skus()).extracting(sku -> sku.priceMode()).containsExactly("auto", "manual");
+    assertThat(result.skus()).extracting(sku -> sku.priceMode()).containsExactly("auto", "auto");
+    assertThat(result.skus()).extracting(sku -> sku.saleCoefficient().toPlainString()).containsExactly("2.00", "1.50");
     assertThat(result.skus()).extracting(sku -> sku.salePrice().toPlainString()).containsExactly("200.00", "300.00");
   }
 
@@ -1485,19 +1541,68 @@ class StoreAccessoryProductServiceTest extends SpringContainerTestSupport {
     assertThat(products.detail(id).skus().getFirst().salePrice()).isEqualByComparingTo("240");
     priceRules.clearPriceBatch("accessory", List.of(99601L));
     assertThat(products.detail(id).skus().getFirst().salePrice()).isEqualByComparingTo("240");
-    assertThat(products.detail(id).skus()).allSatisfy(sku -> assertThat(sku.priceMode()).isEqualTo("manual"));
+    assertThat(products.detail(id).skus()).allSatisfy(sku -> assertThat(sku.priceMode()).isEqualTo("auto"));
     priceRules.savePriceBatch("accessory", List.of(99601L), new BigDecimal("3.00"));
-    assertThat(products.detail(id).skus().getFirst().salePrice()).isEqualByComparingTo("240");
-    products.saveEdit(id, 99601L, saleInputs("auto"));
+    assertThat(products.detail(id).skus().getFirst().salePrice()).isEqualByComparingTo("360");
     storeCategories.updateStatus(99601L, "accessory", "disabled");
     assertThat(products.detail(id).skus().getFirst().salePrice()).isEqualByComparingTo("360");
     storeCategories.updateStatus(99601L, "accessory", "enabled");
-    assertThat(products.detail(id).skus().getFirst().priceMode()).isEqualTo("manual");
-    products.saveEdit(id, 99601L, saleInputs("auto"));
+    assertThat(products.detail(id).skus().getFirst().priceMode()).isEqualTo("auto");
     storeCategories.createCategory(new com.zdm.platform.store.StoreCategoryCreateRequest("accessory", 99601L, "新增子分类", "enabled", true));
     assertThat(products.detail(id).skus().getFirst().salePrice()).isEqualByComparingTo("360");
-    assertThat(products.detail(id).skus().getFirst().priceMode()).isEqualTo("manual");
+    assertThat(products.detail(id).skus().getFirst().priceMode()).isEqualTo("auto");
     storeCategories.deleteCategory(99602L, "accessory");
+  }
+
+  @Test
+  @Transactional
+  void enablingGrandchildOpensOnlyItsBranchAndPreservesBothLevelsBeforeClearingCoefficients() {
+    Long middleListing = salePriceFixture();
+    Long root = 99601L;
+    var middle = storeCategories.createCategory(new com.zdm.platform.store.StoreCategoryCreateRequest(
+        "accessory", root, "二级分类", "enabled", true)).getId();
+    var sibling = storeCategories.createCategory(new com.zdm.platform.store.StoreCategoryCreateRequest(
+        "accessory", root, "同级分类", "enabled")).getId();
+    var leaf = storeCategories.createCategory(new com.zdm.platform.store.StoreCategoryCreateRequest(
+        "accessory", middle, "三级分类", "enabled")).getId();
+    priceRules.savePriceBatch("accessory", List.of(leaf), new BigDecimal("3.00"));
+    storeCategories.updateStatus(leaf, "accessory", "disabled");
+    priceRules.savePriceBatch("accessory", List.of(middle), new BigDecimal("2.00"));
+    products.saveEdit(middleListing, middle, List.of(saleInputs("auto").getFirst(), saleInputs("manual").getLast()));
+    storeCategories.updateStatus(root, "accessory", "disabled");
+    assertThat(storeCategories.hasPriceCoefficient(middle, "accessory")).isTrue();
+    // Re-enable just the root path by creating an enabled child, then remove that child.
+    var temporary = storeCategories.createCategory(new com.zdm.platform.store.StoreCategoryCreateRequest(
+        "accessory", root, "临时分类", "enabled")).getId();
+    storeCategories.deleteCategory(temporary, "accessory");
+    priceRules.savePriceBatch("accessory", List.of(root), new BigDecimal("1.50"));
+
+    jdbc.update("INSERT INTO accessory_products(id,name,total_stock,status,source_status,operations_deleted) VALUES(99605,'一级关联商品',1,'selling','selling',FALSE)");
+    jdbc.update("INSERT INTO accessory_product_variants(id,accessory_product_id,variant_label,stock,cost_price) VALUES(99605,99605,'一级规格',1,10)");
+    jdbc.update("INSERT INTO accessory_product_prices(accessory_product_id,sku_id,variant_label,store_level_id,store_level_name,price_coefficient,cost_price,price,price_source) VALUES(99605,99605,'一级规格',99601,'售价级别',1,10,100,'manual')");
+    Long rootListing = products.select(List.of(99605L)).getFirst().id();
+    products.saveEdit(rootListing, root, List.of(new StoreAccessoryProductService.SalePriceInput(99605L, null, "auto", null)));
+    jdbc.update("UPDATE accessory_product_prices SET price=120 WHERE sku_id IN (99601,99605)");
+    sqlSession.clearCache();
+
+    storeCategories.updateStatus(leaf, "accessory", "enabled");
+    for (Long node : List.of(root, middle, leaf))
+      assertThat(storeCategories.requireCategory(node, "accessory").getStatus()).isEqualTo("enabled");
+    assertThat(storeCategories.requireCategory(sibling, "accessory").getStatus()).isEqualTo("disabled");
+    assertThat(storeCategories.hasPriceCoefficient(root, "accessory")).isFalse();
+    assertThat(storeCategories.hasPriceCoefficient(middle, "accessory")).isFalse();
+    assertThat(storeCategories.hasPriceCoefficient(leaf, "accessory")).isTrue();
+    var rootSku = products.detail(rootListing).skus().getFirst();
+    assertThat(rootSku.priceMode()).isEqualTo("auto");
+    assertThat(rootSku.salePrice()).isEqualByComparingTo("180");
+    assertThat(rootSku.saleCoefficient()).isEqualByComparingTo("1.50");
+    var middleSkus = products.detail(middleListing).skus();
+    assertThat(middleSkus).extracting(item -> item.priceMode()).containsExactly("auto", "manual");
+    assertThat(middleSkus).extracting(item -> item.salePrice().toPlainString()).containsExactly("200.00", "250.00");
+    assertThat(middleSkus).extracting(item -> item.saleCoefficient().toPlainString()).containsExactly("2.00", "1.25");
+    products.setBatchCategory(middleListing, leaf, state -> assertThat(state).isEqualTo("warehouse"));
+    assertThat(products.detail(middleListing).skus()).extracting(item -> item.salePrice().toPlainString())
+        .containsExactly("360.00", "250.00");
   }
 
   @Test

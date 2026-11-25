@@ -143,8 +143,10 @@ describe('registered page callbacks', () => {
     ['finished-stock/store/price-configuration.vue', 'createFormRef', 'saveDiscount', 'saving'],
   ])('locks %s before the first asynchronous field check', async (name, form, action, lock) => {
     const messages = feedback();
-    const fetch = mockApi(() => undefined);
-    const page = await pageState(name, { product: { id: 91, skus: [] } }, 'store');
+    const fetch = mockApi((path) => path.endsWith('/edit-categories')
+      ? response([{ id: 7, parentId: null, name: '门店末级分类', status: 'enabled', coefficient: null }])
+      : undefined);
+    const page = await pageState(name, { product: { id: 91, storeCategoryId: 7, skus: [] } }, 'store');
     if (action === 'saveDiscount') {
       page.activeKey = 'discount.finished';
       page.openCreateDiscount();

@@ -177,7 +177,7 @@
       @confirm="handleSubmit(true)"
     >
       新增后，“{{
-        parentName
+        priceRemovalNames
       }}”将不再是末级分类，其价格系数将被清除。已有商品价格不受影响，新子分类需单独设置价格系数。是否继续？
     </AdminConfirmDialog>
 
@@ -527,6 +527,7 @@ const categoryNameExists = () => {
 };
 
 const priceRemovalVisible = ref(false);
+const priceRemovalNames = ref('');
 const formSubmitting = ref(false);
 const handleSubmit = async (confirmPriceRemoval = false) => {
   if (formSubmitting.value) return;
@@ -540,13 +541,18 @@ const handleSubmit = async (confirmPriceRemoval = false) => {
       return rejectFormSubmission(formRef.value);
     }
     if (formMode.value === 'create') {
-      if (
-        formData.parentId &&
-        !confirmPriceRemoval &&
-        (await checkStoreCategoryChildCreation(formData.parentId, activeScope.value))
-      ) {
-        priceRemovalVisible.value = true;
-        return;
+      if (formData.parentId && formData.status === 'enabled' && !confirmPriceRemoval) {
+        const ancestors: CategoryNode[] = [];
+        for (let node = formParent.value; node; node = node.parent) ancestors.push(node);
+        const configured = await Promise.all(
+          ancestors.map((node) => checkStoreCategoryChildCreation(node.id, activeScope.value)),
+        );
+        const names = ancestors.filter((_, index) => configured[index]).map((node) => node.name);
+        if (names.length) {
+          priceRemovalNames.value = names.join('、');
+          priceRemovalVisible.value = true;
+          return;
+        }
       }
       await createStoreCategory({
         confirmPriceRemoval,
@@ -668,7 +674,6 @@ async function handleCategoryDragSort(context: { current: CategoryRow }) {
 const openDeleteDialog = (node: CategoryNode) => {
   return operations.check(`delete:${node.id}`, async () => {
     if (node.children.length) throw new OperationBlockedError('该分类包含下级分类，请先删除或转移下级分类');
-    if (node.productCount) throw new OperationBlockedError('该分类已关联商品，不能删除，请先停用该分类');
     requireCondition(await checkStoreCategoryDelete(node.id, activeScope.value));
   }, () => {
     deleteTarget.value = node;
