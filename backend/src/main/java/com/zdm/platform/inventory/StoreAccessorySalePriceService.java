@@ -10,28 +10,33 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import com.fasterxml.jackson.databind.JsonNode;
-import java.time.LocalDateTime;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 /** Store-owned prices. Public product and partner prices are never written here. */
 @Service
 public class StoreAccessorySalePriceService {
-  public record Category(Long id, Long parentId, String name, String status, BigDecimal coefficient) {}
-  public record Price(BigDecimal amount, String mode, BigDecimal coefficient) {}
-  public record Key(Long listingId, Long skuId) {}
-  public record Context(Map<Long, Category> categories, Map<Key, Price> prices) {
-    public Context { categories = java.util.Collections.unmodifiableMap(new LinkedHashMap<>(categories)); prices = java.util.Collections.unmodifiableMap(new LinkedHashMap<>(prices)); }
-    public BigDecimal coefficient(Long categoryId) {
-      Category category = categories.get(categoryId);
-      if (category == null || categories.values().stream().anyMatch(child -> Objects.equals(child.parentId(), categoryId))) { return null; }
-      var seen = new HashSet<Long>();
-      for (Category current = category; current != null; current = categories.get(current.parentId())) {
-        if (!"enabled".equals(current.status()) || !seen.add(current.id())) { return null; }
-        if (current.parentId() != null && !categories.containsKey(current.parentId())) { return null; }
-      }
-      return category.coefficient();
+  public record Category(Long id, Long parentId, String name, String status, BigDecimal coefficient) implements StoreCategoryEligibility.Node {}
+  public record Price(BigDecimal amount, String mode, BigDecimal coefficient) {
+    public boolean sameValues(Price other) {
+      return other != null && mode.equals(other.mode) && sameNumber(amount, other.amount) && sameNumber(coefficient, other.coefficient);
     }
+
+    private static boolean sameNumber(BigDecimal a, BigDecimal b) {
+      return a == null || b == null ? a == b : a.compareTo(b) == 0;
+    }
+  }
+  public record Key(Long listingId, Long skuId) {}
+  public record Context(Map<Long, Category> categories, Map<Key, Price> prices, java.util.Set<Long> usableLeaves) {
+    public Context(Map<Long, Category> categories, Map<Key, Price> prices) {
+      this(java.util.Collections.unmodifiableMap(new LinkedHashMap<>(categories)), Map.copyOf(prices),
+          StoreCategoryEligibility.usableLeaves(categories.values()));
+    }
+
+    public BigDecimal coefficient(Long categoryId) {
+      return categoryId != null && usableLeaves.contains(categoryId) ? categories.get(categoryId).coefficient() : null;
+    }
+
     public String categoryName(Long id) {
       var names = new java.util.ArrayList<String>();
       var seen = new HashSet<Long>();
@@ -43,7 +48,8 @@ public class StoreAccessorySalePriceService {
       if (saved == null) { return new Price(null, "manual", null); }
       if (!"auto".equals(saved.mode())) { return saved; }
       BigDecimal coefficient = coefficient(categoryId);
-      return coefficient == null ? new Price(saved.amount(), "manual", saved.coefficient()) : new Price(calculate(partnerPrice, coefficient), "auto", coefficient);
+      BigDecimal amount = calculate(partnerPrice, coefficient);
+      return amount == null ? saved : new Price(amount, "auto", coefficient);
     }
   }
   @org.springframework.beans.factory.annotation.Autowired
@@ -79,11 +85,8 @@ public class StoreAccessorySalePriceService {
   }
   public void requireCategory(Context context, Long categoryId) {
     if (categoryId == null) { throw new OperationBlockedException("请选择门店分类"); }
-    Category category = context.categories().get(categoryId);
-    if (category == null || context.categories().values().stream().anyMatch(child -> Objects.equals(child.parentId(), categoryId))) { throw new OperationBlockedException("请选择本门店已启用的末级分类"); }
-    var seen = new HashSet<Long>();
-    for (Category current = category; current != null; current = context.categories().get(current.parentId())) {
-      if (!"enabled".equals(current.status()) || !seen.add(current.id()) || current.parentId() != null && !context.categories().containsKey(current.parentId())) { throw new OperationBlockedException("请选择本门店已启用的末级分类"); }
+    if (!context.usableLeaves().contains(categoryId)) {
+      throw new OperationBlockedException("请选择本门店已启用的末级分类");
     }
   }
   public void save(Long listingId, Long skuId, Price price, Long accountId) {
@@ -95,7 +98,7 @@ public class StoreAccessorySalePriceService {
   public static final String ATTENTION = "供应链修改销售规格，商品售价待补齐";
 
   /** Source product, category rules and listing are locked by the caller. */
-  public String synchronizeSupplyEdit(Long listingId, JsonNode snapshot, Long accountId, LocalDateTime time) {
+  public String synchronizeSupplyEdit(Long listingId, JsonNode before, JsonNode snapshot, Long accountId) {
     if (!exitTargets.lockParent("store_accessory_products", listingId)) {
       throw new org.springframework.security.access.AccessDeniedException("门店已退出，不能同步售价");
     }
@@ -104,6 +107,14 @@ public class StoreAccessorySalePriceService {
     Long categoryId = listing.get("store_category_id") instanceof Number n ? n.longValue() : null;
     Long level = jdbc.queryForObject("SELECT store_level_id FROM stores WHERE id=?", Long.class, storeId);
     var context = context(storeId, List.of(listingId));
+    var previous = new java.util.HashMap<Long, Price>();
+    for (JsonNode sku : before.path("销售规格")) {
+      var amount = sku.path("salePrice");
+      var coefficient = sku.path("saleCoefficient");
+      previous.put(sku.path("skuId").asLong(), new Price(amount.isNumber() ? amount.decimalValue() : null,
+          sku.path("priceMode").asText("manual"), coefficient.isNumber() ? coefficient.decimalValue() : null));
+    }
+    BigDecimal categoryCoefficient = context.coefficient(categoryId);
     boolean missing = false;
     for (JsonNode sku : snapshot.path("销售规格")) {
       long skuId = sku.path("skuId").asLong();
@@ -114,15 +125,14 @@ public class StoreAccessorySalePriceService {
         }
       }
       Price saved = context.prices().get(new Key(listingId, skuId));
-      Price next;
-      if (saved == null) {
-        BigDecimal coefficient = context.coefficient(categoryId);
-        BigDecimal amount = calculate(partner, coefficient);
-        next = amount == null ? new Price(null, "manual", null) : new Price(amount, "auto", coefficient);
-      } else {
-        next = context.effective(listingId, skuId, categoryId, partner);
+      Price prior = previous.getOrDefault(skuId, saved);
+      Price next = prior;
+      if (prior == null || "auto".equals(prior.mode())) {
+        BigDecimal amount = calculate(partner, categoryCoefficient);
+        if (amount != null) next = new Price(amount, "auto", categoryCoefficient);
+        else if (prior == null) next = new Price(null, "manual", null);
       }
-      if (next.amount() != null && next.coefficient() != null && !Objects.equals(saved, next)) { save(listingId, skuId, next, accountId); }
+      if (!next.sameValues(saved)) save(listingId, skuId, next, accountId);
       if (next.amount() == null || next.coefficient() == null || next.amount().signum() < 0 || next.coefficient().signum() < 0
           || "auto".equals(next.mode()) && partner == null) { missing = true; }
     }
@@ -137,20 +147,23 @@ public class StoreAccessorySalePriceService {
     return status;
   }
 
-  /** Called in the same transaction BEFORE removing a rule or invalidating its category. */
+  /** Persist the last calculable values while the category rules are locked. */
   public void freezeCategories(Long storeId, List<Long> categoryIds) {
     if (categoryIds.isEmpty()) { return; }
-    String placeholders = String.join(",", java.util.Collections.nCopies(categoryIds.size(), "?"));
-    var args = new java.util.ArrayList<Object>(); args.add(storeId); args.addAll(categoryIds);
+    var leaves = context(storeId, List.of()).usableLeaves();
+    var eligibleIds = categoryIds.stream().filter(leaves::contains).toList();
+    if (eligibleIds.isEmpty()) return;
+    String placeholders = String.join(",", java.util.Collections.nCopies(eligibleIds.size(), "?"));
+    var args = new java.util.ArrayList<Object>(); args.add(storeId); args.addAll(eligibleIds);
     jdbc.update("""
         UPDATE store_accessory_sale_prices price
         JOIN store_accessory_products listing ON listing.id=price.listing_id
         JOIN stores store ON store.id=listing.store_id AND store.tenant_id=listing.tenant_id
-        LEFT JOIN store_price_rules rule ON rule.store_id=listing.store_id AND rule.tenant_id=listing.tenant_id
+        JOIN store_price_rules rule ON rule.store_id=listing.store_id AND rule.tenant_id=listing.tenant_id
           AND rule.category_id=listing.store_category_id AND rule.kind='price' AND rule.scope='accessory'
-        LEFT JOIN accessory_product_prices partner ON partner.accessory_product_id=listing.accessory_product_id AND partner.sku_id=price.sku_id AND partner.store_level_id=store.store_level_id
-        SET price.sale_price=COALESCE(ROUND(partner.price * rule.coefficient,2),price.sale_price),price.sale_coefficient=rule.coefficient,price.price_mode='manual'
-        WHERE listing.store_id=? AND listing.invalidated_at IS NULL AND price.price_mode='auto' AND listing.store_category_id IN (
+        JOIN accessory_product_prices partner ON partner.accessory_product_id=listing.accessory_product_id AND partner.sku_id=price.sku_id AND partner.store_level_id=store.store_level_id
+        SET price.sale_price=ROUND(partner.price * rule.coefficient,2), price.sale_coefficient=rule.coefficient
+        WHERE partner.price IS NOT NULL AND rule.coefficient IS NOT NULL AND listing.store_id=? AND listing.invalidated_at IS NULL AND price.price_mode='auto' AND listing.store_category_id IN (
         """ + placeholders + ")", args.toArray());
   }
 }

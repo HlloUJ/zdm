@@ -295,12 +295,6 @@
         "update:visible → emit('update:visible', $event)": "view"
       }
     },
-    "src/components/foundation/AdminMediaPreviewDialog.vue": {
-      "script": "f1e0aa59df57993d5b66b690eec277c6af54c2e0a54028b96b59206f1fb8a4cb",
-      "actions": {
-        "update:visible → emit('update:visible', $event)": "view"
-      }
-    },
     "src/components/foundation/AdminListLayout.vue": {
       "script": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "actions": {}
@@ -650,7 +644,7 @@
       }
     },
     "src/pages/finished-stock/store/StoreFinishedEditor.vue": {
-      "script": "96cdae8a691e839cb8ec475021363da066a9798138dacd03b3fda8fe606a845f",
+      "script": "04aa5a96a56050a0cb88c007e0079cc6ab4015a255c0783e5dd08da79e5103f3",
       "actions": {
         "change → batchFilters[filter.key] = []": "query",
         "change → changeCategory": "form",
@@ -667,7 +661,7 @@
       }
     },
     "src/pages/finished-stock/store/index.vue": {
-      "script": "1f3012e79a3a9a144502e1ab004ddc5de3dfb9b94beaf59382a778d9d1212752",
+      "script": "74f92b0a66a0dfe667c37a4162c63ca35dc7cd0195d887cc72a07e2643f502d5",
       "actions": {
         "cancel → categoryDialog = false": "view",
         "cancel → closeEdit": "view",
@@ -713,7 +707,7 @@
       }
     },
     "src/pages/finished-stock/store/price-configuration.vue": {
-      "script": "29065e5f9bbfb7a8801c19267afdc7022e9521e6a6a354652b84778e498e01c6",
+      "script": "e43f19bd4c93cb76ae6b27934d565b4734ba53c82f00361cbf99a58535e053b5",
       "actions": {
         "blur → validateCoefficient(row.id)": "form",
         "cancel → createVisible = false": "view",
@@ -1441,7 +1435,7 @@
       }
     },
     "src/pages/store-category/management/index.vue": {
-      "script": "c9b7cff8d2e8251789bfc64b8d5726a23870493163617ae8d6aa26a6770a3472",
+      "script": "0b47e91966e13a9a9eda6fe94802bea1ee9392000927e177820eac0efaa2a862",
       "actions": {
         "click → handleReset": "query",
         "click → handleSearch": "query",
@@ -1566,7 +1560,7 @@
       }
     },
     "src/pages/finished-stock/store/StoreBatchCategoryDialog.vue": {
-      "script": "2afcdfa67ab20f316bb4372d0e40df50cd5b6a3c0f1c0d8bfce16fb081e0d492",
+      "script": "bbf9e1c91fc760e647f016cab4e33506f34d4bddd8c060b56dcfa1e1adbd8f19",
       "actions": {
         "cancel → !busy && emit('cancel')": "view",
         "click → path = [...path.slice(0,index), item.id]": "form",
@@ -1600,6 +1594,12 @@
       "actions": {
         "click → $emit('preview', url)": "view",
         "keydown → $emit('preview', url)": "view"
+      }
+    },
+    "src/components/foundation/AdminMediaPreviewDialog.vue": {
+      "script": "f1e0aa59df57993d5b66b690eec277c6af54c2e0a54028b96b59206f1fb8a4cb",
+      "actions": {
+        "update:visible → emit('update:visible', $event)": "view"
       }
     }
   },
@@ -1640,15 +1640,16 @@
     "backend/src/main/java/com/zdm/platform/inventory/SlabVarietyController.java": "74dca4bd39825d052e923341d3d69f9286eb799dda9a3fdbba269f1dca69a505",
     "backend/src/main/java/com/zdm/platform/inventory/SlabVarietyService.java": "90362ec8d482d2f6c618d56a5cefae09e2a2029e0233beb345b8e7f92ab8d8ec",
     "backend/src/main/java/com/zdm/platform/inventory/StoreAccessoryProductController.java": "8d6403cfc96260c3c22d4883ecf997f92e8172c97323f7c61d87fce1dd7448ab",
-    "backend/src/main/java/com/zdm/platform/inventory/StoreAccessoryProductService.java": "564fb6ccd2423a8285244ad89c5f2f66ad84508b404072378d13b7cd8249197d",
-    "backend/src/main/java/com/zdm/platform/inventory/StoreAccessorySalePriceService.java": "ca43621e2406bf761a874e3dc69f39699776cc002149455eefbdb66eb317a333",
+    "backend/src/main/java/com/zdm/platform/inventory/StoreAccessoryProductService.java": "2b281561ea3f7cc17e71fb44947b556b5e3d53bca73e2a17e14535e3bcde64f0",
+    "backend/src/main/java/com/zdm/platform/inventory/StoreAccessorySalePriceService.java": "907cfe9ab2d741c0d4a82619f043a333c849dde27c4d15b615d840cc2fccd9e1",
     "backend/src/main/java/com/zdm/platform/inventory/StoreFinishedProductController.java": "db006b6116d948ef358919c3bc9bbcbbbb3bd4889f34cbe5a82ceab51ea01be0",
-    "backend/src/main/java/com/zdm/platform/inventory/StoreFinishedProductService.java": "29c5f3826717ce46ab8a57f6517c8f530bdc95f003ef5d8e0f07ec4af039561c",
+    "backend/src/main/java/com/zdm/platform/inventory/StoreCategoryEligibility.java": "56e6c605a7cd2199ae8eb3f6cc288a178b85cd0f675039e02cea1f54125ea813",
+    "backend/src/main/java/com/zdm/platform/inventory/StoreFinishedProductService.java": "033c329a50c2c2b344edc083131e935f2995800a9a3bcef68a095628b19aaec5",
     "backend/src/main/java/com/zdm/platform/inventory/StoreFinishedSalePriceService.java": "1d98034389addb8578b18cfa71d70cc0ce16e437bfa759804c7d844809872281",
     "backend/src/main/java/com/zdm/platform/media/MediaAssetService.java": "9a97d570e93790dabbb4fc0c87232a039699bc047c857bc403ec2f94b61c1ea9",
     "backend/src/main/java/com/zdm/platform/payment/StorePaymentNameService.java": "00714ae86d7be38ac16e999455de262fa51b9f9272ddfb79f48788c4ff275f1a",
     "backend/src/main/java/com/zdm/platform/store/StoreCategoryController.java": "9173414206b0b2b9162ee664943c9c77b3f7620e64e8cd7d38f9f3a89e7909aa",
-    "backend/src/main/java/com/zdm/platform/store/StoreCategoryService.java": "55ab4442f3c67e27254adb646bcf63a40771114d7c7fafd5a598fa81cac1a993",
+    "backend/src/main/java/com/zdm/platform/store/StoreCategoryService.java": "d6cf94a98af611fa9f23e13922171372bbb19c0b49e4fa94ecc17fd0373424e6",
     "backend/src/main/java/com/zdm/platform/store/StoreController.java": "8c26cd07e8bcf4dc1b783cad9d8501c87def0b3bdc795d737c2314c10ff672f3",
     "backend/src/main/java/com/zdm/platform/store/StoreLevelService.java": "0d87b637ad6bfd42d7dd73fadc6bda3738280a767b1799ee463bb2855832f119",
     "backend/src/main/java/com/zdm/platform/store/StoreService.java": "d3c0a827b592c365cc00bb6b70090090ff874b8af142aad379c33d164426637b",
@@ -1676,9 +1677,10 @@
     "src/services/slabOrigins.ts": "613f4cdf780f7a1dccecdef9f63b587bde3bddf831a2c4e301c2f2f879605363",
     "src/services/slabTextures.ts": "3baf894387d4465b8a2767751d9e527b2486a273124644963a0469c001ff64cd",
     "src/services/slabVarieties.ts": "c49e1428c48ebdcb48f7cb5a9354e630911bfe483da3d0623ce886db91c279dc",
-    "src/services/storeAccessoryStock.ts": "c2108956a0655e3c7890287e54d7afdd4dd324fa275999e7e496e0fe996d096b",
+    "src/services/storeAccessoryStock.ts": "8d21be88cd764ac57c76e999a74070f15c242cb2779ccfa37079118769d9c202",
     "src/services/storeCategories.ts": "643c969f83d93baffb279930e2e4c885e04b60bb2a06fdcb389dfee231f94906",
-    "src/services/storeFinishedStock.ts": "bbb646f7b96dc62b4c33328e013bc292430bbec76fc7167fae916b42fc8d2c68",
+    "src/services/storeFinishedStock.ts": "479cc74d2483e4fab737ef58c86bc211aa4e1203e4d22fa8d1be14ea27cf0498",
+    "src/pages/finished-stock/store/storeCategoryTree.ts": "6fdbc590d5425c6b890a71d9c3554e528a4114ca346e188e4aa86a47ebc5ff9e",
     "src/services/storeSelectionCenter.ts": "bdfed932e8337ada562572412d8c4c574ff593a94098e7fd45613fe3ee2943d2",
     "src/services/stores.ts": "42280b785248b1a77de0dba817561493424e9735ce366a3ee2022a50adead3f2",
     "src/services/suppliers.ts": "f5579765b4b38f877224844aebae45b01fb96f416025ebf2c8f46561fc032d1b",
@@ -2115,7 +2117,7 @@
     },
     "src/pages/finished-stock/store/StoreFinishedEditor.vue": {
       "baseSha256": "cc341a5a4c779bfd5b3ede7011809e763cf5a549996375dbdbf708dbc3e9faa7",
-      "patchCount": 6,
+      "patchCount": 18,
       "patches": [
         {
           "stage": "before-migrations",
@@ -2149,12 +2151,84 @@
         {
           "before": "  }\n}\n</script>\n\n",
           "after": "  }\n}\n\nconst saveIndicator = useDelayedLoading(() => Boolean(saving.value));\n</script>\n\n"
+        },
+        {
+          "task": "011",
+          "reason": "仅允许为本店商品保存已启用的末级分类",
+          "before": "    </div>\n    <AdminSectionCard class=\"form-submit-bar\">\n      <t-button data-loading-button :theme=\"buttonTheme('submit')\" :disabled=\"saving\" :loading=\"saveIndicator\" @click=\"save\"\n        ><template #icon><t-icon name=\"check\" /></template>{{ formConfirmationText('edit') }}</t-button\n      >\n",
+          "after": "    </div>\n    <AdminSectionCard class=\"form-submit-bar\">\n      <t-button data-loading-button :theme=\"buttonTheme('submit')\" :disabled=\"saving || !selectedLeaf\" :loading=\"saveIndicator\" @click=\"save\"\n        ><template #icon><t-icon name=\"check\" /></template>{{ formConfirmationText('edit') }}</t-button\n      >\n"
+        },
+        {
+          "task": "011",
+          "reason": "仅允许为本店商品保存已启用的末级分类",
+          "before": "  return build(null, true, new Set());\n});\nconst coefficient = computed(() => {\n  const category = categories.value.find((item) => item.id === form.categoryId);\n  if (!category || categories.value.some((item) => item.parentId === category.id)) return null;\n  const seen = new Set<number>();\n  for (\n    let current: StoreFinishedEditCategory | undefined = category;\n    current;\n    current = categories.value.find((item) => item.id === current?.parentId)\n  ) {\n    if (current.status !== 'enabled' || seen.has(current.id)) return null;\n    seen.add(current.id);\n  }\n  return category.coefficient;\n});\nconst sku = (id: number) => props.product.skus.find((item) => item.skuId === id)!;\nconst canFollow = (id: number) => ready.value && coefficient.value != null && sku(id).costPrice != null;\n",
+          "after": "  return build(null, true, new Set());\n});\nconst selectedLeaf = computed(() => {\n  const byId = new Map(categories.value.map(item => [item.id, item]));\n  const category = form.categoryId == null ? undefined : byId.get(form.categoryId);\n  if (!category || categories.value.some((item) => item.parentId === category.id)) return undefined;\n  const seen = new Set<number>();\n  let current: StoreFinishedEditCategory | undefined = category;\n  while (current && current.status === 'enabled' && !seen.has(current.id)) {\n    if (current.parentId == null) return category;\n    seen.add(current.id);\n    current = byId.get(current.parentId);\n  }\n  return undefined;\n});\nconst coefficient = computed(() => selectedLeaf.value?.coefficient ?? null);\nconst sku = (id: number) => props.product.skus.find((item) => item.skuId === id)!;\nconst canFollow = (id: number) => ready.value && coefficient.value != null && sku(id).costPrice != null;\n"
+        },
+        {
+          "task": "011",
+          "reason": "仅允许为本店商品保存已启用的末级分类",
+          "before": "formOperation.onInvalidate(() => { saving.value = false; });\nasync function save() {\n  if (saving.value || !ready.value) return;\n  const current = formOperation.capture();\n  saving.value = true;\n",
+          "after": "formOperation.onInvalidate(() => { saving.value = false; });\nasync function save() {\n  if (saving.value || !ready.value || !selectedLeaf.value) return;\n  const current = formOperation.capture();\n  saving.value = true;\n"
+        },
+        {
+          "task": "011",
+          "reason": "仅允许为本店商品保存已启用的末级分类",
+          "before": "    if (!current()) return;\n    if (valid !== true) return rejectFormSubmission(productFormRoot.value);\n    if (\n      props.product.skus.some(\n",
+          "after": "    if (!current()) return;\n    if (valid !== true) return rejectFormSubmission(productFormRoot.value);\n    const category = selectedLeaf.value;\n    if (!category) return;\n    if (\n      props.product.skus.some(\n"
+        },
+        {
+          "task": "011",
+          "reason": "仅允许为本店商品保存已启用的末级分类",
+          "before": "      return rejectFormSubmission(productFormRoot.value);\n    const product = await saveStoreFinishedEdit(props.product.id, {\n      storeCategoryId: form.categoryId!,\n      skus: props.product.skus.map((item) => ({\n        skuId: item.skuId,\n",
+          "after": "      return rejectFormSubmission(productFormRoot.value);\n    const product = await saveStoreFinishedEdit(props.product.id, {\n      storeCategoryId: category.id,\n      skus: props.product.skus.map((item) => ({\n        skuId: item.skuId,\n"
+        },
+        {
+          "task": "011",
+          "reason": "仅可用末级可保存，换类保留逐规格定价模式及既有空价",
+          "before": "                          label=\"系数\"\n                          :submitted=\"submitted\"\n                          @change=\"editDraftCoefficient(drafts[row.skuId], $event, sku(row.skuId).costPrice)\"\n                        />\n",
+          "after": "                          label=\"系数\"\n                          :submitted=\"submitted\"\n                          :optional=\"mayCarryIncomplete(sku(row.skuId)) && sku(row.skuId).saleCoefficient == null\"\n                          @change=\"editDraftCoefficient(drafts[row.skuId], $event, sku(row.skuId).costPrice)\"\n                        />\n"
+        },
+        {
+          "task": "011",
+          "reason": "仅可用末级可保存，换类保留逐规格定价模式及既有空价",
+          "before": "                          placeholder=\"请输入商品售价\"\n                          :submitted=\"submitted\"\n                          @change=\"editDraftPrice(drafts[row.skuId], $event, sku(row.skuId).costPrice)\"\n                        />\n",
+          "after": "                          placeholder=\"请输入商品售价\"\n                          :submitted=\"submitted\"\n                          :optional=\"mayCarryIncomplete(sku(row.skuId)) && sku(row.skuId).salePrice == null\"\n                          @change=\"editDraftPrice(drafts[row.skuId], $event, sku(row.skuId).costPrice)\"\n                        />\n"
+        },
+        {
+          "task": "011",
+          "reason": "仅可用末级可保存，换类保留逐规格定价模式及既有空价",
+          "before": "import StoreProductDetail from '../shared/StoreFinishedStockDetailAdapter.vue';\nimport SpecPriceInput from '../management/components/SpecPriceInput.vue';\nimport PriceSourceToggle from '../management/components/PriceSourceToggle.vue';\nimport { isValidSpecPriceNumber } from '../management/priceValidation';\n",
+          "after": "import StoreProductDetail from '../shared/StoreFinishedStockDetailAdapter.vue';\nimport SpecPriceInput from '../management/components/SpecPriceInput.vue';\nimport { storeCategoryTree } from './storeCategoryTree';\nimport PriceSourceToggle from '../management/components/PriceSourceToggle.vue';\nimport { isValidSpecPriceNumber } from '../management/priceValidation';\n"
+        },
+        {
+          "task": "011",
+          "reason": "仅可用末级可保存，换类保留逐规格定价模式及既有空价",
+          "before": "  calculateSalePrice,\n  changeDraftCategory,\n  createSalePriceDraft,\n  editDraftPrice,\n",
+          "after": "  calculateSalePrice,\n  changeDraftCategory,\n  carriesPrice,\n  createSalePriceDraft,\n  editDraftPrice,\n"
+        },
+        {
+          "task": "011",
+          "reason": "仅可用末级可保存，换类保留逐规格定价模式及既有空价",
+          "before": "  label: string;\n  value: number;\n  disabled: boolean;\n  children?: CategoryOption[];\n}\nconst categoryOptions = computed(() => {\n  const build = (parentId: number | null, parentEnabled: boolean, visited: Set<number>): CategoryOption[] =>\n    categories.value\n      .filter((item) => item.parentId === parentId && !visited.has(item.id))\n      .map((item) => {\n        const enabled = parentEnabled && item.status === 'enabled';\n        const children = build(item.id, enabled, new Set([...visited, item.id]));\n        return { label: item.name, value: item.id, disabled: !enabled, ...(children.length ? { children } : {}) };\n      });\n  return build(null, true, new Set());\n});\nconst selectedLeaf = computed(() => {\n  const byId = new Map(categories.value.map(item => [item.id, item]));\n  const category = form.categoryId == null ? undefined : byId.get(form.categoryId);\n  if (!category || categories.value.some((item) => item.parentId === category.id)) return undefined;\n  const seen = new Set<number>();\n  let current: StoreFinishedEditCategory | undefined = category;\n  while (current && current.status === 'enabled' && !seen.has(current.id)) {\n    if (current.parentId == null) return category;\n    seen.add(current.id);\n    current = byId.get(current.parentId);\n  }\n  return undefined;\n});\nconst coefficient = computed(() => selectedLeaf.value?.coefficient ?? null);\nconst sku = (id: number) => props.product.skus.find((item) => item.skuId === id)!;\n",
+          "after": "  label: string;\n  value: number;\n  children?: CategoryOption[];\n}\nconst tree = computed(() => storeCategoryTree(categories.value));\nconst categoryOptions = computed(() => {\n  const options = (parentId: number | null): CategoryOption[] =>\n    (tree.value.children.get(parentId) ?? []).map((item) => ({\n      label: item.name,\n      value: item.id,\n      ...(tree.value.leafIds.has(item.id) ? {} : { children: options(item.id) }),\n    }));\n  return options(null);\n});\nconst selectedLeaf = computed(() =>\n  categories.value.find(item => item.id === form.categoryId && tree.value.leafIds.has(item.id)),\n);\nfunction mayCarryIncomplete(item: StoreSkuPrice) {\n  return (form.categoryId !== props.product.storeCategoryId || item.priceMode === 'auto') &&\n    carriesPrice(drafts[item.skuId], item);\n}\nconst coefficient = computed(() => selectedLeaf.value?.coefficient ?? null);\nconst sku = (id: number) => props.product.skus.find((item) => item.skuId === id)!;\n"
+        },
+        {
+          "task": "011",
+          "reason": "仅可用末级可保存，换类保留逐规格定价模式及既有空价",
+          "before": "      props.product.skus.some(\n        (item) =>\n          !isValidSpecPriceNumber(drafts[item.skuId].price) || !isValidSpecPriceNumber(drafts[item.skuId].coefficient),\n      )\n    )\n",
+          "after": "      props.product.skus.some(\n        (item) =>\n          !mayCarryIncomplete(item) &&\n          (!isValidSpecPriceNumber(drafts[item.skuId].price) || !isValidSpecPriceNumber(drafts[item.skuId].coefficient)),\n      )\n    )\n"
+        },
+        {
+          "task": "011",
+          "reason": "只换分类时保留提交时的逐规格价格和模式",
+          "before": "      skus: props.product.skus.map((item) => ({\n        skuId: item.skuId,\n        salePrice: drafts[item.skuId].price === '' ? null : Number(drafts[item.skuId].price),\n        priceMode: drafts[item.skuId].mode,\n",
+          "after": "      skus: props.product.skus.map((item) => ({\n        skuId: item.skuId,\n        ...(category.id !== props.product.storeCategoryId &&\n          drafts[item.skuId].mode === item.priceMode &&\n          (item.priceMode === 'auto' || carriesPrice(drafts[item.skuId], item))\n          ? { preservePricing: true } : {}),\n        salePrice: drafts[item.skuId].price === '' ? null : Number(drafts[item.skuId].price),\n        priceMode: drafts[item.skuId].mode,\n"
         }
       ]
     },
     "src/pages/finished-stock/store/index.vue": {
       "baseSha256": "f1f785011a4d1a96737a1b17627dcc8ec77f54e224bfaa60c4f21f79fd6df568",
-      "patchCount": 37,
+      "patchCount": 60,
       "patches": [
         {
           "stage": "before-migrations",
@@ -2347,28 +2421,166 @@
           "after": "        ? [{ colKey: 'warehouseEntry', title: '入库类型 / 详细说明', minWidth: 140 }]\n        : []),\n      { colKey: 'storeCategory', title: '商品分类', minWidth: 120 },\n      { colKey: 'salePrice', title: '商品价格', minWidth: 110 },\n      ...(activeTab.value === 'all'\n        ? productCreationColumns(toggleTimeSort).filter(column => column.colKey !== 'createdByName')\n"
         },
         {
-          "task": "014",
-          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
-          "before": "      </template>\n    </ProductOperationLogTemplate>\n    <AdminDialog\n      :confirmation=\"{ kind: 'close', text: '关闭' }\"\n      confirm-function=\"close\"\n      :visible=\"Boolean(logVideoPreview)\"\n      header=\"商品视频\"\n      width=\"min(960px, 94vw)\"\n      :cancel-btn=\"null\"\n      @confirm=\"logVideoPreview = null\"\n      @close=\"logVideoPreview = null\"\n",
-          "after": "      </template>\n    </ProductOperationLogTemplate>\n    <AdminMediaPreviewDialog\n      :visible=\"Boolean(logVideoPreview)\"\n      header=\"商品视频\"\n      @confirm=\"logVideoPreview = null\"\n      @close=\"logVideoPreview = null\"\n"
+          "task": "011",
+          "reason": "允许按任意门店分类查询并按非末级直属商品筛选和提示",
+          "before": "                      <t-select-input\n                        :value=\"filter.category\"\n                        :value-display=\"listCategories.find((item) => item.id === filter.category)?.name\"\n                        :popup-visible=\"listCategoryVisible\"\n                        :popup-props=\"{\n",
+          "after": "                      <t-select-input\n                        :value=\"filter.category\"\n                        :value-display=\"filter.category == null ? undefined : categoriesById.get(filter.category)?.name\"\n                        :popup-visible=\"listCategoryVisible\"\n                        :popup-props=\"{\n"
+        },
+        {
+          "task": "011",
+          "reason": "允许按任意门店分类查询并按非末级直属商品筛选和提示",
+          "before": "                          <t-cascader-panel\n                            v-if=\"listCategoryVisible\"\n                            :value=\"''\"\n                            :options=\"listCategoryOptions\"\n                            :check-strictly=\"false\"\n                            trigger=\"hover\"\n                            @change=\"changeListCategory\"\n",
+          "after": "                          <t-cascader-panel\n                            v-if=\"listCategoryVisible\"\n                            :value=\"filter.category ?? ''\"\n                            :options=\"listCategoryOptions\"\n                            check-strictly\n                            trigger=\"hover\"\n                            @change=\"changeListCategory\"\n"
+        },
+        {
+          "task": "011",
+          "reason": "允许按任意门店分类查询并按非末级直属商品筛选和提示",
+          "before": "                      </t-select-input>\n                    </t-form-item>\n                  </div>\n                  <div class=\"filter-actions\">\n",
+          "after": "                      </t-select-input>\n                    </t-form-item>\n                    <t-form-item>\n                      <t-checkbox v-model=\"filter.needsCategoryAdjustment\">待调整分类</t-checkbox>\n                    </t-form-item>\n                  </div>\n                  <div class=\"filter-actions\">\n"
+        },
+        {
+          "task": "011",
+          "reason": "允许按任意门店分类查询并按非末级直属商品筛选和提示",
+          "before": "                    </button>\n                  </template>\n                  <template #storeCategory=\"{ row }\">{{ categoryNames.get(row.storeCategoryId) || '-' }}</template>\n                  <template #salePrice=\"{ row }\">\n                    <div v-for=\"line in storeSalePriceLines(row.skus)\" :key=\"line\">{{ line }}</div>\n",
+          "after": "                    </button>\n                  </template>\n                  <template #storeCategory=\"{ row }\">\n                    <div>{{ categoriesById.get(row.storeCategoryId)?.name || '-' }}</div>\n                    <t-tooltip\n                      v-if=\"needsCategoryAdjustment(row)\"\n                      content=\"该分类层级有变动，请重新设置该商品分类\"\n                    >\n                      <t-tag theme=\"danger\" variant=\"light\" size=\"small\">请调整分类</t-tag>\n                    </t-tooltip>\n                  </template>\n                  <template #salePrice=\"{ row }\">\n                    <div v-for=\"line in storeSalePriceLines(row.skus)\" :key=\"line\">{{ line }}</div>\n"
+        },
+        {
+          "task": "011",
+          "reason": "允许按任意门店分类查询并按非末级直属商品筛选和提示",
+          "before": "const page = ref(1);\nconst pageSize = ref(10);\nconst filter = reactive<{ keyword: string; category?: number }>({ keyword: '' });\nconst appliedFilter = reactive<{ keyword: string; category?: number }>({ keyword: '' });\ntype PoolCategoryOption = { value: number; label: string; children?: PoolCategoryOption[] };\nconst listCategories = ref<StoreFinishedEditCategory[]>([]);\nconst categoryNames = computed(() => new Map(listCategories.value.map(item => [item.id, item.name])));\nconst listCategoryVisible = ref(false);\nconst listCategoryOptions = computed(() => {\n",
+          "after": "const page = ref(1);\nconst pageSize = ref(10);\ninterface StoreListFilter {\n  keyword: string;\n  category?: number;\n  needsCategoryAdjustment: boolean;\n}\nconst filter = reactive<StoreListFilter>({ keyword: '', needsCategoryAdjustment: false });\nconst appliedFilter = reactive<StoreListFilter>({ ...filter });\ntype PoolCategoryOption = { value: number; label: string; children?: PoolCategoryOption[] };\nconst listCategories = ref<StoreFinishedEditCategory[]>([]);\nconst categoriesById = computed(() => new Map(listCategories.value.map(item => [item.id, item])));\nconst parentCategoryIds = computed(() => new Set(listCategories.value.map(item => item.parentId)));\nconst listCategoryVisible = ref(false);\nconst listCategoryOptions = computed(() => {\n"
+        },
+        {
+          "task": "011",
+          "reason": "允许按任意门店分类查询并按非末级直属商品筛选和提示",
+          "before": "}\nfunction searchList() {\n  appliedFilter.keyword = filter.keyword.trim();\n  appliedFilter.category = filter.category;\n  page.value = 1;\n  listCategoryVisible.value = false;\n",
+          "after": "}\nfunction searchList() {\n  if (appliedFilter.needsCategoryAdjustment !== filter.needsCategoryAdjustment) resetSelection();\n  appliedFilter.keyword = filter.keyword.trim();\n  appliedFilter.category = filter.category;\n  appliedFilter.needsCategoryAdjustment = filter.needsCategoryAdjustment;\n  page.value = 1;\n  listCategoryVisible.value = false;\n"
+        },
+        {
+          "task": "011",
+          "reason": "允许按任意门店分类查询并按非末级直属商品筛选和提示",
+          "before": "    if (current === appliedFilter.category) return true;\n    visited.add(current);\n    current = listCategories.value.find((item) => item.id === current)?.parentId;\n  }\n  return false;\n}\nconst selected = ref<number[]>([]);\nconst shelfErrors = reactive<Record<number, string>>({});\n",
+          "after": "    if (current === appliedFilter.category) return true;\n    visited.add(current);\n    current = categoriesById.value.get(current)?.parentId;\n  }\n  return false;\n}\nfunction needsCategoryAdjustment(row: StoreFinishedProduct) {\n  return isAllProductStatus(row.effectiveStatus) &&\n    row.storeCategoryId != null &&\n    categoriesById.value.has(row.storeCategoryId) &&\n    parentCategoryIds.value.has(row.storeCategoryId);\n}\nconst selected = ref<number[]>([]);\nconst shelfErrors = reactive<Record<number, string>>({});\n"
+        },
+        {
+          "task": "011",
+          "reason": "允许按任意门店分类查询并按非末级直属商品筛选和提示",
+          "before": "        : row.effectiveStatus === activeTab.value) &&\n      (!appliedFilter.keyword || `${row.name} ${row.productId}`.includes(appliedFilter.keyword)) &&\n      matchesListCategory(row.storeCategoryId),\n  ),\n);\n",
+          "after": "        : row.effectiveStatus === activeTab.value) &&\n      (!appliedFilter.keyword || `${row.name} ${row.productId}`.includes(appliedFilter.keyword)) &&\n      matchesListCategory(row.storeCategoryId) &&\n      (!appliedFilter.needsCategoryAdjustment || needsCategoryAdjustment(row)),\n  ),\n);\n"
+        },
+        {
+          "task": "011",
+          "reason": "允许按任意门店分类查询并按非末级直属商品筛选和提示",
+          "before": "  () => filteredRows.value.length,\n  (total) => {\n    if (activeTab.value === 'all') page.value = Math.min(page.value, Math.max(1, Math.ceil(total / pageSize.value)));\n  },\n);\n",
+          "after": "  () => filteredRows.value.length,\n  (total) => {\n    if (activeTab.value === 'all' || appliedFilter.needsCategoryAdjustment) {\n      page.value = Math.min(page.value, Math.max(1, Math.ceil(total / pageSize.value)));\n    }\n  },\n);\n"
+        },
+        {
+          "task": "011",
+          "reason": "允许按任意门店分类查询并按非末级直属商品筛选和提示",
+          "before": "  filter.keyword = '';\n  filter.category = undefined;\n  searchList();\n}\n",
+          "after": "  filter.keyword = '';\n  filter.category = undefined;\n  filter.needsCategoryAdjustment = false;\n  searchList();\n}\n"
+        },
+        {
+          "task": "011",
+          "reason": "按 011 验收反馈对齐查询复选框，并限定其适用页签",
+          "before": "                      </t-select-input>\n                    </t-form-item>\n                    <t-form-item>\n                      <t-checkbox v-model=\"filter.needsCategoryAdjustment\">待调整分类</t-checkbox>\n                    </t-form-item>\n",
+          "after": "                      </t-select-input>\n                    </t-form-item>\n                    <t-form-item v-if=\"categoryAdjustmentAvailable\" label-width=\"0\">\n                      <t-checkbox v-model=\"filter.needsCategoryAdjustment\">待调整分类</t-checkbox>\n                    </t-form-item>\n"
+        },
+        {
+          "task": "011",
+          "reason": "按 011 验收反馈对齐查询复选框，并限定其适用页签",
+          "before": "});\nconst activeScope = computed(() => (activeTab.value === 'soldOut' ? 'sold-out' : activeTab.value));\nconst rows = ref<StoreFinishedProduct[]>([]);\nconst loading = ref(false);\n",
+          "after": "});\nconst activeScope = computed(() => (activeTab.value === 'soldOut' ? 'sold-out' : activeTab.value));\nconst categoryAdjustmentAvailable = computed(() => activeTab.value === 'all' || isAllProductStatus(activeTab.value));\nconst rows = ref<StoreFinishedProduct[]>([]);\nconst loading = ref(false);\n"
+        },
+        {
+          "task": "011",
+          "reason": "按 011 验收反馈对齐查询复选框，并限定其适用页签",
+          "before": "const filter = reactive<StoreListFilter>({ keyword: '', needsCategoryAdjustment: false });\nconst appliedFilter = reactive<StoreListFilter>({ ...filter });\ntype PoolCategoryOption = { value: number; label: string; children?: PoolCategoryOption[] };\nconst listCategories = ref<StoreFinishedEditCategory[]>([]);\n",
+          "after": "const filter = reactive<StoreListFilter>({ keyword: '', needsCategoryAdjustment: false });\nconst appliedFilter = reactive<StoreListFilter>({ ...filter });\nconst filterCategoryAdjustment = computed(() => categoryAdjustmentAvailable.value && appliedFilter.needsCategoryAdjustment);\ntype PoolCategoryOption = { value: number; label: string; children?: PoolCategoryOption[] };\nconst listCategories = ref<StoreFinishedEditCategory[]>([]);\n"
+        },
+        {
+          "task": "011",
+          "reason": "按 011 验收反馈对齐查询复选框，并限定其适用页签",
+          "before": "}\nfunction searchList() {\n  if (appliedFilter.needsCategoryAdjustment !== filter.needsCategoryAdjustment) resetSelection();\n  appliedFilter.keyword = filter.keyword.trim();\n  appliedFilter.category = filter.category;\n  appliedFilter.needsCategoryAdjustment = filter.needsCategoryAdjustment;\n  page.value = 1;\n  listCategoryVisible.value = false;\n",
+          "after": "}\nfunction searchList() {\n  if (categoryAdjustmentAvailable.value) {\n    if (appliedFilter.needsCategoryAdjustment !== filter.needsCategoryAdjustment) resetSelection();\n    appliedFilter.needsCategoryAdjustment = filter.needsCategoryAdjustment;\n  }\n  appliedFilter.keyword = filter.keyword.trim();\n  appliedFilter.category = filter.category;\n  page.value = 1;\n  listCategoryVisible.value = false;\n"
+        },
+        {
+          "task": "011",
+          "reason": "按 011 验收反馈对齐查询复选框，并限定其适用页签",
+          "before": "      (!appliedFilter.keyword || `${row.name} ${row.productId}`.includes(appliedFilter.keyword)) &&\n      matchesListCategory(row.storeCategoryId) &&\n      (!appliedFilter.needsCategoryAdjustment || needsCategoryAdjustment(row)),\n  ),\n);\n",
+          "after": "      (!appliedFilter.keyword || `${row.name} ${row.productId}`.includes(appliedFilter.keyword)) &&\n      matchesListCategory(row.storeCategoryId) &&\n      (!filterCategoryAdjustment.value || needsCategoryAdjustment(row)),\n  ),\n);\n"
+        },
+        {
+          "task": "011",
+          "reason": "按 011 验收反馈对齐查询复选框，并限定其适用页签",
+          "before": "  () => filteredRows.value.length,\n  (total) => {\n    if (activeTab.value === 'all' || appliedFilter.needsCategoryAdjustment) {\n      page.value = Math.min(page.value, Math.max(1, Math.ceil(total / pageSize.value)));\n    }\n",
+          "after": "  () => filteredRows.value.length,\n  (total) => {\n    if (activeTab.value === 'all' || filterCategoryAdjustment.value) {\n      page.value = Math.min(page.value, Math.max(1, Math.ceil(total / pageSize.value)));\n    }\n"
+        },
+        {
+          "task": "011",
+          "reason": "按 011 验收反馈对齐查询复选框，并限定其适用页签",
+          "before": "  filter.keyword = '';\n  filter.category = undefined;\n  filter.needsCategoryAdjustment = false;\n  searchList();\n}\n",
+          "after": "  filter.keyword = '';\n  filter.category = undefined;\n  if (categoryAdjustmentAvailable.value) filter.needsCategoryAdjustment = false;\n  searchList();\n}\n"
+        },
+        {
+          "task": "011",
+          "reason": "按 011 已修订的 PRD 展示分类层级调整与停用原因，并共用查询判定",
+          "before": "                    <div>{{ categoriesById.get(row.storeCategoryId)?.name || '-' }}</div>\n                    <t-tooltip\n                      v-if=\"needsCategoryAdjustment(row)\"\n                      content=\"该分类层级有变动，请重新设置该商品分类\"\n                    >\n                      <t-tag theme=\"danger\" variant=\"light\" size=\"small\">请调整分类</t-tag>\n                    </t-tooltip>\n                  </template>\n",
+          "after": "                    <div>{{ categoriesById.get(row.storeCategoryId)?.name || '-' }}</div>\n                    <t-tooltip\n                      v-if=\"categoryAdjustmentFor(row)\"\n                      :content=\"categoryAdjustmentFor(row)?.description\"\n                      placement=\"bottom\"\n                    >\n                      <t-tag theme=\"danger\" variant=\"light\" size=\"small\">{{ categoryAdjustmentFor(row)?.label }}</t-tag>\n                    </t-tooltip>\n                  </template>\n"
+        },
+        {
+          "task": "011",
+          "reason": "按 011 已修订的 PRD 展示分类层级调整与停用原因，并共用查询判定",
+          "before": "const listCategories = ref<StoreFinishedEditCategory[]>([]);\nconst categoriesById = computed(() => new Map(listCategories.value.map(item => [item.id, item])));\nconst parentCategoryIds = computed(() => new Set(listCategories.value.map(item => item.parentId)));\nconst listCategoryVisible = ref(false);\nconst listCategoryOptions = computed(() => {\n",
+          "after": "const listCategories = ref<StoreFinishedEditCategory[]>([]);\nconst categoriesById = computed(() => new Map(listCategories.value.map(item => [item.id, item])));\nconst categoryAdjustmentMessages = {\n  disabled: {\n    label: '分类已停用',\n    description: '该分类已停用，请重新选择分类，否则影响商品在用户端的展示。',\n  },\n  nonLeaf: {\n    label: '分类层级调整',\n    description: '该分类的层级有调整，请重新选择分类，否则影响商品在用户端的展示。',\n  },\n};\nconst categoryAdjustments = computed(() => {\n  const parents = new Set(listCategories.value.map(item => item.parentId));\n  const adjustments = new Map<number, { label: string; description: string }>();\n  for (const category of listCategories.value) {\n    if (category.status === 'disabled') {\n      adjustments.set(category.id, categoryAdjustmentMessages.disabled);\n    } else if (category.status === 'enabled' && parents.has(category.id)) {\n      adjustments.set(category.id, categoryAdjustmentMessages.nonLeaf);\n    }\n  }\n  return adjustments;\n});\nconst listCategoryVisible = ref(false);\nconst listCategoryOptions = computed(() => {\n"
+        },
+        {
+          "task": "011",
+          "reason": "按 011 已修订的 PRD 展示分类层级调整与停用原因，并共用查询判定",
+          "before": "  return false;\n}\nfunction needsCategoryAdjustment(row: StoreFinishedProduct) {\n  return isAllProductStatus(row.effectiveStatus) &&\n    row.storeCategoryId != null &&\n    categoriesById.value.has(row.storeCategoryId) &&\n    parentCategoryIds.value.has(row.storeCategoryId);\n}\nconst selected = ref<number[]>([]);\n",
+          "after": "  return false;\n}\nfunction categoryAdjustmentFor(row: StoreFinishedProduct) {\n  if (row.storeCategoryId == null || !isAllProductStatus(row.effectiveStatus)) return undefined;\n  return categoryAdjustments.value.get(row.storeCategoryId);\n}\nconst selected = ref<number[]>([]);\n"
+        },
+        {
+          "task": "011",
+          "reason": "按 011 已修订的 PRD 展示分类层级调整与停用原因，并共用查询判定",
+          "before": "      (!appliedFilter.keyword || `${row.name} ${row.productId}`.includes(appliedFilter.keyword)) &&\n      matchesListCategory(row.storeCategoryId) &&\n      (!filterCategoryAdjustment.value || needsCategoryAdjustment(row)),\n  ),\n);\n",
+          "after": "      (!appliedFilter.keyword || `${row.name} ${row.productId}`.includes(appliedFilter.keyword)) &&\n      matchesListCategory(row.storeCategoryId) &&\n      (!filterCategoryAdjustment.value || categoryAdjustmentFor(row)),\n  ),\n);\n"
+        },
+        {
+          "task": "011",
+          "reason": "待调整分类按实际启用路径和可用末级查询与显示",
+          "before": "import { batchRequestError } from '@/services/productBatchFeedback';\nimport StoreBatchCategoryDialog from './StoreBatchCategoryDialog.vue';\nimport { storeSalePriceLines } from './storeSalePriceLines';\nimport OperationsBatchShelfResult from '@/components/OperationsBatchShelfResult.vue';\n",
+          "after": "import { batchRequestError } from '@/services/productBatchFeedback';\nimport StoreBatchCategoryDialog from './StoreBatchCategoryDialog.vue';\nimport { storeCategoryTree } from './storeCategoryTree';\nimport { storeSalePriceLines } from './storeSalePriceLines';\nimport OperationsBatchShelfResult from '@/components/OperationsBatchShelfResult.vue';\n"
+        },
+        {
+          "task": "011",
+          "reason": "待调整分类按实际启用路径和可用末级查询与显示",
+          "before": "};\nconst categoryAdjustments = computed(() => {\n  const parents = new Set(listCategories.value.map(item => item.parentId));\n  const adjustments = new Map<number, { label: string; description: string }>();\n  for (const category of listCategories.value) {\n    if (category.status === 'disabled') {\n      adjustments.set(category.id, categoryAdjustmentMessages.disabled);\n    } else if (category.status === 'enabled' && parents.has(category.id)) {\n      adjustments.set(category.id, categoryAdjustmentMessages.nonLeaf);\n    }\n",
+          "after": "};\nconst categoryAdjustments = computed(() => {\n  const tree = storeCategoryTree(listCategories.value);\n  const adjustments = new Map<number, { label: string; description: string }>();\n  for (const category of listCategories.value) {\n    if (category.status === 'disabled') {\n      adjustments.set(category.id, categoryAdjustmentMessages.disabled);\n    } else if (tree.enabledIds.has(category.id) && !tree.leafIds.has(category.id)) {\n      adjustments.set(category.id, categoryAdjustmentMessages.nonLeaf);\n    }\n"
+        },
+        {
+          "task": "011",
+          "reason": "分类异常标签悬停时仅显示下方说明气泡",
+          "before": "                      <t-tag theme=\"danger\" variant=\"light\" size=\"small\">{{ categoryAdjustmentFor(row)?.label }}</t-tag>\n",
+          "after": "                      <t-tag theme=\"danger\" variant=\"light\" size=\"small\" title=\"\">{{ categoryAdjustmentFor(row)?.label }}</t-tag>\n"
         },
         {
           "task": "014",
           "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
-          "before": "    >\n      <video v-if=\"logVideoPreview\" :src=\"logVideoPreview\" controls autoplay playsinline class=\"log-video-preview\" />\n    </AdminDialog>\n    <AdminDialog\n      :confirmation=\"{ kind: 'none' }\"\n      confirm-function=\"close\"\n      :visible=\"Boolean(imagePreview)\"\n      header=\"商品主图\"\n      mode=\"modal\"\n      show-overlay\n      close-on-overlay-click\n      width=\"min(960px, 94vw)\"\n      :footer=\"false\"\n      @close=\"imagePreview = null\"\n      @update:visible=\"!$event && (imagePreview = null)\"\n    >\n      <img v-if=\"imagePreview\" :src=\"imagePreview\" alt=\"商品主图\" style=\"max-width: 100%\" />\n    </AdminDialog>\n    <StoreBatchCategoryDialog\n      v-if=\"categoryDialog && canSetCategory\"\n",
-          "after": "    >\n      <video v-if=\"logVideoPreview\" :src=\"logVideoPreview\" controls autoplay playsinline class=\"log-video-preview\" />\n    </AdminMediaPreviewDialog>\n    <AdminMediaPreviewDialog\n      :visible=\"Boolean(imagePreview)\"\n      header=\"商品主图\"\n      @close=\"imagePreview = null\"\n      @update:visible=\"!$event && (imagePreview = null)\"\n    >\n      <img v-if=\"imagePreview\" :src=\"imagePreview\" alt=\"商品主图\" />\n    </AdminMediaPreviewDialog>\n    <StoreBatchCategoryDialog\n      v-if=\"categoryDialog && canSetCategory\"\n"
+          "before": "        />\n      </template>\n    </ProductOperationLogTemplate>\n    <AdminDialog\n      :confirmation=\"{ kind: 'close', text: '关闭' }\"\n      confirm-function=\"close\"\n      :visible=\"Boolean(logVideoPreview)\"\n      header=\"商品视频\"\n      width=\"min(960px, 94vw)\"\n      :cancel-btn=\"null\"\n      @confirm=\"logVideoPreview = null\"\n      @close=\"logVideoPreview = null\"\n      @update:visible=\"!$event && (logVideoPreview = null)\"\n    >\n      <video v-if=\"logVideoPreview\" :src=\"logVideoPreview\" controls autoplay playsinline class=\"log-video-preview\" />\n    </AdminDialog>\n    <AdminDialog\n      :confirmation=\"{ kind: 'none' }\"\n      confirm-function=\"close\"\n      :visible=\"Boolean(imagePreview)\"\n      header=\"商品主图\"\n      mode=\"modal\"\n      show-overlay\n      close-on-overlay-click\n      width=\"min(960px, 94vw)\"\n      :footer=\"false\"\n      @close=\"imagePreview = null\"\n      @update:visible=\"!$event && (imagePreview = null)\"\n    >\n      <img v-if=\"imagePreview\" :src=\"imagePreview\" alt=\"商品主图\" style=\"max-width: 100%\" />\n    </AdminDialog>\n    <StoreBatchCategoryDialog\n      v-if=\"categoryDialog && canSetCategory\"\n      :categories=\"listCategories\"\n",
+          "after": "        />\n      </template>\n    </ProductOperationLogTemplate>\n    <AdminMediaPreviewDialog\n      :visible=\"Boolean(logVideoPreview)\"\n      header=\"商品视频\"\n      @confirm=\"logVideoPreview = null\"\n      @close=\"logVideoPreview = null\"\n      @update:visible=\"!$event && (logVideoPreview = null)\"\n    >\n      <video v-if=\"logVideoPreview\" :src=\"logVideoPreview\" controls autoplay playsinline class=\"log-video-preview\" />\n    </AdminMediaPreviewDialog>\n    <AdminMediaPreviewDialog\n      :visible=\"Boolean(imagePreview)\"\n      header=\"商品主图\"\n      @close=\"imagePreview = null\"\n      @update:visible=\"!$event && (imagePreview = null)\"\n    >\n      <img v-if=\"imagePreview\" :src=\"imagePreview\" alt=\"商品主图\" />\n    </AdminMediaPreviewDialog>\n    <StoreBatchCategoryDialog\n      v-if=\"categoryDialog && canSetCategory\"\n      :categories=\"listCategories\"\n"
         },
         {
           "task": "014",
           "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
-          "before": "import { finishedStockActions } from '../shared/finishedStockActions';\nimport { storeOperationLogSourceLabel as logSourceLabel } from './storeOperationLog';\nimport { AdminConfirmDialog, AdminDialog, adminFeedback, getSafeErrorMessage } from '@/components/foundation';\nimport { hasPermission } from '@/services/adminPermissions';\nimport { getLoginUser } from '@/services/auth';\n",
-          "after": "import { finishedStockActions } from '../shared/finishedStockActions';\nimport { storeOperationLogSourceLabel as logSourceLabel } from './storeOperationLog';\nimport { AdminConfirmDialog, AdminDialog, AdminMediaPreviewDialog, adminFeedback, getSafeErrorMessage } from '@/components/foundation';\nimport { hasPermission } from '@/services/adminPermissions';\nimport { getLoginUser } from '@/services/auth';\n"
+          "before": "import AdminTopNav from '@/components/AdminTopNav.vue';\nimport { finishedStockActions } from '../shared/finishedStockActions';\nimport { storeOperationLogSourceLabel as logSourceLabel } from './storeOperationLog';\nimport { AdminConfirmDialog, AdminDialog, adminFeedback, getSafeErrorMessage } from '@/components/foundation';\nimport { hasPermission } from '@/services/adminPermissions';\nimport { getLoginUser } from '@/services/auth';\nimport ProductOperationLogTemplate from '@/components/product-logs/ProductOperationLogTemplate.vue';\n",
+          "after": "import AdminTopNav from '@/components/AdminTopNav.vue';\nimport { finishedStockActions } from '../shared/finishedStockActions';\nimport { storeOperationLogSourceLabel as logSourceLabel } from './storeOperationLog';\nimport { AdminConfirmDialog, AdminDialog, AdminMediaPreviewDialog, adminFeedback, getSafeErrorMessage } from '@/components/foundation';\nimport { hasPermission } from '@/services/adminPermissions';\nimport { getLoginUser } from '@/services/auth';\nimport ProductOperationLogTemplate from '@/components/product-logs/ProductOperationLogTemplate.vue';\n"
         }
       ]
     },
     "src/pages/finished-stock/store/price-configuration.vue": {
       "baseSha256": "9dd641cb880655b2268e4158e0c9ec5416d5b44442915e7bae2507cac0c3e44c",
-      "patchCount": 8,
+      "patchCount": 20,
       "patches": [
         {
           "stage": "before-migrations",
@@ -2410,6 +2622,78 @@
         {
           "before": "  { immediate: true },\n);\n</script>\n<style scoped>\n",
           "after": "  { immediate: true },\n);\n\nconst saveIndicator = useDelayedLoading(() => Boolean(saving.value));\nconst contentLoading = useDelayedLoading(() => Boolean(loading.value));\n\nconst { pending: applyDiscountActionPending, run: applyDiscountActionOnce } = usePendingAction(applyDiscountAction);\n</script>\n<style scoped>\n"
+        },
+        {
+          "task": "011",
+          "reason": "分类树显示自身停用状态，单行和批量系数仅接受可用末级",
+          "before": "                    :checked=\"categorySelection().checked\"\n                    :indeterminate=\"categorySelection().indeterminate\"\n                    :disabled=\"loading || saving\"\n                    aria-label=\"全选所有分类\"\n                    @change=\"(checked: boolean) => selectCategory(checked)\"\n",
+          "after": "                    :checked=\"categorySelection().checked\"\n                    :indeterminate=\"categorySelection().indeterminate\"\n                    :disabled=\"loading || saving || !tree.leafIds.size\"\n                    aria-label=\"全选所有分类\"\n                    @change=\"(checked: boolean) => selectCategory(checked)\"\n"
+        },
+        {
+          "task": "011",
+          "reason": "分类树显示自身停用状态，单行和批量系数仅接受可用末级",
+          "before": "                    :checked=\"categorySelection(row.id).checked\"\n                    :indeterminate=\"categorySelection(row.id).indeterminate\"\n                    :disabled=\"loading || saving\"\n                    :aria-label=\"`选择${row.name}`\"\n                    @change=\"(checked: boolean) => selectCategory(checked, row.id)\"\n",
+          "after": "                    :checked=\"categorySelection(row.id).checked\"\n                    :indeterminate=\"categorySelection(row.id).indeterminate\"\n                    :disabled=\"loading || saving || !categoryLeafIds(row.id).length\"\n                    :aria-label=\"`选择${row.name}`\"\n                    @change=\"(checked: boolean) => selectCategory(checked, row.id)\"\n"
+        },
+        {
+          "task": "011",
+          "reason": "分类树显示自身停用状态，单行和批量系数仅接受可用末级",
+          "before": "                    <span v-else class=\"tree-toggle-placeholder\"><t-icon name=\"minus\" /></span>\n                    <span>{{ row.name }}</span>\n                  </div>\n                  <span v-else>{{ row.name }}</span>\n",
+          "after": "                    <span v-else class=\"tree-toggle-placeholder\"><t-icon name=\"minus\" /></span>\n                    <span>{{ row.name }}</span>\n                    <t-tag v-if=\"row.status === 'disabled'\" size=\"small\" variant=\"light\">停用</t-tag>\n                  </div>\n                  <span v-else>{{ row.name }}</span>\n"
+        },
+        {
+          "task": "011",
+          "reason": "分类树显示自身停用状态，单行和批量系数仅接受可用末级",
+          "before": "                <template #coefficient=\"{ row }\">\n                  <div\n                    v-if=\"activeKind === 'price' && !row.hasChildren\"\n                    class=\"price-coefficient-field\"\n                    :class=\"{ 'price-coefficient-field--invalid': coefficientErrors[row.id] }\"\n",
+          "after": "                <template #coefficient=\"{ row }\">\n                  <div\n                    v-if=\"activeKind === 'price' && (row.status === 'disabled' || tree.leafIds.has(row.id))\"\n                    class=\"price-coefficient-field\"\n                    :class=\"{ 'price-coefficient-field--invalid': coefficientErrors[row.id] }\"\n"
+        },
+        {
+          "task": "011",
+          "reason": "分类树显示自身停用状态，单行和批量系数仅接受可用末级",
+          "before": "  type StorePriceRole,\n} from '@/services/storePriceRules';\nimport { formatStoreRuleDateTime } from '@/utils/formatStoreRuleDateTime';\ninterface DisplayRow extends TableRowData {\n",
+          "after": "  type StorePriceRole,\n} from '@/services/storePriceRules';\nimport { storeCategoryTree } from './storeCategoryTree';\nimport { formatStoreRuleDateTime } from '@/utils/formatStoreRuleDateTime';\ninterface DisplayRow extends TableRowData {\n"
+        },
+        {
+          "task": "011",
+          "reason": "分类树显示自身停用状态，单行和批量系数仅接受可用末级",
+          "before": "const categories = ref<StorePriceCategory[]>([]);\nconst roles = ref<StorePriceRole[]>([]);\nconst keyword = ref('');\nconst searchForm = reactive({ keyword: '', onlyUnconfigured: false });\n",
+          "after": "const categories = ref<StorePriceCategory[]>([]);\nconst roles = ref<StorePriceRole[]>([]);\nconst tree = computed(() => storeCategoryTree(categories.value));\nconst keyword = ref('');\nconst searchForm = reactive({ keyword: '', onlyUnconfigured: false });\n"
+        },
+        {
+          "task": "011",
+          "reason": "分类树显示自身停用状态，单行和批量系数仅接受可用末级",
+          "before": "    (node.name.includes(query) &&\n      (!onlyUnconfigured.value ||\n        (!categories.value.some((child) => child.parentId === node.id) && !ruleFor(node.id)))) ||\n    (depth < 3 && categories.value.some((child) => child.parentId === node.id && matches(child, depth + 1)));\n  const visit = (parentId: number | null, depth: number) => {\n",
+          "after": "    (node.name.includes(query) &&\n      (!onlyUnconfigured.value ||\n        (tree.value.leafIds.has(node.id) && !ruleFor(node.id)))) ||\n    (depth < 3 && categories.value.some((child) => child.parentId === node.id && matches(child, depth + 1)));\n  const visit = (parentId: number | null, depth: number) => {\n"
+        },
+        {
+          "task": "011",
+          "reason": "分类树显示自身停用状态，单行和批量系数仅接受可用末级",
+          "before": "    : []),\n]);\nfunction isLeafCategory(id: number) {\n  return !categories.value.some((category) => category.parentId === id);\n}\nfunction categoryLeafIds(id?: number): number[] {\n  if (id == null)\n    return categories.value.filter((category) => isLeafCategory(category.id)).map((category) => category.id);\n  const children = categories.value.filter((category) => category.parentId === id);\n  return children.length ? children.flatMap((child) => categoryLeafIds(child.id)) : [id];\n}\nfunction categorySelection(id?: number) {\n",
+          "after": "    : []),\n]);\nfunction categoryLeafIds(id?: number): number[] {\n  if (id == null) return [...tree.value.leafIds];\n  if (!tree.value.enabledIds.has(id)) return [];\n  if (tree.value.leafIds.has(id)) return [id];\n  return (tree.value.children.get(id) ?? []).flatMap(child => categoryLeafIds(child.id));\n}\nfunction categorySelection(id?: number) {\n"
+        },
+        {
+          "task": "011",
+          "reason": "分类树显示自身停用状态，单行和批量系数仅接受可用末级",
+          "before": "    : selectedIds.value.filter((key) => !ids.includes(key));\n}\nconst selectedEditableLeafIds = computed(() =>\n  selectedIds.value.filter(\n    (id) =>\n      categories.value.some((category) => category.id === id && category.status === 'enabled') && isLeafCategory(id),\n  ),\n);\nfunction isExpanded(id: number) {\n  return (onlyUnconfigured.value ? filterExpandedIds.value : expandedIds.value).includes(id);\n",
+          "after": "    : selectedIds.value.filter((key) => !ids.includes(key));\n}\nconst selectedEditableLeafIds = computed(() => selectedIds.value.filter(id => tree.value.leafIds.has(id)));\nfunction isExpanded(id: number) {\n  return (onlyUnconfigured.value ? filterExpandedIds.value : expandedIds.value).includes(id);\n"
+        },
+        {
+          "task": "011",
+          "reason": "分类树显示自身停用状态，单行和批量系数仅接受可用末级",
+          "before": "    if (activeKind.value === 'price') {\n      categories.value = targets as StorePriceCategory[];\n      const firstRoot = categories.value.find((category) => category.parentId == null);\n      const expandBranch = (id: number): number[] => {\n        const children = categories.value.filter((category) => category.parentId === id);\n        return children.length ? [id, ...children.flatMap((child) => expandBranch(child.id))] : [];\n      };\n      expandedIds.value = firstRoot ? expandBranch(firstRoot.id) : [];\n      coefficientDrafts.value = Object.fromEntries(\n        categories.value.map((category) => {\n",
+          "after": "    if (activeKind.value === 'price') {\n      categories.value = targets as StorePriceCategory[];\n      expandedIds.value = [];\n      coefficientDrafts.value = Object.fromEntries(\n        categories.value.map((category) => {\n"
+        },
+        {
+          "task": "011",
+          "reason": "分类树显示自身停用状态，单行和批量系数仅接受可用末级",
+          "before": "          return [\n            category.id,\n            cached && Object.hasOwn(cached, category.id)\n              ? cached[category.id]\n              : rule\n",
+          "after": "          return [\n            category.id,\n            tree.value.leafIds.has(category.id) && cached && Object.hasOwn(cached, category.id)\n              ? cached[category.id]\n              : rule\n"
+        },
+        {
+          "task": "011",
+          "reason": "分类树显示自身停用状态，单行和批量系数仅接受可用末级",
+          "before": "async function savePrices() {\n  if (saving.value || loading.value || !can('batch-set')) return;\n  const editable = categories.value.filter((category) => category.status === 'enabled' && isLeafCategory(category.id));\n  const valid = editable.map((category) => validateCoefficient(category.id)).every(Boolean);\n  if (!valid) {\n",
+          "after": "async function savePrices() {\n  if (saving.value || loading.value || !can('batch-set')) return;\n  const editable = categories.value.filter((category) => tree.value.leafIds.has(category.id));\n  const valid = editable.map((category) => validateCoefficient(category.id)).every(Boolean);\n  if (!valid) {\n"
         }
       ]
     },
@@ -4367,7 +4651,7 @@
     },
     "src/pages/store-category/management/index.vue": {
       "baseSha256": "e6db3a2a43404453ba0ed901036e24385ca44997bdc3755c825742efef8e94df",
-      "patchCount": 19,
+      "patchCount": 23,
       "patches": [
         {
           "stage": "before-migrations",
@@ -4468,6 +4752,30 @@
         {
           "before": "  deleteTarget.value = null;\n});\n</script>\n\n",
           "after": "  deleteTarget.value = null;\n});\n\nconst tableIndicator = useDelayedLoading(() => Boolean(loading.value || sorting.value));\n</script>\n\n"
+        },
+        {
+          "task": "011",
+          "reason": "新增首个可用下级时沿用原确认并显示实际受影响的分类",
+          "before": "    >\n      新增后，“{{\n        parentName\n      }}”将不再是末级分类，其价格系数将被清除。已有商品价格不受影响，新子分类需单独设置价格系数。是否继续？\n    </AdminConfirmDialog>\n",
+          "after": "    >\n      新增后，“{{\n        priceRemovalNames\n      }}”将不再是末级分类，其价格系数将被清除。已有商品价格不受影响，新子分类需单独设置价格系数。是否继续？\n    </AdminConfirmDialog>\n"
+        },
+        {
+          "task": "011",
+          "reason": "新增首个可用下级时沿用原确认并显示实际受影响的分类",
+          "before": "\nconst priceRemovalVisible = ref(false);\nconst formSubmitting = ref(false);\nconst handleSubmit = async (confirmPriceRemoval = false) => {\n",
+          "after": "\nconst priceRemovalVisible = ref(false);\nconst priceRemovalNames = ref('');\nconst formSubmitting = ref(false);\nconst handleSubmit = async (confirmPriceRemoval = false) => {\n"
+        },
+        {
+          "task": "011",
+          "reason": "新增首个可用下级时沿用原确认并显示实际受影响的分类",
+          "before": "    }\n    if (formMode.value === 'create') {\n      if (\n        formData.parentId &&\n        !confirmPriceRemoval &&\n        (await checkStoreCategoryChildCreation(formData.parentId, activeScope.value))\n      ) {\n        priceRemovalVisible.value = true;\n        return;\n      }\n      await createStoreCategory({\n",
+          "after": "    }\n    if (formMode.value === 'create') {\n      if (formData.parentId && formData.status === 'enabled' && !confirmPriceRemoval) {\n        const ancestors: CategoryNode[] = [];\n        for (let node = formParent.value; node; node = node.parent) ancestors.push(node);\n        const configured = await Promise.all(\n          ancestors.map((node) => checkStoreCategoryChildCreation(node.id, activeScope.value)),\n        );\n        const names = ancestors.filter((_, index) => configured[index]).map((node) => node.name);\n        if (names.length) {\n          priceRemovalNames.value = names.join('、');\n          priceRemovalVisible.value = true;\n          return;\n        }\n      }\n      await createStoreCategory({\n"
+        },
+        {
+          "task": "011",
+          "reason": "删除分类时以服务端当前商品关联数预检",
+          "before": "    if (node.productCount) throw new OperationBlockedError('该分类已关联商品，不能删除，请先停用该分类');\n    requireCondition(await checkStoreCategoryDelete(node.id, activeScope.value));\n",
+          "after": "    requireCondition(await checkStoreCategoryDelete(node.id, activeScope.value));\n"
         }
       ]
     },
@@ -5401,6 +5709,12 @@
       "beforeChanges": {
         "src/pages/selection-center/index.vue": "ce5f4d26dfd05df3ba12353a7c518e5b9c6189e61c1e1d41b638d2d2e1b824f1"
       }
+    },
+    {
+      "source": "backend/src/main/java/com/zdm/platform/inventory/StoreFinishedSalePriceService.java",
+      "sha256": "7dc5e81de1f2b11c745a1d57d80d0ec89b8e67922a34a32a3429cfbe7c66ae82",
+      "pages": {},
+      "beforeChanges": {}
     },
     {
       "source": "src/pages/order/prototype/index.vue",

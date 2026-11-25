@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { installAdminApiMocks } from './admin-api-mocks';
 import { installAdminApiMocks as installAccessoryApiMocks } from './accessory-api-mocks';
 const surfaces = [
@@ -377,6 +377,57 @@ test('warehouse entry combines full reason and detail with two-line secondary te
 
 for (const surface of surfaces.filter(item => item.client === 'store')) {
   const p = prefix(surface);
+  test(`${surface.path} spaces the adjustment filter and limits it to adjustable statuses`, async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    const records = await setup(page, surface);
+    const base = '**/api/admin/' + surface.kind;
+    await page.route(base, route => route.fulfill({ json: { code: 0, data: records.map(record => ({
+      ...record, storeCategoryId: record.effectiveStatus === 'selling' ? 6 : 5,
+    })) } }));
+    await page.route(base + '/list/categories', route => route.fulfill({ json: { code: 0, data: [
+      { id: 5, parentId: null, name: '家具', status: 'enabled' },
+      { id: 6, parentId: 5, name: '桌椅', status: 'enabled' },
+    ] } }));
+    await page.reload();
+
+    const main = page.getByRole('main');
+    const checkbox = main.getByRole('checkbox', { name: '待调整分类' });
+    const label = main.getByText('待调整分类', { exact: true });
+    const category = main.locator('.filter-row .t-select-input');
+    const checkboxControl = main.locator('.filter-fields .t-checkbox');
+    await expect(checkboxControl).toBeVisible();
+    const categoryBox = (await category.boundingBox())!;
+    const checkboxBox = (await checkboxControl.boundingBox())!;
+    expect(checkboxBox.x - categoryBox.x - categoryBox.width).toBeCloseTo(24, 0);
+
+    await label.click();
+    await main.getByRole('button', { name: '查询', exact: true }).click();
+    const rows = main.locator('tbody tr');
+    await expect(rows).toHaveCount(1);
+    await expect(rows.first()).toContainText('汇总商品-warehouse');
+    for (const [tab, status] of [['已售完', 'soldOut'], ['回收站', 'recycle']]) {
+      await main.locator('.t-tabs__nav-item').filter({ hasText: tab }).click();
+      await expect(checkbox).toHaveCount(0);
+      await expect(rows.first()).toContainText(`汇总商品-${status}`);
+      await expect(rows.getByText(/^(分类层级调整|分类已停用)$/)).toHaveCount(0);
+    }
+    for (const tab of ['仓库中', '已上架', '全部']) {
+      await main.locator('.t-tabs__nav-item').filter({ hasText: tab }).click();
+      await expect(checkbox).toBeChecked();
+    }
+    await expect(rows).toHaveCount(1);
+
+    // Querying on a tab without the checkbox must not apply an unsubmitted toggle.
+    await label.click();
+    await main.locator('.t-tabs__nav-item').filter({ hasText: '回收站' }).click();
+    await main.getByRole('button', { name: '查询', exact: true }).click();
+    await main.locator('.t-tabs__nav-item').filter({ hasText: '全部' }).click();
+    await expect(checkbox).not.toBeChecked();
+    await expect(rows).toHaveCount(1);
+    await main.getByRole('button', { name: '查询', exact: true }).click();
+    await expect(rows).toHaveCount(2);
+  });
+
   for (const granted of ['warehouse', 'selling', 'both']) {
     test(`${surface.path} grants category action per tab (${granted})`, async ({ page }) => {
       const states = ['warehouse', 'selling'];
@@ -396,49 +447,65 @@ for (const surface of surfaces.filter(item => item.client === 'store')) {
     });
   }
   test(`${surface.path} selects a leaf and shows the coefficient warning before a partial batch`, async ({ page }) => {
-    await setup(page, surface);
+    const records = await setup(page, surface);
     const base = '**/api/admin/' + surface.kind;
+    let assigned = false;
+    await page.route(base, route => route.fulfill({ json: { code: 0, data: records.map(record => ({
+      ...record, storeCategoryId: assigned && record.id === 900 ? 6 : 5,
+    })) } }));
     await page.route(base + '/list/categories', route => route.fulfill({ json: { code: 0, data: [
       { id: 5, parentId: null, name: '家具', status: 'enabled' },
       { id: 6, parentId: 5, name: '桌椅', status: 'enabled', coefficient: null },
       { id: 7, parentId: 5, name: '沙发', status: 'enabled', coefficient: 1.5 },
-      { id: 8, parentId: 5, name: '停用分类', status: 'disabled' },
+      { id: 8, parentId: 6, name: '停用分类', status: 'disabled' },
     ] } }));
     const submissions: unknown[] = [];
     await page.route(base + '/batch-set-category', route => {
       submissions.push(route.request().postDataJSON());
+      assigned = true;
       return route.fulfill({ json: { code: 0, data: { total: 2, successCount: 1, failureCount: 1,
         failures: [{ id: 901, code: 'VALIDATION_FAILED', reason: '商品状态已变更' }] } } });
     });
     await page.reload();
     const main = page.getByRole('main');
+    await main.getByText('待调整分类', { exact: true }).click();
+    await main.getByRole('button', { name: '查询', exact: true }).click();
+    await expect(main.getByText('分类层级调整', { exact: true })).toHaveCount(2);
     await main.locator('thead .t-checkbox').click();
     const action = main.getByRole('button', { name: '批量设置分类', exact: true });
     await action.click();
     const dialog = page.locator('.t-dialog:visible');
+    const selectedPath = dialog.locator('.category-picker-path');
+    const banner = dialog.locator('.t-alert');
+    const verticalGap = async (above: Locator, below: Locator) => {
+      const [upper, lower] = await Promise.all([above.boundingBox(), below.boundingBox()]);
+      return lower!.y - (upper!.y + upper!.height);
+    };
+    const description = dialog.locator('.category-warning-description');
+    await expect(description).toHaveCount(0);
     await dialog.getByRole('button', { name: '家具' }).click();
     const confirm = dialog.getByRole('button', { name: '确认批量设置分类' });
     await expect(confirm).toBeDisabled();
+    await expect(description).toHaveCount(0);
+    await expect.poll(() => verticalGap(selectedPath, confirm)).toBeCloseTo(32, 0);
     await expect(dialog.getByText('停用分类')).toHaveCount(0);
     await dialog.getByRole('button', { name: '桌椅' }).click();
-    await expect(dialog.getByText('该分类未设置价格系数')).toBeVisible();
-    const description = dialog.locator('.category-warning-description');
-    await expect(description.locator(':scope > div')).toHaveText([
-      '更换此分类，规格当前售价不变，但会转为手工定价。',
-      '再次更换有价格系数的分类时，需主动切回“跟随价格配置浮动”，才会自动重新计算价格。',
-      '已有售价保留，未定价的规格继续留空。',
-    ]);
-    const secondary = await dialog.locator('.category-picker-path').evaluate(element => {
+    await expect(description).toBeVisible();
+    await expect(description).toHaveText('所选分类未设置价格系数，商品移入该分类，售价保持不变');
+    await expect(confirm).toBeEnabled();
+    await expect(dialog.getByText('停用分类')).toHaveCount(0);
+    await expect.poll(() => verticalGap(selectedPath, banner)).toBeCloseTo(16, 0);
+    await expect.poll(() => verticalGap(banner, confirm)).toBeCloseTo(32, 0);
+    const secondary = await selectedPath.evaluate(element => {
       const style = getComputedStyle(element);
       return { font: style.font, color: style.color };
     });
-    for (const element of await description.locator('*').all()) {
-      await expect(element).toHaveCSS('font', secondary.font);
-      await expect(element).toHaveCSS('color', secondary.color);
-      await expect(element).toHaveCSS('font-weight', '400');
-    }
+    await expect(description).toHaveCSS('font', secondary.font);
+    await expect(description).toHaveCSS('color', secondary.color);
+    await expect(description).toHaveCSS('font-weight', '400');
     await dialog.getByRole('button', { name: '沙发' }).click();
-    await expect(dialog.getByText('该分类未设置价格系数')).toHaveCount(0);
+    await expect(description).toBeVisible();
+    await expect(description).toHaveText('所选分类已设置价格系数，商品移入该分类，售价将跟随该分类所设置系数，自动重算（手动设置的售价不变，不参与重算）。');
     await dialog.getByRole('button', { name: '取消' }).click();
     expect(submissions).toEqual([]);
     await action.click();
@@ -447,6 +514,9 @@ for (const surface of surfaces.filter(item => item.client === 'store')) {
     await confirm.click();
     await expect(dialog.getByText('成功设置分类1件，失败1件。')).toBeVisible();
     await expect(dialog.getByText('商品状态已变更')).toBeVisible();
+    await expect(main.locator('tbody tr')).toHaveCount(1);
+    await expect(main.locator('tbody tr').first()).toContainText('汇总商品-selling');
+    await expect(main.getByText('分类层级调整', { exact: true })).toHaveCount(1);
     expect(submissions).toEqual([{ ids: expect.arrayContaining([900, 901]), tab: 'all', categoryId: 6 }]);
   });
 }

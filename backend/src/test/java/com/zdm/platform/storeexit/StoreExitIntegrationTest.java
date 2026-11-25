@@ -339,8 +339,8 @@ class StoreExitIntegrationTest extends SpringContainerTestSupport {
       assertEquals(1, count("store_" + kind + "_products", "id", target));
       assertThrows(org.springframework.security.access.AccessDeniedException.class, () ->
           new org.springframework.transaction.support.TransactionTemplate(transactionManager).executeWithoutResult(status -> {
-            if (accessory) { accessoryPrices.synchronizeSupplyEdit(target, json.createObjectNode(), 1L, java.time.LocalDateTime.now()); }
-            else { finishedPrices.synchronizeSupplyEdit(target, json.createObjectNode(), 1L, java.time.LocalDateTime.now()); }
+            if (accessory) { accessoryPrices.synchronizeSupplyEdit(target, json.createObjectNode(), json.createObjectNode(), 1L); }
+            else { finishedPrices.synchronizeSupplyEdit(target, json.createObjectNode(), json.createObjectNode(), 1L); }
           }));
     }
   }
