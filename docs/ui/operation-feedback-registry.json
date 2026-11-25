@@ -1569,7 +1569,7 @@
       }
     },
     "src/pages/store-services/index.vue": {
-      "script": "de7aca54d30204b71ed0761c6c6fd9865fb4eecab8553bdf7316a61c76aba40e",
+      "script": "f1bc22c6363d78c687e76756c5d878b2e2e9bfff64f827ab7bf2e59f4800b0ed",
       "actions": {
         "action → openCreate": "form",
         "blur → priceTouched = true": "form",

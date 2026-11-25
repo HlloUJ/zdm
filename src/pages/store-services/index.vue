@@ -21,14 +21,21 @@
               {{ row.status === 'enabled' ? '启用' : '停用' }}</t-tag
             ></template
           >
-          <template #createdAt="{ row }">{{ row.createdAt.replace('T', ' ').slice(0, 19) }}</template>
+          <template #createdAt="{ row }">{{ formatProductDateTime(row.createdAt) }}</template>
           <template #operation="{ row }">
-            <div class="table-actions">
-              <t-link v-if="can('edit')" :theme="buttonTheme('edit')" @click="openEdit(row)"
+            <t-space size="small" align="center">
+              <t-link
+                hover="color"
+                :disabled="operations.pending('edit:' + row.id)"
+                v-if="can('edit')"
+                :theme="buttonTheme('edit')"
+                @click="openEdit(row)"
                 ><t-loading v-if="operations.checkingIndicator('edit:' + row.id)" size="small" />编辑</t-link
               >
               <t-link
                 v-if="can('toggle-status')"
+                hover="color"
+                :disabled="operations.pending((row.status === 'enabled' ? '停用' : '启用') + row.id)"
                 :theme="buttonTheme(row.status === 'enabled' ? 'disable' : 'enable')"
                 @click="check(row, row.status === 'enabled' ? '停用' : '启用')"
               >
@@ -38,10 +45,15 @@
                 />
                 {{ row.status === 'enabled' ? '停用' : '启用' }}</t-link
               >
-              <t-link v-if="can('delete')" :theme="buttonTheme('delete')" @click="check(row, '删除')"
+              <t-link
+                hover="color"
+                :disabled="operations.pending('删除' + row.id)"
+                v-if="can('delete')"
+                :theme="buttonTheme('delete')"
+                @click="check(row, '删除')"
                 ><t-loading v-if="operations.checkingIndicator('删除' + row.id)" size="small" />删除</t-link
               >
-            </div>
+            </t-space>
           </template>
         </AdminListPage>
       </main>
@@ -111,11 +123,7 @@
     :object-name="confirmation.row.name"
     object-type="服务"
     :function="confirmation.action === '删除' ? 'delete' : confirmation.action === '启用' ? 'enable' : 'disable'"
-    :description="
-      confirmation.action === '删除'
-        ? '是否删除服务「' + confirmation.row.name + '」？已有搭配保留该项并标记为已删除。'
-        : undefined
-    "
+    :description="confirmation.action === '删除' ? '是否删除服务「' + confirmation.row.name + '」？' : undefined"
     :loading="saving"
     @confirm="confirmAction"
     @update:visible="
@@ -132,7 +140,7 @@
     show-overlay
     close-on-overlay-click
     @close="preview = ''"
-    header="图片预览"
+    header="服务主图"
     :footer="false"
     width="min(960px, 94vw)"
     @update:visible="
@@ -177,6 +185,8 @@ import {
   type StoreService,
 } from '@/services/storeServices';
 import ServiceImage from './ServiceImage.vue';
+import type { PrimaryTableCol } from 'tdesign-vue-next';
+import { formatProductDateTime } from '@/utils/formatProductDateTime';
 
 const rows = ref<StoreService[]>([]);
 const loading = ref(false),
@@ -186,15 +196,15 @@ const loading = ref(false),
 const page = ref(1),
   pageSize = ref(10);
 const pagination = computed(() => ({ current: page.value, pageSize: pageSize.value, total: rows.value.length }));
-const columns = [
-  ['image', '服务主图'],
-  ['name', '服务名称'],
-  ['price', '价格'],
-  ['status', '状态'],
-  ['creatorName', '创建人'],
-  ['createdAt', '创建时间'],
-  ['operation', '操作'],
-].map(([colKey, title]) => ({ colKey, title }));
+const columns: PrimaryTableCol[] = [
+  { colKey: 'image', title: '服务主图', width: 96 },
+  { colKey: 'name', title: '服务名称', minWidth: 140 },
+  { colKey: 'price', title: '价格', minWidth: 100 },
+  { colKey: 'status', title: '状态', width: 90 },
+  { colKey: 'creatorName', title: '创建人', minWidth: 110 },
+  { colKey: 'createdAt', title: '创建时间', width: 180 },
+  { colKey: 'operation', title: '操作', width: 168, align: 'left', fixed: 'right' },
+];
 const can = (action: string) => hasPermission(getLoginUser(), 'store.service-management.' + action);
 const editId = ref<number | null>(null);
 const form = reactive({ name: '', price: '' });
@@ -376,7 +386,7 @@ async function save() {
   } catch (e) {
     if (token !== generation) return;
     if (e instanceof ApiError && e.status === 400) {
-      if (e.message === '本店已有同名服务') serverFeedback.reject('name', name, e.message);
+      if (e.message === '本店已有同名服务') serverFeedback.reject('name', name, '服务名称已存在，请更换名称');
       else if (e.message === '金额超出可精确保存的范围') serverFeedback.reject('price', form.price, e.message);
       else if (e.message === '服务主图不可用') uploadError.value = '服务主图不可用，请重新选择图片';
       else {

@@ -51,6 +51,18 @@ test('门店可新增无图的零元服务，并查看和停用它', async ({ pa
   const row = page.getByRole('row').filter({ hasText: '上门安装' });
   await expect(row).toContainText('0.00');
   await expect(row.getByAltText('默认图片')).toBeVisible();
+  await expect(row.getByAltText('默认图片')).toHaveCSS('width', '64px');
+  await expect(row.getByAltText('默认图片')).toHaveCSS('height', '64px');
+  await expect(row.getByRole('cell', { name: '2026/11/24 17:00', exact: true })).toBeVisible();
+  const actions = row.getByRole('cell').last();
+  await expect(actions).toHaveClass(/t-table__cell--fixed-right/);
+  const edit = await actions.getByText('编辑', { exact: true }).boundingBox();
+  const disable = await actions.getByText('停用', { exact: true }).boundingBox();
+  expect(disable!.x).toBeGreaterThan(edit!.x + edit!.width);
+  await actions.getByText('删除', { exact: true }).click();
+  const deletion = page.locator('.zdm-admin-confirm-dialog');
+  await expect(deletion.locator('.zdm-admin-confirm-dialog__content')).toHaveText('是否删除服务「上门安装」？');
+  await deletion.getByRole('button', { name: '取消' }).click();
   await row.getByText('停用', { exact: true }).click();
   await page.getByRole('button', { name: '确认停用' }).click();
   await expect(row.locator('.t-tag')).toHaveText('停用');
@@ -61,7 +73,7 @@ test('新增与编辑使用必填标记、字段错误及精确金额输入', as
     id: 1,
     name: '量尺',
     price: '0.50',
-    imageId: null,
+    imageId: 17,
     status: 'enabled',
     creatorName: '店员',
     createdAt: '2026-11-24T09:00:00',
@@ -69,6 +81,10 @@ test('新增与编辑使用必填标记、字段错误及精确金额输入', as
   const writes: string[] = [];
   await page.route('**/api/admin/**', async (route) => {
     const path = new URL(route.request().url()).pathname;
+    if (path.endsWith('/1/images/17')) {
+      expect(route.request().headers().authorization).toBe('Bearer test-token');
+      return route.fulfill({ path: 'src/pages/store-services/default-image.png', contentType: 'image/png' });
+    }
     if (route.request().method() === 'POST' || route.request().method() === 'PUT') {
       writes.push(route.request().postDataJSON().price);
       return route.fulfill({ status: 400, json: { code: 400, message: '本店已有同名服务' } });
@@ -81,6 +97,14 @@ test('新增与编辑使用必填标记、字段错误及精确金额输入', as
     });
   });
   await page.goto('/store/service-management');
+  const thumbnail = page.getByRole('button', { name: '预览量尺主图' });
+  await expect(thumbnail).toHaveCSS('width', '64px');
+  await expect(thumbnail).toHaveCSS('height', '64px');
+  await thumbnail.press('Enter');
+  const preview = page
+    .locator('.t-dialog')
+    .filter({ has: page.locator('.t-dialog__header').filter({ hasText: '服务主图' }) });
+  await expectStandardImagePreviewAndDismiss(page, preview);
   await page.getByRole('button', { name: '新增', exact: true }).click();
   const dialog = page.locator('.t-dialog').filter({ hasText: '新增服务' });
   await expect(dialog.locator('.t-form__label--required')).toHaveCount(2);
@@ -114,10 +138,10 @@ test('新增与编辑使用必填标记、字段错误及精确金额输入', as
   await name.focus();
   await expect(price).toHaveValue('0.50');
   await dialog.getByRole('button', { name: '确认新增' }).click();
-  await expect(dialog.getByText('本店已有同名服务')).toBeVisible();
+  await expect(dialog.getByText('服务名称已存在，请更换名称')).toBeVisible();
   expect(writes).toEqual(['0.50']);
   await name.fill('配送');
-  await expect(dialog.getByText('本店已有同名服务')).toHaveCount(0);
+  await expect(dialog.getByText('服务名称已存在，请更换名称')).toHaveCount(0);
   await dialog.getByRole('button', { name: '取消' }).click();
   await page.getByText('编辑', { exact: true }).click();
   await expect(page.getByPlaceholder('请输入服务名称')).toHaveValue('量尺');
@@ -158,7 +182,9 @@ test('主图上传、原生卡片预览、替换与删除保留表单草稿', as
   await expect(card).toHaveCSS('height', '110px');
   const original = await card.locator('img').getAttribute('src');
   await card.click();
-  const preview = page.locator('.t-dialog').filter({ hasText: '图片预览' });
+  const preview = page
+    .locator('.t-dialog')
+    .filter({ has: page.locator('.t-dialog__header').filter({ hasText: '服务主图' }) });
   await expectStandardImagePreviewAndDismiss(page, preview);
   await editor.locator('.admin-media-upload').press('Enter');
   await expect(preview).toBeVisible();
