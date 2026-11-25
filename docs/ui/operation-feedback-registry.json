@@ -1611,7 +1611,7 @@
     "backend/src/main/java/com/zdm/platform/inventory/StoreFinishedProductController.java": "db006b6116d948ef358919c3bc9bbcbbbb3bd4889f34cbe5a82ceab51ea01be0",
     "backend/src/main/java/com/zdm/platform/inventory/StoreCategoryEligibility.java": "56e6c605a7cd2199ae8eb3f6cc288a178b85cd0f675039e02cea1f54125ea813",
     "backend/src/main/java/com/zdm/platform/inventory/StoreFinishedProductService.java": "033c329a50c2c2b344edc083131e935f2995800a9a3bcef68a095628b19aaec5",
-    "backend/src/main/java/com/zdm/platform/inventory/StoreFinishedSalePriceService.java": "7dc5e81de1f2b11c745a1d57d80d0ec89b8e67922a34a32a3429cfbe7c66ae82",
+    "backend/src/main/java/com/zdm/platform/inventory/StoreFinishedSalePriceService.java": "1d98034389addb8578b18cfa71d70cc0ce16e437bfa759804c7d844809872281",
     "backend/src/main/java/com/zdm/platform/media/MediaAssetService.java": "7d8d2317b155fe20044dd128f16ab28a00a7c7ab06665482428a6e7a9d647b82",
     "backend/src/main/java/com/zdm/platform/payment/StorePaymentNameService.java": "00714ae86d7be38ac16e999455de262fa51b9f9272ddfb79f48788c4ff275f1a",
     "backend/src/main/java/com/zdm/platform/store/StoreCategoryController.java": "9173414206b0b2b9162ee664943c9c77b3f7620e64e8cd7d38f9f3a89e7909aa",
@@ -5518,6 +5518,12 @@
       "beforeChanges": {
         "src/pages/selection-center/index.vue": "ce5f4d26dfd05df3ba12353a7c518e5b9c6189e61c1e1d41b638d2d2e1b824f1"
       }
+    },
+    {
+      "source": "backend/src/main/java/com/zdm/platform/inventory/StoreFinishedSalePriceService.java",
+      "sha256": "7dc5e81de1f2b11c745a1d57d80d0ec89b8e67922a34a32a3429cfbe7c66ae82",
+      "pages": {},
+      "beforeChanges": {}
     }
   ]
 }
