@@ -149,7 +149,7 @@ export function automaticReview(snap, state, comparisonResult = comparison(snap,
   );
 }
 // The previous source tree describes the round. Invalid original results extend its checks individually.
-function carryEvidence(snap, comparisons, plan) {
+function carryEvidence(snap, comparisons, plan, copyRound) {
   const store = new EvidenceStore(snap.common);
   const input = inputReader(snap);
   const retained = [];
@@ -177,6 +177,10 @@ function carryEvidence(snap, comparisons, plan) {
       if (intact && row.fingerprint === now.fingerprint) {
         retained.push(row);
         record('原始回执完整，相关输入、规则和环境一致');
+        continue;
+      }
+      if (copyRound && intact && report && (!scheduled || scope?.length)) {
+        record('本轮已核实为展示文字及配套验证。旧结果没有签作当前证据，累计检查由交付独立核验');
         continue;
       }
       if (scheduled && intact && row.identity === now.identity && report?.policy === snap.policy && scope?.length) {
@@ -223,7 +227,9 @@ export function development(snap, states) {
     changed: comparisons[i].round.files, reasons: comparisons[i].round.plan.reasons,
     items: r.items || r.intent.items || [], interactions: r.interactions || r.intent.interactions || [],
   }));
-  const inherited = carryEvidence(snap, comparisons, plan);
+  const copyRound = !snap.fallback && plan.risk === 'R0' && rounds.some(p => p.behaviors.includes('copy'))
+    && rounds.every(p => p.behaviors.every(kind => ['copy', 'note'].includes(kind)));
+  const inherited = carryEvidence(snap, comparisons, plan, copyRound);
   const refs = tasks.map((s) => ({ id: s.id, revision: s.history.at(-1).revision }));
   return {
     ...snap,

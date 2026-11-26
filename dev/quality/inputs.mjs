@@ -13,6 +13,7 @@ import { arch, platform, release } from 'node:os';
 import { dirname, basename, join, relative, posix } from 'node:path';
 import { parseEnv } from 'node:util';
 import { checks } from './policy.mjs';
+import { isCopyRegistry } from './copy-registration.mjs';
 import { checkedCommand, digest } from './repository.mjs';
 
 export function fileDigest(path) {
@@ -219,7 +220,8 @@ export function inputReader(snapshot) {
   };
 }
 function knownDomain(path) {
-  return /^(src\/|public\/|tests\/|backend\/|infrastructure\/store-exit-ledger\/|dev\/|\.github\/workflows\/|docs\/(?:notes|task-notes)\/|README\.md$|CHANGELOG\.md$|index\.html$|(?:vite|vitest|playwright)\.config\.|tsconfig|(?:docker-compose|compose\.[^/]+)\.yml$)/.test(
+  // Both schema files are explicit inputs to the unit-level source guards in the check catalogue.
+  return isCopyRegistry(path) || /^(src\/|public\/|tests\/|backend\/|infrastructure\/store-exit-ledger\/|dev\/|\.github\/workflows\/|docs\/(?:notes|task-notes)\/|README\.md$|CHANGELOG\.md$|index\.html$|(?:vite|vitest|playwright)\.config\.|tsconfig|(?:docker-compose|compose\.[^/]+)\.yml$)/.test(
     path,
   );
 }

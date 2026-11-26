@@ -43,3 +43,39 @@ export function displayTests(cwd, ref, texts) {
     /\.(?:spec|test)\.[jt]sx?$/.test(p),
   );
 }
+
+export function presentationTests(cwd, ref, path, readers, terms, read) {
+  const routes = new Set();
+  let unresolved = false;
+  const spec = '@/' + path.slice(4);
+  for (const file of readers) {
+    const source = read(ref, file);
+    if (!source || !file.startsWith('src/') || /\.(?:test|spec)\./.test(file)) continue;
+    const used = [...source.matchAll(/\bpath:\s*['"]([^'"]+)['"][^{}]*?\bcomponent:\s*\(\)\s*=>\s*import\(['"]([^'"]+)['"]\)/g)]
+      .filter(m => m[2] === spec);
+    if (!used.length) unresolved = true;
+    for (const m of used) routes.add(m[1]);
+  }
+  const labels = terms.filter(term => term && !term.includes('${'));
+  const candidates = displayTests(cwd, ref, [...labels, ...routes]);
+  const suites = new Set(), coverage = new Map([...routes].map(route => [route, { direct: new Set(), visited: new Set() }]));
+  for (const suite of candidates) {
+    const source = read(ref, suite);
+    if (!suite.startsWith('tests/e2e/')) {
+      if (readers.includes(suite) && labels.some(label => source.includes(label))) suites.add(suite);
+      continue;
+    }
+    for (const segment of source.split(/(?:\bpage\.goto\(|\btest(?:\.describe)?\s*\()/).slice(1)) {
+      const visit = /^(?:\s*[\w.]+\()?\s*['"]([^'"]+)['"]\s*\)?\s*\)/.exec(segment);
+      if (!visit || !routes.has(visit[1])) continue;
+      const row = coverage.get(visit[1]);
+      row.visited.add(suite);
+      if (labels.some(label => segment.includes(label))) row.direct.add(suite);
+    }
+  }
+  for (const { direct, visited } of coverage.values()) {
+    if (!visited.size) unresolved = true;
+    for (const suite of direct.size ? direct : visited) suites.add(suite);
+  }
+  return { suites, scoped: Boolean(routes.size) && !unresolved };
+}
