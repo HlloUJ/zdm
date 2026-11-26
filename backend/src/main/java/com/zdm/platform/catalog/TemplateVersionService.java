@@ -1,5 +1,7 @@
 package com.zdm.platform.catalog;
 
+import com.zdm.platform.common.FieldValidationException;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -277,10 +279,10 @@ public class TemplateVersionService {
       }
       String role = item.path("attributeRole").asText("");
       if (!role.isEmpty() && !Set.of("product", "sales").contains(role)) {
-        throw new IllegalArgumentException("属性角色无效");
+        throw new FieldValidationException("attributes." + id + ".attributeRole", "属性角色无效");
       }
       if (publishing && role.isEmpty()) {
-        throw new IllegalArgumentException("请选择“" + attribute.getName() + "”的属性角色");
+        throw new FieldValidationException("attributes." + id + ".attributeRole", "请选择“" + attribute.getName() + "”的属性角色");
       }
       boolean skuFlag = item.path("skuFlag").asBoolean(false);
       if (skuFlag && !"sales".equals(role)) {
@@ -298,18 +300,18 @@ public class TemplateVersionService {
       if ("select".equals(attribute.getValueType())) {
         JsonNode selected = item.path("options");
         if (!selected.isMissingNode() && (!selected.isArray() || selected.size() > 1000)) {
-          throw new IllegalArgumentException("选项值列表无效");
+          throw new FieldValidationException("attributes." + id + ".options", "选项值列表无效");
         }
         for (JsonNode option : selected) {
           long valueId = option.path("id").asLong();
           ProductAttributeValue value = values.getById(valueId);
           if (!valueIds.add(valueId) || value == null || value.getAttributeId() != id || !"enabled".equals(value.getStatus())) {
-            throw new IllegalArgumentException("只能绑定该属性下已启用的选项值");
+            throw new FieldValidationException("attributes." + id + ".options", "只能绑定该属性下已启用的选项值");
           }
           options.addObject().put("id", valueId).put("value", value.getValue()).put("code", value.getCode());
         }
         if (publishing && options.isEmpty()) {
-          throw new IllegalArgumentException("请为“" + attribute.getName() + "”绑定选项值");
+          throw new FieldValidationException("attributes." + id + ".options", "请为“" + attribute.getName() + "”绑定选项值");
         }
       }
       result.add(row);

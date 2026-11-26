@@ -411,7 +411,7 @@
       }
     },
     "src/pages/craft/finished-stock/index.vue": {
-      "script": "3319b8feb9965dd10b2f67766968afe4ae2e69e9f3d4e3a08098c908524dbd82",
+      "script": "6301fd35830ae440b19ca2bdd2bc758588e49bf53fa589821b36bb7c69dffca2",
       "actions": {
         "cancel → closeConfirmDialog": "view",
         "cancel → closeFormDialog": "view",
@@ -436,7 +436,7 @@
       }
     },
     "src/pages/customer/index.vue": {
-      "script": "2606c4579a87ae0b86bf2e369e72c1b8ff7cc2a177ea98036ec6ddc52c5055bf",
+      "script": "13476ed7d927dd84bf84331fe0efaa41130a2c371540117c3f55bdb5b34b3b99",
       "actions": {
         "action → handleToolbarAction": "@customerToolbar",
         "cancel → detailVisible = false": "view",
@@ -470,7 +470,7 @@
       "actions": {}
     },
     "src/pages/employee-invite/index.vue": {
-      "script": "e6d5e24e23295f645581e55fe40f9aab9d1017012b80c4e6e23dd4120d7eb96d",
+      "script": "0c02c88543e4ba16a8b72e9e67ad2fe0a4d77bfac9d6b28142a0b1b2c6fce9d4",
       "actions": {
         "click → sendCode": "single",
         "click → step = 1": "view",
@@ -560,7 +560,7 @@
       "actions": {}
     },
     "src/pages/finished-stock/management/components/SpecPriceInput.vue": {
-      "script": "eb32e4c53d66a8039027c63ac690b803456d2800d120508054fcec8e88b01702",
+      "script": "5cbb15951ea397d1da0fe487b462906ca20525df6d891982df7f78d5392a93d8",
       "actions": {
         "blur → handleBlur": "form",
         "change → handleChange": "view",
@@ -568,7 +568,7 @@
       }
     },
     "src/pages/finished-stock/management/index.vue": {
-      "script": "eeb35b3e4a13faa3f090a613e0f6515d103095fbc1f73bf58ec39a6204c8f040",
+      "script": "ad02b268021e96922c2173bfbb1c56bca30a61a419c159457a280c7fd2c3eb64",
       "actions": {
         "blur → formatDecimalValue(row, 'level1')": "form",
         "blur → formatDecimalValue(row, 'level1Coefficient')": "form",
@@ -644,7 +644,7 @@
       }
     },
     "src/pages/finished-stock/store/StoreFinishedEditor.vue": {
-      "script": "04aa5a96a56050a0cb88c007e0079cc6ab4015a255c0783e5dd08da79e5103f3",
+      "script": "60d49ba8e6f52c226e6879ff815eb0f2cde0cd3ca1d0b132b7a560228e85a4ec",
       "actions": {
         "change → batchFilters[filter.key] = []": "query",
         "change → changeCategory": "form",
@@ -661,7 +661,7 @@
       }
     },
     "src/pages/finished-stock/store/index.vue": {
-      "script": "74f92b0a66a0dfe667c37a4162c63ca35dc7cd0195d887cc72a07e2643f502d5",
+      "script": "2d355f3f9631741dcffd3dffa06bfc1469f2b3b70323552e9e99739db455acde",
       "actions": {
         "cancel → categoryDialog = false": "view",
         "cancel → closeEdit": "view",
@@ -707,7 +707,7 @@
       }
     },
     "src/pages/finished-stock/store/price-configuration.vue": {
-      "script": "e43f19bd4c93cb76ae6b27934d565b4734ba53c82f00361cbf99a58535e053b5",
+      "script": "57d6518a63a8f5809b0af1092d59077b9cd8f6104394d8eb57e0de2190469b18",
       "actions": {
         "blur → validateCoefficient(row.id)": "form",
         "cancel → createVisible = false": "view",
@@ -739,7 +739,7 @@
       }
     },
     "src/pages/finished-stock/supply-chain/index.vue": {
-      "script": "7d451c8d28fbb2902ae1d30f4e0c3d86e5bb8b2ca166a87bfa605aab5d981784",
+      "script": "9b2180021e3a5c955c2daf81e76dd1585b50949f112733803a5b56c14b644a2f",
       "actions": {
         "blur → formatDecimalValue(row, 'level1')": "form",
         "blur → formatDecimalValue(row, 'level1Coefficient')": "form",
@@ -837,7 +837,7 @@
       }
     },
     "src/pages/login/index.vue": {
-      "script": "64aaba8afca172d2b52cd87f8c5404f7e24aa5115cc45b4a237af3a34b687f4f",
+      "script": "234bed8937b62c8b9d637a6e398fb1d8072da8b99d9e59a98902008772a89fdd",
       "actions": {
         "click → sendCode": "single",
         "submit → onSubmit": "form",
@@ -888,7 +888,7 @@
       }
     },
     "src/pages/order/prototype/index.vue": {
-      "script": "bebea423cb20cb94dca433550a4eecd57d11dc7d9255b32544f1b9f259afb9df",
+      "script": "caeece5cca40add3f1242f19d5ee9a49ad1e0a9834850b0fc406c29f384199e3",
       "actions": {
         "action → openAction": "@order",
         "action → openSetting()": "form",
@@ -925,7 +925,7 @@
       }
     },
     "src/pages/permission/employee/index.vue": {
-      "script": "c4d0f724ffadbdeffb92e58dd6fb8daf679cbe2ac07abeec47c5639b34e4dff7",
+      "script": "1b5ec6a50ed8479ab97b8f32de959166a4f82def4daf2a881dad7cca29ff3628",
       "actions": {
         "cancel → closeConfirmDialog": "view",
         "cancel → closePermissionDialog": "view",
@@ -960,7 +960,7 @@
       }
     },
     "src/pages/product/attribute-value/index.vue": {
-      "script": "320a3ab921b8309be4635e419cd999e00df03c7bebe57682fa1856a8a6778617",
+      "script": "6b67fde37cda32fc39587b71601a3146df05d70d0480d5d7bfb41080a2c13f3e",
       "actions": {
         "cancel → closeConfirmDialog": "view",
         "change → handlePaginationChange": "view",
@@ -976,7 +976,7 @@
       }
     },
     "src/pages/product/attribute/index.vue": {
-      "script": "1d06d5334e3b296598a42fded70e0f2963ac5c5f8bb61766d205c56d3e9c1a33",
+      "script": "696815256872e0e1a278d961c53d7228a8afca0efadd2ac6605bdaeec730626b",
       "actions": {
         "cancel → closeConfirmDialog": "view",
         "change → handlePaginationChange": "view",
@@ -994,7 +994,7 @@
       }
     },
     "src/pages/product/category-attribute-template/index.vue": {
-      "script": "5efdeb11f686df1740176e4b989ae3d4c230b334e23b89da2e85cc7337287400",
+      "script": "41afc16cf3adaf7d2d40bbbbb446d70f0317043960f484cb5cb5db46c9b26de5",
       "actions": {
         "active → selectCategory": "query",
         "cancel → !busy && (discardTarget = undefined)": "view",
@@ -1034,7 +1034,7 @@
       }
     },
     "src/pages/product/category/index.vue": {
-      "script": "caff63e64845f2196ddecf71af0b20260ad16af72a2bf0d3943ce8eeb1ef645c",
+      "script": "60d97fa8e2420850146664a1bdc7298c7d347c5402c42387a173fbf8740e8d61",
       "actions": {
         "click → handleReset": "query",
         "click → handleSearch": "query",
@@ -1057,7 +1057,7 @@
       }
     },
     "src/pages/product/markup-configuration/index.vue": {
-      "script": "a07860bfad971dd40ab587542953fc69baca8bc96040ae7b0affe2dfe44fcee2",
+      "script": "cd4a34874cb7d2f96d210db30897258c2950167b70991d9eafeeb8684d72a5b2",
       "actions": {
         "cancel → closeForm": "view",
         "cancel → confirmVisible = false": "view",
@@ -1082,7 +1082,7 @@
       }
     },
     "src/pages/role/management/index.vue": {
-      "script": "064eb35f4c54a53a5345e3a2a72339882c7e4e381cb44866c2a7b952c853a321",
+      "script": "dfca1d32d960cfa9ca44d8cc79c9c37b5d9da0f2e48456773cdd3cc6c4f9393d",
       "actions": {
         "cancel → closeDeleteDialog": "view",
         "cancel → closeFormDialog": "view",
@@ -1167,7 +1167,7 @@
       }
     },
     "src/pages/slab/color/index.vue": {
-      "script": "c05afc44a1726c875f446073217a44b6fe895a99dd1dd14a4754e0f0d7af5d8c",
+      "script": "ca3f0e9ce6697272532693fe37cfab88e58a71720d266050d68c8ed64a352ace",
       "actions": {
         "cancel → categoryDeleteVisible = false": "view",
         "cancel → closeCategoryForm": "view",
@@ -1196,7 +1196,7 @@
       }
     },
     "src/pages/slab/grade/index.vue": {
-      "script": "5c0f0bbb458f38d70a48a3da1861c9d85e3086b5bef4e3554262a9593e44c94f",
+      "script": "9e05455885648cec9bcfa4629a1271851a9cb687865d623cb97b88911c3dfef7",
       "actions": {
         "cancel → closeForm": "view",
         "cancel → confirmVisible = false": "view",
@@ -1231,7 +1231,7 @@
       }
     },
     "src/pages/slab/management/index.vue": {
-      "script": "25b8b15fff307602b1c2292e4583f72cece171c963314b57be178fe7e8b01dca",
+      "script": "e457969ba146c090f16992bdfbc1cd1359ce1bbb3b2ae4e0b6233c5677f8c5db",
       "actions": {
         "blur → handleMeasurementBlur('height')": "form",
         "blur → handleMeasurementBlur('length')": "form",
@@ -1308,7 +1308,7 @@
       }
     },
     "src/pages/slab/origin/index.vue": {
-      "script": "2bf7e9460387ff42233d24510635d40081df3c9c0e9f81950a998a4bf0ffe69d",
+      "script": "ec72eb9132829718b73c851c13a163cb6edd7bdeeae7e2b404aee545487f85ab",
       "actions": {
         "cancel → closeConfirmDialog": "view",
         "cancel → closeFormDialog": "view",
@@ -1325,7 +1325,7 @@
       }
     },
     "src/pages/slab/supply-chain/index.vue": {
-      "script": "5c057a9c8f2a431cc2e793f063403c68ff2ae4f877f2bbf6032ec60109481edf",
+      "script": "7db72bbeaf5707bf3b4b6e613a57667e699db452570a06d7c9ad3c0e1c75aa6d",
       "actions": {
         "blur → handleMeasurementBlur('height')": "form",
         "blur → handleMeasurementBlur('length')": "form",
@@ -1391,7 +1391,7 @@
       }
     },
     "src/pages/slab/texture/index.vue": {
-      "script": "15eab6b3fe16b7ad97a36ae922549127e99696320c34e3f2c3bdd80b545cac1b",
+      "script": "dd3a4bc38a2578ae115bc1f26abe86ea71417142c72e122623438c9e5a7580fc",
       "actions": {
         "cancel → aliasFormVisible = false": "view",
         "cancel → confirmVisible = false": "view",
@@ -1417,7 +1417,7 @@
       }
     },
     "src/pages/slab/variety/index.vue": {
-      "script": "ed8a4a195866f23e4fa4a76800b0326db55a9ebd613159a99d196aa54cc77fea",
+      "script": "0964273b0ff8160522a231f351e84c002f205df8b2684800d53a7c7e2ef0bd47",
       "actions": {
         "cancel → closeConfirmDialog": "view",
         "cancel → closeFormDialog": "view",
@@ -1435,7 +1435,7 @@
       }
     },
     "src/pages/store-category/management/index.vue": {
-      "script": "665291e8308ecd489dc79215539f512469324f0d4cbc6bee5e40a1e2788b8b89",
+      "script": "45eedb991d7b6ef49b63cc638536f876833116f16995b11e4be5cb2e40e23731",
       "actions": {
         "click → handleReset": "query",
         "click → handleSearch": "query",
@@ -1456,7 +1456,7 @@
       }
     },
     "src/pages/store-level/management/index.vue": {
-      "script": "c077f52ff2a1dff0c9f8c70df33d3f1033e231e8f01a4703a9e5da06573a81db",
+      "script": "b944d58ba8e979a4f353024bd42e9b73b7e721706ab0c40ce83783de99f26b66",
       "actions": {
         "cancel → closeForm": "view",
         "cancel → confirmVisible = false": "view",
@@ -1474,7 +1474,7 @@
       }
     },
     "src/pages/supplier/management/index.vue": {
-      "script": "67e3890e593e86f465cb58356d2cceb274ffdab87edc86d06e5cacd1f484bc70",
+      "script": "72fe99b32f9fc54f16e5ab61bee3f408f1fc0e62b70e6378ed54278307ee3bc9",
       "actions": {
         "cancel → closeConfirmDialog": "view",
         "cancel → closeFormDialog": "view",
@@ -1492,7 +1492,7 @@
       }
     },
     "src/pages/supplier/supply-type/index.vue": {
-      "script": "d6181805980e6bc1142e871249e3f261a1134abe2be456d744f1f6bef80ea685",
+      "script": "55398ee1480d63a58864c48c515986113bde404fa968ca4b65d9b5a7db03de95",
       "actions": {
         "cancel → closeStatusDialog": "view",
         "cancel → deleting = undefined": "view",
@@ -1510,7 +1510,7 @@
       }
     },
     "src/pages/tenant/management/index.vue": {
-      "script": "908cf36ea4b268f9c3d6827f082f5e85b3da85478c4d4284d89791669ef484f3",
+      "script": "77c16588f3c1e505c186ddc2dfcf64775ef8e66466b2d1836d64663e58812fe0",
       "actions": {
         "cancel → closeBusinessDialog": "view",
         "cancel → closeConfirmDialog": "view",
@@ -1536,7 +1536,7 @@
       }
     },
     "src/pages/tenant/store/index.vue": {
-      "script": "cf2a197e2c416a1d141b277229a7b003513a64054fecf652aaa22f3269dfba12",
+      "script": "ad4d8391bad399134813a9d4a7d9acaf1a32b06705ae9a97e14bcd36b72ce9f3",
       "actions": {
         "cancel → closeConfirmDialog": "view",
         "cancel → closeFormDialog": "view",
@@ -1569,7 +1569,7 @@
       }
     },
     "src/pages/store-services/index.vue": {
-      "script": "372f4f84722628d826aa68dfb16f15d73ca3f91ee6662efc655c9a1d94f49729",
+      "script": "359071bc954748407738b4539d2f24b6b608cd462ac944773a11aff6ebda00e6",
       "actions": {
         "action → openCreate": "form",
         "blur → priceTouched = true": "form",
@@ -1605,58 +1605,58 @@
   },
   "dependencies": {
     "backend/src/main/java/com/zdm/platform/catalog/ProductCategoryController.java": "b144dd3b95ff3f1023138b682af14ca6941b367c86b4ef76f1da07a8d29f0048",
-    "backend/src/main/java/com/zdm/platform/catalog/ProductCategoryService.java": "bf69ad6f2bac4234ac2b4871895f647a39f35885b8f6885cea53c6d330fd105c",
+    "backend/src/main/java/com/zdm/platform/catalog/ProductCategoryService.java": "4c9f51892cb23a1ba909b2d0d13bf2e3b7814e64b78cbc4bac37939c9ea18e27",
     "backend/src/main/java/com/zdm/platform/catalog/TemplateVersionController.java": "ee21af75f14285339b3ec8ac9ad06e46c4c6c891e61e8f2b1c3ab83622575be4",
-    "backend/src/main/java/com/zdm/platform/catalog/TemplateVersionService.java": "0c410125cbc3cdae6f455eaf01fe77a46167a41551a310ebd92543a798b8b88f",
-    "backend/src/main/java/com/zdm/platform/common/FieldValidationException.java": "a4b25092f349932cbbc85b0512c02d8b9affc6269a23ca06dc077d14eec26f1a",
-    "backend/src/main/java/com/zdm/platform/common/GlobalExceptionHandler.java": "2d6bebe5dc5521874c1fe03b4f3f159087cec5818666e1a353660da281983d99",
+    "backend/src/main/java/com/zdm/platform/catalog/TemplateVersionService.java": "2a7769c45c6bc54e1021fbaf48df476f4656713c0c0721ef30908f22cf90c91c",
+    "backend/src/main/java/com/zdm/platform/common/FieldValidationException.java": "bf6fd57c2e444aefce98dd6ad6b5df3fadfb31ac09e82b1c5f5c0ae455f95eae",
+    "backend/src/main/java/com/zdm/platform/common/GlobalExceptionHandler.java": "5f921b51049d36b99e27fa640f7d37403a0b637a8159659ad2e4f67ab52c07c8",
     "backend/src/main/java/com/zdm/platform/common/OperationBlockedException.java": "df4d8aa778d6fd95b305b016eefb9174d60030e583727175d52ceb4c3cf80e0b",
-    "backend/src/main/java/com/zdm/platform/inventory/AccessoryLifecycleService.java": "dddd9bceef01cd88bd7d328518421c12dc27a86b42cf56cd78f7d6630e9387fe",
+    "backend/src/main/java/com/zdm/platform/inventory/AccessoryLifecycleService.java": "34e3a7b9da4af38f556f6dd904a46ef4fb6b3efda29694d00af860a2539bed8f",
     "backend/src/main/java/com/zdm/platform/inventory/AccessoryMarkupConfigurationController.java": "8a5fccaacb086d081ae2d02bc6316422c3f6a392921c790e081ad2ee086cfc68",
-    "backend/src/main/java/com/zdm/platform/inventory/AccessoryMarkupConfigurationService.java": "626083eee41839b7894abe31ee145b9151d3bd4c4ffdd6a8afa00af4c1bb3788",
+    "backend/src/main/java/com/zdm/platform/inventory/AccessoryMarkupConfigurationService.java": "fd6e4218ac8c3baabe35f3aa4ee03e8197b867a81305a6c172839a7f6abb6c18",
     "backend/src/main/java/com/zdm/platform/inventory/AccessoryProductController.java": "4918034150c553457042ddb0b443ecdbe75df6111ced1396f1596e301cec6d6c",
-    "backend/src/main/java/com/zdm/platform/inventory/AccessoryProductPriceService.java": "6bc1a75dc4fa6a59f76a7c79349c1b53a5d76436ff26fd039ffa7bf8eb74b19d",
+    "backend/src/main/java/com/zdm/platform/inventory/AccessoryProductPriceService.java": "dce806ff77aeb1efa3c7c9ba1311d1de548c5f4a9406e833eca60d997879d268",
     "backend/src/main/java/com/zdm/platform/inventory/AccessoryProductService.java": "c140a5aa399e7211baecbf948124c6d583fcd04c19f13948f47bc4148b21b89c",
     "backend/src/main/java/com/zdm/platform/inventory/FinishedMarkupConfigurationController.java": "acf1a96e1820e6861ff28c0eae30539760e7511b45520519046752bcccf388dc",
-    "backend/src/main/java/com/zdm/platform/inventory/FinishedMarkupConfigurationService.java": "d41b8096e0833ad1ff717a3756edeaded9a310907521ac5aca26b3ca9dedc487",
+    "backend/src/main/java/com/zdm/platform/inventory/FinishedMarkupConfigurationService.java": "e81cd356c744191b598a4efb5f213e864e5d084b77e729e37aac3decd8d4a2b7",
     "backend/src/main/java/com/zdm/platform/inventory/FinishedProductController.java": "9c1d4c500dcc48e6f1386ee0eac1bc0be6e052d43f9245df87239c9e920ca0d3",
-    "backend/src/main/java/com/zdm/platform/inventory/FinishedProductPriceService.java": "3332be635cd64a45f2fec27630222da2ebf579386924435b257969678533ef85",
+    "backend/src/main/java/com/zdm/platform/inventory/FinishedProductPriceService.java": "ef855e8c60d18e17be27aebf2f3d759aa51288c809fd3738782132b30821f1ec",
     "backend/src/main/java/com/zdm/platform/inventory/FinishedProductService.java": "99fa89dc87b3516ec1b977870f27299d6bc2f1c5908a5af09c060967e4b7fe22",
-    "backend/src/main/java/com/zdm/platform/inventory/ProductLifecycleService.java": "b72c2e718185b71f05767d4f77efc81b3614cc7b4b8b80ede15a73df4bf2fbd1",
+    "backend/src/main/java/com/zdm/platform/inventory/ProductLifecycleService.java": "1643858f9d20d3675aa6cc2282648415925a7b2bd2b2ef6ce9168bb4c3c66da1",
     "backend/src/main/java/com/zdm/platform/inventory/SlabColorController.java": "f576f83c530efea43504ce5bb27350907216f04db427b1e5582e658e7c938feb",
     "backend/src/main/java/com/zdm/platform/inventory/SlabColorMapper.java": "aa9b751447de9bfd1a15016ece8f4f23dcf3e2a8a5a8ac90f6bac30ea2f91bcd",
-    "backend/src/main/java/com/zdm/platform/inventory/SlabColorService.java": "3e7bf2e582490194ee28f60ae62ccb6c895e1f12b68561bedafbfa1dced29ce2",
+    "backend/src/main/java/com/zdm/platform/inventory/SlabColorService.java": "8514fb8a13c5c74d0d1f2e0b16782974d6f54c602794ae8b405d28387f58e111",
     "backend/src/main/java/com/zdm/platform/inventory/SlabGradeController.java": "6f22d3c619129671829a64534bef07d7b15f265035247f365531ed9fb9b36c5d",
     "backend/src/main/java/com/zdm/platform/inventory/SlabGradeMapper.java": "fb48836f63f7fead46cfebe362e5ae00e59d6446621358703b38f67a3fb79154",
-    "backend/src/main/java/com/zdm/platform/inventory/SlabGradeService.java": "ebbb588f41b473c59fc5c4d22080d11ef236899846746ab538cc229733ce332c",
+    "backend/src/main/java/com/zdm/platform/inventory/SlabGradeService.java": "879479b9e9fb5f8701949a57448de696affe8d90c817ad87e643d81899561485",
     "backend/src/main/java/com/zdm/platform/inventory/SlabInventoryReferenceService.java": "87ae81d2fddcd052a67cd015d111c5bc9b57c4128d4af198d0d476067c9145aa",
-    "backend/src/main/java/com/zdm/platform/inventory/SlabInventoryService.java": "9ec2db03bff3364a8004538dc2d29cc7e2816f57499844ab9556d2d1fffc4dae",
+    "backend/src/main/java/com/zdm/platform/inventory/SlabInventoryService.java": "e21be7e84457ef38e7f4d246bcf0ae17c2d8b7e57cb0530927f278cd7a347424",
     "backend/src/main/java/com/zdm/platform/inventory/SlabOriginController.java": "7f002b7825ec4a8d0bf1d1a86dcb3a575ff7f6c3da1db97b7ef8dc55c9e17f51",
-    "backend/src/main/java/com/zdm/platform/inventory/SlabOriginService.java": "480f3482a4a8b4ae9dec486955d9c79fcec5cb6e7971967d3881d3313ec9d5e7",
-    "backend/src/main/java/com/zdm/platform/inventory/SlabPriceService.java": "90e2717f41d53c465a86335c767ed7642b7ff9c4f985cde70c5e6fdadef8083d",
+    "backend/src/main/java/com/zdm/platform/inventory/SlabOriginService.java": "40533b0d192f4e3d3921bf5ac093e6e5fa95583e504b539afe3dd56d67f5f594",
+    "backend/src/main/java/com/zdm/platform/inventory/SlabPriceService.java": "3146af045835f71450375d935429d74e4aeaa391238d29099ba3011aac4f7b2d",
     "backend/src/main/java/com/zdm/platform/inventory/SlabTextureController.java": "1238c741b7511ff88ba1be41281a0fb0e79b5bf1e1d5bad8f593eeebea398e26",
     "backend/src/main/java/com/zdm/platform/inventory/SlabTextureMapper.java": "835ca5c3dee95d606101129ab3c56c29e0a83f7dc78ac95e646c5c00211010f6",
-    "backend/src/main/java/com/zdm/platform/inventory/SlabTextureService.java": "dadbedd947529e6d8c08e4cbfef614ee77f04c35c5e1ce05b4e0cc6d1bd65df9",
+    "backend/src/main/java/com/zdm/platform/inventory/SlabTextureService.java": "36e34933b0a05355b2640d27c8db614f1890b70d221b1720cf641bba490d5890",
     "backend/src/main/java/com/zdm/platform/inventory/SlabVarietyController.java": "74dca4bd39825d052e923341d3d69f9286eb799dda9a3fdbba269f1dca69a505",
-    "backend/src/main/java/com/zdm/platform/inventory/SlabVarietyService.java": "90362ec8d482d2f6c618d56a5cefae09e2a2029e0233beb345b8e7f92ab8d8ec",
+    "backend/src/main/java/com/zdm/platform/inventory/SlabVarietyService.java": "6f293e82670f1d108cba5661ff30483ebf5057e21121ae3c2bf4954768509b4b",
     "backend/src/main/java/com/zdm/platform/inventory/StoreAccessoryProductController.java": "8d6403cfc96260c3c22d4883ecf997f92e8172c97323f7c61d87fce1dd7448ab",
-    "backend/src/main/java/com/zdm/platform/inventory/StoreAccessoryProductService.java": "2b281561ea3f7cc17e71fb44947b556b5e3d53bca73e2a17e14535e3bcde64f0",
+    "backend/src/main/java/com/zdm/platform/inventory/StoreAccessoryProductService.java": "8d8fbcec239147760ffb6f15a42b608fe9e42184a35b46ba6e1cfe09425284e2",
     "backend/src/main/java/com/zdm/platform/inventory/StoreAccessorySalePriceService.java": "907cfe9ab2d741c0d4a82619f043a333c849dde27c4d15b615d840cc2fccd9e1",
     "backend/src/main/java/com/zdm/platform/inventory/StoreFinishedProductController.java": "db006b6116d948ef358919c3bc9bbcbbbb3bd4889f34cbe5a82ceab51ea01be0",
     "backend/src/main/java/com/zdm/platform/inventory/StoreCategoryEligibility.java": "56e6c605a7cd2199ae8eb3f6cc288a178b85cd0f675039e02cea1f54125ea813",
-    "backend/src/main/java/com/zdm/platform/inventory/StoreFinishedProductService.java": "033c329a50c2c2b344edc083131e935f2995800a9a3bcef68a095628b19aaec5",
+    "backend/src/main/java/com/zdm/platform/inventory/StoreFinishedProductService.java": "4228873b3058b475aad7550e538770f9d4388681cafbe3d1a117b5ba9fe41fed",
     "backend/src/main/java/com/zdm/platform/inventory/StoreFinishedSalePriceService.java": "1d98034389addb8578b18cfa71d70cc0ce16e437bfa759804c7d844809872281",
     "backend/src/main/java/com/zdm/platform/media/MediaAssetService.java": "9a97d570e93790dabbb4fc0c87232a039699bc047c857bc403ec2f94b61c1ea9",
-    "backend/src/main/java/com/zdm/platform/payment/StorePaymentNameService.java": "00714ae86d7be38ac16e999455de262fa51b9f9272ddfb79f48788c4ff275f1a",
+    "backend/src/main/java/com/zdm/platform/payment/StorePaymentNameService.java": "35ac3e9e86a513adce75284a5d12b47652de0d4f77e08360506a6c340dc429cb",
     "backend/src/main/java/com/zdm/platform/store/StoreCategoryController.java": "9173414206b0b2b9162ee664943c9c77b3f7620e64e8cd7d38f9f3a89e7909aa",
-    "backend/src/main/java/com/zdm/platform/store/StoreCategoryService.java": "d6cf94a98af611fa9f23e13922171372bbb19c0b49e4fa94ecc17fd0373424e6",
+    "backend/src/main/java/com/zdm/platform/store/StoreCategoryService.java": "a1b36c7a6d8890e2fad9a739754328b468955b48d9c7941a277284d351173dd4",
     "backend/src/main/java/com/zdm/platform/store/StoreController.java": "8c26cd07e8bcf4dc1b783cad9d8501c87def0b3bdc795d737c2314c10ff672f3",
-    "backend/src/main/java/com/zdm/platform/store/StoreLevelService.java": "0d87b637ad6bfd42d7dd73fadc6bda3738280a767b1799ee463bb2855832f119",
-    "backend/src/main/java/com/zdm/platform/store/StoreService.java": "d3c0a827b592c365cc00bb6b70090090ff874b8af142aad379c33d164426637b",
+    "backend/src/main/java/com/zdm/platform/store/StoreLevelService.java": "54cf63e6fa20a16cccfe9f88c90a0f63cccc6be542bb289f42817be87ea49c60",
+    "backend/src/main/java/com/zdm/platform/store/StoreService.java": "d268b7e8bff0478b383c8273f59d3bc785a795281988745ccf55556291ee184c",
     "backend/src/main/java/com/zdm/platform/supplier/SupplierController.java": "7251cf378eab1deddffc33dceb6d5a11c8a22163ec2aca46762bfce44e40984c",
-    "backend/src/main/java/com/zdm/platform/supplier/SupplierService.java": "08f89a5450ce871c3f0c13ccf3ae4972dc7e73c32f8a82cb0ff06d3da36317eb",
+    "backend/src/main/java/com/zdm/platform/supplier/SupplierService.java": "86a18127ca002359b8ff21aa3937b120ed613d8a9bf570ce5e6b73315688f2da",
     "backend/src/main/java/com/zdm/platform/supplier/SupplierSupplyTypeController.java": "e88ae2ac75bc0d45b876358b5379081fffe6f91b91fb9fadb63f02ae981d8ff7",
-    "backend/src/main/java/com/zdm/platform/supplier/SupplierSupplyTypeService.java": "261ca51cc9606026d33de6a051d378a92c53c01c5a1dd7590c50bc756ee15d2d",
+    "backend/src/main/java/com/zdm/platform/supplier/SupplierSupplyTypeService.java": "ff8e00040f257333718867e6896ed82e545da2d825abc1d7cd022e72d4e5fd08",
     "src/components/foundation/feedback/adminFeedback.ts": "bc0870d5815faceaaff0454cf3dfd314d2424215e88af4bdd69fd97fdeeab718",
     "src/composables/useCommodityModule.ts": "1ebe5fe2b88d0d5e629b0ae948bd5212d787c217ae42a2963f3ef86b09b68259",
     "src/composables/useOperationPreflight.ts": "12de93cda33177aee7b390d8359c9705d34070c1c2dacb9126f57d1a6862623a",
@@ -1667,7 +1667,7 @@
     "src/services/accessoryProducts.ts": "fa9e67b2daa51e4f4feb84f06591e93e89d9c7d210e99b393eaee6e83bb6192c",
     "src/services/finishedMarkupConfigurations.ts": "3d370a6342211b898d24ab0c825a44e79f81727b83dde8bbb26364643be5bc3a",
     "src/services/finishedProducts.ts": "9ab58035d284b3f1b15a0d106551be8a7f4b5406ea16b72f789a23a3e79d96ce",
-    "src/services/http.ts": "15e4a0caefbba567df9d7467bf4a27e8f8a619da5b5ba4c869430dc1bdd4864c",
+    "src/services/http.ts": "788c2c7d3ab09273e6a23d561bf3167c95947e78ea92a365cd08cd64b856f9a6",
     "src/services/operationsBatchShelf.ts": "ae1b265db98eaef6a2e1ad36062f44a0ce1c3e1447692ae914b8f95ad2bdabf8",
     "src/services/productAllBatchShelf.ts": "e0a375da8e7ec5e5a5120af9eba54c22c86d38276cfee61d689f5f1275828fd9",
     "src/services/productBatchDelete.ts": "d9e266a4777681d53ad70c5c68efb5a2694f081db5e386dccd9a36a2a4b6cf75",
@@ -1689,7 +1689,8 @@
     "src/services/productBatchFeedback.ts": "1fbc6bc81362257c4caf08559614018de4027781013f9f38f8cc349e59a4e894",
     "src/pages/finished-stock/store/storeSalePriceLines.ts": "030022d460fdabcf0397b23b3203de0648a710a09022db3f2e56687d866447e0",
     "backend/src/main/java/com/zdm/platform/inventory/StoreBatchCategoryRequest.java": "4c0cdf1704dcf94c4be915c1283f555c649e0efee6a680fdd9b3597ea93f693f",
-    "src/services/storeServices.ts": "1fd2049c39c5363eface2e56f0a66b95017efa38507c02ed39442dba2b54be86"
+    "src/services/storeServices.ts": "1fd2049c39c5363eface2e56f0a66b95017efa38507c02ed39442dba2b54be86",
+    "src/utils/serverFieldValidation.ts": "66263892a7ddb482f2ce3c4d8b499d8173aa86b168c16c7b56a7514ebcac11fc"
   },
   "approvedChanges": {
     "src/components/AdminTopNav.vue": {
@@ -1734,7 +1735,7 @@
     },
     "src/pages/craft/finished-stock/index.vue": {
       "baseSha256": "fee4684dce44b6badbfc8d3c712b61e8365a906ef02e74f8c6cfe7c839cd16a7",
-      "patchCount": 17,
+      "patchCount": 21,
       "patches": [
         {
           "stage": "before-migrations",
@@ -1827,12 +1828,28 @@
           "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
           "before": "import DecimalInput from '@/components/DecimalInput.vue';\nimport { numericError } from '@/utils/numericInput';\nimport { AdminDialog } from '@/components/foundation';\nimport { formConfirmation, dialogButtonProps } from '@/components/foundation/actions/confirmation';\nimport { buttonTheme, buttonFunctionFor, cancelButtonProps } from '@/components/foundation/actions/buttonFunctions';\n",
           "after": "import DecimalInput from '@/components/DecimalInput.vue';\nimport { numericError } from '@/utils/numericInput';\nimport { AdminMediaPreviewDialog } from '@/components/foundation';\nimport { formConfirmation, dialogButtonProps } from '@/components/foundation/actions/confirmation';\nimport { buttonTheme, buttonFunctionFor, cancelButtonProps } from '@/components/foundation/actions/buttonFunctions';\n"
+        },
+        {
+          "before": "\n<script setup lang=\"ts\">\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { useDialogLoading } from '@/composables/useDialogLoading';\n",
+          "after": "\n<script setup lang=\"ts\">\nimport { useServerFieldValidation } from '@/utils/serverFieldValidation';\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { useDialogLoading } from '@/composables/useDialogLoading';\n"
+        },
+        {
+          "before": "};\n\nconst handleSubmit = async () => {\n  const result = await formRef.value?.validate();\n",
+          "after": "};\n\nconst beginHandleSubmitFeedback = useServerFieldValidation(\n  () => formDialogVisible.value, formRef,\n  () => ({ name: formData.name, type: formData.type, width: formData.width, remark: formData.remark }),\n);\nconst handleSubmit = async () => {\n  const result = await formRef.value?.validate();\n"
+        },
+        {
+          "before": "\n  let refresh = false;\n  try {\n    const imageMediaId = formData.image?.mediaId;\n",
+          "after": "\n  let refresh = false;\n  const reportFieldError = beginHandleSubmitFeedback();\n  try {\n    const imageMediaId = formData.image?.mediaId;\n"
+        },
+        {
+          "before": "    if (refresh) void loadCrafts();\n  } catch (error) {\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n",
+          "after": "    if (refresh) void loadCrafts();\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n"
         }
       ]
     },
     "src/pages/customer/index.vue": {
       "baseSha256": "7ce0147064da82ad5a10a65ab144f82e3af0e9ced32081e6dcfd756bd7903f9b",
-      "patchCount": 10,
+      "patchCount": 29,
       "patches": [
         {
           "stage": "before-migrations",
@@ -1880,12 +1897,88 @@
           "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
           "before": "import CustomerFollowupAttachments from '@/components/customer/CustomerFollowupAttachments.vue';\nimport AdminSideMenu from '@/components/AdminSideMenu.vue';\nimport AdminDialog from '@/components/foundation/AdminDialog.vue';\nimport {\n  AdminListPage,\n",
           "after": "import CustomerFollowupAttachments from '@/components/customer/CustomerFollowupAttachments.vue';\nimport AdminSideMenu from '@/components/AdminSideMenu.vue';\nimport { AdminMediaPreviewDialog } from '@/components/foundation';\nimport {\n  AdminListPage,\n"
+        },
+        {
+          "before": "      @confirm=\"submitProfile\"\n    >\n      <t-form-item label=\"归属人\" required-mark v-bind=\"profileFeedback.field('owner', profile.ownerAccountId)\">\n        <t-select\n          v-model=\"profile.ownerAccountId\"\n",
+          "after": "      @confirm=\"submitProfile\"\n    >\n      <t-form-item label=\"归属人\" required-mark v-bind=\"profileFeedback.field('ownerAccountId', profile.ownerAccountId)\">\n        <t-select\n          v-model=\"profile.ownerAccountId\"\n"
+        },
+        {
+          "before": "        />\n      </t-form-item>\n      <t-form-item label=\"客户姓名\" required-mark v-bind=\"fieldFeedback(nameError, nameError)\"\n        ><t-input v-model=\"profile.name\" :maxlength=\"80\" clearable placeholder=\"请输入客户姓名\"\n      /></t-form-item>\n      <t-form-item label=\"客户国籍\">\n        <t-select\n          v-model=\"profile.nationality\"\n",
+          "after": "        />\n      </t-form-item>\n      <t-form-item label=\"客户姓名\" required-mark v-bind=\"nameError ? fieldFeedback(true, nameError) : profileFeedback.field('name', profile.name)\"\n        ><t-input v-model=\"profile.name\" :maxlength=\"80\" clearable placeholder=\"请输入客户姓名\"\n      /></t-form-item>\n      <t-form-item label=\"客户国籍\" v-bind=\"profileFeedback.field('nationality', profile.nationality)\">\n        <t-select\n          v-model=\"profile.nationality\"\n"
+        },
+        {
+          "before": "        <AdminPhoneInput v-model=\"profile.phone\" :calling-code=\"phoneCallingCode\" />\n      </t-form-item>\n      <t-form-item label=\"微信号\"\n        ><t-input v-model=\"profile.wechat\" :maxlength=\"100\" clearable placeholder=\"请输入微信号\"\n      /></t-form-item>\n      <t-form-item label=\"客户需求\"\n        ><t-textarea v-model=\"profile.requirement\" :maxlength=\"100\" :autosize=\"{}\" placeholder=\"请输入客户需求\"\n      /></t-form-item>\n      <t-form-item label=\"客户备注\"\n        ><t-textarea v-model=\"profile.remark\" :maxlength=\"100\" :autosize=\"{}\" placeholder=\"请输入客户备注\"\n      /></t-form-item>\n",
+          "after": "        <AdminPhoneInput v-model=\"profile.phone\" :calling-code=\"phoneCallingCode\" />\n      </t-form-item>\n      <t-form-item label=\"微信号\" v-bind=\"profileFeedback.field('wechat', profile.wechat)\"\n        ><t-input v-model=\"profile.wechat\" :maxlength=\"100\" clearable placeholder=\"请输入微信号\"\n      /></t-form-item>\n      <t-form-item label=\"客户需求\" v-bind=\"profileFeedback.field('requirement', profile.requirement)\"\n        ><t-textarea v-model=\"profile.requirement\" :maxlength=\"100\" :autosize=\"{}\" placeholder=\"请输入客户需求\"\n      /></t-form-item>\n      <t-form-item label=\"客户备注\" v-bind=\"profileFeedback.field('remark', profile.remark)\"\n        ><t-textarea v-model=\"profile.remark\" :maxlength=\"100\" :autosize=\"{}\" placeholder=\"请输入客户备注\"\n      /></t-form-item>\n"
+        },
+        {
+          "before": "      @closed=\"cleanupUploads\"\n    >\n      <t-form-item label=\"跟进时间\" required-mark v-bind=\"followFeedback.field('time', followForm.followedAt)\"\n        ><t-date-picker\n          v-model=\"followForm.followedAt\"\n",
+          "after": "      @closed=\"cleanupUploads\"\n    >\n      <t-form-item label=\"跟进时间\" required-mark v-bind=\"followFeedback.field('followedAt', followForm.followedAt)\"\n        ><t-date-picker\n          v-model=\"followForm.followedAt\"\n"
+        },
+        {
+          "before": "        />\n      </t-form-item>\n      <t-form-item label=\"下次跟进时间\"\n        ><t-date-picker\n          v-model=\"followForm.nextFollowAt\"\n",
+          "after": "        />\n      </t-form-item>\n      <t-form-item label=\"下次跟进时间\" v-bind=\"followFeedback.field('nextFollowAt', followForm.nextFollowAt)\"\n        ><t-date-picker\n          v-model=\"followForm.nextFollowAt\"\n"
+        },
+        {
+          "before": "          :time-picker-props=\"{ format: 'HH:mm' }\"\n      /></t-form-item>\n      <t-form-item label=\"下次跟进事项\"\n        ><t-textarea\n          v-model=\"followForm.nextFollowTask\"\n",
+          "after": "          :time-picker-props=\"{ format: 'HH:mm' }\"\n      /></t-form-item>\n      <t-form-item label=\"下次跟进事项\" v-bind=\"followFeedback.field('nextFollowTask', followForm.nextFollowTask)\"\n        ><t-textarea\n          v-model=\"followForm.nextFollowTask\"\n"
+        },
+        {
+          "before": "          placeholder=\"请输入下次跟进事项\"\n      /></t-form-item>\n      <t-form-item label=\"附件\">\n        <CustomerFollowupAttachments v-if=\"followVisible\" v-model=\"uploads\" :upload=\"upload\" @preview=\"previewUpload\" />\n      </t-form-item>\n",
+          "after": "          placeholder=\"请输入下次跟进事项\"\n      /></t-form-item>\n      <t-form-item label=\"附件\" v-bind=\"followFeedback.field('mediaIds', uploads.map(item => item?.mediaId))\">\n        <CustomerFollowupAttachments v-if=\"followVisible\" v-model=\"uploads\" :upload=\"upload\" @preview=\"previewUpload\" />\n      </t-form-item>\n"
+        },
+        {
+          "before": "</template>\n<script setup lang=\"ts\">\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { usePendingAction } from '@/composables/usePendingAction';\n",
+          "after": "</template>\n<script setup lang=\"ts\">\nimport { useServerFields } from '@/utils/serverFieldValidation';\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { usePendingAction } from '@/composables/usePendingAction';\n"
+        },
+        {
+          "before": "const nameError = ref('');\nconst profileOwners = ref<Owner[]>([]);\nconst profileFeedback = useFormFeedback(profileVisible);\nconst emptyProfile = (): CustomerProfile => ({\n",
+          "after": "const nameError = ref('');\nconst profileOwners = ref<Owner[]>([]);\nconst profileDialog = ref<InstanceType<typeof AdminFormDialog>>();\nconst profileFeedback = useFormFeedback(profileVisible);\nconst emptyProfile = (): CustomerProfile => ({\n"
+        },
+        {
+          "before": "  }\n}\nasync function submitProfile() {\n  if (submitting.value) return;\n",
+          "after": "  }\n}\nconst submitProfileFields = (): Record<string, unknown> => ({ ...profile.value });\nconst beginSubmitProfileFeedback = useServerFields(\n  () => profileVisible.value, profileDialog, submitProfileFields,\n  (field, message) => {\n    const values = submitProfileFields();\n    profileFeedback.reject(field, values[field], message);\n  },\n);\nasync function submitProfile() {\n  if (submitting.value) return;\n"
+        },
+        {
+          "before": "  }\n  if (!profileOwners.value.some((owner) => owner.accountId === profile.value.ownerAccountId)) {\n    profileFeedback.reject('owner', profile.value.ownerAccountId, '请选择归属人');\n    invalid = true;\n  }\n",
+          "after": "  }\n  if (!profileOwners.value.some((owner) => owner.accountId === profile.value.ownerAccountId)) {\n    profileFeedback.reject('ownerAccountId', profile.value.ownerAccountId, '请选择归属人');\n    invalid = true;\n  }\n"
+        },
+        {
+          "before": "  if (invalid) return rejectFormSubmission(profileDialog.value);\n  submitting.value = true;\n  try {\n    await saveCustomer(profile.value, editingId.value);\n",
+          "after": "  if (invalid) return rejectFormSubmission(profileDialog.value);\n  submitting.value = true;\n  const reportFieldError = beginSubmitProfileFeedback();\n  try {\n    await saveCustomer(profile.value, editingId.value);\n"
+        },
+        {
+          "before": "    await reload();\n  } catch (error) {\n    fail('保存', error);\n  } finally {\n",
+          "after": "    await reload();\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    fail('保存', error);\n  } finally {\n"
+        },
+        {
+          "before": "});\nconst assignVisible = ref(false);\nconst profileDialog = ref<InstanceType<typeof AdminFormDialog>>();\nconst followDialog = ref<InstanceType<typeof AdminFormDialog>>();\nconst assignDialog = ref<InstanceType<typeof AdminFormDialog>>();\n",
+          "after": "});\nconst assignVisible = ref(false);\nconst followDialog = ref<InstanceType<typeof AdminFormDialog>>();\nconst assignDialog = ref<InstanceType<typeof AdminFormDialog>>();\n"
+        },
+        {
+          "before": "  } else confirmVisible.value = true;\n}\nasync function submitAction() {\n  if (submitting.value) return;\n",
+          "after": "  } else confirmVisible.value = true;\n}\nconst submitActionFields = (): Record<string, unknown> => ({ ownerAccountId: newOwner.value });\nconst beginSubmitActionFeedback = useServerFields(\n  () => assignVisible.value, assignDialog, submitActionFields,\n  (field, message) => {\n    const values = submitActionFields();\n    assignFeedback.reject('owner', values[field], message);\n  },\n);\nasync function submitAction() {\n  if (submitting.value) return;\n"
+        },
+        {
+          "before": "  }\n  submitting.value = true;\n  try {\n    await actOnCustomers(\n",
+          "after": "  }\n  submitting.value = true;\n  const reportFieldError = beginSubmitActionFeedback();\n  try {\n    await actOnCustomers(\n"
+        },
+        {
+          "before": "    await reload();\n  } catch (error) {\n    fail(actionLabels[pending.value.action], error);\n    await reload();\n",
+          "after": "    await reload();\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    fail(actionLabels[pending.value.action], error);\n    await reload();\n"
+        },
+        {
+          "before": "  uploads.value = [];\n}\nasync function submitFollowup() {\n  if (!followCustomer.value || submitting.value || uploading.value > 0) return;\n  if (!followForm.value.followedAt || !followForm.value.content.trim()) {\n    if (!followForm.value.followedAt) followFeedback.reject('time', followForm.value.followedAt, '请选择跟进时间');\n    if (!followForm.value.content.trim()) followFeedback.reject('content', followForm.value.content, '请输入跟进内容');\n    return rejectFormSubmission(followDialog.value);\n  }\n  submitting.value = true;\n  try {\n    const ids = uploads.value.flatMap((a) => (a?.mediaId ? [a.mediaId] : []));\n",
+          "after": "  uploads.value = [];\n}\nconst submitFollowupFields = (): Record<string, unknown> => ({ ...followForm.value, mediaIds: uploads.value.map(item => item?.mediaId) });\nconst beginSubmitFollowupFeedback = useServerFields(\n  () => followVisible.value, followDialog, submitFollowupFields,\n  (field, message) => {\n    const values = submitFollowupFields();\n    followFeedback.reject(field, values[field], message);\n  },\n);\nasync function submitFollowup() {\n  if (!followCustomer.value || submitting.value || uploading.value > 0) return;\n  if (!followForm.value.followedAt || !followForm.value.content.trim()) {\n    if (!followForm.value.followedAt) followFeedback.reject('followedAt', followForm.value.followedAt, '请选择跟进时间');\n    if (!followForm.value.content.trim()) followFeedback.reject('content', followForm.value.content, '请输入跟进内容');\n    return rejectFormSubmission(followDialog.value);\n  }\n  submitting.value = true;\n  const reportFieldError = beginSubmitFollowupFeedback();\n  try {\n    const ids = uploads.value.flatMap((a) => (a?.mediaId ? [a.mediaId] : []));\n"
+        },
+        {
+          "before": "    adminFeedback.actionSuccess({ action: followId.value ? '修改' : '保存跟进' });\n  } catch (error) {\n    fail('保存跟进', error);\n  } finally {\n",
+          "after": "    adminFeedback.actionSuccess({ action: followId.value ? '修改' : '保存跟进' });\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    fail('保存跟进', error);\n  } finally {\n"
         }
       ]
     },
     "src/pages/employee-invite/index.vue": {
       "baseSha256": "05238abcb631d02b13208614c5856b42d9a49fd91eaeaf8fcccd00a855468e37",
-      "patchCount": 8,
+      "patchCount": 13,
       "patches": [
         {
           "stage": "before-migrations",
@@ -1924,12 +2017,32 @@
         {
           "before": "\nonBeforeUnmount(stopCounter);\n</script>\n\n",
           "after": "\nonBeforeUnmount(stopCounter);\n\nconst codeIndicator = useDelayedLoading(() => Boolean(requestingCode.value));\nconst submitIndicator = useDelayedLoading(() => Boolean(submitting.value));\nconst inviteIndicator = useDelayedLoading(() => loading.value);\n</script>\n\n"
+        },
+        {
+          "before": "\n<script setup lang=\"ts\">\nimport { useDelayedLoading } from '@/composables/useDelayedLoading';\nimport { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';\n",
+          "after": "\n<script setup lang=\"ts\">\nimport { useServerFieldValidation } from '@/utils/serverFieldValidation';\nimport { useDelayedLoading } from '@/composables/useDelayedLoading';\nimport { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';\n"
+        },
+        {
+          "before": "};\n\nconst handlePhoneSubmit = async (ctx: SubmitContext) => {\n  if (submitting.value) return;\n  if (ctx.validateResult !== true) return rejectFormSubmission(phoneFormRef.value);\n  submitting.value = true;\n  try {\n    const result = await verifyEmployeeInviteCode(token.value, phoneForm);\n",
+          "after": "};\n\nconst beginHandlePhoneSubmitFeedback = useServerFieldValidation(\n  () => step.value === 1, phoneFormRef,\n  () => ({ phone: phoneForm.phone, verifyCode: phoneForm.verifyCode }),\n);\nconst handlePhoneSubmit = async (ctx: SubmitContext) => {\n  if (submitting.value) return;\n  if (ctx.validateResult !== true) return rejectFormSubmission(phoneFormRef.value);\n  submitting.value = true;\n  const reportFieldError = beginHandlePhoneSubmitFeedback();\n  try {\n    const result = await verifyEmployeeInviteCode(token.value, phoneForm);\n"
+        },
+        {
+          "before": "    }\n  } catch (error) {\n    adminFeedback.error(error instanceof Error ? error.message : '验证码校验失败');\n  } finally {\n",
+          "after": "    }\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    adminFeedback.error(error instanceof Error ? error.message : '验证码校验失败');\n  } finally {\n"
+        },
+        {
+          "before": "};\n\nconst handleProfileSubmit = async (ctx: SubmitContext) => {\n  if (submitting.value) return;\n  if (ctx.validateResult !== true || profileForm.gender === '') return rejectFormSubmission(profileFormRef.value);\n  submitting.value = true;\n  try {\n    const result = await registerEmployeeInvite(token.value, {\n",
+          "after": "};\n\nconst beginProfileFeedback = useServerFieldValidation(\n  () => step.value === 2, profileFormRef, () => ({ ...profileForm }),\n);\nconst handleProfileSubmit = async (ctx: SubmitContext) => {\n  if (submitting.value) return;\n  if (ctx.validateResult !== true || profileForm.gender === '') return rejectFormSubmission(profileFormRef.value);\n  submitting.value = true;\n  const reportFieldError = beginProfileFeedback();\n  try {\n    const result = await registerEmployeeInvite(token.value, {\n"
+        },
+        {
+          "before": "    showRegistrationResult(result);\n  } catch (error) {\n    adminFeedback.error(error instanceof Error ? error.message : '注册提交失败');\n  } finally {\n",
+          "after": "    showRegistrationResult(result);\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    adminFeedback.error(error instanceof Error ? error.message : '注册提交失败');\n  } finally {\n"
         }
       ]
     },
     "src/pages/finished-stock/management/index.vue": {
       "baseSha256": "eb08f195b1aa64cd889f68d480b68817e39177546244f73af819fb3cb89e4a34",
-      "patchCount": 35,
+      "patchCount": 47,
       "patches": [
         {
           "stage": "before-migrations",
@@ -2112,12 +2225,60 @@
           "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
           "before": "  adminFeedback,\n  AdminConfirmDialog,\n  AdminDialog,\n  AdminSectionCard,\n  getSafeErrorMessage,\n",
           "after": "  adminFeedback,\n  AdminConfirmDialog,\n  AdminMediaPreviewDialog,\n  AdminSectionCard,\n  getSafeErrorMessage,\n"
+        },
+        {
+          "before": "                            <SpecPriceInput\n                              v-model=\"row.markupPrices[configuration.id].coefficient\"\n                              placeholder=\"请输入系数\"\n                              label=\"系数\"\n",
+          "after": "                            <SpecPriceInput\n                              v-model=\"row.markupPrices[configuration.id].coefficient\"\n                              :server-error=\"priceFeedback.field(`skus.${row.skuId}.markupPrices.${configuration.id}.priceCoefficient`).tips\"\n                              placeholder=\"请输入系数\"\n                              label=\"系数\"\n"
+        },
+        {
+          "before": "                            <SpecPriceInput\n                              v-model=\"row.markupPrices[configuration.id].price\"\n                              placeholder=\"请输入价格\"\n                              label=\"价格\"\n",
+          "after": "                            <SpecPriceInput\n                              v-model=\"row.markupPrices[configuration.id].price\"\n                              :server-error=\"priceFeedback.field(`skus.${row.skuId}.markupPrices.${configuration.id}.price`).tips\"\n                              placeholder=\"请输入价格\"\n                              label=\"价格\"\n"
+        },
+        {
+          "before": "                          <SpecPriceInput\n                            v-model=\"row.guideCoefficient\"\n                            placeholder=\"请输入系数\"\n                            label=\"系数\"\n",
+          "after": "                          <SpecPriceInput\n                            v-model=\"row.guideCoefficient\"\n                              :server-error=\"priceFeedback.field(`skus.${row.skuId}.guide.priceCoefficient`).tips\"\n                            placeholder=\"请输入系数\"\n                            label=\"系数\"\n"
+        },
+        {
+          "before": "                          <SpecPriceInput\n                            v-model=\"row.guide\"\n                            placeholder=\"请输入价格\"\n                            label=\"价格\"\n",
+          "after": "                          <SpecPriceInput\n                            v-model=\"row.guide\"\n                              :server-error=\"priceFeedback.field(`skus.${row.skuId}.guide.price`).tips\"\n                            placeholder=\"请输入价格\"\n                            label=\"价格\"\n"
+        },
+        {
+          "before": "          </t-select>\n        </t-form-item>\n        <t-form-item label=\"详细说明\">\n          <t-textarea v-model=\"reasonForm.detail\" :maxlength=\"100\" placeholder=\"请输入详细说明\" :autosize=\"{}\" />\n        </t-form-item>\n",
+          "after": "          </t-select>\n        </t-form-item>\n        <t-form-item label=\"详细说明\" v-bind=\"reasonFeedback.field('detail', reasonForm.detail)\">\n          <t-textarea v-model=\"reasonForm.detail\" :maxlength=\"100\" placeholder=\"请输入详细说明\" :autosize=\"{}\" />\n        </t-form-item>\n"
+        },
+        {
+          "before": "\n<script setup lang=\"ts\">\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { useDialogLoading } from '@/composables/useDialogLoading';\n",
+          "after": "\n<script setup lang=\"ts\">\nimport { useBoundServerFields, useServerFields } from '@/utils/serverFieldValidation';\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { useDialogLoading } from '@/composables/useDialogLoading';\n"
+        },
+        {
+          "before": "  });\n};\nconst submitProductForm = async () => {\n  if (!editingProduct.value) return;\n",
+          "after": "  });\n};\nconst priceFeedback = useBoundServerFields(formPageVisible, productFormRoot, () => Object.fromEntries(\n  specRows.value.flatMap(row => {\n    const prefix = `skus.${row.skuId}`;\n    return [\n      [`${prefix}.guide.priceCoefficient`, row.guideCoefficient], [`${prefix}.guide.price`, row.guide],\n      ...Object.entries(row.markupPrices).flatMap(([id, price]) => [\n        [`${prefix}.markupPrices.${id}.priceCoefficient`, price.coefficient], [`${prefix}.markupPrices.${id}.price`, price.price],\n      ]),\n    ];\n  }),\n));\nconst submitProductForm = async () => {\n  if (!editingProduct.value) return;\n"
+        },
+        {
+          "before": "  if (issues.length) return rejectProductForm(issues);\n  saving.value = true;\n  try {\n    upsertStockItem(await updateFinishedProduct(editingProduct.value.id, buildOperationsPricePayload()));\n",
+          "after": "  if (issues.length) return rejectProductForm(issues);\n  saving.value = true;\n  const reportFieldError = priceFeedback.begin();\n  try {\n    upsertStockItem(await updateFinishedProduct(editingProduct.value.id, buildOperationsPricePayload()));\n"
+        },
+        {
+          "before": "    adminFeedback.actionSuccess({ action: '修改' });\n  } catch (error) {\n    adminFeedback.error(getSafeErrorMessage(error, '商品价格保存失败'));\n  } finally {\n",
+          "after": "    adminFeedback.actionSuccess({ action: '修改' });\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    adminFeedback.error(getSafeErrorMessage(error, '商品价格保存失败'));\n  } finally {\n"
+        },
+        {
+          "before": "  reasonDialogVisible.value = false;\n};\nconst submitReason = async () => {\n  if (!reasonForm.reason) {\n",
+          "after": "  reasonDialogVisible.value = false;\n};\nconst beginReasonFeedback = useServerFields(\n  () => reasonDialogVisible.value, reasonFormRoot, () => ({ ...reasonForm }),\n  (key, message) => reasonFeedback.reject(key, reasonForm[key as keyof typeof reasonForm], message),\n);\nconst submitReason = async () => {\n  if (!reasonForm.reason) {\n"
+        },
+        {
+          "before": "    return rejectFormSubmission(reasonFormRoot.value);\n  }\n  saving.value = true;\n  try {\n",
+          "after": "    return rejectFormSubmission(reasonFormRoot.value);\n  }\n  const reportFieldError = beginReasonFeedback();\n  saving.value = true;\n  try {\n"
+        },
+        {
+          "before": "      adminFeedback.success('商品已下架');\n    }\n  } catch (error) {\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  } finally {\n    closeReasonDialog();\n    saving.value = false;\n  }\n",
+          "after": "      adminFeedback.success('商品已下架');\n    }\n    closeReasonDialog();\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    closeReasonDialog();\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  } finally {\n    saving.value = false;\n  }\n"
         }
       ]
     },
     "src/pages/finished-stock/store/StoreFinishedEditor.vue": {
       "baseSha256": "cc341a5a4c779bfd5b3ede7011809e763cf5a549996375dbdbf708dbc3e9faa7",
-      "patchCount": 18,
+      "patchCount": 25,
       "patches": [
         {
           "stage": "before-migrations",
@@ -2223,12 +2384,40 @@
           "reason": "只换分类时保留提交时的逐规格价格和模式",
           "before": "      skus: props.product.skus.map((item) => ({\n        skuId: item.skuId,\n        salePrice: drafts[item.skuId].price === '' ? null : Number(drafts[item.skuId].price),\n        priceMode: drafts[item.skuId].mode,\n",
           "after": "      skus: props.product.skus.map((item) => ({\n        skuId: item.skuId,\n        ...(category.id !== props.product.storeCategoryId &&\n          drafts[item.skuId].mode === item.priceMode &&\n          (item.priceMode === 'auto' || carriesPrice(drafts[item.skuId], item))\n          ? { preservePricing: true } : {}),\n        salePrice: drafts[item.skuId].price === '' ? null : Number(drafts[item.skuId].price),\n        priceMode: drafts[item.skuId].mode,\n"
+        },
+        {
+          "before": "        <template #basic-extra>\n          <t-form ref=\"formRef\" class=\"supplier-form\" :data=\"form\" :rules=\"rules\" label-width=\"100px\" colon>\n            <t-form-item label=\"门店分类\" name=\"categoryId\"\n              ><t-cascader\n                v-model=\"form.categoryId\"\n",
+          "after": "        <template #basic-extra>\n          <t-form ref=\"formRef\" class=\"supplier-form\" :data=\"form\" :rules=\"rules\" label-width=\"100px\" colon>\n            <t-form-item label=\"门店分类\" name=\"categoryId\" v-bind=\"serverFeedback.field('storeCategoryId')\"\n              ><t-cascader\n                v-model=\"form.categoryId\"\n"
+        },
+        {
+          "before": "                          v-if=\"drafts[row.skuId]\"\n                          v-model=\"drafts[row.skuId].coefficient\"\n                          class=\"store-sale-coefficient-input\"\n                          placeholder=\"请输入系数\"\n",
+          "after": "                          v-if=\"drafts[row.skuId]\"\n                          v-model=\"drafts[row.skuId].coefficient\"\n                          :server-error=\"serverFeedback.field(`skus.${row.skuId}.saleCoefficient`).tips\"\n                          class=\"store-sale-coefficient-input\"\n                          placeholder=\"请输入系数\"\n"
+        },
+        {
+          "before": "                          v-if=\"drafts[row.skuId]\"\n                          v-model=\"drafts[row.skuId].price\"\n                          class=\"decimal-input store-sale-price-input\"\n                          label=\"商品售价\"\n",
+          "after": "                          v-if=\"drafts[row.skuId]\"\n                          v-model=\"drafts[row.skuId].price\"\n                          :server-error=\"serverFeedback.field(`skus.${row.skuId}.salePrice`).tips\"\n                          class=\"decimal-input store-sale-price-input\"\n                          label=\"商品售价\"\n"
+        },
+        {
+          "before": "</template>\n<script setup lang=\"ts\">\nimport { useDelayedLoading } from '@/composables/useDelayedLoading';\nimport { useOperationPreflight } from '@/composables/useOperationPreflight';\n",
+          "after": "</template>\n<script setup lang=\"ts\">\nimport { useBoundServerFields } from '@/utils/serverFieldValidation';\nimport { useDelayedLoading } from '@/composables/useDelayedLoading';\nimport { useOperationPreflight } from '@/composables/useOperationPreflight';\n"
+        },
+        {
+          "before": "const formOperation = useOperationPreflight(() => props.product.id);\nformOperation.onInvalidate(() => { saving.value = false; });\nasync function save() {\n  if (saving.value || !ready.value || !selectedLeaf.value) return;\n  const current = formOperation.capture();\n  saving.value = true;\n  try {\n",
+          "after": "const formOperation = useOperationPreflight(() => props.product.id);\nformOperation.onInvalidate(() => { saving.value = false; });\nconst serverFeedback = useBoundServerFields(ready, productFormRoot, () => {\n  const fields: Record<string, unknown> = { storeCategoryId: form.categoryId };\n  for (const [id, draft] of Object.entries(drafts)) {\n    fields[`skus.${id}.salePrice`] = draft.price;\n    fields[`skus.${id}.saleCoefficient`] = draft.coefficient;\n  }\n  return fields;\n});\nasync function save() {\n  if (saving.value || !ready.value || !selectedLeaf.value) return;\n  const current = formOperation.capture();\n  let reportFieldError: ReturnType<typeof serverFeedback.begin> | undefined;\n  saving.value = true;\n  try {\n"
+        },
+        {
+          "before": "    )\n      return rejectFormSubmission(productFormRoot.value);\n    const product = await saveStoreFinishedEdit(props.product.id, {\n      storeCategoryId: category.id,\n",
+          "after": "    )\n      return rejectFormSubmission(productFormRoot.value);\n    reportFieldError = serverFeedback.begin();\n    const product = await saveStoreFinishedEdit(props.product.id, {\n      storeCategoryId: category.id,\n"
+        },
+        {
+          "before": "  } catch (error) {\n    if (!current()) return;\n    adminFeedback.error(getSafeErrorMessage(error, '保存商品失败'));\n  } finally {\n",
+          "after": "  } catch (error) {\n    if (!current()) return;\n    if (await reportFieldError?.(error)) return;\n    adminFeedback.error(getSafeErrorMessage(error, '保存商品失败'));\n  } finally {\n"
         }
       ]
     },
     "src/pages/finished-stock/store/index.vue": {
       "baseSha256": "f1f785011a4d1a96737a1b17627dcc8ec77f54e224bfaa60c4f21f79fd6df568",
-      "patchCount": 60,
+      "patchCount": 65,
       "patches": [
         {
           "stage": "before-migrations",
@@ -2575,12 +2764,32 @@
           "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
           "before": "import AdminTopNav from '@/components/AdminTopNav.vue';\nimport { finishedStockActions } from '../shared/finishedStockActions';\nimport { storeOperationLogSourceLabel as logSourceLabel } from './storeOperationLog';\nimport { AdminConfirmDialog, AdminDialog, adminFeedback, getSafeErrorMessage } from '@/components/foundation';\nimport { hasPermission } from '@/services/adminPermissions';\nimport { getLoginUser } from '@/services/auth';\nimport ProductOperationLogTemplate from '@/components/product-logs/ProductOperationLogTemplate.vue';\n",
           "after": "import AdminTopNav from '@/components/AdminTopNav.vue';\nimport { finishedStockActions } from '../shared/finishedStockActions';\nimport { storeOperationLogSourceLabel as logSourceLabel } from './storeOperationLog';\nimport { AdminConfirmDialog, AdminDialog, AdminMediaPreviewDialog, adminFeedback, getSafeErrorMessage } from '@/components/foundation';\nimport { hasPermission } from '@/services/adminPermissions';\nimport { getLoginUser } from '@/services/auth';\nimport ProductOperationLogTemplate from '@/components/product-logs/ProductOperationLogTemplate.vue';\n"
+        },
+        {
+          "before": "              label=\"商品信息调整\" /><t-option value=\"其他\" label=\"其他\" /></t-select\n        ></t-form-item>\n        <t-form-item label=\"详细说明\"\n          ><t-textarea v-model=\"offShelf.detail\" :maxlength=\"100\" placeholder=\"请输入详细说明\" :autosize=\"{}\"\n        /></t-form-item>\n",
+          "after": "              label=\"商品信息调整\" /><t-option value=\"其他\" label=\"其他\" /></t-select\n        ></t-form-item>\n        <t-form-item label=\"详细说明\" v-bind=\"offShelfFeedback.field('detail', offShelf.detail)\"\n          ><t-textarea v-model=\"offShelf.detail\" :maxlength=\"100\" placeholder=\"请输入详细说明\" :autosize=\"{}\"\n        /></t-form-item>\n"
+        },
+        {
+          "before": "\n<script setup lang=\"ts\">\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { usePendingAction } from '@/composables/usePendingAction';\n",
+          "after": "\n<script setup lang=\"ts\">\nimport { useServerFields } from '@/utils/serverFieldValidation';\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { usePendingAction } from '@/composables/usePendingAction';\n"
+        },
+        {
+          "before": "  confirm.value = { kind: action.kind, label: action.label, ids: [...selected.value] };\n}\nasync function confirmOffShelf() {\n  if (submittingOffShelf.value) return;\n",
+          "after": "  confirm.value = { kind: action.kind, label: action.label, ids: [...selected.value] };\n}\nconst beginOffShelfFeedback = useServerFields(\n  () => offShelfVisible.value, offShelfFormRoot, () => ({ ...offShelf }),\n  (key, message) => offShelfFeedback.reject(key, offShelf[key as keyof typeof offShelf], message),\n);\nasync function confirmOffShelf() {\n  if (submittingOffShelf.value) return;\n"
+        },
+        {
+          "before": "  if (!pending) return;\n  submittingOffShelf.value = true;\n  if (pending.batch) offShelfVisible.value = false;\n  try {\n",
+          "after": "  if (!pending) return;\n  submittingOffShelf.value = true;\n  const reportFieldError = beginOffShelfFeedback();\n  if (pending.batch) offShelfVisible.value = false;\n  try {\n"
+        },
+        {
+          "before": "    await load();\n  } catch (error) {\n    if (await refreshAvailability(pending.ids))\n      adminFeedback.error(getSafeErrorMessage(error, pending.batch ? '操作失败' : '下架失败'));\n",
+          "after": "    await load();\n  } catch (error) {\n    if (!pending.batch && await reportFieldError(error)) return;\n    if (await refreshAvailability(pending.ids))\n      adminFeedback.error(getSafeErrorMessage(error, pending.batch ? '操作失败' : '下架失败'));\n"
         }
       ]
     },
     "src/pages/finished-stock/store/price-configuration.vue": {
       "baseSha256": "9dd641cb880655b2268e4158e0c9ec5416d5b44442915e7bae2507cac0c3e44c",
-      "patchCount": 20,
+      "patchCount": 24,
       "patches": [
         {
           "stage": "before-migrations",
@@ -2694,12 +2903,28 @@
           "reason": "分类树显示自身停用状态，单行和批量系数仅接受可用末级",
           "before": "async function savePrices() {\n  if (saving.value || loading.value || !can('batch-set')) return;\n  const editable = categories.value.filter((category) => category.status === 'enabled' && isLeafCategory(category.id));\n  const valid = editable.map((category) => validateCoefficient(category.id)).every(Boolean);\n  if (!valid) {\n",
           "after": "async function savePrices() {\n  if (saving.value || loading.value || !can('batch-set')) return;\n  const editable = categories.value.filter((category) => tree.value.leafIds.has(category.id));\n  const valid = editable.map((category) => validateCoefficient(category.id)).every(Boolean);\n  if (!valid) {\n"
+        },
+        {
+          "before": "</template>\n<script setup lang=\"ts\">\nimport { usePendingAction } from '@/composables/usePendingAction';\nimport { useDelayedLoading } from '@/composables/useDelayedLoading';\n",
+          "after": "</template>\n<script setup lang=\"ts\">\nimport { useServerFieldValidation } from '@/utils/serverFieldValidation';\nimport { usePendingAction } from '@/composables/usePendingAction';\nimport { useDelayedLoading } from '@/composables/useDelayedLoading';\n"
+        },
+        {
+          "before": "const formOperation = useOperationPreflight(() => `${activeScope.value}:${editingDiscountId.value}:${createVisible.value}`);\nformOperation.onInvalidate(() => { saving.value = false; });\nasync function saveDiscount() {\n  if (saving.value || !can(editingDiscountId.value == null ? 'create' : 'edit')) return;\n",
+          "after": "const formOperation = useOperationPreflight(() => `${activeScope.value}:${editingDiscountId.value}:${createVisible.value}`);\nformOperation.onInvalidate(() => { saving.value = false; });\nconst beginSaveDiscountFeedback = useServerFieldValidation(\n  () => createVisible.value, createFormRef,\n  () => ({ roleId: createForm.roleId, coefficient: createForm.coefficient }),\n);\nasync function saveDiscount() {\n  if (saving.value || !can(editingDiscountId.value == null ? 'create' : 'edit')) return;\n"
+        },
+        {
+          "before": "  const current = formOperation.capture();\n  saving.value = true;\n  try {\n    const valid = await createFormRef.value?.validate();\n",
+          "after": "  const current = formOperation.capture();\n  saving.value = true;\n  const reportFieldError = beginSaveDiscountFeedback();\n  try {\n    const valid = await createFormRef.value?.validate();\n"
+        },
+        {
+          "before": "    adminFeedback.actionSuccess({ action: editingDiscountId.value == null ? '新增' : '修改', target: '折扣配置' });\n  } catch (error) {\n    if (!current()) return;\n    adminFeedback.error(getSafeErrorMessage(error, editing ? '修改失败，请稍后重试' : '新增失败，请稍后重试'));\n",
+          "after": "    adminFeedback.actionSuccess({ action: editingDiscountId.value == null ? '新增' : '修改', target: '折扣配置' });\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    if (!current()) return;\n    adminFeedback.error(getSafeErrorMessage(error, editing ? '修改失败，请稍后重试' : '新增失败，请稍后重试'));\n"
         }
       ]
     },
     "src/pages/finished-stock/supply-chain/index.vue": {
       "baseSha256": "e1587ec2d5c209a426f8bfe9c584eb6a421289c0ef3ca40651b955330d06e1da",
-      "patchCount": 29,
+      "patchCount": 44,
       "patches": [
         {
           "stage": "before-migrations",
@@ -2843,6 +3068,66 @@
           "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
           "before": "  AdminConfirmDialog,\n  AdminDialog,\n  AdminMediaUpload,\n  AdminSectionCard,\n",
           "after": "  AdminConfirmDialog,\n  AdminDialog,\n  AdminMediaPreviewDialog,\n  AdminMediaUpload,\n  AdminSectionCard,\n"
+        },
+        {
+          "before": "                  <h1>{{ formPageTitle }}</h1>\n                  <div class=\"selected-category\">\n                    当前分类：{{ selectedCategoryPath }}\n                    <t-button\n                      v-if=\"formPageMode === 'create'\"\n",
+          "after": "                  <h1>{{ formPageTitle }}</h1>\n                  <div class=\"selected-category\">\n                    <t-form-item v-if=\"productFieldErrors.field('categoryId').status\" v-bind=\"productFieldErrors.field('categoryId')\">当前分类：{{ selectedCategoryPath }}</t-form-item>\n                    <template v-else>当前分类：{{ selectedCategoryPath }}</template>\n                    <t-button\n                      v-if=\"formPageMode === 'create'\"\n"
+        },
+        {
+          "before": "                      :title=\"index === 0 ? '封面图' : `商品主图${index + 1}`\"\n                      accept=\"image/*\"\n                      :error-message=\"submitAttempted && !mainImageMedia && index === 0 ? '请上传图片' : ''\"\n                      :upload=\"(file) => uploadProductMedia(file, 'image')\"\n                      @preview=\"openProductMediaPreview($event, 'image')\"\n",
+          "after": "                      :title=\"index === 0 ? '封面图' : `商品主图${index + 1}`\"\n                      accept=\"image/*\"\n                      :error-message=\"index === 0 ? productFieldErrors.field('mainImageMediaIds').tips || (submitAttempted && !mainImageMedia ? '请上传图片' : '') : ''\"\n                      :upload=\"(file) => uploadProductMedia(file, 'image')\"\n                      @preview=\"openProductMediaPreview($event, 'image')\"\n"
+        },
+        {
+          "before": "                    accept=\"video/*\"\n                    media-type=\"video\"\n                    :error-message=\"submitAttempted && !videoMedia ? '请上传视频' : ''\"\n                    :upload=\"(file) => uploadProductMedia(file, 'video')\"\n                    @preview=\"openProductMediaPreview($event, 'video')\"\n",
+          "after": "                    accept=\"video/*\"\n                    media-type=\"video\"\n                    :error-message=\"productFieldErrors.field('videoMediaId').tips || (submitAttempted && !videoMedia ? '请上传视频' : '')\"\n                    :upload=\"(file) => uploadProductMedia(file, 'video')\"\n                    @preview=\"openProductMediaPreview($event, 'video')\"\n"
+        },
+        {
+          "before": "                  label=\"宝贝详情\"\n                  required-mark\n                  v-bind=\"requiredFieldFeedback(productForm.detail, '宝贝详情', submitAttempted)\"\n                >\n                  <ProductRichEditor\n",
+          "after": "                  label=\"宝贝详情\"\n                  required-mark\n                  v-bind=\"productFieldErrors.field('detail', requiredFieldFeedback(productForm.detail, '宝贝详情', submitAttempted))\"\n                >\n                  <ProductRichEditor\n"
+        },
+        {
+          "before": "                  <t-input\n                    v-model=\"productForm.name\"\n                    v-bind=\"requiredFieldFeedback(productForm.name, '商品名称', submitAttempted)\"\n                    clearable\n                    placeholder=\"请输入商品名称\"\n",
+          "after": "                  <t-input\n                    v-model=\"productForm.name\"\n                    v-bind=\"productFieldErrors.field('name', requiredFieldFeedback(productForm.name, '商品名称', submitAttempted))\"\n                    clearable\n                    placeholder=\"请输入商品名称\"\n"
+        },
+        {
+          "before": "                <t-form-item label=\"供应商\" required-mark>\n                  <t-select\n                    v-bind=\"requiredFieldFeedback(productForm.supplier, '供应商', submitAttempted, true)\"\n                    v-model=\"productForm.supplier\"\n                    clearable\n",
+          "after": "                <t-form-item label=\"供应商\" required-mark>\n                  <t-select\n                    v-bind=\"productFieldErrors.field('supplierId', requiredFieldFeedback(productForm.supplier, '供应商', submitAttempted, true))\"\n                    v-model=\"productForm.supplier\"\n                    clearable\n"
+        },
+        {
+          "before": "                  required-mark\n                  v-bind=\"\n                    !specRows.length\n                      ? fieldFeedback(submitAttempted, '请创建销售规格')\n                      : salesSpecificationFeedback.field('specifications', [\n",
+          "after": "                  required-mark\n                  v-bind=\"\n                    productFieldErrors.field('variants').status\n                      ? productFieldErrors.field('variants')\n                      : !specRows.length\n                      ? fieldFeedback(submitAttempted, '请创建销售规格')\n                      : salesSpecificationFeedback.field('specifications', [\n"
+        },
+        {
+          "before": "          </t-select>\n        </t-form-item>\n        <t-form-item label=\"详细说明\">\n          <t-textarea v-model=\"reasonForm.detail\" :maxlength=\"100\" placeholder=\"请输入详细说明\" :autosize=\"{}\" />\n        </t-form-item>\n",
+          "after": "          </t-select>\n        </t-form-item>\n        <t-form-item label=\"详细说明\" v-bind=\"reasonFeedback.field('detail', reasonForm.detail)\">\n          <t-textarea v-model=\"reasonForm.detail\" :maxlength=\"100\" placeholder=\"请输入详细说明\" :autosize=\"{}\" />\n        </t-form-item>\n"
+        },
+        {
+          "before": "\n<script setup lang=\"ts\">\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { useDialogLoading } from '@/composables/useDialogLoading';\n",
+          "after": "\n<script setup lang=\"ts\">\nimport { useServerFields, useBoundServerFields } from '@/utils/serverFieldValidation';\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { useDialogLoading } from '@/composables/useDialogLoading';\n"
+        },
+        {
+          "before": "  });\n};\nconst submitProductForm = async () => {\n  newSpecsAwaitingSubmit.value = false;\n",
+          "after": "  });\n};\nconst productFieldErrors = useBoundServerFields(formPageVisible, productFormRoot, () => ({\n  ...(formPageMode.value === 'create' ? { categoryId: selectedCategoryId.value } : {}),\n  name: productForm.name,\n  detail: productForm.detail,\n  supplierId: productForm.supplier,\n  mainImageMediaIds: mainImageSlots.value.map(item => item?.mediaId),\n  videoMediaId: videoMedia.value?.mediaId,\n  variants: specRows.value,\n}), {\n  reveal: field => {\n    const section = field.closest('[id^=\"finished-product-\"]')?.id.replace('finished-product-', '');\n    if (section === 'base' || section === 'sales' || section === 'description') activeFormSection.value = section;\n  },\n});\nconst submitProductForm = async () => {\n  newSpecsAwaitingSubmit.value = false;\n"
+        },
+        {
+          "before": "  const issues = validateProductForm();\n  if (issues.length) return rejectProductForm(issues);\n  const isCreate = formPageMode.value !== 'edit' || !editingProduct.value;\n  saving.value = true;\n",
+          "after": "  const issues = validateProductForm();\n  if (issues.length) return rejectProductForm(issues);\n  const reportFieldError = productFieldErrors.begin();\n  const isCreate = formPageMode.value !== 'edit' || !editingProduct.value;\n  saving.value = true;\n"
+        },
+        {
+          "before": "    }\n  } catch (error) {\n    adminFeedback.error(error instanceof Error ? error.message : '商品提交失败');\n  } finally {\n",
+          "after": "    }\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    adminFeedback.error(error instanceof Error ? error.message : '商品提交失败');\n  } finally {\n"
+        },
+        {
+          "before": "  reasonDialogVisible.value = false;\n};\nconst submitReason = async () => {\n  if (!reasonForm.reason) {\n",
+          "after": "  reasonDialogVisible.value = false;\n};\nconst beginReasonFeedback = useServerFields(\n  () => reasonDialogVisible.value, reasonFormRoot, () => ({ ...reasonForm }),\n  (key, message) => reasonFeedback.reject(key, reasonForm[key as keyof typeof reasonForm], message),\n);\nconst submitReason = async () => {\n  if (!reasonForm.reason) {\n"
+        },
+        {
+          "before": "    return rejectFormSubmission(reasonFormRoot.value);\n  }\n  saving.value = true;\n  try {\n",
+          "after": "    return rejectFormSubmission(reasonFormRoot.value);\n  }\n  const reportFieldError = beginReasonFeedback();\n  saving.value = true;\n  try {\n"
+        },
+        {
+          "before": "      adminFeedback.success('商品已下架');\n    }\n  } catch (error) {\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  } finally {\n    closeReasonDialog();\n    saving.value = false;\n  }\n",
+          "after": "      adminFeedback.success('商品已下架');\n    }\n    closeReasonDialog();\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    closeReasonDialog();\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  } finally {\n    saving.value = false;\n  }\n"
         }
       ]
     },
@@ -2889,7 +3174,7 @@
     },
     "src/pages/order/prototype/index.vue": {
       "baseSha256": "ff3c5f3cbc085070d7ce4d9a0457c1441a23759cd18681c34794378ebcd6ac02",
-      "patchCount": 17,
+      "patchCount": 21,
       "patches": [
         {
           "stage": "before-migrations",
@@ -2977,12 +3262,28 @@
           "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
           "before": "  AdminConfirmDialog,\n  AdminDialog,\n  adminFeedback,\n  type ListAction,\n",
           "after": "  AdminConfirmDialog,\n  AdminDialog,\n  AdminMediaPreviewDialog,\n  adminFeedback,\n  type ListAction,\n"
+        },
+        {
+          "before": "import { usePendingAction } from '@/composables/usePendingAction';\nimport { useOperationPreflight } from '@/composables/useOperationPreflight';\nimport { ApiFieldError, OperationBlockedError } from '@/services/http';\nimport { orderConfirmationBlock, requireOrderField } from './model';\nimport { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue';\n",
+          "after": "import { usePendingAction } from '@/composables/usePendingAction';\nimport { useOperationPreflight } from '@/composables/useOperationPreflight';\nimport { useServerFields } from '@/utils/serverFieldValidation';\nimport { OperationBlockedError } from '@/services/http';\nimport { orderConfirmationBlock, requireOrderField } from './model';\nimport { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue';\n"
+        },
+        {
+          "before": "  settingVisible.value = true;\n}\nasync function addSetting() {\n  if (settingsSaving.value || !canSetting(editingSettingId.value ? 'edit' : 'create')) return;\n",
+          "after": "  settingVisible.value = true;\n}\nconst beginSettingFeedback = useServerFields(\n  () => settingVisible.value, settingDialog, () => ({ name: settingName.value }),\n  (field, message) => settingFeedback.reject(field, settingName.value, message),\n  undefined, field => settingFeedback.clearField(field),\n);\nasync function addSetting() {\n  if (settingsSaving.value || !canSetting(editingSettingId.value ? 'edit' : 'create')) return;\n"
+        },
+        {
+          "before": "    return;\n  }\n  const scope = key.value,\n    editing = Boolean(editingSettingId.value);\n",
+          "after": "    return;\n  }\n  const reportFieldError = beginSettingFeedback();\n  const scope = key.value,\n    editing = Boolean(editingSettingId.value);\n"
+        },
+        {
+          "before": "  } catch (error) {\n    if (scope !== key.value) return;\n    if (error instanceof ApiFieldError && error.field === 'name') {\n      settingFeedback.reject('name', settingName.value, error.message);\n      await rejectFormSubmission(settingDialog.value);\n    } else {\n      adminFeedback.actionError({ action: editing ? '修改' : '新增', error });\n    }\n",
+          "after": "  } catch (error) {\n    if (scope !== key.value) return;\n    if (!(await reportFieldError(error))) {\n      adminFeedback.actionError({ action: editing ? '修改' : '新增', error });\n    }\n"
         }
       ]
     },
     "src/pages/permission/employee/index.vue": {
       "baseSha256": "46c56961a34772b9213ae0a8339912aefb65e92a5d333f39bb161addd37d85e0",
-      "patchCount": 15,
+      "patchCount": 18,
       "patches": [
         {
           "stage": "before-migrations",
@@ -3061,6 +3362,18 @@
         {
           "before": "  void loadPermissionCenter();\n});\n</script>\n\n",
           "after": "  void loadPermissionCenter();\n});\n\nconst inviteIndicator = useDelayedLoading(() => Boolean(inviteCreating.value));\nconst contentLoading = listRequest.indicator;\n\nconst { pending: handleProfileSubmitPending, run: handleProfileSubmitOnce } = usePendingAction(handleProfileSubmit);\nconst handleProfileSubmitButton = useDialogLoading(() => profileDialogVisible.value, () => dialogButtonProps('submit', formConfirmation('edit'), { loading: handleProfileSubmitPending.value }));\nconst { pending: handlePermissionSubmitPending, run: handlePermissionSubmitOnce } = usePendingAction(handlePermissionSubmit);\nconst handlePermissionSubmitButton = useDialogLoading(() => permissionDialogVisible.value, () => dialogButtonProps('permissions', operationConfirmation('配置权限'), { loading: handlePermissionSubmitPending.value }));\n</script>\n\n"
+        },
+        {
+          "before": "      {{ confirmText }}\n    </AdminConfirmDialog>\n  </div>\n</template>\n\n<script setup lang=\"ts\">\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { useDialogLoading } from '@/composables/useDialogLoading';\nimport { usePendingAction } from '@/composables/usePendingAction';\nimport { useDelayedLoading } from '@/composables/useDelayedLoading';\nimport { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';\nimport { useOperationPreflight } from '@/composables/useOperationPreflight';\n",
+          "after": "      {{ confirmText }}\n    </AdminConfirmDialog>\n  </div>\n</template>\n\n<script setup lang=\"ts\">\nimport { useServerFieldValidation } from '@/utils/serverFieldValidation';\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { useDialogLoading } from '@/composables/useDialogLoading';\nimport { usePendingAction } from '@/composables/usePendingAction';\nimport { useDelayedLoading } from '@/composables/useDelayedLoading';\nimport { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';\nimport { useOperationPreflight } from '@/composables/useOperationPreflight';\n"
+        },
+        {
+          "before": "\nconst closePermissionDialog = () => {\n  permissionDialogVisible.value = false;\n  permissionFormRef.value?.clearValidate();\n};\n\nconst handleProfileSubmit = async () => {\n  if ((await profileFormRef.value?.validate()) !== true) return rejectFormSubmission(profileFormRef.value);\n\n  if (activeEmployee.value) {\n    try {\n      const updated = await (\n        activeEmployee.value.identityType === 'supply_chain_admin' ? updateSupplyChainAdministrator : updateEmployee\n      )(\n        activeEmployee.value.id,\n        toEmployeePayload({\n",
+          "after": "\nconst closePermissionDialog = () => {\n  permissionDialogVisible.value = false;\n  permissionFormRef.value?.clearValidate();\n};\n\nconst beginProfileFeedback = useServerFieldValidation(\n  () => profileDialogVisible.value, profileFormRef, () => ({ ...profileFormData }),\n);\nconst handleProfileSubmit = async () => {\n  if ((await profileFormRef.value?.validate()) !== true) return rejectFormSubmission(profileFormRef.value);\n\n  if (activeEmployee.value) {\n    const reportFieldError = beginProfileFeedback();\n    try {\n      const updated = await (\n        activeEmployee.value.identityType === 'supply_chain_admin' ? updateSupplyChainAdministrator : updateEmployee\n      )(\n        activeEmployee.value.id,\n        toEmployeePayload({\n"
+        },
+        {
+          "before": "      const targetIndex = employees.value.findIndex((employee) => employee.id === activeEmployee.value?.id);\n      if (targetIndex !== -1) {\n        employees.value.splice(targetIndex, 1, toEmployeeItem(updated));\n      }\n      adminFeedback.actionSuccess({ action: '修改' });\n    } catch (error) {\n      adminFeedback.error(error instanceof Error ? error.message : '更新失败');\n      return;\n    }\n  }\n\n  closeProfileDialog();\n};\n\nconst handlePermissionSubmit = async () => {\n  if ((await permissionFormRef.value?.validate()) !== true) return rejectFormSubmission(permissionFormRef.value);\n  if (!permissionFormData.roleIds.length) {\n    return;\n  }\n  if (!permissionFormData.dataPermission) {\n    return;\n  }\n  if (activeEmployee.value) {\n    try {\n      const updated = await updateEmployeePermissions(activeEmployee.value.id, {\n        roleIds: permissionFormData.roleIds.join(','),\n        dataPermission: permissionFormData.dataPermission,\n      });\n      const targetIndex = employees.value.findIndex((employee) => employee.id === activeEmployee.value?.id);\n      if (targetIndex !== -1) {\n        employees.value.splice(targetIndex, 1, toEmployeeItem(updated));\n      }\n      adminFeedback.actionSuccess({ action: '修改' });\n    } catch (error) {\n      adminFeedback.error(error instanceof Error ? error.message : '更新失败');\n      return;\n    }\n  }\n\n  closePermissionDialog();\n",
+          "after": "      const targetIndex = employees.value.findIndex((employee) => employee.id === activeEmployee.value?.id);\n      if (targetIndex !== -1) {\n        employees.value.splice(targetIndex, 1, toEmployeeItem(updated));\n      }\n      adminFeedback.actionSuccess({ action: '修改' });\n    } catch (error) {\n      if (await reportFieldError(error)) return;\n      adminFeedback.error(error instanceof Error ? error.message : '更新失败');\n      return;\n    }\n  }\n\n  closeProfileDialog();\n};\n\nconst beginPermissionFeedback = useServerFieldValidation(\n  () => permissionDialogVisible.value, permissionFormRef, () => ({ ...permissionFormData }),\n);\nconst handlePermissionSubmit = async () => {\n  if ((await permissionFormRef.value?.validate()) !== true) return rejectFormSubmission(permissionFormRef.value);\n  if (!permissionFormData.roleIds.length) {\n    return;\n  }\n  if (!permissionFormData.dataPermission) {\n    return;\n  }\n  if (activeEmployee.value) {\n    const reportFieldError = beginPermissionFeedback();\n    try {\n      const updated = await updateEmployeePermissions(activeEmployee.value.id, {\n        roleIds: permissionFormData.roleIds.join(','),\n        dataPermission: permissionFormData.dataPermission,\n      });\n      const targetIndex = employees.value.findIndex((employee) => employee.id === activeEmployee.value?.id);\n      if (targetIndex !== -1) {\n        employees.value.splice(targetIndex, 1, toEmployeeItem(updated));\n      }\n      adminFeedback.actionSuccess({ action: '修改' });\n    } catch (error) {\n      if (await reportFieldError(error)) return;\n      adminFeedback.error(error instanceof Error ? error.message : '更新失败');\n      return;\n    }\n  }\n\n  closePermissionDialog();\n"
         }
       ]
     },
@@ -3116,7 +3429,7 @@
     },
     "src/pages/product/attribute-value/index.vue": {
       "baseSha256": "5b2fe9b3f9019ed577c60c50ec3fc546b8697276abbf866728e2b1c824cbf6a6",
-      "patchCount": 14,
+      "patchCount": 18,
       "patches": [
         {
           "stage": "before-migrations",
@@ -3191,12 +3504,28 @@
         {
           "before": "  confirmTarget.value = null;\n});\n</script>\n\n",
           "after": "  confirmTarget.value = null;\n});\n\nconst contentLoading = listRequest.indicator;\n\nconst { pending: submitPending, run: submitOnce } = usePendingAction(submit);\n</script>\n\n"
+        },
+        {
+          "before": "\n<script setup lang=\"ts\">\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { usePendingAction } from '@/composables/usePendingAction';\n",
+          "after": "\n<script setup lang=\"ts\">\nimport { useServerFieldValidation } from '@/utils/serverFieldValidation';\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { usePendingAction } from '@/composables/usePendingAction';\n"
+        },
+        {
+          "before": "  formRef.value?.clearValidate();\n};\nconst submit = async () => {\n  const result = await formRef.value?.validate();\n",
+          "after": "  formRef.value?.clearValidate();\n};\nconst beginSubmitFeedback = useServerFieldValidation(\n  () => dialogVisible.value, formRef,\n  () => ({ value: form.name, attributeId: form.attribute }),\n  { names: { value: 'name', attributeId: 'attribute' } },\n);\nconst submit = async () => {\n  const result = await formRef.value?.validate();\n"
+        },
+        {
+          "before": "    return rejectFormSubmission(formRef.value);\n  }\n  try {\n    await createProductAttributeValue({\n",
+          "after": "    return rejectFormSubmission(formRef.value);\n  }\n  const reportFieldError = beginSubmitFeedback();\n  try {\n    await createProductAttributeValue({\n"
+        },
+        {
+          "before": "    void loadValues();\n  } catch (error) {\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n",
+          "after": "    void loadValues();\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n"
         }
       ]
     },
     "src/pages/product/attribute/index.vue": {
       "baseSha256": "0acfd70bf9f3452864fd54b0bfe14e5f055c7051f7e2e8796800e69a22309935",
-      "patchCount": 16,
+      "patchCount": 19,
       "patches": [
         {
           "stage": "before-migrations",
@@ -3285,12 +3614,24 @@
         {
           "before": "  confirmTarget.value = null;\n});\n</script>\n\n",
           "after": "  confirmTarget.value = null;\n});\n\nconst contentLoading = listRequest.indicator;\n\nconst { pending: submitPending, run: submitOnce } = usePendingAction(submit);\n</script>\n\n"
+        },
+        {
+          "before": "\n<script setup lang=\"ts\">\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { usePendingAction } from '@/composables/usePendingAction';\n",
+          "after": "\n<script setup lang=\"ts\">\nimport { useServerFieldValidation } from '@/utils/serverFieldValidation';\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { usePendingAction } from '@/composables/usePendingAction';\n"
+        },
+        {
+          "before": "  formRef.value?.clearValidate();\n};\nconst submit = async () => {\n  const result = await formRef.value?.validate();\n  if (result !== true) return rejectFormSubmission(formRef.value);\n  const name = form.name.trim();\n  try {\n    await createProductAttribute({\n",
+          "after": "  formRef.value?.clearValidate();\n};\nconst beginSubmitFeedback = useServerFieldValidation(\n  () => dialogVisible.value, formRef,\n  () => ({ name: form.name, valueType: form.valueType }),\n);\nconst submit = async () => {\n  const result = await formRef.value?.validate();\n  if (result !== true) return rejectFormSubmission(formRef.value);\n  const name = form.name.trim();\n  const reportFieldError = beginSubmitFeedback();\n  try {\n    await createProductAttribute({\n"
+        },
+        {
+          "before": "    void loadAttributes();\n  } catch (error) {\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n",
+          "after": "    void loadAttributes();\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n"
         }
       ]
     },
     "src/pages/product/category-attribute-template/index.vue": {
       "baseSha256": "90bcf5cad3bc1de818bece56995c4077e25cfc36536d7876adc72250b06c5e4c",
-      "patchCount": 19,
+      "patchCount": 30,
       "patches": [
         {
           "stage": "before-migrations",
@@ -3382,12 +3723,56 @@
         {
           "before": "  publishVisible.value = false;\n});\n</script>\n<style scoped>\n",
           "after": "  publishVisible.value = false;\n});\n\nconst contentLoading = useDelayedLoading(() => Boolean(loading.value));\n</script>\n<style scoped>\n"
+        },
+        {
+          "before": "                                    validatedAttributeIds.includes(row.attributeId) && !row.attributeRole\n                                      ? 'error'\n                                      : undefined\n                                  \"\n                                  :tips=\"\n                                    validatedAttributeIds.includes(row.attributeId) && !row.attributeRole\n                                      ? '请选择属性角色'\n                                      : undefined\n                                  \"\n                                  :options=\"[\n",
+          "after": "                                    validatedAttributeIds.includes(row.attributeId) && !row.attributeRole\n                                      ? 'error'\n                                      : rowFeedback.field(attributeKey(row, 'attributeRole'), row.attributeRole).status\n                                  \"\n                                  :tips=\"\n                                    validatedAttributeIds.includes(row.attributeId) && !row.attributeRole\n                                      ? '请选择属性角色'\n                                      : rowFeedback.field(attributeKey(row, 'attributeRole'), row.attributeRole).tips\n                                  \"\n                                  :options=\"[\n"
+        },
+        {
+          "before": "                                <t-form-item\n                                  v-if=\"\n                                    validatedAttributeIds.includes(row.attributeId) &&\n                                    row.valueType === 'select' &&\n                                    !row.options.length\n                                  \"\n                                  status=\"error\"\n                                  tips=\"请选择选项值\"\n                                >\n                                  <t-link hover=\"color\" :theme=\"buttonTheme('options')\" @click=\"openValues(row)\">{{\n",
+          "after": "                                <t-form-item\n                                  v-if=\"\n                                    row.valueType === 'select' && (rowFeedback.field(attributeKey(row, 'options'), row.options).status ||\n                                    (validatedAttributeIds.includes(row.attributeId) && !row.options.length))\n                                  \"\n                                  status=\"error\"\n                                  :tips=\"rowFeedback.field(attributeKey(row, 'options'), row.options).tips || '请选择选项值'\"\n                                >\n                                  <t-link hover=\"color\" :theme=\"buttonTheme('options')\" @click=\"openValues(row)\">{{\n"
+        },
+        {
+          "before": "import { operationConfirmation, formConfirmation } from '@/components/foundation/actions/confirmation';\nimport { buttonTheme } from '@/components/foundation/actions/buttonFunctions';\nimport { rejectFormSubmission } from '@/utils/submitValidation';\nimport { toRaw, computed, h, onBeforeUnmount, onMounted, ref, watch } from 'vue';\n",
+          "after": "import { operationConfirmation, formConfirmation } from '@/components/foundation/actions/confirmation';\nimport { buttonTheme } from '@/components/foundation/actions/buttonFunctions';\nimport { ApiFieldError } from '@/services/http';\nimport { useFormFeedback } from '@/utils/formValidation';\nimport { useServerFields } from '@/utils/serverFieldValidation';\nimport { rejectFormSubmission } from '@/utils/submitValidation';\nimport { toRaw, computed, h, onBeforeUnmount, onMounted, ref, watch } from 'vue';\n"
+        },
+        {
+          "before": "  });\n}\nfunction save(): Promise<boolean> {\n  if (savePromise) return savePromise;\n",
+          "after": "  });\n}\nconst rowFeedback = useFormFeedback();\nwatch(selectedId, rowFeedback.clear, { flush: 'sync' });\nconst attributeKey = (row: TemplateAttribute, property: string) => `attributes.${row.attributeId}.${property}`;\nconst rowValues = computed(() => Object.fromEntries(rows.value.flatMap(row => [\n  [attributeKey(row, 'attributeRole'), row.attributeRole], [attributeKey(row, 'options'), row.options],\n])));\nconst beginRowFeedback = useServerFields(\n  () => isDraft.value, versionLayout, () => rowValues.value,\n  (field, message) => rowFeedback.reject(field, rowValues.value[field], message),\n  undefined, rowFeedback.clearField,\n);\nfunction save(): Promise<boolean> {\n  if (savePromise) return savePromise;\n"
+        },
+        {
+          "before": "  const draftId = selected.value.id;\n  savePromise = (async () => {\n    try {\n      // Serialize saves so rapid edits always use the latest server revision.\n",
+          "after": "  const draftId = selected.value.id;\n  savePromise = (async () => {\n    let report: ReturnType<typeof beginRowFeedback> | undefined;\n    try {\n      // Serialize saves so rapid edits always use the latest server revision.\n"
+        },
+        {
+          "before": "        const snapshot = JSON.stringify([content(), note.value]);\n        const [draftContent, draftNote] = JSON.parse(snapshot) as [TemplateVersion['content'], string];\n        const updated = await saveTemplateDraft(draftId, selected.value.revision, draftContent, draftNote);\n        versions.value = versions.value.map((version) => (version.id === draftId ? updated : version));\n",
+          "after": "        const snapshot = JSON.stringify([content(), note.value]);\n        const [draftContent, draftNote] = JSON.parse(snapshot) as [TemplateVersion['content'], string];\n        report = beginRowFeedback({ inlineOnly: true });\n        const updated = await saveTemplateDraft(draftId, selected.value.revision, draftContent, draftNote);\n        versions.value = versions.value.map((version) => (version.id === draftId ? updated : version));\n"
+        },
+        {
+          "before": "      return true;\n    } catch (e) {\n      error(e, '保存', '草稿');\n      return false;\n    } finally {\n",
+          "after": "      return true;\n    } catch (e) {\n      if (selected.value?.id === draftId && !(await report?.(e))) error(e, '保存', '草稿');\n      return false;\n    } finally {\n"
+        },
+        {
+          "before": "}\nconst publishVisible = ref(false);\nasync function preparePublish() {\n  const id = categoryId.value;\n",
+          "after": "}\nconst publishVisible = ref(false);\nasync function saveBeforePublish() {\n  if (await save()) return true;\n  const index = rows.value.findIndex(row =>\n    rowFeedback.field(attributeKey(row, 'attributeRole'), row.attributeRole).status ||\n    rowFeedback.field(attributeKey(row, 'options'), row.options).status);\n  if (index >= 0) {\n    publishVisible.value = false;\n    attributePage.value = Math.floor(index / attributePageSize.value) + 1;\n    await rejectFormSubmission(versionLayout.value);\n  }\n  return false;\n}\nasync function preparePublish() {\n  const id = categoryId.value;\n"
+        },
+        {
+          "before": "  await operations.check(`publish:${id}`, () => checkTemplateCategory(id, 'publish').then(requireCondition), async () => {\n    const current = operations.capture();\n    if (!(await save()) || !current()) return;\n    validatedAttributeIds.value = rows.value.map((row) => row.attributeId);\n    if (\n",
+          "after": "  await operations.check(`publish:${id}`, () => checkTemplateCategory(id, 'publish').then(requireCondition), async () => {\n    const current = operations.capture();\n    if (!(await saveBeforePublish()) || !current()) return;\n    validatedAttributeIds.value = rows.value.map((row) => row.attributeId);\n    if (\n"
+        },
+        {
+          "before": "  const current = operations.capture();\n  busy.value = true;\n  try {\n    if (!(await save()) || !current() || selected.value?.id !== id) return;\n    const published = await publishTemplateDraft(id, selected.value.revision);\n    if (!current()) return;\n",
+          "after": "  const current = operations.capture();\n  busy.value = true;\n  let report: ReturnType<typeof beginRowFeedback> | undefined;\n  try {\n    if (!(await saveBeforePublish()) || !current() || selected.value?.id !== id) return;\n    report = beginRowFeedback();\n    const published = await publishTemplateDraft(id, selected.value.revision);\n    if (!current()) return;\n"
+        },
+        {
+          "before": "    adminFeedback.actionSuccess({ action: '发布', target: '新版本' });\n  } catch (e) {\n    if (current()) error(e, '发布', '新版本');\n  } finally {\n    if (current()) busy.value = false;\n",
+          "after": "    adminFeedback.actionSuccess({ action: '发布', target: '新版本' });\n  } catch (e) {\n    if (!current() || selected.value?.id !== id) return;\n    if (e instanceof ApiFieldError) {\n      const index = rows.value.findIndex(row => e.fields.some(item =>\n        item.field === attributeKey(row, 'attributeRole') || item.field === attributeKey(row, 'options')));\n      if (index >= 0) {\n        attributePage.value = Math.floor(index / attributePageSize.value) + 1;\n        publishVisible.value = false;\n        busy.value = false;\n      }\n    }\n    if (!(await report?.(e))) error(e, '发布', '新版本');\n  } finally {\n    if (current()) busy.value = false;\n"
         }
       ]
     },
     "src/pages/product/category/index.vue": {
       "baseSha256": "d0c3e9bc240c62acc821fb519b0a41a7b8e3c3f693eb8c564e4b74336713d6ca",
-      "patchCount": 25,
+      "patchCount": 29,
       "patches": [
         {
           "stage": "before-migrations",
@@ -3515,12 +3900,28 @@
         {
           "before": "<span class=\"level-label\">{{ levelLabel(row.level) }}</span>",
           "after": "<span class=\"level-label\">{{ row.level }}级分类</span>"
+        },
+        {
+          "before": "\n<script setup lang=\"ts\">\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { useDialogLoading } from '@/composables/useDialogLoading';\n",
+          "after": "\n<script setup lang=\"ts\">\nimport { useServerFieldValidation } from '@/utils/serverFieldValidation';\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { useDialogLoading } from '@/composables/useDialogLoading';\n"
+        },
+        {
+          "before": "  formVisible.value = false;\n}\nasync function handleSubmit() {\n  const result = await formRef.value?.validate();\n",
+          "after": "  formVisible.value = false;\n}\nconst beginHandleSubmitFeedback = useServerFieldValidation(\n  () => formVisible.value, formRef,\n  () => ({ name: formData.name }),\n);\nasync function handleSubmit() {\n  const result = await formRef.value?.validate();\n"
+        },
+        {
+          "before": "  }\n  const name = formData.name.trim();\n  try {\n    if (formMode.value === 'create') {\n",
+          "after": "  }\n  const name = formData.name.trim();\n  const reportFieldError = beginHandleSubmitFeedback();\n  try {\n    if (formMode.value === 'create') {\n"
+        },
+        {
+          "before": "    await loadCategories();\n  } catch (error) {\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n",
+          "after": "    await loadCategories();\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n"
         }
       ]
     },
     "src/pages/product/markup-configuration/index.vue": {
       "baseSha256": "d69caf8ea2cc461065afd84d0232145b6ef6b919127078c5b2dad73b2b6f297e",
-      "patchCount": 20,
+      "patchCount": 26,
       "patches": [
         {
           "stage": "before-migrations",
@@ -3619,12 +4020,36 @@
         {
           "before": "  confirmRow.value = null;\n});\n</script>\n\n",
           "after": "  confirmRow.value = null;\n});\n\nconst guideIndicator = useDelayedLoading(() => Boolean(guideSaving.value));\nconst contentLoading = listRequest.indicator;\n\nconst { pending: submitFormPending, run: submitFormOnce } = usePendingAction(submitForm);\nconst { pending: submitStatusConfirmPending, run: submitStatusConfirmOnce } = usePendingAction(submitStatusConfirm);\n</script>\n\n"
+        },
+        {
+          "before": "\n<script setup lang=\"ts\">\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { usePendingAction } from '@/composables/usePendingAction';\n",
+          "after": "\n<script setup lang=\"ts\">\nimport { useServerFieldValidation } from '@/utils/serverFieldValidation';\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { usePendingAction } from '@/composables/usePendingAction';\n"
+        },
+        {
+          "before": "  }\n};\nconst saveGuidePriceSetting = async () => {\n  if ((await guideFormRef.value?.validate()) !== true) return rejectFormSubmission(guideFormRef.value);\n  const coefficient = Number(guideForm.priceCoefficient);\n  guideSaving.value = true;\n  try {\n",
+          "after": "  }\n};\nconst beginGuideFeedback = useServerFieldValidation(\n  () => Boolean(guideFormRef.value), guideFormRef, () => ({ priceCoefficient: guideForm.priceCoefficient }),\n);\nconst saveGuidePriceSetting = async () => {\n  if ((await guideFormRef.value?.validate()) !== true) return rejectFormSubmission(guideFormRef.value);\n  const coefficient = Number(guideForm.priceCoefficient);\n  const reportFieldError = beginGuideFeedback();\n  const submittedType = activeType.value;\n  guideSaving.value = true;\n  try {\n"
+        },
+        {
+          "before": "    });\n  } catch (error) {\n    adminFeedback.error(error instanceof Error ? error.message : '指导价设置保存失败');\n  } finally {\n",
+          "after": "    });\n  } catch (error) {\n    if (submittedType !== activeType.value || await reportFieldError(error)) return;\n    adminFeedback.error(error instanceof Error ? error.message : '指导价设置保存失败');\n  } finally {\n"
+        },
+        {
+          "before": "  }\n};\nconst submitForm = async () => {\n  if ((await formRef.value?.validate()) !== true) return rejectFormSubmission(formRef.value);\n",
+          "after": "  }\n};\nconst beginSubmitFormFeedback = useServerFieldValidation(\n  () => formVisible.value, formRef,\n  () => ({ storeLevelId: formData.storeLevelId, priceCoefficient: formData.priceCoefficient }),\n);\nconst submitForm = async () => {\n  if ((await formRef.value?.validate()) !== true) return rejectFormSubmission(formRef.value);\n"
+        },
+        {
+          "before": "  const name = storeLevels.value.find((level) => level.id === formData.storeLevelId)?.name ?? '门店级别';\n  const payload = { storeLevelId: formData.storeLevelId, priceCoefficient: Number(formData.priceCoefficient) };\n  try {\n    if (activeType.value !== 'slab') {\n",
+          "after": "  const name = storeLevels.value.find((level) => level.id === formData.storeLevelId)?.name ?? '门店级别';\n  const payload = { storeLevelId: formData.storeLevelId, priceCoefficient: Number(formData.priceCoefficient) };\n  const reportFieldError = beginSubmitFormFeedback();\n  try {\n    if (activeType.value !== 'slab') {\n"
+        },
+        {
+          "before": "    else adminFeedback.created(name);\n  } catch (error) {\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n",
+          "after": "    else adminFeedback.created(name);\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n"
         }
       ]
     },
     "src/pages/role/management/index.vue": {
       "baseSha256": "bb11f2cdd5000139d47396ea04f251f783c80fb39dfe39a67d9c5325bba6d839",
-      "patchCount": 18,
+      "patchCount": 22,
       "patches": [
         {
           "stage": "before-migrations",
@@ -3712,6 +4137,22 @@
         {
           "before": "  void loadRoles();\n});\n</script>\n\n",
           "after": "  void loadRoles();\n});\n\nconst contentLoading = listRequest.indicator;\n\nconst { pending: handleSubmitPending, run: handleSubmitOnce } = usePendingAction(handleSubmit);\nconst handleSubmitButton = useDialogLoading(() => formDialogVisible.value, () => dialogButtonProps('submit', formConfirmation(dialogMode.value), { loading: handleSubmitPending.value }));\nconst { pending: handlePermissionSavePending, run: handlePermissionSaveOnce } = usePendingAction(handlePermissionSave);\nconst handlePermissionSaveButton = useDialogLoading(() => permissionDialogVisible.value, () => dialogButtonProps('permissions', operationConfirmation('配置权限'), { loading: handlePermissionSavePending.value }));\n</script>\n\n"
+        },
+        {
+          "before": "\n<script setup lang=\"ts\">\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { useDialogLoading } from '@/composables/useDialogLoading';\n",
+          "after": "\n<script setup lang=\"ts\">\nimport { useServerFieldValidation } from '@/utils/serverFieldValidation';\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { useDialogLoading } from '@/composables/useDialogLoading';\n"
+        },
+        {
+          "before": "};\n\nconst handleSubmit = async () => {\n  const result = await formRef.value?.validate();\n",
+          "after": "};\n\nconst beginHandleSubmitFeedback = useServerFieldValidation(\n  () => formDialogVisible.value, formRef,\n  () => ({ name: formData.name, remark: formData.remark }),\n);\nconst handleSubmit = async () => {\n  const result = await formRef.value?.validate();\n"
+        },
+        {
+          "before": "\n  let refresh = false;\n  try {\n    if (dialogMode.value === 'create') {\n",
+          "after": "\n  let refresh = false;\n  const reportFieldError = beginHandleSubmitFeedback();\n  try {\n    if (dialogMode.value === 'create') {\n"
+        },
+        {
+          "before": "    if (refresh) void loadRoles();\n  } catch (error) {\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n",
+          "after": "    if (refresh) void loadRoles();\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n"
         }
       ]
     },
@@ -3865,7 +4306,7 @@
     },
     "src/pages/slab/color/index.vue": {
       "baseSha256": "8f6dcf874ece4bec83580d7d96a2ce6dfc653bb3ad8b7cbb122c1b9b704d55f3",
-      "patchCount": 24,
+      "patchCount": 30,
       "patches": [
         {
           "stage": "before-migrations",
@@ -3986,12 +4427,36 @@
         {
           "before": "  await Promise.all([loadColors(), loadCategories()]);\n});\n</script>\n\n",
           "after": "  await Promise.all([loadColors(), loadCategories()]);\n});\n\nconst contentLoading = listRequest.indicator;\n\nconst { pending: submitColorPending, run: submitColorOnce } = usePendingAction(submitColor);\nconst { pending: submitCategoryPending, run: submitCategoryOnce } = usePendingAction(submitCategory);\n</script>\n\n"
+        },
+        {
+          "before": "\n<script setup lang=\"ts\">\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { usePendingAction } from '@/composables/usePendingAction';\n",
+          "after": "\n<script setup lang=\"ts\">\nimport { useServerFieldValidation } from '@/utils/serverFieldValidation';\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { usePendingAction } from '@/composables/usePendingAction';\n"
+        },
+        {
+          "before": "  formRef.value?.clearValidate();\n};\nconst submitColor = async () => {\n  if ((await formRef.value?.validate()) !== true || !formData.categoryId) return rejectFormSubmission(formRef.value);\n",
+          "after": "  formRef.value?.clearValidate();\n};\nconst beginSubmitColorFeedback = useServerFieldValidation(\n  () => formVisible.value, formRef,\n  () => ({ name: formData.name, categoryId: formData.categoryId, remark: formData.remark }),\n);\nconst submitColor = async () => {\n  if ((await formRef.value?.validate()) !== true || !formData.categoryId) return rejectFormSubmission(formRef.value);\n"
+        },
+        {
+          "before": "    remark: formData.remark.trim(),\n  };\n  try {\n    if (editingId.value) await updateSlabColor(editingId.value, payload);\n",
+          "after": "    remark: formData.remark.trim(),\n  };\n  const reportFieldError = beginSubmitColorFeedback();\n  try {\n    if (editingId.value) await updateSlabColor(editingId.value, payload);\n"
+        },
+        {
+          "before": "    else adminFeedback.created(target);\n  } catch (error) {\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n",
+          "after": "    else adminFeedback.created(target);\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n"
+        },
+        {
+          "before": "  categoryFormRef.value?.clearValidate();\n};\nconst submitCategory = async () => {\n  if ((await categoryFormRef.value?.validate()) !== true) return rejectFormSubmission(categoryFormRef.value);\n  const payload = { name: categoryForm.name.trim(), remark: categoryForm.remark.trim() };\n  try {\n    if (editingCategoryId.value) await updateSlabColorCategory(editingCategoryId.value, payload);\n",
+          "after": "  categoryFormRef.value?.clearValidate();\n};\nconst beginSubmitCategoryFeedback = useServerFieldValidation(\n  () => categoryFormVisible.value, categoryFormRef,\n  () => ({ name: categoryForm.name, remark: categoryForm.remark }),\n);\nconst submitCategory = async () => {\n  if ((await categoryFormRef.value?.validate()) !== true) return rejectFormSubmission(categoryFormRef.value);\n  const payload = { name: categoryForm.name.trim(), remark: categoryForm.remark.trim() };\n  const reportFieldError = beginSubmitCategoryFeedback();\n  try {\n    if (editingCategoryId.value) await updateSlabColorCategory(editingCategoryId.value, payload);\n"
+        },
+        {
+          "before": "    void loadCategories();\n  } catch (error) {\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n",
+          "after": "    void loadCategories();\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n"
         }
       ]
     },
     "src/pages/slab/grade/index.vue": {
       "baseSha256": "f0e80d39b6e3a5dcca10ee8bff19bb007495ee6444e057fa3d153aae7a96bd48",
-      "patchCount": 14,
+      "patchCount": 18,
       "patches": [
         {
           "stage": "before-migrations",
@@ -4063,12 +4528,28 @@
         {
           "before": "\nonMounted(loadGrades);\n</script>\n\n",
           "after": "\nonMounted(loadGrades);\n\nconst contentLoading = listRequest.indicator;\n\nconst { pending: submitGradePending, run: submitGradeOnce } = usePendingAction(submitGrade);\n</script>\n\n"
+        },
+        {
+          "before": "\n<script setup lang=\"ts\">\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { usePendingAction } from '@/composables/usePendingAction';\n",
+          "after": "\n<script setup lang=\"ts\">\nimport { useServerFieldValidation } from '@/utils/serverFieldValidation';\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { usePendingAction } from '@/composables/usePendingAction';\n"
+        },
+        {
+          "before": "  }\n};\nconst submitGrade = async () => {\n  if ((await formRef.value?.validate()) !== true || !formData.code) return rejectFormSubmission(formRef.value);\n",
+          "after": "  }\n};\nconst beginSubmitGradeFeedback = useServerFieldValidation(\n  () => formVisible.value, formRef,\n  () => ({ code: formData.code, name: formData.name, remark: formData.remark }),\n);\nconst submitGrade = async () => {\n  if ((await formRef.value?.validate()) !== true || !formData.code) return rejectFormSubmission(formRef.value);\n"
+        },
+        {
+          "before": "    remark: formData.remark.trim(),\n  };\n  try {\n    if (editingId.value) await updateSlabGrade(editingId.value, payload);\n",
+          "after": "    remark: formData.remark.trim(),\n  };\n  const reportFieldError = beginSubmitGradeFeedback();\n  try {\n    if (editingId.value) await updateSlabGrade(editingId.value, payload);\n"
+        },
+        {
+          "before": "    else adminFeedback.created(target);\n  } catch (error) {\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n",
+          "after": "    else adminFeedback.created(target);\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n"
         }
       ]
     },
     "src/pages/slab/management/index.vue": {
       "baseSha256": "191459ad149f78ebaa6c495a2617ce9c60c105742ee3f70125c032c438d3c29b",
-      "patchCount": 32,
+      "patchCount": 53,
       "patches": [
         {
           "stage": "before-migrations",
@@ -4233,12 +4714,96 @@
           "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
           "before": "  AdminConfirmDialog,\n  AdminDialog,\n  AdminMediaUpload,\n  AdminListLayout,\n",
           "after": "  AdminConfirmDialog,\n  AdminDialog,\n  AdminMediaPreviewDialog,\n  AdminMediaUpload,\n  AdminListLayout,\n"
+        },
+        {
+          "before": "                :media-type=\"item.key === 'video' ? 'video' : 'image'\"\n                :disabled=\"readonlyProductFields\"\n                :error-message=\"uploadErrors[item.key] ? `请上传${item.title}` : ''\"\n                :upload=\"(file) => uploadSlabMedia(item, file)\"\n                @uploaded=\"uploadErrors[item.key] = false\"\n                @removed=\"releasePendingUpload\"\n",
+          "after": "                :media-type=\"item.key === 'video' ? 'video' : 'image'\"\n                :disabled=\"readonlyProductFields\"\n                :error-message=\"productErrors.field(mediaFields[item.key]).tips || (item.key === 'video' && productErrors.field('videoCoverMediaId').tips) || (uploadErrors[item.key] ? `请上传${item.title}` : '')\"\n                :upload=\"(file) => uploadSlabMedia(item, file)\"\n                @uploaded=\"uploadErrors[item.key] = false\"\n                @removed=\"releasePendingUpload\"\n"
+        },
+        {
+          "before": "                    @keydown=\"handleStockKeydown\"\n                  />\n                </t-form-item>\n                <t-form-item label=\"大板编号\" name=\"sku\">\n                  <span v-if=\"readonlyProductFields\">{{ productForm.sku || '-' }}</span>\n                  <t-input\n                    v-else\n",
+          "after": "                    @keydown=\"handleStockKeydown\"\n                  />\n                </t-form-item>\n                <t-form-item label=\"大板编号\" name=\"sku\" v-bind=\"productErrors.field('serialNo')\">\n                  <span v-if=\"readonlyProductFields\">{{ productForm.sku || '-' }}</span>\n                  <t-input\n                    v-else\n"
+        },
+        {
+          "before": "                  <SpecPriceInput\n                    v-else\n                    v-model=\"productForm.cost\"\n                    label=\"成本价\"\n                    placeholder=\"请输入成本价\"\n                    :submitted=\"productPriceSubmitted\"\n",
+          "after": "                  <SpecPriceInput\n                    v-else\n                    v-model=\"productForm.cost\"\n                    :server-error=\"productErrors.field('costPrice').tips\"\n                    label=\"成本价\"\n                    placeholder=\"请输入成本价\"\n                    :submitted=\"productPriceSubmitted\"\n"
+        },
+        {
+          "before": "                  <SpecPriceInput\n                    v-else\n                    v-model=\"productForm.guideRatio\"\n                    label=\"系数\"\n                    placeholder=\"请输入系数\"\n                    :submitted=\"productPriceSubmitted\"\n",
+          "after": "                  <SpecPriceInput\n                    v-else\n                    v-model=\"productForm.guideRatio\"\n                    :server-error=\"productErrors.field('guidePriceCoefficient').tips\"\n                    label=\"系数\"\n                    placeholder=\"请输入系数\"\n                    :submitted=\"productPriceSubmitted\"\n"
+        },
+        {
+          "before": "                  <SpecPriceInput\n                    v-else\n                    v-model=\"productForm.guidePrice\"\n                    label=\"价格\"\n                    placeholder=\"请输入价格\"\n                    :submitted=\"productPriceSubmitted\"\n",
+          "after": "                  <SpecPriceInput\n                    v-else\n                    v-model=\"productForm.guidePrice\"\n                    :server-error=\"productErrors.field('guidePrice').tips\"\n                    label=\"价格\"\n                    placeholder=\"请输入价格\"\n                    :submitted=\"productPriceSubmitted\"\n"
+        },
+        {
+          "before": "                  <SpecPriceInput\n                    v-else\n                    v-model=\"productForm.markupPrices[item.id].ratio\"\n                    label=\"系数\"\n                    placeholder=\"请输入系数\"\n                    :submitted=\"productPriceSubmitted\"\n",
+          "after": "                  <SpecPriceInput\n                    v-else\n                    v-model=\"productForm.markupPrices[item.id].ratio\"\n                    :server-error=\"productErrors.field(`markupPrices.${item.id}.priceCoefficient`).tips\"\n                    label=\"系数\"\n                    placeholder=\"请输入系数\"\n                    :submitted=\"productPriceSubmitted\"\n"
+        },
+        {
+          "before": "                  <SpecPriceInput\n                    v-else\n                    v-model=\"productForm.markupPrices[item.id].price\"\n                    label=\"价格\"\n                    placeholder=\"请输入价格\"\n                    :submitted=\"productPriceSubmitted\"\n",
+          "after": "                  <SpecPriceInput\n                    v-else\n                    v-model=\"productForm.markupPrices[item.id].price\"\n                    :server-error=\"productErrors.field(`markupPrices.${item.id}.price`).tips\"\n                    label=\"价格\"\n                    placeholder=\"请输入价格\"\n                    :submitted=\"productPriceSubmitted\"\n"
+        },
+        {
+          "before": "              <SpecPriceInput\n                v-else\n                :model-value=\"row.ratio ?? ''\"\n                label=\"系数\"\n                placeholder=\"请输入系数\"\n                :submitted=\"drawerPriceSubmitted\"\n",
+          "after": "              <SpecPriceInput\n                v-else\n                :model-value=\"row.ratio ?? ''\"\n                :server-error=\"drawerPrices.field(row.configurationId == null ? 'guidePriceCoefficient' : `markupPrices.${row.configurationId}.priceCoefficient`).tips\"\n                label=\"系数\"\n                placeholder=\"请输入系数\"\n                :submitted=\"drawerPriceSubmitted\"\n"
+        },
+        {
+          "before": "              <SpecPriceInput\n                v-else\n                v-model=\"row.price\"\n                label=\"价格\"\n                placeholder=\"请输入价格\"\n                :submitted=\"drawerPriceSubmitted\"\n",
+          "after": "              <SpecPriceInput\n                v-else\n                v-model=\"row.price\"\n                :server-error=\"drawerPrices.field(row.configurationId == null ? 'guidePrice' : `markupPrices.${row.configurationId}.price`).tips\"\n                label=\"价格\"\n                placeholder=\"请输入价格\"\n                :submitted=\"drawerPriceSubmitted\"\n"
+        },
+        {
+          "before": "</template>\n\n<script setup lang=\"ts\">\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { useDialogLoading } from '@/composables/useDialogLoading';\nimport { usePendingAction } from '@/composables/usePendingAction';\n",
+          "after": "</template>\n\n<script setup lang=\"ts\">\nimport { useBoundServerFields, useServerFieldValidation } from '@/utils/serverFieldValidation';\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { useDialogLoading } from '@/composables/useDialogLoading';\nimport { usePendingAction } from '@/composables/usePendingAction';\n"
+        },
+        {
+          "before": "    showErrorMessage: true,\n  });\n};\nconst rejectProductForm = () =>\n  rejectFormSubmission(productLayoutRef.value, {\n    reveal: (field) => {\n      const key = field.closest('[id^=\"slab-product-\"]')?.id.replace('slab-product-', '');\n      if (key === 'images' || key === 'base' || key === 'sales') productTab.value = key;\n    },\n  });\nconst handleProductSubmit = async () => {\n  productPriceSubmitted.value = true;\n  if (productMode.value === 'view') {\n",
+          "after": "    showErrorMessage: true,\n  });\n};\nconst productErrorLocation = {\n  reveal: (field: HTMLElement) => {\n      const key = field.closest('[id^=\"slab-product-\"]')?.id.replace('slab-product-', '');\n      if (key === 'images' || key === 'base' || key === 'sales') productTab.value = key;\n    },\n};\nconst rejectProductForm = () => rejectFormSubmission(productLayoutRef.value, productErrorLocation);\nconst productErrors = useBoundServerFields(productDialogVisible, productLayoutRef, () => ({\n  ...(!readonlyProductFields.value ? {\n    serialNo: productForm.sku,\n    mainImageMediaId: uploadPreviews.main?.mediaId,\n    scanImageMediaId: uploadPreviews.scan?.mediaId,\n    designImageMediaId: uploadPreviews.design?.mediaId,\n    videoMediaId: uploadPreviews.video?.mediaId,\n    videoCoverMediaId: uploadPreviews.video?.coverMediaId,\n    costPrice: productForm.cost,\n  } : {}),\n  guidePrice: productForm.guidePrice,\n  guidePriceCoefficient: productForm.guideRatio,\n  ...Object.fromEntries(Object.entries(productForm.markupPrices).flatMap(([id, row]) => [\n    [`markupPrices.${id}.priceCoefficient`, row.ratio], [`markupPrices.${id}.price`, row.price],\n  ])),\n }), productErrorLocation);\nconst mediaFields = { main: 'mainImageMediaId', scan: 'scanImageMediaId', design: 'designImageMediaId', video: 'videoMediaId' };\nconst handleProductSubmit = async () => {\n  productPriceSubmitted.value = true;\n  if (productMode.value === 'view') {\n"
+        },
+        {
+          "before": "        sourceConfigurationId: productForm.markupPrices[item.id].sourceConfigurationId,\n      })),\n    };\n    saving.value = true;\n    try {\n      upsertSlabItem(await updateSlab(editingItem.id, payload));\n      closeProductDialog();\n      adminFeedback.actionSuccess({ action: '修改', target: editingItem.name });\n    } catch (error) {\n      adminFeedback.actionError({ action: '保存', error, fallback: '请稍后重试', target: editingItem.name });\n    } finally {\n      saving.value = false;\n",
+          "after": "        sourceConfigurationId: productForm.markupPrices[item.id].sourceConfigurationId,\n      })),\n    };\n    const reportFieldError = productErrors.begin();\n    saving.value = true;\n    try {\n      upsertSlabItem(await updateSlab(editingItem.id, payload));\n      closeProductDialog();\n      adminFeedback.actionSuccess({ action: '修改', target: editingItem.name });\n    } catch (error) {\n      if (await reportFieldError(error)) return;\n      adminFeedback.actionError({ action: '保存', error, fallback: '请稍后重试', target: editingItem.name });\n    } finally {\n      saving.value = false;\n"
+        },
+        {
+          "before": "    status: editingItem?.status || publishTargetStatus.value,\n  };\n  saving.value = true;\n  try {\n    if (editingItem) {\n      upsertSlabItem(await updateSlab(editingItem.id, payload));\n",
+          "after": "    status: editingItem?.status || publishTargetStatus.value,\n  };\n  saving.value = true;\n  const reportFieldError = productErrors.begin();\n  try {\n    if (editingItem) {\n      upsertSlabItem(await updateSlab(editingItem.id, payload));\n"
+        },
+        {
+          "before": "    if (productMode.value === 'create') adminFeedback.created(targetName);\n    else adminFeedback.actionSuccess({ action: '修改', target: targetName });\n  } catch (error) {\n    adminFeedback.actionError({\n      action: productMode.value === 'create' ? '新增' : '保存',\n      error,\n",
+          "after": "    if (productMode.value === 'create') adminFeedback.created(targetName);\n    else adminFeedback.actionSuccess({ action: '修改', target: targetName });\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    adminFeedback.actionError({\n      action: productMode.value === 'create' ? '新增' : '保存',\n      error,\n"
+        },
+        {
+          "before": "  confirmState.content = content;\n  confirmDialogVisible.value = true;\n};\nconst closeConfirmDialog = () => {\n  confirmDialogVisible.value = false;\n  confirmState.row = null;\n",
+          "after": "  confirmState.content = content;\n  confirmDialogVisible.value = true;\n};\nconst drawerPrices = useBoundServerFields(priceDrawerVisible, priceDrawerFormRef, () => Object.fromEntries(\n  batchPriceRows.slice(1).flatMap(row => row.configurationId == null\n    ? [['guidePriceCoefficient', row.ratio], ['guidePrice', row.price]]\n    : [[`markupPrices.${row.configurationId}.priceCoefficient`, row.ratio], [`markupPrices.${row.configurationId}.price`, row.price]]),\n));\nconst closeConfirmDialog = () => {\n  confirmDialogVisible.value = false;\n  confirmState.row = null;\n"
+        },
+        {
+          "before": "  const selectedCount = selectedKeys.value.length;\n  const recycleIds = tableData.value.filter((item) => item.status === 'recycle').map((item) => item.id);\n  const selectedIdsBeforeWrite = [...selectedKeys.value];\n  let refreshList = false;\n  saving.value = true;\n  try {\n",
+          "after": "  const selectedCount = selectedKeys.value.length;\n  const recycleIds = tableData.value.filter((item) => item.status === 'recycle').map((item) => item.id);\n  const selectedIdsBeforeWrite = [...selectedKeys.value];\n  const reportPriceError = type === 'savePrice' ? drawerPrices.begin() : undefined;\n  let refreshList = false;\n  saving.value = true;\n  try {\n"
+        },
+        {
+          "before": "    else if (type === 'batchRestore') await refreshSlabItems(selectedIdsBeforeWrite);\n  } catch (error) {\n    await loadSlabs();\n    const isBatchAction = type === 'batchShelf' || type === 'batchRestore' || type === 'batchPurge';\n    adminFeedback.actionError({\n      action: confirmAction.value,\n",
+          "after": "    else if (type === 'batchRestore') await refreshSlabItems(selectedIdsBeforeWrite);\n  } catch (error) {\n    await loadSlabs();\n    if (reportPriceError && await reportPriceError(error)) {\n      closeConfirmDialog();\n      return;\n    }\n    const isBatchAction = type === 'batchShelf' || type === 'batchRestore' || type === 'batchPurge';\n    adminFeedback.actionError({\n      action: confirmAction.value,\n"
+        },
+        {
+          "before": "  offShelfHistoryVisible.value = false;\n  offShelfHistoryRow.value = null;\n};\nconst handleReasonSubmit = async () => {\n  if (!reasonForm.reason) {\n    await reasonFormRef.value?.validate({ trigger: 'submit', showErrorMessage: true });\n    return rejectFormSubmission(reasonFormRef.value);\n",
+          "after": "  offShelfHistoryVisible.value = false;\n  offShelfHistoryRow.value = null;\n};\nconst beginReasonFeedback = useServerFieldValidation(\n  () => reasonDialogVisible.value, reasonFormRef, () => ({ ...reasonForm }),\n);\nconst handleReasonSubmit = async () => {\n  const reportFieldError = beginReasonFeedback();\n  if (!reasonForm.reason) {\n    await reasonFormRef.value?.validate({ trigger: 'submit', showErrorMessage: true });\n    return rejectFormSubmission(reasonFormRef.value);\n"
+        },
+        {
+          "before": "      await loadSlabs();\n      ensureCurrentPage();\n    } catch (error) {\n      await loadSlabs();\n      adminFeedback.actionError({\n        action: '批量下架',\n",
+          "after": "      await loadSlabs();\n      ensureCurrentPage();\n    } catch (error) {\n      if (await reportFieldError(error)) return;\n      await loadSlabs();\n      adminFeedback.actionError({\n        action: '批量下架',\n"
+        },
+        {
+          "before": "      await loadSlabs();\n      ensureCurrentPage();\n    } catch (error) {\n      await loadSlabs();\n      adminFeedback.actionError({\n        action: '下架',\n",
+          "after": "      await loadSlabs();\n      ensureCurrentPage();\n    } catch (error) {\n      if (await reportFieldError(error)) return;\n      await loadSlabs();\n      adminFeedback.actionError({\n        action: '下架',\n"
+        },
+        {
+          "before": "      closeReasonDialog();\n      adminFeedback.actionSuccess({ action: '删除', target: row.name });\n    } catch (error) {\n      await loadSlabs();\n      adminFeedback.actionError({ action: '删除', error, fallback: '请稍后重试', target: row.name });\n",
+          "after": "      closeReasonDialog();\n      adminFeedback.actionSuccess({ action: '删除', target: row.name });\n    } catch (error) {\n      if (await reportFieldError(error)) return;\n      await loadSlabs();\n      adminFeedback.actionError({ action: '删除', error, fallback: '请稍后重试', target: row.name });\n"
         }
       ]
     },
     "src/pages/slab/origin/index.vue": {
       "baseSha256": "0b916f1a8ae2108fa636d3d3c538cfc88cfc842ebb93b746168316a3ef61ad31",
-      "patchCount": 15,
+      "patchCount": 18,
       "patches": [
         {
           "stage": "before-migrations",
@@ -4320,12 +4885,24 @@
         {
           "before": "\nonMounted(loadOrigins);\n</script>\n\n",
           "after": "\nonMounted(loadOrigins);\n\nconst contentLoading = listRequest.indicator;\n\nconst { pending: handleSubmitPending, run: handleSubmitOnce } = usePendingAction(handleSubmit);\nconst handleSubmitButton = useDialogLoading(() => formDialogVisible.value, () => dialogButtonProps('submit', formConfirmation(dialogMode.value), { loading: handleSubmitPending.value }));\n</script>\n\n"
+        },
+        {
+          "before": "\n<script setup lang=\"ts\">\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { useDialogLoading } from '@/composables/useDialogLoading';\n",
+          "after": "\n<script setup lang=\"ts\">\nimport { useServerFieldValidation } from '@/utils/serverFieldValidation';\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { useDialogLoading } from '@/composables/useDialogLoading';\n"
+        },
+        {
+          "before": "  formRef.value?.clearValidate();\n};\nconst handleSubmit = async () => {\n  if ((await formRef.value?.validate()) !== true) return rejectFormSubmission(formRef.value);\n  try {\n    if (dialogMode.value === 'create') {\n",
+          "after": "  formRef.value?.clearValidate();\n};\nconst beginHandleSubmitFeedback = useServerFieldValidation(\n  () => formDialogVisible.value, formRef,\n  () => ({ name: formData.name, remark: formData.remark }),\n);\nconst handleSubmit = async () => {\n  if ((await formRef.value?.validate()) !== true) return rejectFormSubmission(formRef.value);\n  const reportFieldError = beginHandleSubmitFeedback();\n  try {\n    if (dialogMode.value === 'create') {\n"
+        },
+        {
+          "before": "    else adminFeedback.actionSuccess({ action: '修改', target });\n  } catch (error) {\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n",
+          "after": "    else adminFeedback.actionSuccess({ action: '修改', target });\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n"
         }
       ]
     },
     "src/pages/slab/supply-chain/index.vue": {
       "baseSha256": "0181b2543f11c694d882f3f565779c2f0b3c3a3332a24d2277acbf6009ce93d6",
-      "patchCount": 30,
+      "patchCount": 41,
       "patches": [
         {
           "stage": "before-migrations",
@@ -4482,12 +5059,56 @@
           "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
           "before": "  AdminConfirmDialog,\n  AdminDialog,\n  AdminMediaUpload,\n  AdminListLayout,\n",
           "after": "  AdminConfirmDialog,\n  AdminDialog,\n  AdminMediaPreviewDialog,\n  AdminMediaUpload,\n  AdminListLayout,\n"
+        },
+        {
+          "before": "                :media-type=\"item.key === 'video' ? 'video' : 'image'\"\n                :disabled=\"readonlyProductFields\"\n                :error-message=\"uploadErrors[item.key] ? `请上传${item.title}` : ''\"\n                :upload=\"(file) => uploadSlabMedia(item, file)\"\n                @uploaded=\"uploadErrors[item.key] = false\"\n                @removed=\"releasePendingUpload\"\n",
+          "after": "                :media-type=\"item.key === 'video' ? 'video' : 'image'\"\n                :disabled=\"readonlyProductFields\"\n                :error-message=\"productErrors.field(mediaFields[item.key]).tips || (item.key === 'video' && productErrors.field('videoCoverMediaId').tips) || (uploadErrors[item.key] ? `请上传${item.title}` : '')\"\n                :upload=\"(file) => uploadSlabMedia(item, file)\"\n                @uploaded=\"uploadErrors[item.key] = false\"\n                @removed=\"releasePendingUpload\"\n"
+        },
+        {
+          "before": "              label-width=\"100px\"\n              colon\n            >\n              <t-form-item label=\"成本价\" name=\"cost\" required-mark>\n                <SpecPriceInput\n                  v-model=\"productForm.cost\"\n                  label=\"成本价\"\n",
+          "after": "              label-width=\"100px\"\n              colon\n            >\n              <t-form-item label=\"成本价\" name=\"cost\" v-bind=\"productErrors.field('costPrice')\" required-mark>\n                <SpecPriceInput\n                  v-model=\"productForm.cost\"\n                  label=\"成本价\"\n"
+        },
+        {
+          "before": "                    @keydown=\"handleStockKeydown\"\n                  />\n                </t-form-item>\n                <t-form-item label=\"大板编号\" name=\"sku\">\n                  <t-input\n                    v-model=\"productForm.sku\"\n                    :disabled=\"readonlyProductFields\"\n",
+          "after": "                    @keydown=\"handleStockKeydown\"\n                  />\n                </t-form-item>\n                <t-form-item label=\"大板编号\" name=\"sku\" v-bind=\"productErrors.field('serialNo')\">\n                  <t-input\n                    v-model=\"productForm.sku\"\n                    :disabled=\"readonlyProductFields\"\n"
+        },
+        {
+          "before": "</template>\n\n<script setup lang=\"ts\">\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { useDialogLoading } from '@/composables/useDialogLoading';\nimport { usePendingAction } from '@/composables/usePendingAction';\n",
+          "after": "</template>\n\n<script setup lang=\"ts\">\nimport { useBoundServerFields, useServerFieldValidation } from '@/utils/serverFieldValidation';\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { useDialogLoading } from '@/composables/useDialogLoading';\nimport { usePendingAction } from '@/composables/usePendingAction';\n"
+        },
+        {
+          "before": "    showErrorMessage: true,\n  });\n};\nconst rejectProductForm = () =>\n  rejectFormSubmission(productLayoutRef.value, {\n    reveal: (field) => {\n      const key = field.closest('[id^=\"slab-product-\"]')?.id.replace('slab-product-', '');\n      if (key === 'images' || key === 'base' || key === 'sales') productTab.value = key;\n    },\n  });\nconst handleProductSubmit = async () => {\n  productPriceSubmitted.value = true;\n  if (productMode.value === 'view') {\n",
+          "after": "    showErrorMessage: true,\n  });\n};\nconst productErrorLocation = {\n  reveal: (field: HTMLElement) => {\n      const key = field.closest('[id^=\"slab-product-\"]')?.id.replace('slab-product-', '');\n      if (key === 'images' || key === 'base' || key === 'sales') productTab.value = key;\n    },\n};\nconst rejectProductForm = () => rejectFormSubmission(productLayoutRef.value, productErrorLocation);\nconst productErrors = useBoundServerFields(productDialogVisible, productLayoutRef, () => ({\n  ...(!readonlyProductFields.value ? {\n    serialNo: productForm.sku,\n    mainImageMediaId: uploadPreviews.main?.mediaId,\n    scanImageMediaId: uploadPreviews.scan?.mediaId,\n    designImageMediaId: uploadPreviews.design?.mediaId,\n    videoMediaId: uploadPreviews.video?.mediaId,\n    videoCoverMediaId: uploadPreviews.video?.coverMediaId,\n    costPrice: productForm.cost,\n  } : {}),\n }), productErrorLocation);\nconst mediaFields = { main: 'mainImageMediaId', scan: 'scanImageMediaId', design: 'designImageMediaId', video: 'videoMediaId' };\nconst handleProductSubmit = async () => {\n  productPriceSubmitted.value = true;\n  if (productMode.value === 'view') {\n"
+        },
+        {
+          "before": "    status: publishTargetStatus.value,\n  };\n  saving.value = true;\n  try {\n    if (productMode.value === 'edit' && editingItem) {\n      upsertSlabItem(await updateSlab(editingItem.id, payload));\n",
+          "after": "    status: publishTargetStatus.value,\n  };\n  saving.value = true;\n  const reportFieldError = productErrors.begin();\n  try {\n    if (productMode.value === 'edit' && editingItem) {\n      upsertSlabItem(await updateSlab(editingItem.id, payload));\n"
+        },
+        {
+          "before": "    if (productMode.value === 'create') adminFeedback.created(targetName);\n    else adminFeedback.actionSuccess({ action: '修改', target: targetName });\n  } catch (error) {\n    adminFeedback.actionError({\n      action: productMode.value === 'create' ? '新增' : '保存',\n      error,\n",
+          "after": "    if (productMode.value === 'create') adminFeedback.created(targetName);\n    else adminFeedback.actionSuccess({ action: '修改', target: targetName });\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    adminFeedback.actionError({\n      action: productMode.value === 'create' ? '新增' : '保存',\n      error,\n"
+        },
+        {
+          "before": "  offShelfHistoryVisible.value = false;\n  offShelfHistoryRow.value = null;\n};\nconst handleReasonSubmit = async () => {\n  if (!reasonForm.reason) {\n    await reasonFormRef.value?.validate({ trigger: 'submit', showErrorMessage: true });\n    return rejectFormSubmission(reasonFormRef.value);\n",
+          "after": "  offShelfHistoryVisible.value = false;\n  offShelfHistoryRow.value = null;\n};\nconst beginReasonFeedback = useServerFieldValidation(\n  () => reasonDialogVisible.value, reasonFormRef, () => ({ ...reasonForm }),\n);\nconst handleReasonSubmit = async () => {\n  const reportFieldError = beginReasonFeedback();\n  if (!reasonForm.reason) {\n    await reasonFormRef.value?.validate({ trigger: 'submit', showErrorMessage: true });\n    return rejectFormSubmission(reasonFormRef.value);\n"
+        },
+        {
+          "before": "      await loadSlabs();\n      ensureCurrentPage();\n    } catch (error) {\n      await loadSlabs();\n      adminFeedback.actionError({\n        action: '批量下架',\n",
+          "after": "      await loadSlabs();\n      ensureCurrentPage();\n    } catch (error) {\n      if (await reportFieldError(error)) return;\n      await loadSlabs();\n      adminFeedback.actionError({\n        action: '批量下架',\n"
+        },
+        {
+          "before": "      await loadSlabs();\n      ensureCurrentPage();\n    } catch (error) {\n      await loadSlabs();\n      adminFeedback.actionError({\n        action: '下架',\n",
+          "after": "      await loadSlabs();\n      ensureCurrentPage();\n    } catch (error) {\n      if (await reportFieldError(error)) return;\n      await loadSlabs();\n      adminFeedback.actionError({\n        action: '下架',\n"
+        },
+        {
+          "before": "      closeReasonDialog();\n      adminFeedback.actionSuccess({ action: '删除', target: row.name });\n    } catch (error) {\n      await loadSlabs();\n      adminFeedback.actionError({ action: '删除', error, fallback: '请稍后重试', target: row.name });\n",
+          "after": "      closeReasonDialog();\n      adminFeedback.actionSuccess({ action: '删除', target: row.name });\n    } catch (error) {\n      if (await reportFieldError(error)) return;\n      await loadSlabs();\n      adminFeedback.actionError({ action: '删除', error, fallback: '请稍后重试', target: row.name });\n"
         }
       ]
     },
     "src/pages/slab/texture/index.vue": {
       "baseSha256": "1938ac2fec522c09b00b11e8ab6c880e3aef00f8ac2c72458328e33c30d17d37",
-      "patchCount": 19,
+      "patchCount": 24,
       "patches": [
         {
           "stage": "before-migrations",
@@ -4579,12 +5200,32 @@
         {
           "before": "\nonMounted(loadData);\n</script>\n\n",
           "after": "\nonMounted(loadData);\n\nconst contentLoading = listRequest.indicator;\n\nconst { pending: submitTexturePending, run: submitTextureOnce } = usePendingAction(submitTexture);\nconst { pending: submitAliasPending, run: submitAliasOnce } = usePendingAction(submitAlias);\n</script>\n\n"
+        },
+        {
+          "before": "\n<script setup lang=\"ts\">\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { usePendingAction } from '@/composables/usePendingAction';\n",
+          "after": "\n<script setup lang=\"ts\">\nimport { useServerFieldValidation } from '@/utils/serverFieldValidation';\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { usePendingAction } from '@/composables/usePendingAction';\n"
+        },
+        {
+          "before": "  formVisible.value = true;\n};\nconst submitTexture = async () => {\n  if ((await formRef.value?.validate()) !== true) return rejectFormSubmission(formRef.value);\n  try {\n    const payload = { name: formData.name.trim(), remark: formData.remark.trim(), status: 'enabled' as const };\n",
+          "after": "  formVisible.value = true;\n};\nconst beginSubmitTextureFeedback = useServerFieldValidation(\n  () => formVisible.value, formRef,\n  () => ({ name: formData.name, remark: formData.remark }),\n);\nconst submitTexture = async () => {\n  if ((await formRef.value?.validate()) !== true) return rejectFormSubmission(formRef.value);\n  const reportFieldError = beginSubmitTextureFeedback();\n  try {\n    const payload = { name: formData.name.trim(), remark: formData.remark.trim(), status: 'enabled' as const };\n"
+        },
+        {
+          "before": "    await loadData();\n  } catch (error) {\n    adminFeedback.error(error instanceof Error ? error.message : '提交失败');\n  }\n",
+          "after": "    await loadData();\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    adminFeedback.error(error instanceof Error ? error.message : '提交失败');\n  }\n"
+        },
+        {
+          "before": "  aliasFormVisible.value = true;\n};\nconst submitAlias = async () => {\n  if ((await aliasFormRef.value?.validate()) !== true) return rejectFormSubmission(aliasFormRef.value);\n  if (!activeTexture.value) return;\n  const name = aliasForm.name.trim();\n  try {\n    if (editingAliasId.value) {\n",
+          "after": "  aliasFormVisible.value = true;\n};\nconst beginSubmitAliasFeedback = useServerFieldValidation(\n  () => aliasFormVisible.value, aliasFormRef,\n  () => ({ name: aliasForm.name }),\n);\nconst submitAlias = async () => {\n  if ((await aliasFormRef.value?.validate()) !== true) return rejectFormSubmission(aliasFormRef.value);\n  if (!activeTexture.value) return;\n  const name = aliasForm.name.trim();\n  const reportFieldError = beginSubmitAliasFeedback();\n  try {\n    if (editingAliasId.value) {\n"
+        },
+        {
+          "before": "    await loadData();\n  } catch (error) {\n    adminFeedback.error(error instanceof Error ? error.message : '别名提交失败');\n  }\n",
+          "after": "    await loadData();\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    adminFeedback.error(error instanceof Error ? error.message : '别名提交失败');\n  }\n"
         }
       ]
     },
     "src/pages/slab/variety/index.vue": {
       "baseSha256": "ca58179a70be3d18174d7f053f26e849987a0af564b7624a6bb56f9481722e11",
-      "patchCount": 16,
+      "patchCount": 20,
       "patches": [
         {
           "stage": "before-migrations",
@@ -4670,12 +5311,28 @@
         {
           "before": "\nonMounted(loadVarieties);\n</script>\n\n",
           "after": "\nonMounted(loadVarieties);\n\nconst contentLoading = listRequest.indicator;\n\nconst { pending: handleSubmitPending, run: handleSubmitOnce } = usePendingAction(handleSubmit);\nconst handleSubmitButton = useDialogLoading(() => formDialogVisible.value, () => dialogButtonProps('submit', formConfirmation(dialogMode.value), { loading: handleSubmitPending.value }));\n</script>\n\n"
+        },
+        {
+          "before": "\n<script setup lang=\"ts\">\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { useDialogLoading } from '@/composables/useDialogLoading';\n",
+          "after": "\n<script setup lang=\"ts\">\nimport { useServerFieldValidation } from '@/utils/serverFieldValidation';\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { useDialogLoading } from '@/composables/useDialogLoading';\n"
+        },
+        {
+          "before": "};\n\nconst handleSubmit = async () => {\n  const result = await formRef.value?.validate();\n",
+          "after": "};\n\nconst beginHandleSubmitFeedback = useServerFieldValidation(\n  () => formDialogVisible.value, formRef,\n  () => ({ name: formData.name, remark: formData.remark }),\n);\nconst handleSubmit = async () => {\n  const result = await formRef.value?.validate();\n"
+        },
+        {
+          "before": "\n  let refresh = false;\n  try {\n    if (dialogMode.value === 'create') {\n",
+          "after": "\n  let refresh = false;\n  const reportFieldError = beginHandleSubmitFeedback();\n  try {\n    if (dialogMode.value === 'create') {\n"
+        },
+        {
+          "before": "    if (refresh) void loadVarieties();\n  } catch (error) {\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n",
+          "after": "    if (refresh) void loadVarieties();\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n"
         }
       ]
     },
     "src/pages/store-category/management/index.vue": {
       "baseSha256": "e6db3a2a43404453ba0ed901036e24385ca44997bdc3755c825742efef8e94df",
-      "patchCount": 28,
+      "patchCount": 31,
       "patches": [
         {
           "stage": "before-migrations",
@@ -4820,12 +5477,24 @@
         {
           "before": "        level: node.level,\n        name: node.name,\n        status: node.status,\n        sort: position + 1,\n        productCount: node.productCount,\n        createdByName: node.createdByName,\n        createdAt: formatDateTime(node.createdAt),",
           "after": "        level: node.level,\n        name: node.name,\n        status: node.status,\n        productCount: node.productCount,\n        createdByName: node.createdByName,\n        createdAt: formatDateTime(node.createdAt),"
+        },
+        {
+          "before": "\n<script setup lang=\"ts\">\nimport { useDelayedLoading } from '@/composables/useDelayedLoading';\nimport { OperationBlockedError } from '@/services/http';\n",
+          "after": "\n<script setup lang=\"ts\">\nimport { useServerFieldValidation } from '@/utils/serverFieldValidation';\nimport { useDelayedLoading } from '@/composables/useDelayedLoading';\nimport { OperationBlockedError } from '@/services/http';\n"
+        },
+        {
+          "before": "const priceRemovalNames = ref('');\nconst formSubmitting = ref(false);\nconst handleSubmit = async (confirmPriceRemoval = false) => {\n  if (formSubmitting.value) return;\n  formSubmitting.value = true;\n  try {\n    const result = await formRef.value?.validate();\n",
+          "after": "const priceRemovalNames = ref('');\nconst formSubmitting = ref(false);\nconst beginHandleSubmitFeedback = useServerFieldValidation(\n  () => formVisible.value, formRef,\n  () => ({ name: formData.name }),\n);\nconst handleSubmit = async (confirmPriceRemoval = false) => {\n  if (formSubmitting.value) return;\n  formSubmitting.value = true;\n  const reportFieldError = beginHandleSubmitFeedback();\n  try {\n    const result = await formRef.value?.validate();\n"
+        },
+        {
+          "before": "    }\n  } catch (error) {\n    showError(error, '分类保存失败');\n  } finally {\n",
+          "after": "    }\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    showError(error, '分类保存失败');\n  } finally {\n"
         }
       ]
     },
     "src/pages/store-level/management/index.vue": {
       "baseSha256": "b408a34878795a50a654e754fdce53f6dca7f7fc40c568b50288cc1dd1cb53eb",
-      "patchCount": 14,
+      "patchCount": 17,
       "patches": [
         {
           "stage": "before-migrations",
@@ -4897,12 +5566,24 @@
         {
           "before": "  confirmRow.value = null;\n});\n</script>\n\n",
           "after": "  confirmRow.value = null;\n});\n\nconst contentLoading = listRequest.indicator;\n\nconst { pending: submitLevelPending, run: submitLevelOnce } = usePendingAction(submitLevel);\n</script>\n\n"
+        },
+        {
+          "before": "\n<script setup lang=\"ts\">\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { usePendingAction } from '@/composables/usePendingAction';\n",
+          "after": "\n<script setup lang=\"ts\">\nimport { useServerFieldValidation } from '@/utils/serverFieldValidation';\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { usePendingAction } from '@/composables/usePendingAction';\n"
+        },
+        {
+          "before": "  }\n};\nconst submitLevel = async () => {\n  if ((await formRef.value?.validate()) !== true) return rejectFormSubmission(formRef.value);\n  const payload: StoreLevelPayload = { name: formData.name.trim(), status: 'enabled', remark: formData.remark.trim() };\n  try {\n    if (editingId.value) await updateStoreLevel(editingId.value, payload);\n",
+          "after": "  }\n};\nconst beginSubmitLevelFeedback = useServerFieldValidation(\n  () => formVisible.value, formRef,\n  () => ({ name: formData.name, remark: formData.remark }),\n);\nconst submitLevel = async () => {\n  if ((await formRef.value?.validate()) !== true) return rejectFormSubmission(formRef.value);\n  const payload: StoreLevelPayload = { name: formData.name.trim(), status: 'enabled', remark: formData.remark.trim() };\n  const reportFieldError = beginSubmitLevelFeedback();\n  try {\n    if (editingId.value) await updateStoreLevel(editingId.value, payload);\n"
+        },
+        {
+          "before": "    else adminFeedback.created(target);\n  } catch (error) {\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n",
+          "after": "    else adminFeedback.created(target);\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n"
         }
       ]
     },
     "src/pages/supplier/management/index.vue": {
       "baseSha256": "1d19b21835c32549d06501143c208108b975f1db74bffd4f997a4c202be36a06",
-      "patchCount": 17,
+      "patchCount": 21,
       "patches": [
         {
           "stage": "before-migrations",
@@ -4992,12 +5673,28 @@
         {
           "before": "  await Promise.all([loadSupplyTypes(), loadSuppliers()]);\n});\n</script>\n\n",
           "after": "  await Promise.all([loadSupplyTypes(), loadSuppliers()]);\n});\n\nconst contentLoading = listRequest.indicator;\n\nconst { pending: handleSubmitPending, run: handleSubmitOnce } = usePendingAction(handleSubmit);\n</script>\n\n"
+        },
+        {
+          "before": "\n<script setup lang=\"ts\">\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { usePendingAction } from '@/composables/usePendingAction';\n",
+          "after": "\n<script setup lang=\"ts\">\nimport { useServerFieldValidation } from '@/utils/serverFieldValidation';\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { usePendingAction } from '@/composables/usePendingAction';\n"
+        },
+        {
+          "before": "};\n\nconst handleSubmit = async () => {\n  const result = await formRef.value?.validate();\n",
+          "after": "};\n\nconst beginHandleSubmitFeedback = useServerFieldValidation(\n  () => formDialogVisible.value, formRef,\n  () => ({ name: formData.name, supplyTypeIds: formData.supplyTypeIds, contactName: formData.contact, contactPhone: formData.phone, remark: formData.remark }),\n  { names: { contactName: 'contact', contactPhone: 'phone' } },\n);\nconst handleSubmit = async () => {\n  const result = await formRef.value?.validate();\n"
+        },
+        {
+          "before": "\n  let refresh = false;\n  try {\n    if (dialogMode.value === 'create') {\n",
+          "after": "\n  let refresh = false;\n  const reportFieldError = beginHandleSubmitFeedback();\n  try {\n    if (dialogMode.value === 'create') {\n"
+        },
+        {
+          "before": "    if (refresh) void loadSuppliers();\n  } catch (error) {\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n",
+          "after": "    if (refresh) void loadSuppliers();\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n"
         }
       ]
     },
     "src/pages/supplier/supply-type/index.vue": {
       "baseSha256": "879b1e12bf5b8d24b18fa7b5d226fd0025097fa73105fd80a7da7624bb3a3f78",
-      "patchCount": 10,
+      "patchCount": 14,
       "patches": [
         {
           "stage": "before-migrations",
@@ -5050,12 +5747,28 @@
         {
           "before": "};\nonMounted(load);\n</script>\n",
           "after": "};\nonMounted(load);\n\nconst contentLoading = listRequest.indicator;\n</script>\n"
+        },
+        {
+          "before": "</template>\n<script setup lang=\"ts\">\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { checkSupplierSupplyTypeDelete } from '@/services/suppliers';\n",
+          "after": "</template>\n<script setup lang=\"ts\">\nimport { useServerFieldValidation } from '@/utils/serverFieldValidation';\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { checkSupplierSupplyTypeDelete } from '@/services/suppliers';\n"
+        },
+        {
+          "before": "  visible.value = true;\n};\nconst save = async () => {\n  if (saving.value) return;\n",
+          "after": "  visible.value = true;\n};\nconst beginSaveFeedback = useServerFieldValidation(\n  () => visible.value, form,\n  () => ({ name: draft.name }),\n);\nconst save = async () => {\n  if (saving.value) return;\n"
+        },
+        {
+          "before": "  const target = draft.name.trim();\n  const action = editing.value ? '保存' : '新增';\n  try {\n    const payload = { name: target };\n",
+          "after": "  const target = draft.name.trim();\n  const action = editing.value ? '保存' : '新增';\n  const reportFieldError = beginSaveFeedback();\n  try {\n    const payload = { name: target };\n"
+        },
+        {
+          "before": "    await load();\n  } catch (error) {\n    adminFeedback.actionError({ action, target, error });\n  } finally {\n",
+          "after": "    await load();\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    adminFeedback.actionError({ action, target, error });\n  } finally {\n"
         }
       ]
     },
     "src/pages/tenant/management/index.vue": {
       "baseSha256": "a956403dfd1cfaeafeb03541cf5a9b55a2c70944706af36f25923de11e0c3a38",
-      "patchCount": 21,
+      "patchCount": 25,
       "patches": [
         {
           "stage": "before-migrations",
@@ -5173,12 +5886,28 @@
         {
           "before": "  purgePreview.value = null;\n});\n</script>\n\n",
           "after": "  purgePreview.value = null;\n});\n\nconst contentLoading = listRequest.indicator;\n\nconst { pending: handleSubmitPending, run: handleSubmitOnce } = usePendingAction(handleSubmit);\nconst handleSubmitButton = useDialogLoading(() => formDialogVisible.value, () => dialogButtonProps('submit', formConfirmation(dialogMode.value), { loading: handleSubmitPending.value }));\nconst { pending: handleBusinessSubmitPending, run: handleBusinessSubmitOnce } = usePendingAction(handleBusinessSubmit);\nconst handleBusinessSubmitButton = useDialogLoading(() => businessDialogVisible.value, () => dialogButtonProps('activate-business', operationConfirmation('业务开通'), { loading: handleBusinessSubmitPending.value }));\n</script>\n\n"
+        },
+        {
+          "before": "\n<script setup lang=\"ts\">\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { useDialogLoading } from '@/composables/useDialogLoading';\n",
+          "after": "\n<script setup lang=\"ts\">\nimport { useServerFieldValidation } from '@/utils/serverFieldValidation';\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { useDialogLoading } from '@/composables/useDialogLoading';\n"
+        },
+        {
+          "before": "};\n\nconst handleSubmit = async () => {\n  const result = await formRef.value?.validate();\n",
+          "after": "};\n\nconst beginHandleSubmitFeedback = useServerFieldValidation(\n  () => formDialogVisible.value, formRef,\n  () => ({ contactPhone: formData.phone, name: formData.tenantName, remark: formData.remark }),\n  { names: { contactPhone: 'phone', name: 'tenantName' } },\n);\nconst handleSubmit = async () => {\n  const result = await formRef.value?.validate();\n"
+        },
+        {
+          "before": "  const action = dialogMode.value === 'create' ? '新增' : '保存';\n  let refresh = false;\n  try {\n    if (dialogMode.value === 'create') {\n",
+          "after": "  const action = dialogMode.value === 'create' ? '新增' : '保存';\n  let refresh = false;\n  const reportFieldError = beginHandleSubmitFeedback();\n  try {\n    if (dialogMode.value === 'create') {\n"
+        },
+        {
+          "before": "    if (refresh) void loadTenants();\n  } catch (error) {\n    adminFeedback.actionError({ action, target: targetName, error });\n  }\n",
+          "after": "    if (refresh) void loadTenants();\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    adminFeedback.actionError({ action, target: targetName, error });\n  }\n"
         }
       ]
     },
     "src/pages/tenant/store/index.vue": {
       "baseSha256": "ce460c541cca46dd8c013e1fef94ef5f1679f1cd7b8dd61e59e40494eccec00f",
-      "patchCount": 19,
+      "patchCount": 23,
       "patches": [
         {
           "stage": "before-migrations",
@@ -5276,6 +6005,22 @@
         {
           "before": "  deletePlanHash.value = '';\n});\n</script>\n\n",
           "after": "  deletePlanHash.value = '';\n});\n\nconst contentLoading = listRequest.indicator;\n\nconst { pending: handleSubmitPending, run: handleSubmitOnce } = usePendingAction(handleSubmit);\nconst { pending: handleLevelSubmitPending, run: handleLevelSubmitOnce } = usePendingAction(handleLevelSubmit);\n</script>\n\n"
+        },
+        {
+          "before": "\n<script setup lang=\"ts\">\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { usePendingAction } from '@/composables/usePendingAction';\n",
+          "after": "\n<script setup lang=\"ts\">\nimport { useServerFieldValidation } from '@/utils/serverFieldValidation';\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { usePendingAction } from '@/composables/usePendingAction';\n"
+        },
+        {
+          "before": "};\n\nconst handleSubmit = async () => {\n  const result = await formRef.value?.validate();\n",
+          "after": "};\n\nconst beginHandleSubmitFeedback = useServerFieldValidation(\n  () => formDialogVisible.value, formRef,\n  () => ({ name: formData.shopName, type: formData.shopType, region: formData.region, detailAddress: formData.detailAddress, remark: formData.remark }),\n  { names: { name: 'shopName', type: 'shopType' }, messages: { '店铺名称已存在': '门店名称已存在' } },\n);\nconst handleSubmit = async () => {\n  const result = await formRef.value?.validate();\n"
+        },
+        {
+          "before": "  const targetName = formData.shopName.trim();\n  let refresh = false;\n  try {\n    if (dialogMode.value === 'create') {\n",
+          "after": "  const targetName = formData.shopName.trim();\n  let refresh = false;\n  const reportFieldError = beginHandleSubmitFeedback();\n  try {\n    if (dialogMode.value === 'create') {\n"
+        },
+        {
+          "before": "    if (refresh) void loadStorePage();\n  } catch (error) {\n    if (error instanceof Error && error.message === '店铺名称已存在') {\n      formRef.value?.setValidateMessage({\n        shopName: [{ type: 'error', message: '门店名称已存在' }],\n      });\n      adminFeedback.actionError({\n        action,\n        target: targetName,\n        error: new Error('门店名称已存在'),\n        fallback: '请稍后重试',\n      });\n      return;\n    }\n    adminFeedback.actionError({ action, target: targetName, error, fallback: '请稍后重试' });\n  }\n",
+          "after": "    if (refresh) void loadStorePage();\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    adminFeedback.actionError({ action, target: targetName, error, fallback: '请稍后重试' });\n  }\n"
         }
       ]
     },
@@ -5371,7 +6116,7 @@
     },
     "src/pages/login/index.vue": {
       "baseSha256": "cbb0906fa885fadfd32546823cb5ef2ca19e52d12be1e4a3e0bcc33712c6416c",
-      "patchCount": 3,
+      "patchCount": 7,
       "patches": [
         {
           "before": "\n        <t-form-item class=\"btn-container\">\n          <t-button :theme=\"buttonTheme('login')\" block size=\"large\" type=\"submit\" :loading=\"submitting\">登录</t-button>\n        </t-form-item>\n      </t-form>\n",
@@ -5384,6 +6129,22 @@
         {
           "before": "\nonBeforeUnmount(stopCounter);\n</script>\n\n",
           "after": "\nonBeforeUnmount(stopCounter);\n\nconst submitIndicator = useDelayedLoading(() => Boolean(submitting.value));\n</script>\n\n"
+        },
+        {
+          "before": "\n<script setup lang=\"ts\">\nimport { useDelayedLoading } from '@/composables/useDelayedLoading';\nimport { buttonTheme } from '@/components/foundation/actions/buttonFunctions';\n",
+          "after": "\n<script setup lang=\"ts\">\nimport { useServerFieldValidation } from '@/utils/serverFieldValidation';\nimport { useDelayedLoading } from '@/composables/useDelayedLoading';\nimport { buttonTheme } from '@/components/foundation/actions/buttonFunctions';\n"
+        },
+        {
+          "before": "};\n\nconst onSubmit = async (ctx: SubmitContext) => {\n  if (submitting.value) return;\n",
+          "after": "};\n\nconst beginOnSubmitFeedback = useServerFieldValidation(\n  () => true, formRef,\n  () => ({ phone: formData.phone, verifyCode: formData.verifyCode }),\n);\nconst onSubmit = async (ctx: SubmitContext) => {\n  if (submitting.value) return;\n"
+        },
+        {
+          "before": "\n  submitting.value = true;\n  try {\n    const result = await login({\n",
+          "after": "\n  submitting.value = true;\n  const reportFieldError = beginOnSubmitFeedback();\n  try {\n    const result = await login({\n"
+        },
+        {
+          "before": "    await router.push(getFirstAccessiblePath(result.user) || '/dashboard');\n  } catch (error) {\n    adminFeedback.error(error instanceof Error ? error.message : '登录失败，请稍后重试');\n  } finally {\n",
+          "after": "    await router.push(getFirstAccessiblePath(result.user) || '/dashboard');\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    adminFeedback.error(error instanceof Error ? error.message : '登录失败，请稍后重试');\n  } finally {\n"
         }
       ]
     },
@@ -5468,6 +6229,58 @@
         {
           "before": "const formRoot = ref<HTMLElement>();\ndefineExpose({ scrollToSection, getFormElement: () => formRoot.value });\n</script>\n\n",
           "after": "const formRoot = ref<HTMLElement>();\ndefineExpose({ scrollToSection, getFormElement: () => formRoot.value });\n\nconst submitIndicator = useDelayedLoading(() => Boolean(props.loading));\n</script>\n\n"
+        }
+      ]
+    },
+    "src/pages/finished-stock/management/components/SpecPriceInput.vue": {
+      "baseSha256": "3e26e54e7be9289b2dc18de9c8ed0bb026ea43ba60c561bb19db5094e72ffd1d",
+      "patchCount": 2,
+      "patches": [
+        {
+          "before": "  formLayout?: boolean;\n  validationDeferred?: boolean;\n}>();\nconst emit = defineEmits<{ 'update:modelValue': [value: string]; change: [value: string]; commit: [] }>();\n",
+          "after": "  formLayout?: boolean;\n  validationDeferred?: boolean;\n  serverError?: string;\n}>();\nconst emit = defineEmits<{ 'update:modelValue': [value: string]; change: [value: string]; commit: [] }>();\n"
+        },
+        {
+          "before": "};\nconst error = computed(() => {\n  if (props.validationDeferred) return '';\n  if (!touched.value && !props.submitted) return '';\n",
+          "after": "};\nconst error = computed(() => {\n  if (props.serverError) return props.serverError;\n  if (props.validationDeferred) return '';\n  if (!touched.value && !props.submitted) return '';\n"
+        }
+      ]
+    },
+    "src/pages/store-services/index.vue": {
+      "baseSha256": "8783a73f8260831bd7529c751b3eba9e16695e03395ce5f9df5ae4cee4ebca54",
+      "patchCount": 8,
+      "patches": [
+        {
+          "before": "    \"\n  />\n  <AdminDialog\n    :visible=\"!!preview\"\n    confirm-function=\"close\"\n    :confirmation=\"{ kind: 'none' }\"\n    mode=\"modal\"\n    show-overlay\n    close-on-overlay-click\n    @close=\"preview = ''\"\n    header=\"服务主图\"\n    :footer=\"false\"\n    width=\"min(960px, 94vw)\"\n    @update:visible=\"\n      (v) => {\n",
+          "after": "    \"\n  />\n  <AdminMediaPreviewDialog\n    :visible=\"!!preview\"\n    @close=\"preview = ''\"\n    header=\"服务主图\"\n    @update:visible=\"\n      (v) => {\n"
+        },
+        {
+          "before": "  >\n    <img v-if=\"preview\" :src=\"preview\" alt=\"服务主图\" class=\"service-preview-image\" />\n  </AdminDialog>\n</template>\n<script setup lang=\"ts\">\n",
+          "after": "  >\n    <img v-if=\"preview\" :src=\"preview\" alt=\"服务主图\" class=\"service-preview-image\" />\n  </AdminMediaPreviewDialog>\n</template>\n<script setup lang=\"ts\">\n"
+        },
+        {
+          "before": "  AdminFormDialog,\n  AdminConfirmDialog,\n  AdminDialog,\n  adminFeedback,\n} from '@/components/foundation';\n",
+          "after": "  AdminFormDialog,\n  AdminConfirmDialog,\n  AdminMediaPreviewDialog,\n  adminFeedback,\n} from '@/components/foundation';\n"
+        },
+        {
+          "before": "}\n</script>\n\n<style scoped>\n.service-preview-image {\n  /* TDesign reserves 48px above and below its centered dialog, plus a 1px border. */\n  --dialog-spacing: calc(49px + var(--td-comp-paddingTB-xxl) + var(--td-comp-paddingTB-l));\n  display: block;\n  margin-inline: auto;\n  max-width: 100%;\n  max-height: max(1px, calc(100dvh - 2 * var(--dialog-spacing) - var(--td-line-height-title-medium)));\n}\n</style>\n",
+          "after": "}\n</script>\n"
+        },
+        {
+          "before": "import { getLoginUser } from '@/services/auth';\nimport { hasPermission } from '@/services/adminPermissions';\nimport { ApiError, request } from '@/services/http';\nimport DecimalInput from '@/components/DecimalInput.vue';\nimport { fieldFeedback, useFormFeedback } from '@/utils/formValidation';\n",
+          "after": "import { getLoginUser } from '@/services/auth';\nimport { hasPermission } from '@/services/adminPermissions';\nimport { useServerFields } from '@/utils/serverFieldValidation';\nimport { request } from '@/services/http';\nimport DecimalInput from '@/components/DecimalInput.vue';\nimport { fieldFeedback, useFormFeedback } from '@/utils/formValidation';\n"
+        },
+        {
+          "before": "  }\n}\nasync function save() {\n  if (saving.value || uploading.value) return;\n",
+          "after": "  }\n}\nconst storeServiceFields = () => ({\n  name: form.name.trim(), price: form.price, imageId: mainImage.value?.mediaId ?? null,\n});\nconst beginStoreServiceFeedback = useServerFields(\n  () => visible.value, editor, storeServiceFields, (key, message) => {\n    if (key === 'imageId') uploadError.value = message;\n    else serverFeedback.reject(key, key === 'name' ? form.name.trim() : form.price, message);\n  }, undefined, key => {\n    if (key === 'imageId') uploadError.value = '';\n    else serverFeedback.clearField(key);\n  },\n);\nasync function save() {\n  if (saving.value || uploading.value) return;\n"
+        },
+        {
+          "before": "  const imageId = mainImage.value?.mediaId ?? null;\n  const token = generation;\n  saving.value = true;\n  try {\n",
+          "after": "  const imageId = mainImage.value?.mediaId ?? null;\n  const token = generation;\n  const reportFieldError = beginStoreServiceFeedback();\n  saving.value = true;\n  try {\n"
+        },
+        {
+          "before": "  } catch (e) {\n    if (token !== generation) return;\n    if (e instanceof ApiError && e.status === 400) {\n      if (e.message === '本店已有同名服务') serverFeedback.reject('name', name, '服务名称已存在，请更换名称');\n      else if (e.message === '金额超出可精确保存的范围') serverFeedback.reject('price', form.price, e.message);\n      else if (e.message === '服务主图不可用') uploadError.value = '服务主图不可用，请重新选择图片';\n      else {\n        failure(e);\n        return;\n      }\n      await rejectFormSubmission(editor.value);\n    } else failure(e);\n  } finally {\n    if (token === generation) saving.value = false;\n",
+          "after": "  } catch (e) {\n    if (token !== generation) return;\n    if (!(await reportFieldError(e))) failure(e);\n  } finally {\n    if (token === generation) saving.value = false;\n"
         }
       ]
     }

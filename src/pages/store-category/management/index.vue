@@ -209,6 +209,7 @@
 </template>
 
 <script setup lang="ts">
+import { useServerFieldValidation } from '@/utils/serverFieldValidation';
 import { useDelayedLoading } from '@/composables/useDelayedLoading';
 import { OperationBlockedError } from '@/services/http';
 import { checkStoreCategoryDelete } from '@/services/storeCategories';
@@ -529,9 +530,14 @@ const categoryNameExists = () => {
 const priceRemovalVisible = ref(false);
 const priceRemovalNames = ref('');
 const formSubmitting = ref(false);
+const beginHandleSubmitFeedback = useServerFieldValidation(
+  () => formVisible.value, formRef,
+  () => ({ name: formData.name }),
+);
 const handleSubmit = async (confirmPriceRemoval = false) => {
   if (formSubmitting.value) return;
   formSubmitting.value = true;
+  const reportFieldError = beginHandleSubmitFeedback();
   try {
     const result = await formRef.value?.validate();
     if (result !== true) return rejectFormSubmission(formRef.value);
@@ -578,6 +584,7 @@ const handleSubmit = async (confirmPriceRemoval = false) => {
       adminFeedback.actionSuccess({ action: '修改', target: name });
     }
   } catch (error) {
+    if (await reportFieldError(error)) return;
     showError(error, '分类保存失败');
   } finally {
     formSubmitting.value = false;

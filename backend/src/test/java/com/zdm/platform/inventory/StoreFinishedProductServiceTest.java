@@ -107,7 +107,15 @@ class StoreFinishedProductServiceTest extends SpringContainerTestSupport {
     jdbc.update("UPDATE product_state_activity SET warehouse_entry_type='firstEntry' WHERE kind='store-finished' AND business_client_code='store' AND record_id=?", selected.id());
     assertThat(products.detail(selected.id()).warehouseEntryType()).isEqualTo("productCenterSelect");
     assertThat(jdbc.queryForObject("SELECT warehouse_entry_type FROM product_state_activity WHERE kind='store-finished' AND business_client_code='store' AND record_id=?", String.class, selected.id())).isEqualTo("firstEntry");
-    products.saveEdit(selected.id(),99941L,List.of(new StoreFinishedProductService.SalePriceInput(99941L,new BigDecimal("40"),"manual",new BigDecimal("2"))));
+    var validSku = new StoreFinishedProductService.SalePriceInput(99941L, new BigDecimal("40"), "manual", new BigDecimal("2"));
+    assertThatThrownBy(() -> products.saveEdit(selected.id(), null, List.of(validSku)))
+        .isInstanceOfSatisfying(com.zdm.platform.common.FieldValidationException.class,
+            error -> assertThat(error.field()).isEqualTo("storeCategoryId"));
+    var invalidSku = new StoreFinishedProductService.SalePriceInput(99941L, new BigDecimal("-1"), "manual", new BigDecimal("2"));
+    assertThatThrownBy(() -> products.saveEdit(selected.id(), 99941L, List.of(invalidSku)))
+        .isInstanceOfSatisfying(com.zdm.platform.common.FieldValidationException.class,
+            error -> assertThat(error.field()).isEqualTo("skus.99941.salePrice"));
+    products.saveEdit(selected.id(), 99941L, List.of(validSku));
     for (String target : List.of("selling", "offShelf", "recycle", "warehouse")) {
       var response=products.changeStatus(selected.id(),target,"商品暂停售卖",null);
       assertThat(response.stateOperatorName()).isNotBlank();

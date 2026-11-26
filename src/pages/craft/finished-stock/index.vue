@@ -213,6 +213,7 @@
 </template>
 
 <script setup lang="ts">
+import { useServerFieldValidation } from '@/utils/serverFieldValidation';
 import { useContentRequest } from '@/composables/useContentRequest';
 import { useDialogLoading } from '@/composables/useDialogLoading';
 import { usePendingAction } from '@/composables/usePendingAction';
@@ -529,6 +530,10 @@ const openFormImagePreview = () => {
   imagePreviewVisible.value = true;
 };
 
+const beginHandleSubmitFeedback = useServerFieldValidation(
+  () => formDialogVisible.value, formRef,
+  () => ({ name: formData.name, type: formData.type, width: formData.width, remark: formData.remark }),
+);
 const handleSubmit = async () => {
   const result = await formRef.value?.validate();
 
@@ -542,6 +547,7 @@ const handleSubmit = async () => {
   if (result !== true || duplicateName) return rejectFormSubmission(formRef.value);
 
   let refresh = false;
+  const reportFieldError = beginHandleSubmitFeedback();
   try {
     const imageMediaId = formData.image?.mediaId;
     if (dialogMode.value === 'create') {
@@ -563,6 +569,7 @@ const handleSubmit = async () => {
     }
     if (refresh) void loadCrafts();
   } catch (error) {
+    if (await reportFieldError(error)) return;
     adminFeedback.error(error instanceof Error ? error.message : '操作失败');
   }
 };

@@ -116,6 +116,7 @@
 </template>
 
 <script setup lang="ts">
+import { useServerFieldValidation } from '@/utils/serverFieldValidation';
 import { useDelayedLoading } from '@/composables/useDelayedLoading';
 import { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';
 import { useOperationPreflight } from '@/composables/useOperationPreflight';
@@ -252,10 +253,15 @@ const sendCode = async () => {
   }
 };
 
+const beginHandlePhoneSubmitFeedback = useServerFieldValidation(
+  () => step.value === 1, phoneFormRef,
+  () => ({ phone: phoneForm.phone, verifyCode: phoneForm.verifyCode }),
+);
 const handlePhoneSubmit = async (ctx: SubmitContext) => {
   if (submitting.value) return;
   if (ctx.validateResult !== true) return rejectFormSubmission(phoneFormRef.value);
   submitting.value = true;
+  const reportFieldError = beginHandlePhoneSubmitFeedback();
   try {
     const result = await verifyEmployeeInviteCode(token.value, phoneForm);
     if (result.requiresProfile) {
@@ -266,16 +272,21 @@ const handlePhoneSubmit = async (ctx: SubmitContext) => {
       throw new Error('邀请处理失败，请重试');
     }
   } catch (error) {
+    if (await reportFieldError(error)) return;
     adminFeedback.error(error instanceof Error ? error.message : '验证码校验失败');
   } finally {
     submitting.value = false;
   }
 };
 
+const beginProfileFeedback = useServerFieldValidation(
+  () => step.value === 2, profileFormRef, () => ({ ...profileForm }),
+);
 const handleProfileSubmit = async (ctx: SubmitContext) => {
   if (submitting.value) return;
   if (ctx.validateResult !== true || profileForm.gender === '') return rejectFormSubmission(profileFormRef.value);
   submitting.value = true;
+  const reportFieldError = beginProfileFeedback();
   try {
     const result = await registerEmployeeInvite(token.value, {
       phone: phoneForm.phone,
@@ -285,6 +296,7 @@ const handleProfileSubmit = async (ctx: SubmitContext) => {
     });
     showRegistrationResult(result);
   } catch (error) {
+    if (await reportFieldError(error)) return;
     adminFeedback.error(error instanceof Error ? error.message : '注册提交失败');
   } finally {
     submitting.value = false;

@@ -1,5 +1,6 @@
 package com.zdm.platform.inventory;
 
+import com.zdm.platform.common.FieldValidationException;
 import com.zdm.platform.common.OperationBlockedException;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -553,7 +554,11 @@ public class StoreAccessoryProductService {
     salePrices.lockCategories(store.storeId());
     listing = listing(store, id, true); requirePriceEditable(listing, source);
     var context = salePrices.context(store.storeId(), List.of(id));
-    salePrices.requireCategory(context, categoryId);
+    try {
+      salePrices.requireCategory(context, categoryId);
+    } catch (OperationBlockedException ex) {
+      throw new FieldValidationException("storeCategoryId", ex.getMessage(), ex);
+    }
     AccessoryProduct product = publicProduct(number(source.get("id")));
     var variants = product.getVariants() == null ? List.<AccessoryProductVariant>of() : product.getVariants();
     if (inputs == null || inputs.size() != variants.size() || inputs.stream().anyMatch(Objects::isNull)
@@ -588,10 +593,16 @@ public class StoreAccessoryProductService {
       } else {
         next = input.preservePricing() ? before : new StoreAccessorySalePriceService.Price(input.salePrice(), "manual", input.saleCoefficient());
         boolean carryOnCategoryChange = !Objects.equals(previousCategory, categoryId) && before.sameValues(next);
-        if (next.amount() != null) requirePrice(next.amount());
-        else if (!carryOnCategoryChange) throw new IllegalArgumentException("请输入商品售价");
-        if (next.coefficient() != null) requirePrice(next.coefficient());
-        else if (!carryOnCategoryChange) throw new IllegalArgumentException("请输入系数");
+        if (next.amount() != null) {
+          requireEditablePrice(next.amount(), input.skuId(), "salePrice");
+        } else if (!carryOnCategoryChange) {
+          throw new FieldValidationException("skus." + input.skuId() + ".salePrice", "请输入商品售价");
+        }
+        if (next.coefficient() != null) {
+          requireEditablePrice(next.coefficient(), input.skuId(), "saleCoefficient");
+        } else if (!carryOnCategoryChange) {
+          throw new FieldValidationException("skus." + input.skuId() + ".saleCoefficient", "请输入系数");
+        }
       }
       if (!before.sameValues(next)) salesChanged = true;
       prepared.put(input.skuId(), next);
@@ -993,6 +1004,14 @@ public class StoreAccessoryProductService {
   private static LocalDateTime timestamp(Object value) {
     if (value instanceof LocalDateTime time) { return time; }
     return value instanceof Timestamp time ? time.toLocalDateTime() : null;
+  }
+
+  private static void requireEditablePrice(BigDecimal price, Long skuId, String field) {
+    try {
+      requirePrice(price);
+    } catch (IllegalArgumentException ex) {
+      throw new FieldValidationException("skus." + skuId + "." + field, ex.getMessage(), ex);
+    }
   }
 
   private static void requirePrice(BigDecimal price) {

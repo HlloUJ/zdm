@@ -284,7 +284,7 @@
               value="商品信息调整"
               label="商品信息调整" /><t-option value="其他" label="其他" /></t-select
         ></t-form-item>
-        <t-form-item label="详细说明"
+        <t-form-item label="详细说明" v-bind="offShelfFeedback.field('detail', offShelf.detail)"
           ><t-textarea v-model="offShelf.detail" :maxlength="100" placeholder="请输入详细说明" :autosize="{}"
         /></t-form-item>
       </t-form>
@@ -379,6 +379,7 @@
 </template>
 
 <script setup lang="ts">
+import { useServerFields } from '@/utils/serverFieldValidation';
 import { useContentRequest } from '@/composables/useContentRequest';
 import { usePendingAction } from '@/composables/usePendingAction';
 import { useDelayedLoading } from '@/composables/useDelayedLoading';
@@ -996,6 +997,10 @@ async function prepareBatch() {
   }
   confirm.value = { kind: action.kind, label: action.label, ids: [...selected.value] };
 }
+const beginOffShelfFeedback = useServerFields(
+  () => offShelfVisible.value, offShelfFormRoot, () => ({ ...offShelf }),
+  (key, message) => offShelfFeedback.reject(key, offShelf[key as keyof typeof offShelf], message),
+);
 async function confirmOffShelf() {
   if (submittingOffShelf.value) return;
   const ids = pendingOffShelf.value?.ids;
@@ -1011,6 +1016,7 @@ async function confirmOffShelf() {
   const pending = pendingOffShelf.value;
   if (!pending) return;
   submittingOffShelf.value = true;
+  const reportFieldError = beginOffShelfFeedback();
   if (pending.batch) offShelfVisible.value = false;
   try {
     if (pending.batch)
@@ -1031,6 +1037,7 @@ async function confirmOffShelf() {
     adminFeedback.success(pending.batch ? '已批量下架' : '商品已下架');
     await load();
   } catch (error) {
+    if (!pending.batch && await reportFieldError(error)) return;
     if (await refreshAvailability(pending.ids))
       adminFeedback.error(getSafeErrorMessage(error, pending.batch ? '操作失败' : '下架失败'));
     else offShelfVisible.value = false;

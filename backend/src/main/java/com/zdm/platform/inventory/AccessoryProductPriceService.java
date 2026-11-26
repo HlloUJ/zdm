@@ -1,5 +1,7 @@
 package com.zdm.platform.inventory;
 
+import com.zdm.platform.common.FieldValidationException;
+
 import com.zdm.platform.common.OperationBlockedException;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -123,17 +125,19 @@ public class AccessoryProductPriceService {
     BigDecimal coefficient = price.getPriceCoefficient();
     BigDecimal cost = price.getCostPrice();
     BigDecimal value = price.getPrice();
-    if (coefficient == null
-        || coefficient.signum() < 0
-        || cost == null
-        || cost.signum() < 0
-        || value == null
-        || value.signum() < 0) {
-      throw new IllegalArgumentException("价格系数、成本价和价格不能为空且不能小于0");
+    String field = "skus." + skuId + ".markupPrices." + price.getStoreLevelId() + ".";
+    if (coefficient == null || coefficient.signum() < 0) {
+      throw FieldValidationException.withHint(field + "priceCoefficient", "价格系数、成本价和价格不能为空且不能小于0", "请输入大于或等于0的价格系数");
+    }
+    if (cost == null || cost.signum() < 0) {
+      throw FieldValidationException.withHint("skus." + skuId + ".costPrice", "价格系数、成本价和价格不能为空且不能小于0", "请输入大于或等于0的成本价");
+    }
+    if (value == null || value.signum() < 0) {
+      throw FieldValidationException.withHint(field + "price", "价格系数、成本价和价格不能为空且不能小于0", "请输入大于或等于0的价格");
     }
     BigDecimal expected = cost.multiply(coefficient).setScale(2, RoundingMode.HALF_UP);
     if (value.setScale(2, RoundingMode.HALF_UP).compareTo(expected) != 0) {
-      throw new IllegalArgumentException("价格必须等于成本价按价格系数计算后的结果");
+      throw new FieldValidationException(field + "price", "价格必须等于成本价按价格系数计算后的结果");
     }
     AccessoryProductPrice normalized = new AccessoryProductPrice();
     normalized.setAccessoryProductId(productId);

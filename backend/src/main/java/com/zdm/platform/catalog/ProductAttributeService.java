@@ -1,5 +1,6 @@
 package com.zdm.platform.catalog;
 
+import com.zdm.platform.common.FieldValidationException;
 import com.zdm.platform.account.CreatorAwareService;
 import com.zdm.platform.security.CurrentIdentity;
 import com.zdm.platform.security.CurrentIdentityProvider;
@@ -49,7 +50,7 @@ public class ProductAttributeService extends CreatorAwareService<ProductAttribut
     try {
       save(attribute);
     } catch (DuplicateKeyException exception) {
-      throw new IllegalArgumentException("属性名称已存在，请勿重复创建", exception);
+      throw new FieldValidationException("name", "属性名称已存在，请勿重复创建", exception);
     }
     return getById(attribute.getId());
   }

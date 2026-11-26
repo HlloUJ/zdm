@@ -1,5 +1,6 @@
 package com.zdm.platform.inventory;
 
+import com.zdm.platform.common.FieldValidationException;
 import com.zdm.platform.common.OperationBlockedException;
 
 import com.zdm.platform.account.CreatorAwareService;
@@ -121,10 +122,10 @@ public class SlabGradeService extends CreatorAwareService<SlabGradeMapper, SlabG
       duplicateName.ne(SlabGrade::getId, excludedId);
     }
     if (duplicateCode.count() > 0) {
-      throw new IllegalArgumentException("等级已存在");
+      throw new FieldValidationException("code", "等级已存在");
     }
     if (duplicateName.count() > 0) {
-      throw new IllegalArgumentException("等级名称已存在");
+      throw new FieldValidationException("name", "等级名称已存在");
     }
   }
   @Override
