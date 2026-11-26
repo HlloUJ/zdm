@@ -4789,7 +4789,7 @@
     },
     "src/pages/store-category/management/index.vue": {
       "baseSha256": "e6db3a2a43404453ba0ed901036e24385ca44997bdc3755c825742efef8e94df",
-      "patchCount": 24,
+      "patchCount": 25,
       "patches": [
         {
           "stage": "before-migrations",
@@ -4918,6 +4918,10 @@
         {
           "before": "      action=\"新增\"\n      title=\"新增下级分类\"\n      :loading=\"formSubmitting\"\n",
           "after": "      action=\"新增\"\n      title=\"是否新增下级分类？\"\n      :loading=\"formSubmitting\"\n"
+        },
+        {
+          "before": "      :header=\"formMode === 'create' ? `新增${formLevel}级分类` : '编辑分类'\"\n",
+          "after": "      :header=\"formMode === 'create' ? `新增${['一', '二', '三'][formLevel - 1]}级分类` : '编辑分类'\"\n"
         }
       ]
     },

@@ -14710,6 +14710,13 @@
           "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
           "before": "      action=\"新增\"\n      title=\"新增下级分类\"\n      :loading=\"formSubmitting\"\n",
           "after": "      action=\"新增\"\n      title=\"是否新增下级分类？\"\n      :loading=\"formSubmitting\"\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按验收反馈将门店分类新增弹窗的层级数字与按钮统一为汉字",
+          "before": "      :header=\"formMode === 'create' ? `新增${formLevel}级分类` : '编辑分类'\"\n",
+          "after": "      :header=\"formMode === 'create' ? `新增${['一', '二', '三'][formLevel - 1]}级分类` : '编辑分类'\"\n"
         }
       ]
     },
