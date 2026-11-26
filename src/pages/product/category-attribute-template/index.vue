@@ -282,7 +282,7 @@
       v-model:visible="addVisible"
       :confirmation="operationConfirmation('添加属性')"
       confirm-function="create"
-      header="添加属性"
+      header="选择要添加的属性"
       width="720px"
       :confirm-btn="{ disabled: !addIds.length }"
       @confirm="addAttributes"
@@ -362,7 +362,7 @@
       v-model:visible="publishVisible"
       :confirmation="operationConfirmation('发布版本')"
       confirm-function="publish-version"
-      header="发布新版本"
+      header="是否发布属性模板新版本？"
       width="max-content"
       :confirm-btn="{ loading: busy }"
       @confirm="publish"
@@ -376,14 +376,14 @@
       :confirmation="operationConfirmation('复制版本')"
       confirm-function="copy-version"
       :visible="!!copyTarget"
-      header="复制版本"
+      header="是否复制属性模板版本并覆盖草稿？"
       :confirm-btn="{ loading: busy }"
       @confirm="copyVersion(copyTarget!)"
       @close="copyTarget = undefined"
       @cancel="copyTarget = undefined"
       >当前分类已有草稿，复制后将覆盖草稿中的全部配置，是否继续？</AdminDialog
     >
-    <t-drawer v-model:visible="historyVisible" header="版本记录" size="min(760px, 100%)" :footer="false">
+    <t-drawer v-model:visible="historyVisible" header="属性模板版本记录" size="min(760px, 100%)" :footer="false">
       <t-table row-key="id" :data="versions.filter((v) => v.state === 'published')" :columns="historyColumns">
         <template #versionNo="{ row }">
           <t-space size="small" align="center">

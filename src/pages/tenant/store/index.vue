@@ -79,7 +79,7 @@
                     size="small"
                     variant="text"
                     :theme="buttonTheme('edit')"
-                    aria-label="修改门店级别"
+                    aria-label="调整门店级别"
                     @click="openLevelDialog(row)"
                   >
                     <t-icon name="check-circle" />
@@ -148,7 +148,7 @@
       :confirmation="formConfirmation(dialogMode)"
       confirm-function="submit"
       dialog-class-name="zdm-admin-dialog zdm-admin-single-form"
-      :header="dialogMode === 'create' ? '新增' : '编辑'"
+      :header="dialogMode === 'create' ? '新增门店' : '编辑门店'"
       width="480px"
       :confirm-btn="{ loading: handleSubmitPending }"
       @confirm="handleSubmitOnce"
@@ -216,7 +216,7 @@
       v-model:visible="levelDialogVisible"
       :confirmation="operationConfirmation('调整门店级别')"
       confirm-function="edit"
-      header="门店级别"
+      header="调整门店级别"
       dialog-class-name="zdm-admin-single-form"
       width="480px"
       :confirm-btn="{ loading: handleLevelSubmitPending }"
@@ -248,7 +248,7 @@
     </AdminConfirmDialog>
     <AdminDialog
       v-model:visible="deleteResultVisible"
-      header="删除结果"
+      header="门店彻底删除结果"
       confirm-function="close"
       :confirmation="{ kind: 'none' }"
       :footer="false"

@@ -86,7 +86,7 @@
       v-model:visible="dialogVisible"
       :confirmation="formConfirmation('create')"
       confirm-function="submit"
-      header="新增"
+      header="新增属性"
       width="480px"
       placement="center"
       :prevent-scroll-through="false"

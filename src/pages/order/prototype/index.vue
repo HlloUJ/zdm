@@ -74,7 +74,7 @@
                     hover="color"
                     :theme="buttonTheme('archive')"
                     @click="openAction('revoke-plan', selected!, row.id)"
-                    >撤销未发安排</t-link
+                    >撤销未发货安排</t-link
                   ></template
                 >
               </AdminListPage>
@@ -96,7 +96,7 @@
                     hover="color"
                     :theme="buttonTheme('edit')"
                     @click="openAction('correct-shipment', selected!, row.id)"
-                    >更正／作废</t-link
+                    >更正或作废发货记录</t-link
                   ></template
                 >
               </AdminListPage>
@@ -212,7 +212,7 @@
                   :theme="buttonTheme('view')"
                   hover="color"
                   @click="openAction('receive', findOrder(row.orderId), row.id)"
-                  >登记收货</t-link
+                  >登记到店收货</t-link
                 ><t-link
                   v-if="canTask('ship') && (row.source === 'local' || row.received > row.shipped)"
                   :theme="buttonTheme('view')"
@@ -293,6 +293,7 @@
       :order="editingOrder"
       :state="state"
       :editing="editing"
+      :copied="editorAction === 'copy'"
       :saving="editorSaving"
       @save="saveEditorOnce"
     />
@@ -350,7 +351,7 @@
     /></AdminDialog>
     <AdminDialog
       :visible="scopeVerified && Boolean(logDetail)"
-      header="操作前后数据"
+      header="订单操作前后数据"
       width="min(960px, 94vw)"
       confirm-function="close"
       :confirmation="{ kind: 'close', text: '关闭' }"
@@ -711,7 +712,8 @@ const toolbarActions = computed<ListAction[]>(() =>
   can('create') ? [{ id: 'create', label: '新增订单', function: 'create', icon: 'add' }] : [],
 );
 const editingOrder = ref(blankOrder(context.value, state.value.orders)),
-  editing = ref(false),
+  editorAction = ref('create'),
+  editing = computed(() => editorAction.value === 'edit'),
   editorVisible = ref(false);
 const actionVisible = ref(false),
   action = ref(''),
@@ -773,7 +775,7 @@ async function openAction(id: string, o?: Order, rid = '') {
       return;
     }
     if (['create', 'copy', 'edit'].includes(id)) {
-      editing.value = id === 'edit';
+      editorAction.value = id;
       editingOrder.value =
         id === 'create'
           ? blankOrder(context.value, state.value.orders)

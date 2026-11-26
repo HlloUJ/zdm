@@ -16,7 +16,7 @@
     :confirmation="operationConfirmation('更改价格浮动方式')"
     confirm-function="edit"
     attach="body"
-    header="更改价格浮动方式"
+    :header="source === 'auto' ? '是否切换为手工价格？' : '是否切换为跟随价格配置？'"
     @confirm="confirmToggle"
     @cancel="confirmVisible = false"
   >

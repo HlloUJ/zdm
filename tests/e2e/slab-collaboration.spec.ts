@@ -144,7 +144,7 @@ test('运营角色候选目录五个状态均显示详情且默认不勾选', as
   );
   await page.goto(productWarehouseUrl('/role-management'));
   await page.locator('tbody tr').filter({ hasText: '大板运营角色' }).getByText('权限', { exact: true }).click();
-  const dialog = page.locator('.t-dialog:visible').filter({ hasText: '权限配置' });
+  const dialog = page.locator('.t-dialog:visible').filter({ hasText: '配置角色权限' });
   await dialog.locator('.permission-module-list').getByText('商品管理', { exact: true }).click();
   const rows = dialog.locator('.permission-matrix tbody tr');
   const first = rows.filter({ hasText: '大板管理页' }).first();

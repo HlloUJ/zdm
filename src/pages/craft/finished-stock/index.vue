@@ -129,7 +129,7 @@
     <t-dialog
       v-model:visible="formDialogVisible"
       dialog-class-name="zdm-admin-dialog zdm-admin-single-form"
-      :header="dialogMode === 'create' ? '新增' : '编辑'"
+      :header="dialogMode === 'create' ? '新增成品工艺' : '编辑成品工艺'"
       width="480px"
       placement="center"
       :close-on-overlay-click="true"

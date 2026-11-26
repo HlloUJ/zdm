@@ -22,6 +22,41 @@ export function operationConfirmation(action: string, batch = false): Confirmati
     throw new Error(`Unregistered confirmation action: ${action}`);
   return { kind: 'operation', action: action as keyof typeof registry.confirmationActions, batch };
 }
+/** Describe the subject and direction separately from the footer button caption. */
+export function confirmationQuestion(action: string, target: string, batch = false): string {
+  const scope = batch || action.startsWith('批量') ? '批量' : '';
+  const verb = action.replace(/^批量/, '');
+  let phrase = `${verb}${target}`;
+  if (target) {
+    switch (verb) {
+      case '放回':
+      case '放回到仓库':
+      case '放回仓库':
+        phrase = `将${target}放回仓库`;
+        break;
+      case '删除至回收站':
+        phrase = `将${target}移至回收站`;
+        break;
+      case '恢复运营':
+        phrase = `恢复${target}运营`;
+        break;
+      case '取消归档':
+        phrase = `取消${target}归档`;
+        break;
+      case '清空回收站':
+        phrase = `清空${target}回收站`;
+        break;
+      case '保存价格':
+        phrase = `保存${target}价格`;
+        break;
+      case '删除跟进记录':
+        phrase = `删除${target}跟进记录`;
+        break;
+    }
+  }
+  return `是否${scope}${phrase}？`;
+}
+
 export function confirmationText(confirmation: Confirmation): string {
   switch (confirmation.kind) {
     case 'form':

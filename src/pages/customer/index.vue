@@ -47,7 +47,7 @@
                 hover="color"
                 :theme="buttonTheme('create')"
                 @click="openFollowup(undefined, row)"
-                >跟进</t-link
+                >新增跟进</t-link
               >
               <t-link
                 v-if="can('edit') && isInDataScope(row)"
@@ -219,7 +219,7 @@
       confirm-function="submit"
       :data="followForm"
       label-width="100px"
-      :header="followId ? '编辑跟进' : '新增跟进'"
+      :header="followId ? '编辑客户跟进记录' : '新增客户跟进记录'"
       width="480px"
       :confirm-btn="submitButton"
       @confirm="submitFollowup"
@@ -271,7 +271,7 @@
       :confirmation="operationConfirmation('调整归属', pending.batch)"
       confirm-function="assign"
       :data="{ ownerAccountId: newOwner }"
-      header="调整归属"
+      :header="pending.batch ? '批量调整客户归属' : '调整客户归属'"
       :confirm-btn="submitButton"
       @confirm="submitAction"
     >
@@ -296,6 +296,7 @@
       :function="deletingFollowId != null ? 'delete' : buttonFunctionFor('customer', pending.action)"
       :batch="deletingFollowId == null && pending.batch"
       :action="confirmAction"
+      :title="confirmationQuestion(confirmAction, '客户', deletingFollowId == null && pending.batch)"
       :object-type="confirmObjectType"
       :object-name="confirmObjectName"
       :description="confirmDescription"
@@ -322,7 +323,7 @@
 import { useContentRequest } from '@/composables/useContentRequest';
 import { usePendingAction } from '@/composables/usePendingAction';
 import { useDelayedLoading } from '@/composables/useDelayedLoading';
-import { formConfirmation, operationConfirmation } from '@/components/foundation/actions/confirmation';
+import { confirmationQuestion, formConfirmation, operationConfirmation } from '@/components/foundation/actions/confirmation';
 import { buttonTheme, buttonFunctionFor, cancelButtonProps } from '@/components/foundation/actions/buttonFunctions';
 import { rejectFormSubmission } from '@/utils/submitValidation';
 import { fieldFeedback, useFormFeedback } from '@/utils/formValidation';

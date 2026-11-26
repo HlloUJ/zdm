@@ -164,6 +164,7 @@
                         v-if="row.image"
                         :src="row.image"
                         :alt="row.name"
+                        :aria-label="`预览${row.name}主图`"
                         role="button"
                         :tabindex="sourceBlocked(row) ? -1 : 0"
                         @click="!sourceBlocked(row) && openTableImage(row)"
@@ -978,7 +979,7 @@
 
     <t-drawer
       v-model:visible="priceDrawerVisible"
-      header="价格编辑器"
+      :header="priceDrawerReadonly ? '查看大板价格' : '编辑大板价格'"
       placement="right"
       :size="priceDrawerSize"
       :footer="!priceDrawerReadonly"
@@ -1081,7 +1082,6 @@
       :loading="saving"
       :function="buttonFunctionFor('stock', confirmState.type)"
       :action="confirmAction"
-      :title="confirmTitle"
       object-type="大板"
       :object-name="confirmState.row?.name"
       @confirm="handleConfirmSubmit"
@@ -1136,7 +1136,7 @@
       v-model:visible="offShelfHistoryVisible"
       :confirmation="{ kind: 'close', text: '关闭' }"
       confirm-function="close"
-      header="历史下架原因"
+      header="大板历史下架原因"
       dialog-class-name="zdm-admin-responsive-dialog"
       width="800px"
       :cancel-btn="null"
@@ -1161,6 +1161,7 @@
       v-model:visible="batchShelfResultVisible"
       :result="batchShelfResult"
       :operation="batchOperation"
+      object-type="大板"
     />
   </div>
 </template>
@@ -1733,11 +1734,6 @@ const confirmAction = computed(() => {
   };
   return actionMap[confirmState.type];
 });
-const confirmTitle = computed(() => {
-  if (confirmState.type === 'restore') return '是否放回仓库';
-  if (confirmState.type === 'batchRestore') return '是否批量放回到仓库';
-  return '';
-});
 const reasonState = reactive<{
   type: 'deleteExternal' | 'offShelf';
   row: SlabItem | null;
@@ -1749,7 +1745,7 @@ const reasonState = reactive<{
 });
 const reasonDialogTitle = computed(() => {
   if (reasonState.type === 'deleteExternal') return '删除大板';
-  return reasonState.isBatch ? '批量下架' : '下架';
+  return reasonState.isBatch ? '批量下架大板' : '下架大板';
 });
 const reasonForm = reactive({
   reason: '',

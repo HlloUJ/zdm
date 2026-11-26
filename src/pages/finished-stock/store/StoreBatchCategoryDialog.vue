@@ -1,5 +1,5 @@
 <template>
-  <AdminDialog :visible="true" header="批量设置分类" width="min(920px, 94vw)"
+  <AdminDialog :visible="true" header="批量设置商品分类" width="min(920px, 94vw)"
     confirm-function="batch-fill" :confirmation="operationConfirmation('设置分类', true)"
     :confirm-btn="{ disabled: !leaf || busy, loading: busy }"
     @confirm="leaf && !busy && emit('submit', leaf.id)" @close="!busy && emit('cancel')" @cancel="!busy && emit('cancel')">

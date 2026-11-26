@@ -2,14 +2,14 @@
   <AdminFormDialog
     ref="dialog"
     v-model:visible="visible"
-    :header="label"
+    :header="dialogTitle"
     :data="form"
     :width="action === 'cancel' ? 'min(1100px, 94vw)' : '480px'"
     :form-layout="action === 'cancel' ? 'custom' : 'single-column'"
     :confirm-function="
       action === 'cancel' || action === 'void-payment' || action === 'revoke-plan' ? 'archive' : 'save'
     "
-    :confirmation="operationConfirmation(label)"
+    :confirmation="operationConfirmation(operationName)"
     :confirm-btn="{ loading: submitting }"
     @confirm="submit"
   >
@@ -290,6 +290,23 @@ const paymentKind = computed(() =>
       ? 'receipt'
       : 'refund',
 );
+const operationName = computed(() => {
+  if (props.action === 'correct-payment' || props.action === 'void-payment') {
+    const payment = props.order.payments.find((entry) => entry.id === props.recordId);
+    if (payment) {
+      const action = props.action === 'void-payment' ? '作废' : '更正';
+      return `${action}${payment.kind === 'receipt' ? '收款' : '退款'}记录`;
+    }
+  }
+  if (props.action === 'correct-shipment' && form.value.quantity === 0) return '作废发货记录';
+  if (props.action === 'revoke-plan') return '撤销未发货安排';
+  return props.label;
+});
+const dialogTitle = computed(() => {
+  if (props.action === 'confirm') return '是否确认订单？';
+  if (props.action === 'correct-shipment') return '更正或作废发货记录';
+  return operationName.value;
+});
 const needsReason = computed(() =>
   ['cancel', 'terms', 'void-payment', 'revoke-plan', 'correct-shipment'].includes(props.action),
 );

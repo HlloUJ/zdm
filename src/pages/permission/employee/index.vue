@@ -105,7 +105,7 @@
                     hover="color"
                     @click="openPermissionDialog(row)"
                   >
-                    角色
+                    配置权限
                   </t-link>
                   <t-link
                     v-if="canToggleEmployeeStatus && !isSuperAdminEmployee(row) && !isCurrentEmployee(row)"
@@ -154,7 +154,7 @@
       v-model:visible="inviteDialogVisible"
       :cancel-btn="cancelButtonProps(undefined)"
       :confirm-btn="dialogButtonProps('submit', operationConfirmation('邀请员工'))"
-      header="邀请员工"
+      header="员工邀请链接"
       width="560px"
       placement="center"
       @close="closeInviteDialog"
@@ -183,7 +183,7 @@
     <t-dialog
       v-model:visible="profileDialogVisible"
       dialog-class-name="zdm-admin-dialog zdm-admin-single-form"
-      header="编辑资料"
+      header="编辑员工资料"
       width="480px"
       placement="center"
       :confirm-btn="handleProfileSubmitButton"
@@ -210,7 +210,7 @@
 
     <t-dialog
       v-model:visible="permissionDialogVisible"
-      header="配置权限"
+      header="配置员工权限"
       width="560px"
       placement="center"
       :confirm-btn="handlePermissionSubmitButton"

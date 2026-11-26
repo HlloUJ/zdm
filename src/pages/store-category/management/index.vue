@@ -173,7 +173,7 @@
       v-model:visible="priceRemovalVisible"
       function="create"
       action="新增"
-      title="新增下级分类"
+      title="是否新增下级分类？"
       :loading="formSubmitting"
       @confirm="handleSubmit(true)"
     >

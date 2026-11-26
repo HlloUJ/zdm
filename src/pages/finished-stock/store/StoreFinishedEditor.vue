@@ -142,7 +142,7 @@
   </section>
   <t-drawer
     v-model:visible="batchVisible"
-    header="批量填写"
+    header="批量填写商品规格售价"
     placement="right"
     size="min(1180px, 100%)"
     lazy

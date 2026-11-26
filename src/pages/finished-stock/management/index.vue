@@ -480,7 +480,7 @@
 
     <t-drawer
       v-model:visible="priceDrawerVisible"
-      header="批量填写"
+      header="批量填写商品规格价格"
       placement="right"
       size="min(1180px, 100%)"
       lazy
@@ -592,7 +592,7 @@
     </t-drawer>
     <t-dialog
       v-model:visible="reasonDialogVisible"
-      header="下架"
+      :header="reasonState.isBatch ? '批量下架商品' : '下架商品'"
       width="520px"
       placement="center"
       :confirm-btn="submitReasonButton"
@@ -1380,7 +1380,7 @@ const baseBatchButtons = computed(() => {
     selling: [{ action: 'batchOffShelf', label: '批量下架', icon: 'download', className: 'brown-button' }],
     soldOut: [],
     recycle: [
-      { action: 'batchRestore', label: '批量放回到仓库', icon: 'rollback' },
+      { action: 'batchRestore', label: '批量放回仓库', icon: 'rollback' },
       { action: 'batchPurge', label: '批量彻底删除', icon: 'delete', className: 'deep-danger-button' },
       { action: 'clearRecycle', label: '清空回收站', icon: 'clear' },
     ],

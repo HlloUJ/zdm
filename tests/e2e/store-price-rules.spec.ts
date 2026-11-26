@@ -205,7 +205,7 @@ test('price batch fills selected inputs locally and only Save writes configurati
   await expect(batch).toBeEnabled();
   await batch.click();
   const dialog = page.locator('.t-dialog:visible');
-  await expect(dialog.locator('.t-dialog__header-content')).toHaveText('批量设置');
+  await expect(dialog.locator('.t-dialog__header-content')).toHaveText('批量设置价格系数');
   await expect(dialog.getByText(/已选分类|已选择.*个分类|留空将/)).toHaveCount(0);
   await checkDecimalEditing(dialog.locator('.t-input-number input'));
   const priorCoefficient = await dialog.locator('.t-input-number input').inputValue();

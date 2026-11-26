@@ -813,7 +813,7 @@ for (const scope of ['finished', 'accessory']) {
       await entry.click();
       const dialog = page.locator('.t-dialog:visible');
       const name = scope === 'finished' ? '岩板餐桌' : '桌腿';
-      await expect(dialog.locator('.t-dialog__header')).toHaveText('是否删除');
+      await expect(dialog.locator('.t-dialog__header')).toHaveText('是否删除模板草稿？');
       await expect(dialog).toContainText(`是否删除模板草稿“${name}”？`);
       await expect(dialog).toHaveCSS('width', '480px');
       await dialog.getByRole('button', { name: '取消', exact: true }).click();
