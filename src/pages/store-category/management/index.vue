@@ -93,7 +93,6 @@
                   {{ row.status === 'enabled' ? '启用' : '停用' }}
                 </t-tag>
               </template>
-              <template #sort="{ row }">{{ row.sort }}</template>
               <template #createdByName="{ row }">{{ row.createdByName }}</template>
               <template #createdAt="{ row }">{{ row.createdAt }}</template>
               <template #operation="{ row }">
@@ -292,7 +291,6 @@ interface CategoryRow {
   level: 1 | 2 | 3;
   name: string;
   status: CategoryStatus;
-  sort: number;
   productCount: number;
   createdByName: string;
   createdAt: string;
@@ -322,13 +320,12 @@ const formRules: Record<string, FormRule[]> = {
 
 const columns = computed<PrimaryTableCol<TableRowData>[]>(() => [
   ...(canSortCategory.value ? [{ colKey: 'drag', title: 'dragTitle', width: 28 }] : []),
-  { colKey: 'name', title: '分类名称', minWidth: 240, align: 'left' },
-  { colKey: 'level', title: '分类级别', width: 120, align: 'left' },
-  { colKey: 'productCount', title: '关联商品', width: 120 },
+  { colKey: 'name', title: '分类名称', minWidth: 280, align: 'left' },
+  { colKey: 'level', title: '分类级别', width: 130, align: 'left' },
+  { colKey: 'productCount', title: '关联商品', width: 130 },
   { colKey: 'status', title: '状态', width: 100 },
-  { colKey: 'sort', title: '排序', width: 100 },
-  { colKey: 'createdByName', title: '创建人', width: 120 },
-  { colKey: 'createdAt', title: '创建时间', width: 200 },
+  { colKey: 'createdByName', title: '创建人', width: 140 },
+  { colKey: 'createdAt', title: '创建时间', width: 220 },
   {
     colKey: 'operation',
     title: '操作',
@@ -346,7 +343,7 @@ const displayRows = computed<CategoryRow[]>(() => {
   const subtreeMatches = (node: CategoryNode): boolean => matches(node) || node.children.some(subtreeMatches);
   const rows: CategoryRow[] = [];
   const appendNodes = (nodes: CategoryNode[], forceDescendants = false) => {
-    nodes.forEach((node, position) => {
+    nodes.forEach((node) => {
       const nodeMatches = matches(node);
       if (hasFilter && !forceDescendants && !subtreeMatches(node)) return;
       rows.push({
@@ -354,7 +351,6 @@ const displayRows = computed<CategoryRow[]>(() => {
         level: node.level,
         name: node.name,
         status: node.status,
-        sort: position + 1,
         productCount: node.productCount,
         createdByName: node.createdByName,
         createdAt: formatDateTime(node.createdAt),

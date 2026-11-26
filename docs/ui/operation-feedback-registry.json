@@ -1034,7 +1034,7 @@
       }
     },
     "src/pages/product/category/index.vue": {
-      "script": "1728fc0ffc3630673167aa14ab0c8fdcc3aeb89b4e2f3c7e2ebc07b707530cc3",
+      "script": "60d97fa8e2420850146664a1bdc7298c7d347c5402c42387a173fbf8740e8d61",
       "actions": {
         "click → handleReset": "query",
         "click → handleSearch": "query",
@@ -1435,7 +1435,7 @@
       }
     },
     "src/pages/store-category/management/index.vue": {
-      "script": "c6661ff014e9690e77abbbfc3dd41f330f2c8b234510a8c5f5c01dfa78d2f991",
+      "script": "45eedb991d7b6ef49b63cc638536f876833116f16995b11e4be5cb2e40e23731",
       "actions": {
         "click → handleReset": "query",
         "click → handleSearch": "query",
@@ -3676,7 +3676,7 @@
     },
     "src/pages/product/category/index.vue": {
       "baseSha256": "d0c3e9bc240c62acc821fb519b0a41a7b8e3c3f693eb8c564e4b74336713d6ca",
-      "patchCount": 23,
+      "patchCount": 29,
       "patches": [
         {
           "stage": "before-migrations",
@@ -3780,6 +3780,30 @@
         {
           "before": "  deleteTarget.value = null;\n});\n</script>\n\n",
           "after": "  deleteTarget.value = null;\n});\n\nconst tableIndicator = useDelayedLoading(() => Boolean(loading.value || sorting.value));\n\nconst { pending: handleSubmitPending, run: handleSubmitOnce } = usePendingAction(handleSubmit);\nconst handleSubmitButton = useDialogLoading(() => formVisible.value, () => dialogButtonProps('save', formConfirmation(formMode.value), { loading: handleSubmitPending.value }));\nconst { pending: handleStatusConfirmPending, run: handleStatusConfirmOnce } = usePendingAction(handleStatusConfirm);\n</script>\n\n"
+        },
+        {
+          "before": "                  row.status === 'enabled' ? '启用' : '停用'\n                }}</t-tag></template\n              >\n              <template #sort=\"{ row }\">{{ row.sort }}</template>\n              <template #createdAt=\"{ row }\">{{ row.createdAt }}</template>\n              <template #operation=\"{ row }\">\n                <div class=\"table-actions\">",
+          "after": "                  row.status === 'enabled' ? '启用' : '停用'\n                }}</t-tag></template\n              >\n              <template #createdAt=\"{ row }\">{{ row.createdAt }}</template>\n              <template #operation=\"{ row }\">\n                <div class=\"table-actions\">"
+        },
+        {
+          "before": "  name: string;\n  status: Status;\n  productCount: number;\n  sort: number;\n  createdByName: string;\n  createdByAccountId?: number;\n  createdAt: string;",
+          "after": "  name: string;\n  status: Status;\n  productCount: number;\n  createdByName: string;\n  createdByAccountId?: number;\n  createdAt: string;"
+        },
+        {
+          "before": "\nconst columns = computed<PrimaryTableCol<TableRowData>[]>(() => [\n  ...(canSortCategory.value ? [{ colKey: 'drag', title: 'dragTitle', width: 28 }] : []),\n  { colKey: 'name', title: '分类名称', minWidth: 240, align: 'left' },\n  { colKey: 'level', title: '分类级别', width: 120, align: 'left' },\n  { colKey: 'productCount', title: '关联商品', width: 120 },\n  { colKey: 'status', title: '状态', width: 100 },\n  { colKey: 'sort', title: '排序', width: 100 },\n  { colKey: 'createdByName', title: '创建人', width: 120 },\n  { colKey: 'createdAt', title: '创建时间', width: 200 },\n  {\n    colKey: 'operation',\n    title: '操作',",
+          "after": "\nconst columns = computed<PrimaryTableCol<TableRowData>[]>(() => [\n  ...(canSortCategory.value ? [{ colKey: 'drag', title: 'dragTitle', width: 28 }] : []),\n  { colKey: 'name', title: '分类名称', minWidth: 280, align: 'left' },\n  { colKey: 'level', title: '分类级别', width: 130, align: 'left' },\n  { colKey: 'productCount', title: '关联商品', width: 130 },\n  { colKey: 'status', title: '状态', width: 100 },\n  { colKey: 'createdByName', title: '创建人', width: 140 },\n  { colKey: 'createdAt', title: '创建时间', width: 220 },\n  {\n    colKey: 'operation',\n    title: '操作',"
+        },
+        {
+          "before": "  rows: CategoryRow[],\n  forceVisible: boolean,\n) {\n  nodes.forEach((node, index) => {\n    const selfMatches = nodeMatches(node);\n    const descendantMatches = hasMatchingDescendant(node);\n    const visible = !hasSearch.value || forceVisible || selfMatches || descendantMatches;",
+          "after": "  rows: CategoryRow[],\n  forceVisible: boolean,\n) {\n  nodes.forEach((node) => {\n    const selfMatches = nodeMatches(node);\n    const descendantMatches = hasMatchingDescendant(node);\n    const visible = !hasSearch.value || forceVisible || selfMatches || descendantMatches;"
+        },
+        {
+          "before": "      name: node.name,\n      status: node.status,\n      productCount: node.productCount,\n      sort: index + 1,\n      createdByName: node.createdByName,\n      createdByAccountId: node.createdByAccountId,\n      createdAt: formatDateTime(node.createdAt),",
+          "after": "      name: node.name,\n      status: node.status,\n      productCount: node.productCount,\n      createdByName: node.createdByName,\n      createdByAccountId: node.createdByAccountId,\n      createdAt: formatDateTime(node.createdAt),"
+        },
+        {
+          "before": "<span class=\"level-label\">{{ levelLabel(row.level) }}</span>",
+          "after": "<span class=\"level-label\">{{ row.level }}级分类</span>"
         },
         {
           "before": "\n<script setup lang=\"ts\">\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { useDialogLoading } from '@/composables/useDialogLoading';\n",
@@ -5176,7 +5200,7 @@
     },
     "src/pages/store-category/management/index.vue": {
       "baseSha256": "e6db3a2a43404453ba0ed901036e24385ca44997bdc3755c825742efef8e94df",
-      "patchCount": 26,
+      "patchCount": 31,
       "patches": [
         {
           "stage": "before-migrations",
@@ -5301,6 +5325,26 @@
           "reason": "删除分类时以服务端当前商品关联数预检",
           "before": "    if (node.productCount) throw new OperationBlockedError('该分类已关联商品，不能删除，请先停用该分类');\n    requireCondition(await checkStoreCategoryDelete(node.id, activeScope.value));\n",
           "after": "    requireCondition(await checkStoreCategoryDelete(node.id, activeScope.value));\n"
+        },
+        {
+          "before": "                  {{ row.status === 'enabled' ? '启用' : '停用' }}\n                </t-tag>\n              </template>\n              <template #sort=\"{ row }\">{{ row.sort }}</template>\n              <template #createdByName=\"{ row }\">{{ row.createdByName }}</template>\n              <template #createdAt=\"{ row }\">{{ row.createdAt }}</template>\n              <template #operation=\"{ row }\">",
+          "after": "                  {{ row.status === 'enabled' ? '启用' : '停用' }}\n                </t-tag>\n              </template>\n              <template #createdByName=\"{ row }\">{{ row.createdByName }}</template>\n              <template #createdAt=\"{ row }\">{{ row.createdAt }}</template>\n              <template #operation=\"{ row }\">"
+        },
+        {
+          "before": "  level: 1 | 2 | 3;\n  name: string;\n  status: CategoryStatus;\n  sort: number;\n  productCount: number;\n  createdByName: string;\n  createdAt: string;",
+          "after": "  level: 1 | 2 | 3;\n  name: string;\n  status: CategoryStatus;\n  productCount: number;\n  createdByName: string;\n  createdAt: string;"
+        },
+        {
+          "before": "\nconst columns = computed<PrimaryTableCol<TableRowData>[]>(() => [\n  ...(canSortCategory.value ? [{ colKey: 'drag', title: 'dragTitle', width: 28 }] : []),\n  { colKey: 'name', title: '分类名称', minWidth: 240, align: 'left' },\n  { colKey: 'level', title: '分类级别', width: 120, align: 'left' },\n  { colKey: 'productCount', title: '关联商品', width: 120 },\n  { colKey: 'status', title: '状态', width: 100 },\n  { colKey: 'sort', title: '排序', width: 100 },\n  { colKey: 'createdByName', title: '创建人', width: 120 },\n  { colKey: 'createdAt', title: '创建时间', width: 200 },\n  {\n    colKey: 'operation',\n    title: '操作',",
+          "after": "\nconst columns = computed<PrimaryTableCol<TableRowData>[]>(() => [\n  ...(canSortCategory.value ? [{ colKey: 'drag', title: 'dragTitle', width: 28 }] : []),\n  { colKey: 'name', title: '分类名称', minWidth: 280, align: 'left' },\n  { colKey: 'level', title: '分类级别', width: 130, align: 'left' },\n  { colKey: 'productCount', title: '关联商品', width: 130 },\n  { colKey: 'status', title: '状态', width: 100 },\n  { colKey: 'createdByName', title: '创建人', width: 140 },\n  { colKey: 'createdAt', title: '创建时间', width: 220 },\n  {\n    colKey: 'operation',\n    title: '操作',"
+        },
+        {
+          "before": "  const subtreeMatches = (node: CategoryNode): boolean => matches(node) || node.children.some(subtreeMatches);\n  const rows: CategoryRow[] = [];\n  const appendNodes = (nodes: CategoryNode[], forceDescendants = false) => {\n    nodes.forEach((node, position) => {\n      const nodeMatches = matches(node);\n      if (hasFilter && !forceDescendants && !subtreeMatches(node)) return;\n      rows.push({",
+          "after": "  const subtreeMatches = (node: CategoryNode): boolean => matches(node) || node.children.some(subtreeMatches);\n  const rows: CategoryRow[] = [];\n  const appendNodes = (nodes: CategoryNode[], forceDescendants = false) => {\n    nodes.forEach((node) => {\n      const nodeMatches = matches(node);\n      if (hasFilter && !forceDescendants && !subtreeMatches(node)) return;\n      rows.push({"
+        },
+        {
+          "before": "        level: node.level,\n        name: node.name,\n        status: node.status,\n        sort: position + 1,\n        productCount: node.productCount,\n        createdByName: node.createdByName,\n        createdAt: formatDateTime(node.createdAt),",
+          "after": "        level: node.level,\n        name: node.name,\n        status: node.status,\n        productCount: node.productCount,\n        createdByName: node.createdByName,\n        createdAt: formatDateTime(node.createdAt),"
         },
         {
           "before": "\n<script setup lang=\"ts\">\nimport { useDelayedLoading } from '@/composables/useDelayedLoading';\nimport { OperationBlockedError } from '@/services/http';\n",
