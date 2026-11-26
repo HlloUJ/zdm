@@ -284,7 +284,7 @@ for (const surface of surfaces) {
       await main.locator('.t-tabs__nav-item').filter({ hasText: '回收站' }).click();
       if (batch) {
         await main.locator('thead .t-checkbox').click();
-        await main.getByRole('button', { name: '批量放回到仓库', exact: true }).click();
+        await main.getByRole('button', { name: '批量放回仓库', exact: true }).click();
       } else {
         await main
           .locator('tbody tr')

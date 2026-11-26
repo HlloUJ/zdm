@@ -2,7 +2,7 @@
   <AdminFormDialog
     ref="dialog"
     v-model:visible="visible"
-    :header="editing ? '编辑订单' : '新增订单'"
+    :header="editing ? '编辑订单' : copied ? '复制开单' : '新增订单'"
     :data="draft"
     width="min(1280px, 96vw)"
     form-layout="custom"
@@ -199,7 +199,7 @@ import { buttonTheme } from '@/components/foundation/actions/buttonFunctions';
 import { rejectFormSubmission } from '@/utils/submitValidation';
 import { useFormFeedback } from '@/utils/formValidation';
 import { addProduct, clone, freeStock, money, pricing, type State, type Order, type Line } from './model';
-const props = defineProps<{ order: Order; state: State; editing: boolean; saving?: boolean }>();
+const props = defineProps<{ order: Order; state: State; editing: boolean; copied?: boolean; saving?: boolean }>();
 const emit = defineEmits<{ save: [order: Order, reason: string] }>();
 const visible = defineModel<boolean>('visible', { required: true });
 const draft = ref(clone(props.order));

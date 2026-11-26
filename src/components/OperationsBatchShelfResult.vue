@@ -1,7 +1,7 @@
 <template>
   <AdminDialog
     :visible="visible"
-    :header="`批量${operation}结果`"
+    :header="operation === '设置分类' ? '商品分类批量设置结果' : `${objectType}批量${operation}结果`"
     width="max-content"
     dialog-class-name="zdm-operation-result-dialog"
     confirm-function="close"
@@ -21,8 +21,9 @@
 import { computed } from 'vue';
 import { AdminDialog } from '@/components/foundation';
 import { groupShelfFailures, type BatchShelfResult } from '@/services/operationsBatchShelf';
-const props = withDefaults(defineProps<{ visible: boolean; result: BatchShelfResult; operation?: '上架' | '删除' | '设置分类' }>(), {
+const props = withDefaults(defineProps<{ visible: boolean; result: BatchShelfResult; objectType?: '商品' | '大板'; operation?: '上架' | '删除' | '设置分类' }>(), {
   operation: '上架',
+  objectType: '商品',
 });
 const emit = defineEmits<{ 'update:visible': [value: boolean] }>();
 const rows = computed(() => groupShelfFailures(props.result.failures));

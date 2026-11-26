@@ -23,6 +23,19 @@ test.beforeEach(async ({ page }) => {
   await installAdminApiMocks(page);
 });
 
+test('names the role and store-level dialogs opened by the same add button', async ({ page }) => {
+  for (const [route, title] of [
+    ['/role-management', '新增角色'],
+    ['/store-level-management', '新增门店级别'],
+  ] as const) {
+    await page.goto(route);
+    await page.getByRole('main').getByRole('button', { name: '新增', exact: true }).click();
+    const dialog = page.locator('.t-dialog:visible');
+    await expect(dialog.locator('.t-dialog__header')).toHaveText(title);
+    await dialog.getByRole('button', { name: '取消', exact: true }).click();
+  }
+});
+
 test('keeps foundation pagination spacing consistent inside list layouts', async ({ page }) => {
   await page.goto(productWarehouseUrl('/product-attribute'));
 
@@ -399,9 +412,9 @@ test('opens tenant create, business and edit dialogs', async ({ page }) => {
   await expect(createDialog).toBeHidden();
 
   const tenantRow = page.locator('tbody tr').filter({ hasText: '装点猫直营租户' }).first();
-  await tenantRow.getByText('业务开通').click();
-  const businessDialog = page.locator('.t-dialog:visible').filter({ hasText: '业务开通' });
-  await expect(businessDialog).toBeVisible();
+  await tenantRow.getByText('设置开通业务').click();
+  const businessDialog = page.locator('.t-dialog:visible').filter({ hasText: '设置租户开通业务' });
+  await expect(businessDialog.getByRole('button', { name: '确认设置开通业务', exact: true })).toBeVisible();
   await expect(businessDialog.getByText('城市合伙人')).toBeVisible();
   await expect(businessDialog.getByText('大板供应商')).toBeVisible();
   await businessDialog.getByRole('button', { name: '取消' }).click();
@@ -419,14 +432,14 @@ test('gates tenant actions by status and requires the exact name before permanen
   await page.goto(productWarehouseUrl('/tenant-management'));
 
   const enabledRow = page.locator('tbody tr').filter({ hasText: '装点猫直营租户' });
-  await expect(enabledRow.getByText('业务开通', { exact: true })).toBeVisible();
+  await expect(enabledRow.getByText('设置开通业务', { exact: true })).toBeVisible();
   await expect(enabledRow.getByText('编辑', { exact: true })).toBeVisible();
   await expect(enabledRow.getByText('归档', { exact: true })).toBeVisible();
   await expect(enabledRow.getByText('彻底删除', { exact: true })).toHaveCount(0);
 
   await page.getByText('已归档', { exact: true }).click();
   const disabledRow = page.locator('tbody tr').filter({ hasText: '临时归档租户' });
-  await expect(disabledRow.getByText('业务开通', { exact: true })).toHaveCount(0);
+  await expect(disabledRow.getByText('设置开通业务', { exact: true })).toHaveCount(0);
   await expect(disabledRow.getByText('编辑', { exact: true })).toHaveCount(0);
   await expect(disabledRow.getByText('恢复运营', { exact: true })).toBeVisible();
   await disabledRow.getByText('彻底删除', { exact: true }).click();
@@ -470,7 +483,7 @@ test('opens store create, level and edit dialogs', async ({ page }) => {
 
   const storeRow = page.locator('tbody tr').filter({ hasText: '杭州体验门店' }).first();
   await storeRow.locator('.level-cell').hover();
-  await storeRow.getByLabel('修改门店级别').click();
+  await storeRow.getByLabel('调整门店级别').click();
   const levelDialog = page.locator('.t-dialog:visible').filter({ hasText: '门店级别' });
   await expect(levelDialog).toBeVisible();
   await expect(levelDialog.getByText('门店级别').first()).toBeVisible();

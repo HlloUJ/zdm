@@ -445,7 +445,7 @@ test('opens employee invitation and edit dialogs', async ({ page }) => {
   await expect(main.locator('thead')).toContainText('注册时间');
 
   await main.getByRole('button', { name: '邀请员工', exact: true }).click();
-  const inviteDialog = page.locator('.t-dialog:visible').filter({ hasText: '邀请员工' });
+  const inviteDialog = page.locator('.t-dialog:visible').filter({ hasText: '员工邀请链接' });
   await expect(inviteDialog).toBeVisible();
   await expect(inviteDialog.locator('textarea')).toHaveValue(/employee-invite\?token=e2e-invite-token/);
   await expect(inviteDialog.getByText('复制链接', { exact: true })).toBeVisible();
@@ -461,7 +461,7 @@ test('opens employee invitation and edit dialogs', async ({ page }) => {
   await firstEmployeeRow.locator('.remark-cell').hover();
   await expect(page.locator('.t-popup').filter({ hasText: '系统内置超管' }).last()).toBeVisible();
   await firstEmployeeRow.getByText('编辑', { exact: true }).click();
-  const profileDialog = page.locator('.t-dialog:visible').filter({ hasText: '编辑资料' });
+  const profileDialog = page.locator('.t-dialog:visible').filter({ hasText: '编辑员工资料' });
   await expect(profileDialog).toBeVisible();
   await expect(profileDialog.locator('label').filter({ hasText: '姓名' })).toBeVisible();
   await expect(profileDialog.locator('label').filter({ hasText: '性别' })).toBeVisible();
@@ -481,15 +481,15 @@ test('opens employee invitation and edit dialogs', async ({ page }) => {
   await expect(profileDialog).toBeHidden();
 
   const firstEmployeeActions = firstEmployeeRow.locator('.table-actions');
-  await expect(firstEmployeeActions.getByText('角色', { exact: true })).toHaveCount(0);
+  await expect(firstEmployeeActions.getByText('配置权限', { exact: true })).toHaveCount(0);
   await expect(firstEmployeeActions.getByText('停用', { exact: true })).toHaveCount(0);
   await expect(firstEmployeeActions.getByText('启用', { exact: true })).toHaveCount(0);
   await expect(firstEmployeeActions.getByText('删除', { exact: true })).toHaveCount(0);
 
   const pendingEmployeeRow = page.locator('tbody tr').filter({ hasText: '15926628888' }).first();
   await expect(pendingEmployeeRow).toBeVisible();
-  await pendingEmployeeRow.getByText('角色', { exact: true }).click();
-  const employeePermissionDialog = page.locator('.t-dialog:visible').filter({ hasText: '配置权限' });
+  await pendingEmployeeRow.getByText('配置权限', { exact: true }).click();
+  const employeePermissionDialog = page.locator('.t-dialog:visible').filter({ hasText: '配置员工权限' });
   await expect(employeePermissionDialog).toBeVisible();
   await expect(employeePermissionDialog.locator('label').filter({ hasText: '角色' })).toBeVisible();
   await expect(employeePermissionDialog.getByText('数据权限')).toBeVisible();
@@ -518,7 +518,7 @@ test('employee invitation follows the selected system tab', async ({ page }) => 
     );
     await page.getByRole('button', { name: '邀请员工', exact: true }).click();
     expect(new URL((await request).url()).searchParams.get('clientCode')).toBe(client);
-    const dialog = page.locator('.t-dialog:visible').filter({ hasText: '邀请员工' });
+    const dialog = page.locator('.t-dialog:visible').filter({ hasText: '员工邀请链接' });
     await expect(dialog.getByText('复制链接', { exact: true })).toBeVisible();
     await dialog.getByRole('button', { name: '关闭', exact: true }).click();
   }
@@ -672,8 +672,8 @@ for (const message of ['邀请链接已使用', '邀请链接已过期']) {
 test('employee permission dialog validates only after submit and clears errors on reopen', async ({ page }) => {
   await page.goto(productWarehouseUrl('/employee-management'));
   const row = page.locator('tbody tr').filter({ hasText: '15926628888' }).first();
-  await row.getByText('角色', { exact: true }).click();
-  const dialog = page.locator('.t-dialog:visible').filter({ hasText: '配置权限' });
+  await row.getByText('配置权限', { exact: true }).click();
+  const dialog = page.locator('.t-dialog:visible').filter({ hasText: '配置员工权限' });
   await expect(dialog).toBeVisible();
   await expect(dialog.locator('.t-is-error')).toHaveCount(0);
   await dialog
@@ -685,7 +685,7 @@ test('employee permission dialog validates only after submit and clears errors o
   await expect(dialog.locator('.t-input__extra').getByText('请选择角色', { exact: true })).toBeVisible();
   await expect(dialog.getByText('请选择数据权限', { exact: true })).toBeVisible();
   await dialog.getByRole('button', { name: '取消', exact: true }).click();
-  await row.getByText('角色', { exact: true }).click();
+  await row.getByText('配置权限', { exact: true }).click();
   await expect(dialog).toBeVisible();
   await expect(dialog.locator('.t-is-error')).toHaveCount(0);
 });
@@ -708,8 +708,8 @@ test('opens enable confirmation after employee permissions are configured', asyn
   const pendingEmployeeRow = page.locator('tbody tr').filter({ hasText: '15926628888' }).first();
   await expect(pendingEmployeeRow).toBeVisible();
 
-  await pendingEmployeeRow.getByText('角色', { exact: true }).click();
-  const employeePermissionDialog = page.locator('.t-dialog:visible').filter({ hasText: '配置权限' });
+  await pendingEmployeeRow.getByText('配置权限', { exact: true }).click();
+  const employeePermissionDialog = page.locator('.t-dialog:visible').filter({ hasText: '配置员工权限' });
   await expect(employeePermissionDialog).toBeVisible();
   await employeePermissionDialog.getByText('查看自己').click();
   await employeePermissionDialog.locator('.t-select').click();
@@ -766,7 +766,7 @@ test('filters menu and employee actions by logged-in permissions', async ({ page
   await expect(sideNav.getByText('商品分类管理')).toHaveCount(0);
   await expect(page.getByRole('button', { name: /邀请员工/ })).toHaveCount(0);
   await expect(firstEmployeeActions.getByText('编辑', { exact: true })).toBeVisible();
-  await expect(firstEmployeeActions.getByText('角色', { exact: true })).toHaveCount(0);
+  await expect(firstEmployeeActions.getByText('配置权限', { exact: true })).toHaveCount(0);
   await expect(firstEmployeeActions.getByText('停用', { exact: true })).toHaveCount(0);
   await expect(firstEmployeeActions.getByText('启用', { exact: true })).toHaveCount(0);
   await expect(firstEmployeeActions.getByText('删除', { exact: true })).toHaveCount(0);
@@ -774,7 +774,7 @@ test('filters menu and employee actions by logged-in permissions', async ({ page
   const pendingEmployeeRow = page.locator('tbody tr').filter({ hasText: '15926628888' }).first();
   const pendingEmployeeActions = pendingEmployeeRow.locator('.table-actions');
   await expect(pendingEmployeeActions.getByText('编辑', { exact: true })).toBeVisible();
-  await expect(pendingEmployeeActions.getByText('角色', { exact: true })).toHaveCount(0);
+  await expect(pendingEmployeeActions.getByText('配置权限', { exact: true })).toHaveCount(0);
 });
 
 test('shows employee permission action without edit action for permission-only users', async ({ page }) => {
@@ -803,7 +803,7 @@ test('shows employee permission action without edit action for permission-only u
   const permissionOnlyEmployeeRow = page.locator('tbody tr').filter({ hasText: '15926628888' }).first();
   const permissionOnlyEmployeeActions = permissionOnlyEmployeeRow.locator('.table-actions');
   await expect(permissionOnlyEmployeeActions.getByText('编辑', { exact: true })).toHaveCount(0);
-  await expect(permissionOnlyEmployeeActions.getByText('角色', { exact: true })).toBeVisible();
+  await expect(permissionOnlyEmployeeActions.getByText('配置权限', { exact: true })).toBeVisible();
   // Hiding the other actions must not shrink the reserved four-button column.
   await expect(page.getByRole('columnheader', { name: '操作', exact: true })).toHaveCSS('width', '184px');
 });
@@ -838,12 +838,12 @@ test('allows granted employee operations for records created by another account'
   const actions = row.locator('.table-actions');
 
   await actions.getByText('编辑', { exact: true }).click();
-  const profileDialog = page.locator('.t-dialog:visible').filter({ hasText: '编辑资料' });
+  const profileDialog = page.locator('.t-dialog:visible').filter({ hasText: '编辑员工资料' });
   await expect(profileDialog).toBeVisible();
   await profileDialog.getByRole('button', { name: '取消' }).click();
 
-  await actions.getByText('角色', { exact: true }).click();
-  const permissionDialog = page.locator('.t-dialog:visible').filter({ hasText: '配置权限' });
+  await actions.getByText('配置权限', { exact: true }).click();
+  const permissionDialog = page.locator('.t-dialog:visible').filter({ hasText: '配置员工权限' });
   await expect(permissionDialog).toBeVisible();
   await permissionDialog.getByRole('button', { name: '取消' }).click();
 
@@ -888,7 +888,7 @@ test('hides all operations for the current employee', async ({ page }) => {
 
   const actions = row.locator('.table-actions');
   await expect(actions.getByText('编辑', { exact: true })).toHaveCount(0);
-  await expect(actions.getByText('角色', { exact: true })).toHaveCount(0);
+  await expect(actions.getByText('配置权限', { exact: true })).toHaveCount(0);
   await expect(actions.getByText('停用', { exact: true })).toHaveCount(0);
   await expect(actions.getByText('删除', { exact: true })).toHaveCount(0);
   await expect(actions.locator('.table-action-placeholder')).toHaveText('-');
@@ -944,12 +944,12 @@ test('shows only granted store management operations for a restricted account', 
   const row = main.locator('tbody tr').filter({ hasText: '杭州体验门店' });
 
   await expect(main.getByRole('button', { name: '新增', exact: true })).toHaveCount(0);
-  await expect(row.getByRole('button', { name: '修改门店级别' })).toBeVisible();
+  await expect(row.getByRole('button', { name: '调整门店级别' })).toBeVisible();
   await expect(row.locator('.table-actions .t-link')).toHaveText(['归档']);
   await expect(row.getByText('编辑', { exact: true })).toHaveCount(0);
   await expect(row.getByText('删除', { exact: true })).toHaveCount(0);
 
-  await row.getByRole('button', { name: '修改门店级别' }).click({ force: true });
+  await row.getByRole('button', { name: '调整门店级别' }).click({ force: true });
   const levelDialog = page.locator('.t-dialog:visible').filter({ hasText: '门店级别' });
   await expect(levelDialog).toBeVisible();
   await levelDialog.getByRole('button', { name: '取消' }).click();
@@ -1025,7 +1025,7 @@ test('allows granted role operations for records created by another account', as
   await editDialog.getByRole('button', { name: '取消' }).click();
 
   await actions.getByText('权限', { exact: true }).click();
-  const permissionDialog = page.locator('.t-dialog:visible').filter({ hasText: '权限配置' });
+  const permissionDialog = page.locator('.t-dialog:visible').filter({ hasText: '配置角色权限' });
   await expect(permissionDialog).toBeVisible();
   await permissionDialog.getByRole('button', { name: '取消' }).click();
 
@@ -1051,7 +1051,7 @@ test('opens role permission configuration dialog', async ({ page }) => {
   await expect(operationRoleRow.locator('.table-actions .t-link')).toHaveText(['编辑', '权限', '删除']);
   await operationRoleRow.getByText('权限', { exact: true }).click();
 
-  const permissionDialog = page.locator('.t-dialog:visible').filter({ hasText: '权限配置' });
+  const permissionDialog = page.locator('.t-dialog:visible').filter({ hasText: '配置角色权限' });
   await expect(permissionDialog).toBeVisible();
   await expect(permissionDialog.getByRole('heading', { name: '功能权限', exact: true })).toBeVisible();
   const roleModuleList = permissionDialog.locator('.permission-module-list');
@@ -1663,7 +1663,7 @@ test('platform edits, disables, enables and deletes only the selected supply-cha
   const row = page.locator('tbody tr').filter({ hasText: '15926627771' });
   await expect(row.locator('.table-actions .t-link')).toHaveText(['编辑', '停用', '删除']);
   await row.getByText('编辑', { exact: true }).click();
-  const profile = page.locator('.t-dialog:visible').filter({ hasText: '编辑资料' });
+  const profile = page.locator('.t-dialog:visible').filter({ hasText: '编辑员工资料' });
   await expect(profile).toBeVisible();
   await profile.locator('input').first().fill('供应链管理员新名');
   await profile.locator('textarea').fill('管理员备注');
@@ -1833,7 +1833,7 @@ test('builtin store manager exposes permissions only while ordinary roles keep e
   const ordinary = page.locator('tbody tr').filter({ hasText: '普通导购' });
   await expect(ordinary.locator('.table-actions .t-link')).toHaveText(['编辑', '权限', '删除']);
   await manager.getByText('权限', { exact: true }).click();
-  await expect(page.getByText('权限配置', { exact: true })).toBeVisible();
+  await expect(page.getByText('配置角色权限', { exact: true })).toBeVisible();
 });
 
 test('store role customer matrix retains bulk assignment and removes retired standalone grants', async ({ page }) => {
@@ -1874,7 +1874,7 @@ test('store role customer matrix retains bulk assignment and removes retired sta
   });
   await page.goto(productWarehouseUrl('/role-management'));
   await page.locator('tbody tr').filter({ hasText: '普通导购' }).getByText('权限', { exact: true }).click();
-  const dialog = page.locator('.t-dialog:visible').filter({ hasText: '权限配置' });
+  const dialog = page.locator('.t-dialog:visible').filter({ hasText: '配置角色权限' });
   await dialog.locator('.permission-module-list').getByText('客户管理', { exact: true }).click();
   const matrix = dialog.locator('.permission-matrix');
   await expect(matrix.locator('.permission-action-grid .t-checkbox')).toHaveText([
@@ -2042,7 +2042,7 @@ test(`store role saves and reloads terminal ${scope} candidates without unrelate
   const open = async () =>
     page.locator('tbody tr').filter({ hasText: '普通导购' }).getByText('权限', { exact: true }).click();
   await open();
-  const dialog = page.locator('.t-dialog:visible').filter({ hasText: '权限配置' });
+  const dialog = page.locator('.t-dialog:visible').filter({ hasText: '配置角色权限' });
   const matrix = dialog.locator('.permission-matrix');
   const label = category ? '批量设置分类' : '选品中心';
   const choices = matrix.getByRole('checkbox', { name: label, exact: true });

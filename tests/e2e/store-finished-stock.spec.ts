@@ -1000,7 +1000,7 @@ for (const scenario of [
   {
     tab: '回收站',
     status: 'recycle',
-    button: '批量放回到仓库',
+    button: '批量放回仓库',
     icon: 'rollback',
     theme: 'success',
     description: '是否将所选成品现货放回仓库？',
@@ -1068,7 +1068,7 @@ for (const scenario of [
     await button.click();
     await dialog
       .getByRole('button', {
-        name: scenario.button === '批量放回到仓库' ? '确认批量放回仓库' : `确认${scenario.button}`,
+        name: `确认${scenario.button}`,
         exact: true,
       })
       .click();
@@ -1078,7 +1078,7 @@ for (const scenario of [
     fail = false;
     await dialog
       .getByRole('button', {
-        name: scenario.button === '批量放回到仓库' ? '确认批量放回仓库' : `确认${scenario.button}`,
+        name: `确认${scenario.button}`,
         exact: true,
       })
       .click();
@@ -1115,7 +1115,7 @@ test('store batch off shelf uses operations reason dialog and failure feedback',
   await expect(button).toBeEnabled();
   await button.click();
   const dialog = page.locator('.t-dialog:visible');
-  await expect(dialog.locator('.t-dialog__header')).toHaveText('下架');
+  await expect(dialog.locator('.t-dialog__header')).toHaveText('批量下架商品');
   await expect(dialog).toHaveCSS('width', '520px');
   await dialog
     .getByRole('button', {

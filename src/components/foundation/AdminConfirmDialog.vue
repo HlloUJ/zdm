@@ -21,7 +21,7 @@
 </template>
 
 <script setup lang="ts">
-import { operationConfirmation, type Confirmation } from './actions/confirmation';
+import { confirmationQuestion, operationConfirmation, type Confirmation } from './actions/confirmation';
 import { type ButtonFunction } from './actions/buttonFunctions';
 import { computed } from 'vue';
 
@@ -64,7 +64,7 @@ const targetText = computed(() => {
   const name = props.objectName ? `“${props.objectName}”` : '';
   return `${props.objectType}${name}`;
 });
-const dialogTitle = computed(() => props.title || `是否${props.action}`);
+const dialogTitle = computed(() => props.title || confirmationQuestion(props.action, props.objectType, props.batch));
 const confirmation = computed<Confirmation>(() =>
   props.visible ? operationConfirmation(props.action, props.batch) : { kind: 'none' },
 );

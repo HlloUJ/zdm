@@ -89,12 +89,17 @@ test('switches isolated category types and limits maintenance to three levels', 
   const third = page.getByRole('row').filter({ hasText: '成品三级' });
   await expect(third).toBeVisible();
   await expect(third.getByText('新增下级', { exact: true })).toHaveCount(0);
+  await page.getByRole('row').filter({ hasText: '成品二级' }).getByText('新增下级', { exact: true }).click();
+  const dialog = page.locator('.t-dialog:visible');
+  await expect(dialog.locator('.t-dialog__header-content')).toHaveText('新增三级分类');
+  await dialog.getByRole('button', { name: '取消', exact: true }).click();
+  await expect(dialog).toBeHidden();
   await page.locator('.t-tabs__nav-item').filter({ hasText: '配件分类' }).click();
   await expect(page.getByText('配件一级', { exact: true })).toBeVisible();
   await expect(page.getByText('成品一级', { exact: true })).toHaveCount(0);
   expect(requests.filter((item) => item.method === 'GET').map((item) => item.scope)).toContain('accessory');
   await page.getByRole('button', { name: '新增一级分类', exact: true }).click();
-  const dialog = page.locator('.t-dialog:visible');
+  await expect(dialog.locator('.t-dialog__header-content')).toHaveText('新增一级分类');
   const name = dialog.getByPlaceholder('请输入分类名称');
   await name.fill('一二三四五六七');
   await expect(name).toHaveValue('一二三四五六');
@@ -165,6 +170,7 @@ test('adding a child to a priced category requires confirmation; cancel preserve
   await page.goto('/store-category-management');
   await page.getByRole('row').filter({ hasText: '成品另一级' }).getByText('新增下级', { exact: true }).click();
   const form = page.locator('.t-dialog:visible').filter({ hasText: '分类名称' });
+  await expect(form.locator('.t-dialog__header-content')).toHaveText('新增二级分类');
   await form.getByPlaceholder('请输入分类名称').fill('新增二级');
   await form.getByRole('button', { name: /^确认(?:新增|保存|配置权限)$/, exact: true }).click();
   const confirmation = page.locator('.t-dialog:visible').filter({ hasText: '已有商品价格不受影响' });

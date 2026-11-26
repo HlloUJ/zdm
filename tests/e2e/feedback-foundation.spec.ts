@@ -672,7 +672,7 @@ test('places clear recycle after batch purge and permanently deletes every recyc
   await page.getByText('回收站（2）', { exact: true }).click();
 
   expect((await page.locator('.toolbar-buttons button').allTextContents()).map((text) => text.trim())).toEqual([
-    '批量放回到仓库',
+    '批量放回仓库',
     '批量彻底删除',
     '清空回收站',
   ]);

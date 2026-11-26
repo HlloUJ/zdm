@@ -75,7 +75,7 @@ for (const route of [
 test('store level edit uses the shared dialog standard even without edit in its title', async ({ page }) => {
   await page.goto('/tenant-store-management');
   const row = page.getByRole('main').locator('tbody tr').filter({ hasText: '杭州体验门店' });
-  await row.getByRole('button', { name: '修改门店级别' }).click({ force: true });
+  await row.getByRole('button', { name: '调整门店级别' }).click({ force: true });
   const dialog = page.locator('.t-dialog:visible');
   await expect(dialog).toHaveClass(/zdm-admin-single-form/);
   await expect.poll(() => dialog.evaluate((element) => element.getBoundingClientRect().width)).toBe(480);

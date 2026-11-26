@@ -519,7 +519,7 @@ test('shows every publish section and navigates anchors without losing form inpu
   await createSpecButton.scrollIntoViewIfNeeded();
   const scrollBeforeDialog = await page.evaluate(() => window.scrollY);
   await createSpecButton.click();
-  await expect(page.locator('.t-dialog__header').filter({ hasText: '创建规格' })).toBeVisible();
+  await expect(page.locator('.t-dialog__header').filter({ hasText: '创建商品规格' })).toBeVisible();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(scrollBeforeDialog);
   await page.locator('.spec-dialog-footer').getByRole('button', { name: '取消', exact: true }).click();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(scrollBeforeDialog);
@@ -667,7 +667,7 @@ test('source specification editor exposes cost and stock without operations pric
   await expect(page.locator('.batch-field-grid').getByText('成本价', { exact: true })).toBeVisible();
   await expect(page.locator('.batch-field-grid').getByText('指导价', { exact: true })).toHaveCount(0);
   const drawer = page.locator('.t-drawer--open');
-  await expectEditableDrawer(drawer, '批量填写');
+  await expectEditableDrawer(drawer, '批量填写商品规格信息');
   await expectDrawerWithinViewport(drawer);
   await expectNativeBatchDrawer(drawer);
   await expect(drawer.getByText('按规格属性值圈定范围，再填写要覆盖的字段', { exact: true })).toHaveCount(0);
@@ -2819,7 +2819,7 @@ test('operations batch drawer uses native footer and cancel keeps specification 
   const inputs = page.locator('.spec-table-block tbody input');
   const valuesBefore = await inputs.evaluateAll((items) => items.map((input) => (input as HTMLInputElement).value));
   const drawer = page.locator('.t-drawer--open');
-  await expectEditableDrawer(drawer, '批量填写');
+  await expectEditableDrawer(drawer, '批量填写商品规格价格');
   await expectDrawerWithinViewport(drawer);
   await expectNativeBatchDrawer(drawer);
   await expect(drawer.getByText('按规格属性值圈定范围，再填写要覆盖的字段', { exact: true })).toHaveCount(0);

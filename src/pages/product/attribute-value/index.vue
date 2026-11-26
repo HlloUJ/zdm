@@ -100,7 +100,7 @@
       :confirmation="formConfirmation('create')"
       confirm-function="submit"
       dialog-class-name="zdm-admin-dialog zdm-admin-single-form"
-      header="新增"
+      header="新增属性值"
       width="480px"
       placement="center"
       :confirm-btn="{ loading: submitPending }"

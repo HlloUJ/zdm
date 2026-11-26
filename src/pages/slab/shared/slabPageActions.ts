@@ -30,7 +30,7 @@ export function slabBatchButtons(status: SlabStatus, hasAction: PermissionCheck)
     ],
     soldOut: [],
     recycle: [
-      { label: '批量放回到仓库', action: 'batchRestore', icon: 'rollback' },
+      { label: '批量放回仓库', action: 'batchRestore', icon: 'rollback' },
       { label: '批量彻底删除', action: 'batchPurge', icon: 'delete', className: 'dark-red-button' },
       { label: '清空回收站', action: 'clearRecycle', icon: 'clear' },
     ],

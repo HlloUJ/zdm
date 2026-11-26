@@ -241,7 +241,7 @@
       "actions": {}
     },
     "src/components/OperationsBatchShelfResult.vue": {
-      "script": "15a422c764579621756c94ecc4d561c0b701b1580434ae00ff2042981f691c68",
+      "script": "71419bd915c523359fc80e1a099db085657a8d54a9e05bbba8027a5a64be7ea6",
       "actions": {
         "close → emit('update:visible', false)": "view",
         "confirm → emit('update:visible', false)": "view",
@@ -274,7 +274,7 @@
       }
     },
     "src/components/foundation/AdminConfirmDialog.vue": {
-      "script": "f4569d46904dd3856601d0420d5d3f79d1952e55867bcc2e977f9f584383e25c",
+      "script": "190b3dde104c49ad38f492c4a8a1cc33081a0ef7a7f47022b8da0e6d43639ddf",
       "actions": {
         "cancel → emit('cancel')": "view",
         "close → emit('close')": "view",
@@ -436,7 +436,7 @@
       }
     },
     "src/pages/customer/index.vue": {
-      "script": "13476ed7d927dd84bf84331fe0efaa41130a2c371540117c3f55bdb5b34b3b99",
+      "script": "f91b1da30dd522802081c9bb7be5f4bd884061d63132588c1df2eb27d02654e8",
       "actions": {
         "action → handleToolbarAction": "@customerToolbar",
         "cancel → detailVisible = false": "view",
@@ -568,7 +568,7 @@
       }
     },
     "src/pages/finished-stock/management/index.vue": {
-      "script": "ad02b268021e96922c2173bfbb1c56bca30a61a419c159457a280c7fd2c3eb64",
+      "script": "bb1de4b9a05180fbc3c2d3e7f1aa6459d718bf64a680d2e89e0f3078c9f22a7b",
       "actions": {
         "blur → formatDecimalValue(row, 'level1')": "form",
         "blur → formatDecimalValue(row, 'level1Coefficient')": "form",
@@ -661,7 +661,7 @@
       }
     },
     "src/pages/finished-stock/store/index.vue": {
-      "script": "2d355f3f9631741dcffd3dffa06bfc1469f2b3b70323552e9e99739db455acde",
+      "script": "10219ffd5377d504ca115603cb6e27688c62ce8201188a17579001f69e8f2982",
       "actions": {
         "cancel → categoryDialog = false": "view",
         "cancel → closeEdit": "view",
@@ -739,7 +739,7 @@
       }
     },
     "src/pages/finished-stock/supply-chain/index.vue": {
-      "script": "9b2180021e3a5c955c2daf81e76dd1585b50949f112733803a5b56c14b644a2f",
+      "script": "7f9928f2a46a6b3c79e104ba3150ae52f18d59461b86a0793962812fd71abf64",
       "actions": {
         "blur → formatDecimalValue(row, 'level1')": "form",
         "blur → formatDecimalValue(row, 'level1Coefficient')": "form",
@@ -845,14 +845,14 @@
       }
     },
     "src/pages/order/prototype/OrderActionDialog.vue": {
-      "script": "bcf86bb347ab9d4db36190407c46d715bc57fb84dbe6a8aab664814928302f7f",
+      "script": "f17666595e3104aad29e7baf123d5e692763734b137f4d607f1fbf9f49b8772d",
       "actions": {
         "change → selectPaymentName": "form",
         "confirm → submit": "@order"
       }
     },
     "src/pages/order/prototype/OrderEditor.vue": {
-      "script": "82a4391b5cf3ac525b10a7b3aa0a5ed04c7eccd8dfd7c42343cbfdcefd33af29",
+      "script": "f0c60b142f24816bd7c927d4b936638dbf3b1af42f935ec4723159fa3fd8f201",
       "actions": {
         "change → changeLine(row, 'billingQuantity', Number($event))": "form",
         "change → changeLine(row, 'price', Number($event))": "form",
@@ -888,7 +888,7 @@
       }
     },
     "src/pages/order/prototype/index.vue": {
-      "script": "caeece5cca40add3f1242f19d5ee9a49ad1e0a9834850b0fc406c29f384199e3",
+      "script": "686aa72357d3c7ec8b003e773e01ab46abbbec60132fb78d424b7328859fa8c1",
       "actions": {
         "action → openAction": "@order",
         "action → openSetting()": "form",
@@ -1231,7 +1231,7 @@
       }
     },
     "src/pages/slab/management/index.vue": {
-      "script": "e457969ba146c090f16992bdfbc1cd1359ce1bbb3b2ae4e0b6233c5677f8c5db",
+      "script": "d6fb5e0d1121e450a3dabe0d2ba8e99252d089904debc19b32901f578e59f69a",
       "actions": {
         "blur → handleMeasurementBlur('height')": "form",
         "blur → handleMeasurementBlur('length')": "form",
@@ -1325,7 +1325,7 @@
       }
     },
     "src/pages/slab/supply-chain/index.vue": {
-      "script": "7db72bbeaf5707bf3b4b6e613a57667e699db452570a06d7c9ad3c0e1c75aa6d",
+      "script": "b9bc49c29f37a22ef3d32d29f1c273241b8211d24114a925bc41f41e71d140a6",
       "actions": {
         "blur → handleMeasurementBlur('height')": "form",
         "blur → handleMeasurementBlur('length')": "form",
@@ -1731,11 +1731,37 @@
     },
     "src/components/foundation/AdminConfirmDialog.vue": {
       "baseSha256": "9701b819bd50b96ecff87d470f68fdd5bd61658288c8348419cb50cd21cf23a8",
-      "patchCount": 4
+      "patchCount": 6,
+      "patches": [
+        {
+          "before": "<template>\n  <AdminDialog\n    :visible=\"visible\"\n    :confirm-function=\"mode === 'blocked' ? 'close' : props.function\"\n    :header=\"dialogTitle\"\n    :width=\"width\"\n    dialog-class-name=\"zdm-admin-confirm-dialog\"\n    :confirmation=\"confirmation\"\n    :cancel-btn=\"mode === 'blocked' ? null : '取消'\"\n    @update:visible=\"emit('update:visible', $event)\"\n    @confirm=\"handleConfirm\"\n    @cancel=\"emit('cancel')\"\n    @close=\"emit('close')\"\n    @opened=\"emit('opened')\"\n",
+          "after": "<template>\n  <AdminDialog\n    :visible=\"visible\"\n    :confirm-function=\"props.function\"\n    :confirm-btn=\"{ loading }\"\n    :header=\"dialogTitle\"\n    :width=\"width\"\n    dialog-class-name=\"zdm-admin-confirm-dialog\"\n    :confirmation=\"confirmation\"\n    @update:visible=\"emit('update:visible', $event)\"\n    @confirm=\"emit('confirm')\"\n    @cancel=\"emit('cancel')\"\n    @close=\"emit('close')\"\n    @opened=\"emit('opened')\"\n"
+        },
+        {
+          "before": "    action: string;\n    batch?: boolean;\n    description?: string;\n    mode?: 'confirm' | 'blocked';\n    objectName?: string;\n    objectType?: string;\n    title?: string;\n",
+          "after": "    action: string;\n    batch?: boolean;\n    description?: string;\n    loading?: boolean;\n    objectName?: string;\n    objectType?: string;\n    title?: string;\n"
+        },
+        {
+          "before": "  {\n    batch: false,\n    description: '',\n    mode: 'confirm',\n    objectName: '',\n    objectType: '',\n    title: '',\n",
+          "after": "  {\n    batch: false,\n    description: '',\n    loading: false,\n    objectName: '',\n    objectType: '',\n    title: '',\n"
+        },
+        {
+          "before": "  const name = props.objectName ? `“${props.objectName}”` : '';\n  return `${props.objectType}${name}`;\n});\nconst dialogTitle = computed(\n  () => props.title || (props.mode === 'blocked' ? `无法${props.action}` : `是否${props.action}`),\n);\nconst confirmation = computed<Confirmation>(() =>\n  props.mode === 'blocked'\n    ? { kind: 'close', text: '我知道了' }\n    : props.visible\n      ? operationConfirmation(props.action, props.batch)\n      : { kind: 'none' },\n);\nconst dialogDescription = computed(() => {\n  if (props.description) return props.description;\n  return props.mode === 'blocked'\n    ? `${targetText.value || '当前对象'}暂时无法${props.action}。`\n    : `是否${props.action}${targetText.value}？`;\n});\n\nfunction handleConfirm() {\n  if (props.mode === 'blocked') emit('update:visible', false);\n  emit('confirm');\n}\n</script>\n\n<style scoped>\n",
+          "after": "  const name = props.objectName ? `“${props.objectName}”` : '';\n  return `${props.objectType}${name}`;\n});\nconst dialogTitle = computed(() => props.title || `是否${props.action}`);\nconst confirmation = computed<Confirmation>(() =>\n  props.visible ? operationConfirmation(props.action, props.batch) : { kind: 'none' },\n);\nconst dialogDescription = computed(() => props.description || `是否${props.action}${targetText.value}？`);\n</script>\n\n<style scoped>\n"
+        },
+        {
+          "before": "<script setup lang=\"ts\">\nimport { operationConfirmation, type Confirmation } from './actions/confirmation';\nimport { type ButtonFunction } from './actions/buttonFunctions';\n",
+          "after": "<script setup lang=\"ts\">\nimport { confirmationQuestion, operationConfirmation, type Confirmation } from './actions/confirmation';\nimport { type ButtonFunction } from './actions/buttonFunctions';\n"
+        },
+        {
+          "before": "});\nconst dialogTitle = computed(() => props.title || `是否${props.action}`);\nconst confirmation = computed<Confirmation>(() =>\n",
+          "after": "});\nconst dialogTitle = computed(() => props.title || confirmationQuestion(props.action, props.objectType, props.batch));\nconst confirmation = computed<Confirmation>(() =>\n"
+        }
+      ]
     },
     "src/pages/craft/finished-stock/index.vue": {
       "baseSha256": "fee4684dce44b6badbfc8d3c712b61e8365a906ef02e74f8c6cfe7c839cd16a7",
-      "patchCount": 21,
+      "patchCount": 22,
       "patches": [
         {
           "stage": "before-migrations",
@@ -1844,12 +1870,16 @@
         {
           "before": "    if (refresh) void loadCrafts();\n  } catch (error) {\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n",
           "after": "    if (refresh) void loadCrafts();\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n"
+        },
+        {
+          "before": "      dialog-class-name=\"zdm-admin-dialog zdm-admin-single-form\"\n      :header=\"dialogMode === 'create' ? '新增' : '编辑'\"\n      width=\"480px\"\n",
+          "after": "      dialog-class-name=\"zdm-admin-dialog zdm-admin-single-form\"\n      :header=\"dialogMode === 'create' ? '新增成品工艺' : '编辑成品工艺'\"\n      width=\"480px\"\n"
         }
       ]
     },
     "src/pages/customer/index.vue": {
       "baseSha256": "7ce0147064da82ad5a10a65ab144f82e3af0e9ced32081e6dcfd756bd7903f9b",
-      "patchCount": 29,
+      "patchCount": 34,
       "patches": [
         {
           "stage": "before-migrations",
@@ -1973,6 +2003,26 @@
         {
           "before": "    adminFeedback.actionSuccess({ action: followId.value ? '修改' : '保存跟进' });\n  } catch (error) {\n    fail('保存跟进', error);\n  } finally {\n",
           "after": "    adminFeedback.actionSuccess({ action: followId.value ? '修改' : '保存跟进' });\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    fail('保存跟进', error);\n  } finally {\n"
+        },
+        {
+          "before": "                @click=\"openFollowup(undefined, row)\"\n                >跟进</t-link\n              >\n",
+          "after": "                @click=\"openFollowup(undefined, row)\"\n                >新增跟进</t-link\n              >\n"
+        },
+        {
+          "before": "      label-width=\"100px\"\n      :header=\"followId ? '编辑跟进' : '新增跟进'\"\n      width=\"480px\"\n",
+          "after": "      label-width=\"100px\"\n      :header=\"followId ? '编辑客户跟进记录' : '新增客户跟进记录'\"\n      width=\"480px\"\n"
+        },
+        {
+          "before": "      :data=\"{ ownerAccountId: newOwner }\"\n      header=\"调整归属\"\n      :confirm-btn=\"submitButton\"\n",
+          "after": "      :data=\"{ ownerAccountId: newOwner }\"\n      :header=\"pending.batch ? '批量调整客户归属' : '调整客户归属'\"\n      :confirm-btn=\"submitButton\"\n"
+        },
+        {
+          "before": "      :action=\"confirmAction\"\n      :object-type=\"confirmObjectType\"\n",
+          "after": "      :action=\"confirmAction\"\n      :title=\"confirmationQuestion(confirmAction, '客户', deletingFollowId == null && pending.batch)\"\n      :object-type=\"confirmObjectType\"\n"
+        },
+        {
+          "before": "import { useDelayedLoading } from '@/composables/useDelayedLoading';\nimport { formConfirmation, operationConfirmation } from '@/components/foundation/actions/confirmation';\nimport { buttonTheme, buttonFunctionFor, cancelButtonProps } from '@/components/foundation/actions/buttonFunctions';\n",
+          "after": "import { useDelayedLoading } from '@/composables/useDelayedLoading';\nimport { confirmationQuestion, formConfirmation, operationConfirmation } from '@/components/foundation/actions/confirmation';\nimport { buttonTheme, buttonFunctionFor, cancelButtonProps } from '@/components/foundation/actions/buttonFunctions';\n"
         }
       ]
     },
@@ -2042,7 +2092,7 @@
     },
     "src/pages/finished-stock/management/index.vue": {
       "baseSha256": "eb08f195b1aa64cd889f68d480b68817e39177546244f73af819fb3cb89e4a34",
-      "patchCount": 47,
+      "patchCount": 50,
       "patches": [
         {
           "stage": "before-migrations",
@@ -2273,12 +2323,24 @@
         {
           "before": "      adminFeedback.success('商品已下架');\n    }\n  } catch (error) {\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  } finally {\n    closeReasonDialog();\n    saving.value = false;\n  }\n",
           "after": "      adminFeedback.success('商品已下架');\n    }\n    closeReasonDialog();\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    closeReasonDialog();\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  } finally {\n    saving.value = false;\n  }\n"
+        },
+        {
+          "before": "      v-model:visible=\"priceDrawerVisible\"\n      header=\"批量填写\"\n      placement=\"right\"\n",
+          "after": "      v-model:visible=\"priceDrawerVisible\"\n      header=\"批量填写商品规格价格\"\n      placement=\"right\"\n"
+        },
+        {
+          "before": "      v-model:visible=\"reasonDialogVisible\"\n      header=\"下架\"\n      width=\"520px\"\n",
+          "after": "      v-model:visible=\"reasonDialogVisible\"\n      :header=\"reasonState.isBatch ? '批量下架商品' : '下架商品'\"\n      width=\"520px\"\n"
+        },
+        {
+          "before": "    recycle: [\n      { action: 'batchRestore', label: '批量放回到仓库', icon: 'rollback' },\n      { action: 'batchPurge', label: '批量彻底删除', icon: 'delete', className: 'deep-danger-button' },\n",
+          "after": "    recycle: [\n      { action: 'batchRestore', label: '批量放回仓库', icon: 'rollback' },\n      { action: 'batchPurge', label: '批量彻底删除', icon: 'delete', className: 'deep-danger-button' },\n"
         }
       ]
     },
     "src/pages/finished-stock/store/StoreFinishedEditor.vue": {
       "baseSha256": "cc341a5a4c779bfd5b3ede7011809e763cf5a549996375dbdbf708dbc3e9faa7",
-      "patchCount": 25,
+      "patchCount": 26,
       "patches": [
         {
           "stage": "before-migrations",
@@ -2412,12 +2474,16 @@
         {
           "before": "  } catch (error) {\n    if (!current()) return;\n    adminFeedback.error(getSafeErrorMessage(error, '保存商品失败'));\n  } finally {\n",
           "after": "  } catch (error) {\n    if (!current()) return;\n    if (await reportFieldError?.(error)) return;\n    adminFeedback.error(getSafeErrorMessage(error, '保存商品失败'));\n  } finally {\n"
+        },
+        {
+          "before": "    v-model:visible=\"batchVisible\"\n    header=\"批量填写\"\n    placement=\"right\"\n",
+          "after": "    v-model:visible=\"batchVisible\"\n    header=\"批量填写商品规格售价\"\n    placement=\"right\"\n"
         }
       ]
     },
     "src/pages/finished-stock/store/index.vue": {
       "baseSha256": "f1f785011a4d1a96737a1b17627dcc8ec77f54e224bfaa60c4f21f79fd6df568",
-      "patchCount": 65,
+      "patchCount": 67,
       "patches": [
         {
           "stage": "before-migrations",
@@ -2784,12 +2850,20 @@
         {
           "before": "    await load();\n  } catch (error) {\n    if (await refreshAvailability(pending.ids))\n      adminFeedback.error(getSafeErrorMessage(error, pending.batch ? '操作失败' : '下架失败'));\n",
           "after": "    await load();\n  } catch (error) {\n    if (!pending.batch && await reportFieldError(error)) return;\n    if (await refreshAvailability(pending.ids))\n      adminFeedback.error(getSafeErrorMessage(error, pending.batch ? '操作失败' : '下架失败'));\n"
+        },
+        {
+          "before": "      confirm-function=\"off-shelf\"\n      :header=\"pendingOffShelf?.batch ? '下架' : '下架商品'\"\n      :width=\"pendingOffShelf?.batch ? '520px' : '500px'\"\n",
+          "after": "      confirm-function=\"off-shelf\"\n      :header=\"pendingOffShelf?.batch ? '批量下架商品' : '下架商品'\"\n      :width=\"pendingOffShelf?.batch ? '520px' : '500px'\"\n"
+        },
+        {
+          "before": "  selling: { kind: 'off-shelf', label: '批量下架', permission: 'batch-off-shelf' },\n  recycle: { kind: 'batch-restore', label: '批量放回到仓库', permission: 'batch-restore' },\n};\n",
+          "after": "  selling: { kind: 'off-shelf', label: '批量下架', permission: 'batch-off-shelf' },\n  recycle: { kind: 'batch-restore', label: '批量放回仓库', permission: 'batch-restore' },\n};\n"
         }
       ]
     },
     "src/pages/finished-stock/store/price-configuration.vue": {
       "baseSha256": "9dd641cb880655b2268e4158e0c9ec5416d5b44442915e7bae2507cac0c3e44c",
-      "patchCount": 24,
+      "patchCount": 26,
       "patches": [
         {
           "stage": "before-migrations",
@@ -2919,12 +2993,20 @@
         {
           "before": "    adminFeedback.actionSuccess({ action: editingDiscountId.value == null ? '新增' : '修改', target: '折扣配置' });\n  } catch (error) {\n    if (!current()) return;\n    adminFeedback.error(getSafeErrorMessage(error, editing ? '修改失败，请稍后重试' : '新增失败，请稍后重试'));\n",
           "after": "    adminFeedback.actionSuccess({ action: editingDiscountId.value == null ? '新增' : '修改', target: '折扣配置' });\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    if (!current()) return;\n    adminFeedback.error(getSafeErrorMessage(error, editing ? '修改失败，请稍后重试' : '新增失败，请稍后重试'));\n"
+        },
+        {
+          "before": "      confirm-function=\"save\"\n      :header=\"editingDiscountId == null ? '新增' : '编辑'\"\n      dialog-class-name=\"discount-config-dialog zdm-admin-dialog zdm-admin-single-form\"\n",
+          "after": "      confirm-function=\"save\"\n      :header=\"editingDiscountId == null ? '新增折扣配置' : '编辑折扣配置'\"\n      dialog-class-name=\"discount-config-dialog zdm-admin-dialog zdm-admin-single-form\"\n"
+        },
+        {
+          "before": "      width=\"320px\"\n      header=\"批量设置\"\n      :confirm-btn=\"{ loading: saving }\"\n",
+          "after": "      width=\"320px\"\n      header=\"批量设置价格系数\"\n      :confirm-btn=\"{ loading: saving }\"\n"
         }
       ]
     },
     "src/pages/finished-stock/supply-chain/index.vue": {
       "baseSha256": "e1587ec2d5c209a426f8bfe9c584eb6a421289c0ef3ca40651b955330d06e1da",
-      "patchCount": 44,
+      "patchCount": 52,
       "patches": [
         {
           "stage": "before-migrations",
@@ -3128,12 +3210,44 @@
         {
           "before": "      adminFeedback.success('商品已下架');\n    }\n  } catch (error) {\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  } finally {\n    closeReasonDialog();\n    saving.value = false;\n  }\n",
           "after": "      adminFeedback.success('商品已下架');\n    }\n    closeReasonDialog();\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    closeReasonDialog();\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  } finally {\n    saving.value = false;\n  }\n"
+        },
+        {
+          "before": "      confirm-function=\"switch-category\"\n      header=\"切换分类\"\n      cancel-btn=\"取消\"\n",
+          "after": "      confirm-function=\"switch-category\"\n      header=\"是否切换商品分类？\"\n      cancel-btn=\"取消\"\n"
+        },
+        {
+          "before": "      confirm-function=\"close\"\n      header=\"创建规格\"\n      width=\"920px\"\n",
+          "after": "      confirm-function=\"close\"\n      :header=\"specFormMode === 'edit' ? '编辑商品规格' : '创建商品规格'\"\n      width=\"920px\"\n"
+        },
+        {
+          "before": "              />\n              <t-button shape=\"square\" variant=\"text\" :theme=\"buttonTheme('delete')\" @click=\"removeSingleSpec(index)\">\n                <t-icon name=\"delete\" />\n",
+          "after": "              />\n              <t-button shape=\"square\" variant=\"text\" :theme=\"buttonTheme('delete')\" aria-label=\"删除规格项\" title=\"删除规格项\" @click=\"removeSingleSpec(index)\">\n                <t-icon name=\"delete\" />\n"
+        },
+        {
+          "before": "                  :theme=\"buttonTheme('delete')\"\n                  @click=\"removeSpecValue(group.name, index)\"\n",
+          "after": "                  :theme=\"buttonTheme('delete')\"\n                  aria-label=\"删除属性值\"\n                  title=\"删除属性值\"\n                  @click=\"removeSpecValue(group.name, index)\"\n"
+        },
+        {
+          "before": "      confirm-function=\"edit\"\n      header=\"切换展示模式\"\n      cancel-btn=\"取消\"\n",
+          "after": "      confirm-function=\"edit\"\n      header=\"是否切换规格展示模式？\"\n      cancel-btn=\"取消\"\n"
+        },
+        {
+          "before": "      v-model:visible=\"priceDrawerVisible\"\n      header=\"批量填写\"\n      placement=\"right\"\n",
+          "after": "      v-model:visible=\"priceDrawerVisible\"\n      header=\"批量填写商品规格信息\"\n      placement=\"right\"\n"
+        },
+        {
+          "before": "      v-model:visible=\"reasonDialogVisible\"\n      header=\"下架\"\n      width=\"520px\"\n",
+          "after": "      v-model:visible=\"reasonDialogVisible\"\n      :header=\"reasonState.isBatch ? '批量下架商品' : '下架商品'\"\n      width=\"520px\"\n"
+        },
+        {
+          "before": "    recycle: [\n      { action: 'batchRestore', label: '批量放回到仓库', icon: 'rollback' },\n      { action: 'batchPurge', label: '批量彻底删除', icon: 'delete', className: 'deep-danger-button' },\n",
+          "after": "    recycle: [\n      { action: 'batchRestore', label: '批量放回仓库', icon: 'rollback' },\n      { action: 'batchPurge', label: '批量彻底删除', icon: 'delete', className: 'deep-danger-button' },\n"
         }
       ]
     },
     "src/pages/order/prototype/OrderActionDialog.vue": {
       "baseSha256": "e537575501e1609102dcc1e87db1c9b1c6a15d1a9fce1451c8e49cb6815e4c92",
-      "patchCount": 5,
+      "patchCount": 8,
       "patches": [
         {
           "stage": "before-migrations",
@@ -3169,12 +3283,24 @@
           "reason": "按已确认的操作校验与反馈整改方案接入本页登记的操作",
           "before": "  });\n}\nasync function submit() {\n  if (!(await validateNumericControls(dialog.value))) return;\n  fb.clear();\n  error.value = '';\n  try {\n    await props.execute(clone(form.value));\n    visible.value = false;\n    return;\n  } catch (e) {\n    error.value = e instanceof Error ? e.message : '操作失败';\n    fb.reject('operation', error.value, error.value);\n  }\n  await rejectFormSubmission(dialog.value);\n}\n</script>\n",
           "after": "  });\n}\nasync function submit() {\n  if (submitting.value) return;\n  submitting.value = true;\n  try {\n    fb.clear();\n    const value = form.value;\n    let invalid = false;\n    const field = (key: keyof ActionForm, valid: unknown, message: string) => {\n      if (valid) return;\n      invalid = true;\n      fb.reject(key, value[key], message);\n    };\n    if (paymentAction.value) {\n      field('amount', value.amount > 0, '请输入大于零的金额');\n      field('method', value.method, '请选择收退款渠道');\n      field('at', value.at, '请选择实际时间');\n      if (paymentKind.value === 'receipt') field('nature', value.nature, '请选择款项名称');\n      else field('reason', value.reason.trim(), '请输入退款原因');\n    }\n    if (['ship', 'receive'].includes(props.action)) {\n      field('quantity', Number.isInteger(value.quantity) && value.quantity > 0, '请输入大于零的整数数量');\n      if (props.action === 'ship') field('at', value.at, '请选择实际发货时间');\n    }\n    if (needsReason.value) field('reason', value.reason.trim(), '请输入操作原因');\n    if (!(await validateNumericControls(dialog.value))) return;\n    if (invalid) { await rejectFormSubmission(dialog.value); return; }\n    await props.execute(clone(value));\n    visible.value = false;\n  } catch (error) {\n    if (error instanceof OrderFieldError) {\n      const field = error.field as keyof ActionForm;\n      fb.reject(field, form.value[field], error.message);\n      await rejectFormSubmission(dialog.value);\n    } else adminFeedback.actionError({ action: props.label, error });\n  } finally {\n    submitting.value = false;\n  }\n}\n</script>\n"
+        },
+        {
+          "before": "    v-model:visible=\"visible\"\n    :header=\"label\"\n    :data=\"form\"\n",
+          "after": "    v-model:visible=\"visible\"\n    :header=\"dialogTitle\"\n    :data=\"form\"\n"
+        },
+        {
+          "before": "    \"\n    :confirmation=\"operationConfirmation(label)\"\n    :confirm-btn=\"{ loading: submitting }\"\n",
+          "after": "    \"\n    :confirmation=\"operationConfirmation(operationName)\"\n    :confirm-btn=\"{ loading: submitting }\"\n"
+        },
+        {
+          "before": ");\nconst needsReason = computed(() =>\n",
+          "after": ");\nconst operationName = computed(() => {\n  if (props.action === 'correct-payment' || props.action === 'void-payment') {\n    const payment = props.order.payments.find((entry) => entry.id === props.recordId);\n    if (payment) {\n      const action = props.action === 'void-payment' ? '作废' : '更正';\n      return `${action}${payment.kind === 'receipt' ? '收款' : '退款'}记录`;\n    }\n  }\n  if (props.action === 'correct-shipment' && form.value.quantity === 0) return '作废发货记录';\n  if (props.action === 'revoke-plan') return '撤销未发货安排';\n  return props.label;\n});\nconst dialogTitle = computed(() => {\n  if (props.action === 'confirm') return '是否确认订单？';\n  if (props.action === 'correct-shipment') return '更正或作废发货记录';\n  return operationName.value;\n});\nconst needsReason = computed(() =>\n"
         }
       ]
     },
     "src/pages/order/prototype/index.vue": {
       "baseSha256": "ff3c5f3cbc085070d7ce4d9a0457c1441a23759cd18681c34794378ebcd6ac02",
-      "patchCount": 21,
+      "patchCount": 28,
       "patches": [
         {
           "stage": "before-migrations",
@@ -3278,12 +3404,40 @@
         {
           "before": "  } catch (error) {\n    if (scope !== key.value) return;\n    if (error instanceof ApiFieldError && error.field === 'name') {\n      settingFeedback.reject('name', settingName.value, error.message);\n      await rejectFormSubmission(settingDialog.value);\n    } else {\n      adminFeedback.actionError({ action: editing ? '修改' : '新增', error });\n    }\n",
           "after": "  } catch (error) {\n    if (scope !== key.value) return;\n    if (!(await reportFieldError(error))) {\n      adminFeedback.actionError({ action: editing ? '修改' : '新增', error });\n    }\n"
+        },
+        {
+          "before": "                    @click=\"openAction('revoke-plan', selected!, row.id)\"\n                    >撤销未发安排</t-link\n                  ></template\n",
+          "after": "                    @click=\"openAction('revoke-plan', selected!, row.id)\"\n                    >撤销未发货安排</t-link\n                  ></template\n"
+        },
+        {
+          "before": "                    @click=\"openAction('correct-shipment', selected!, row.id)\"\n                    >更正／作废</t-link\n                  ></template\n",
+          "after": "                    @click=\"openAction('correct-shipment', selected!, row.id)\"\n                    >更正或作废发货记录</t-link\n                  ></template\n"
+        },
+        {
+          "before": "                  @click=\"openAction('receive', findOrder(row.orderId), row.id)\"\n                  >登记收货</t-link\n                ><t-link\n",
+          "after": "                  @click=\"openAction('receive', findOrder(row.orderId), row.id)\"\n                  >登记到店收货</t-link\n                ><t-link\n"
+        },
+        {
+          "before": "      :editing=\"editing\"\n      :saving=\"editorSaving\"\n",
+          "after": "      :editing=\"editing\"\n      :copied=\"editorAction === 'copy'\"\n      :saving=\"editorSaving\"\n"
+        },
+        {
+          "before": "      :visible=\"scopeVerified && Boolean(logDetail)\"\n      header=\"操作前后数据\"\n      width=\"min(960px, 94vw)\"\n",
+          "after": "      :visible=\"scopeVerified && Boolean(logDetail)\"\n      header=\"订单操作前后数据\"\n      width=\"min(960px, 94vw)\"\n"
+        },
+        {
+          "before": "const editingOrder = ref(blankOrder(context.value, state.value.orders)),\n  editing = ref(false),\n  editorVisible = ref(false);\n",
+          "after": "const editingOrder = ref(blankOrder(context.value, state.value.orders)),\n  editorAction = ref('create'),\n  editing = computed(() => editorAction.value === 'edit'),\n  editorVisible = ref(false);\n"
+        },
+        {
+          "before": "    if (['create', 'copy', 'edit'].includes(id)) {\n      editing.value = id === 'edit';\n      editingOrder.value =\n",
+          "after": "    if (['create', 'copy', 'edit'].includes(id)) {\n      editorAction.value = id;\n      editingOrder.value =\n"
         }
       ]
     },
     "src/pages/permission/employee/index.vue": {
       "baseSha256": "46c56961a34772b9213ae0a8339912aefb65e92a5d333f39bb161addd37d85e0",
-      "patchCount": 18,
+      "patchCount": 22,
       "patches": [
         {
           "stage": "before-migrations",
@@ -3374,6 +3528,22 @@
         {
           "before": "      const targetIndex = employees.value.findIndex((employee) => employee.id === activeEmployee.value?.id);\n      if (targetIndex !== -1) {\n        employees.value.splice(targetIndex, 1, toEmployeeItem(updated));\n      }\n      adminFeedback.actionSuccess({ action: '修改' });\n    } catch (error) {\n      adminFeedback.error(error instanceof Error ? error.message : '更新失败');\n      return;\n    }\n  }\n\n  closeProfileDialog();\n};\n\nconst handlePermissionSubmit = async () => {\n  if ((await permissionFormRef.value?.validate()) !== true) return rejectFormSubmission(permissionFormRef.value);\n  if (!permissionFormData.roleIds.length) {\n    return;\n  }\n  if (!permissionFormData.dataPermission) {\n    return;\n  }\n  if (activeEmployee.value) {\n    try {\n      const updated = await updateEmployeePermissions(activeEmployee.value.id, {\n        roleIds: permissionFormData.roleIds.join(','),\n        dataPermission: permissionFormData.dataPermission,\n      });\n      const targetIndex = employees.value.findIndex((employee) => employee.id === activeEmployee.value?.id);\n      if (targetIndex !== -1) {\n        employees.value.splice(targetIndex, 1, toEmployeeItem(updated));\n      }\n      adminFeedback.actionSuccess({ action: '修改' });\n    } catch (error) {\n      adminFeedback.error(error instanceof Error ? error.message : '更新失败');\n      return;\n    }\n  }\n\n  closePermissionDialog();\n",
           "after": "      const targetIndex = employees.value.findIndex((employee) => employee.id === activeEmployee.value?.id);\n      if (targetIndex !== -1) {\n        employees.value.splice(targetIndex, 1, toEmployeeItem(updated));\n      }\n      adminFeedback.actionSuccess({ action: '修改' });\n    } catch (error) {\n      if (await reportFieldError(error)) return;\n      adminFeedback.error(error instanceof Error ? error.message : '更新失败');\n      return;\n    }\n  }\n\n  closeProfileDialog();\n};\n\nconst beginPermissionFeedback = useServerFieldValidation(\n  () => permissionDialogVisible.value, permissionFormRef, () => ({ ...permissionFormData }),\n);\nconst handlePermissionSubmit = async () => {\n  if ((await permissionFormRef.value?.validate()) !== true) return rejectFormSubmission(permissionFormRef.value);\n  if (!permissionFormData.roleIds.length) {\n    return;\n  }\n  if (!permissionFormData.dataPermission) {\n    return;\n  }\n  if (activeEmployee.value) {\n    const reportFieldError = beginPermissionFeedback();\n    try {\n      const updated = await updateEmployeePermissions(activeEmployee.value.id, {\n        roleIds: permissionFormData.roleIds.join(','),\n        dataPermission: permissionFormData.dataPermission,\n      });\n      const targetIndex = employees.value.findIndex((employee) => employee.id === activeEmployee.value?.id);\n      if (targetIndex !== -1) {\n        employees.value.splice(targetIndex, 1, toEmployeeItem(updated));\n      }\n      adminFeedback.actionSuccess({ action: '修改' });\n    } catch (error) {\n      if (await reportFieldError(error)) return;\n      adminFeedback.error(error instanceof Error ? error.message : '更新失败');\n      return;\n    }\n  }\n\n  closePermissionDialog();\n"
+        },
+        {
+          "before": "                  >\n                    角色\n                  </t-link>\n",
+          "after": "                  >\n                    配置权限\n                  </t-link>\n"
+        },
+        {
+          "before": "      :confirm-btn=\"dialogButtonProps('submit', operationConfirmation('邀请员工'))\"\n      header=\"邀请员工\"\n      width=\"560px\"\n",
+          "after": "      :confirm-btn=\"dialogButtonProps('submit', operationConfirmation('邀请员工'))\"\n      header=\"员工邀请链接\"\n      width=\"560px\"\n"
+        },
+        {
+          "before": "      dialog-class-name=\"zdm-admin-dialog zdm-admin-single-form\"\n      header=\"编辑资料\"\n      width=\"480px\"\n",
+          "after": "      dialog-class-name=\"zdm-admin-dialog zdm-admin-single-form\"\n      header=\"编辑员工资料\"\n      width=\"480px\"\n"
+        },
+        {
+          "before": "      v-model:visible=\"permissionDialogVisible\"\n      header=\"配置权限\"\n      width=\"560px\"\n",
+          "after": "      v-model:visible=\"permissionDialogVisible\"\n      header=\"配置员工权限\"\n      width=\"560px\"\n"
         }
       ]
     },
@@ -3429,7 +3599,7 @@
     },
     "src/pages/product/attribute-value/index.vue": {
       "baseSha256": "5b2fe9b3f9019ed577c60c50ec3fc546b8697276abbf866728e2b1c824cbf6a6",
-      "patchCount": 18,
+      "patchCount": 19,
       "patches": [
         {
           "stage": "before-migrations",
@@ -3520,12 +3690,16 @@
         {
           "before": "    void loadValues();\n  } catch (error) {\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n",
           "after": "    void loadValues();\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n"
+        },
+        {
+          "before": "      dialog-class-name=\"zdm-admin-dialog zdm-admin-single-form\"\n      header=\"新增\"\n      width=\"480px\"\n",
+          "after": "      dialog-class-name=\"zdm-admin-dialog zdm-admin-single-form\"\n      header=\"新增属性值\"\n      width=\"480px\"\n"
         }
       ]
     },
     "src/pages/product/attribute/index.vue": {
       "baseSha256": "0acfd70bf9f3452864fd54b0bfe14e5f055c7051f7e2e8796800e69a22309935",
-      "patchCount": 19,
+      "patchCount": 20,
       "patches": [
         {
           "stage": "before-migrations",
@@ -3626,12 +3800,16 @@
         {
           "before": "    void loadAttributes();\n  } catch (error) {\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n",
           "after": "    void loadAttributes();\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n"
+        },
+        {
+          "before": "      confirm-function=\"submit\"\n      header=\"新增\"\n      width=\"480px\"\n",
+          "after": "      confirm-function=\"submit\"\n      header=\"新增属性\"\n      width=\"480px\"\n"
         }
       ]
     },
     "src/pages/product/category-attribute-template/index.vue": {
       "baseSha256": "90bcf5cad3bc1de818bece56995c4077e25cfc36536d7876adc72250b06c5e4c",
-      "patchCount": 30,
+      "patchCount": 34,
       "patches": [
         {
           "stage": "before-migrations",
@@ -3767,6 +3945,22 @@
         {
           "before": "    adminFeedback.actionSuccess({ action: '发布', target: '新版本' });\n  } catch (e) {\n    if (current()) error(e, '发布', '新版本');\n  } finally {\n    if (current()) busy.value = false;\n",
           "after": "    adminFeedback.actionSuccess({ action: '发布', target: '新版本' });\n  } catch (e) {\n    if (!current() || selected.value?.id !== id) return;\n    if (e instanceof ApiFieldError) {\n      const index = rows.value.findIndex(row => e.fields.some(item =>\n        item.field === attributeKey(row, 'attributeRole') || item.field === attributeKey(row, 'options')));\n      if (index >= 0) {\n        attributePage.value = Math.floor(index / attributePageSize.value) + 1;\n        publishVisible.value = false;\n        busy.value = false;\n      }\n    }\n    if (!(await report?.(e))) error(e, '发布', '新版本');\n  } finally {\n    if (current()) busy.value = false;\n"
+        },
+        {
+          "before": "      confirm-function=\"create\"\n      header=\"添加属性\"\n      width=\"720px\"\n",
+          "after": "      confirm-function=\"create\"\n      header=\"选择要添加的属性\"\n      width=\"720px\"\n"
+        },
+        {
+          "before": "      confirm-function=\"publish-version\"\n      header=\"发布新版本\"\n      width=\"max-content\"\n",
+          "after": "      confirm-function=\"publish-version\"\n      header=\"是否发布属性模板新版本？\"\n      width=\"max-content\"\n"
+        },
+        {
+          "before": "      :visible=\"!!copyTarget\"\n      header=\"复制版本\"\n      :confirm-btn=\"{ loading: busy }\"\n",
+          "after": "      :visible=\"!!copyTarget\"\n      header=\"是否复制属性模板版本并覆盖草稿？\"\n      :confirm-btn=\"{ loading: busy }\"\n"
+        },
+        {
+          "before": "    >\n    <t-drawer v-model:visible=\"historyVisible\" header=\"版本记录\" size=\"min(760px, 100%)\" :footer=\"false\">\n      <t-table row-key=\"id\" :data=\"versions.filter((v) => v.state === 'published')\" :columns=\"historyColumns\">\n",
+          "after": "    >\n    <t-drawer v-model:visible=\"historyVisible\" header=\"属性模板版本记录\" size=\"min(760px, 100%)\" :footer=\"false\">\n      <t-table row-key=\"id\" :data=\"versions.filter((v) => v.state === 'published')\" :columns=\"historyColumns\">\n"
         }
       ]
     },
@@ -3921,7 +4115,7 @@
     },
     "src/pages/product/markup-configuration/index.vue": {
       "baseSha256": "d69caf8ea2cc461065afd84d0232145b6ef6b919127078c5b2dad73b2b6f297e",
-      "patchCount": 26,
+      "patchCount": 28,
       "patches": [
         {
           "stage": "before-migrations",
@@ -4044,12 +4238,20 @@
         {
           "before": "    else adminFeedback.created(name);\n  } catch (error) {\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n",
           "after": "    else adminFeedback.created(name);\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n"
+        },
+        {
+          "before": "      dialog-class-name=\"zdm-admin-dialog zdm-admin-single-form\"\n      :header=\"editingId ? '编辑' : '新增'\"\n      width=\"480px\"\n",
+          "after": "      dialog-class-name=\"zdm-admin-dialog zdm-admin-single-form\"\n      :header=\"`${editingId ? '编辑' : '新增'}${commodityLabel}价格配置`\"\n      width=\"480px\"\n"
+        },
+        {
+          "before": "      action=\"删除\"\n      object-type=\"价格配置\"\n",
+          "after": "      action=\"删除\"\n      :title=\"`是否删除${commodityLabel}价格配置？`\"\n      object-type=\"价格配置\"\n"
         }
       ]
     },
     "src/pages/role/management/index.vue": {
       "baseSha256": "bb11f2cdd5000139d47396ea04f251f783c80fb39dfe39a67d9c5325bba6d839",
-      "patchCount": 22,
+      "patchCount": 24,
       "patches": [
         {
           "stage": "before-migrations",
@@ -4153,12 +4355,20 @@
         {
           "before": "    if (refresh) void loadRoles();\n  } catch (error) {\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n",
           "after": "    if (refresh) void loadRoles();\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n"
+        },
+        {
+          "before": "      dialog-class-name=\"zdm-admin-dialog zdm-admin-single-form\"\n      :header=\"dialogMode === 'create' ? '新增' : '编辑'\"\n      width=\"480px\"\n",
+          "after": "      dialog-class-name=\"zdm-admin-dialog zdm-admin-single-form\"\n      :header=\"dialogMode === 'create' ? '新增角色' : '编辑角色'\"\n      width=\"480px\"\n"
+        },
+        {
+          "before": "      v-model:visible=\"permissionDialogVisible\"\n      header=\"权限配置\"\n      width=\"min(1560px, calc(100vw - 48px))\"\n",
+          "after": "      v-model:visible=\"permissionDialogVisible\"\n      header=\"配置角色权限\"\n      width=\"min(1560px, calc(100vw - 48px))\"\n"
         }
       ]
     },
     "src/pages/selection-center/index.vue": {
       "baseSha256": "ce5f4d26dfd05df3ba12353a7c518e5b9c6189e61c1e1d41b638d2d2e1b824f1",
-      "patchCount": 31,
+      "patchCount": 32,
       "patches": [
         {
           "stage": "before-migrations",
@@ -4301,6 +4511,10 @@
         {
           "before": "      </t-loading>\n    </main>\n    <SelectionDetail :detail=\"detail\" :loading=\"detailIndicator\" :adding=\"Boolean(detail && adding.includes(keyOf(detail.product)))\" :adding-indicator=\"Boolean(detail && addingIndicator(keyOf(detail.product)))\" @close=\"closeDetail\" @add=\"add\" />\n    <AdminDialog\n      v-model:visible=\"resultVisible\"\n",
           "after": "      </t-loading>\n    </main>\n    <SelectionDetail :detail=\"detail\" :adding=\"Boolean(detail && adding.includes(keyOf(detail.product)))\" :adding-indicator=\"Boolean(detail && addingIndicator(keyOf(detail.product)))\" @close=\"closeDetail\" @add=\"add\" />\n    <AdminDialog\n      v-model:visible=\"resultVisible\"\n"
+        },
+        {
+          "before": "      v-model:visible=\"resultVisible\"\n      header=\"加入门店结果\"\n      width=\"min(760px, 90vw)\"\n",
+          "after": "      v-model:visible=\"resultVisible\"\n      header=\"商品加入门店结果\"\n      width=\"min(760px, 90vw)\"\n"
         }
       ]
     },
@@ -4549,7 +4763,7 @@
     },
     "src/pages/slab/management/index.vue": {
       "baseSha256": "191459ad149f78ebaa6c495a2617ce9c60c105742ee3f70125c032c438d3c29b",
-      "patchCount": 53,
+      "patchCount": 60,
       "patches": [
         {
           "stage": "before-migrations",
@@ -4798,6 +5012,34 @@
         {
           "before": "      closeReasonDialog();\n      adminFeedback.actionSuccess({ action: '删除', target: row.name });\n    } catch (error) {\n      await loadSlabs();\n      adminFeedback.actionError({ action: '删除', error, fallback: '请稍后重试', target: row.name });\n",
           "after": "      closeReasonDialog();\n      adminFeedback.actionSuccess({ action: '删除', target: row.name });\n    } catch (error) {\n      if (await reportFieldError(error)) return;\n      await loadSlabs();\n      adminFeedback.actionError({ action: '删除', error, fallback: '请稍后重试', target: row.name });\n"
+        },
+        {
+          "before": "                        :alt=\"row.name\"\n                        role=\"button\"\n",
+          "after": "                        :alt=\"row.name\"\n                        :aria-label=\"`预览${row.name}主图`\"\n                        role=\"button\"\n"
+        },
+        {
+          "before": "      v-model:visible=\"priceDrawerVisible\"\n      header=\"价格编辑器\"\n      placement=\"right\"\n",
+          "after": "      v-model:visible=\"priceDrawerVisible\"\n      :header=\"priceDrawerReadonly ? '查看大板价格' : '编辑大板价格'\"\n      placement=\"right\"\n"
+        },
+        {
+          "before": "      :action=\"confirmAction\"\n      :title=\"confirmTitle\"\n      object-type=\"大板\"\n",
+          "after": "      :action=\"confirmAction\"\n      object-type=\"大板\"\n"
+        },
+        {
+          "before": "      confirm-function=\"close\"\n      header=\"历史下架原因\"\n      dialog-class-name=\"zdm-admin-responsive-dialog\"\n",
+          "after": "      confirm-function=\"close\"\n      header=\"大板历史下架原因\"\n      dialog-class-name=\"zdm-admin-responsive-dialog\"\n"
+        },
+        {
+          "before": "      :operation=\"batchOperation\"\n    />\n",
+          "after": "      :operation=\"batchOperation\"\n      object-type=\"大板\"\n    />\n"
+        },
+        {
+          "before": "});\nconst confirmTitle = computed(() => {\n  if (confirmState.type === 'restore') return '是否放回仓库';\n  if (confirmState.type === 'batchRestore') return '是否批量放回到仓库';\n  return '';\n});\nconst reasonState = reactive<{\n",
+          "after": "});\nconst reasonState = reactive<{\n"
+        },
+        {
+          "before": "  if (reasonState.type === 'deleteExternal') return '删除大板';\n  return reasonState.isBatch ? '批量下架' : '下架';\n});\n",
+          "after": "  if (reasonState.type === 'deleteExternal') return '删除大板';\n  return reasonState.isBatch ? '批量下架大板' : '下架大板';\n});\n"
         }
       ]
     },
@@ -4902,7 +5144,7 @@
     },
     "src/pages/slab/supply-chain/index.vue": {
       "baseSha256": "0181b2543f11c694d882f3f565779c2f0b3c3a3332a24d2277acbf6009ce93d6",
-      "patchCount": 41,
+      "patchCount": 48,
       "patches": [
         {
           "stage": "before-migrations",
@@ -5103,6 +5345,34 @@
         {
           "before": "      closeReasonDialog();\n      adminFeedback.actionSuccess({ action: '删除', target: row.name });\n    } catch (error) {\n      await loadSlabs();\n      adminFeedback.actionError({ action: '删除', error, fallback: '请稍后重试', target: row.name });\n",
           "after": "      closeReasonDialog();\n      adminFeedback.actionSuccess({ action: '删除', target: row.name });\n    } catch (error) {\n      if (await reportFieldError(error)) return;\n      await loadSlabs();\n      adminFeedback.actionError({ action: '删除', error, fallback: '请稍后重试', target: row.name });\n"
+        },
+        {
+          "before": "                        :alt=\"row.name\"\n                        role=\"button\"\n",
+          "after": "                        :alt=\"row.name\"\n                        :aria-label=\"`预览${row.name}主图`\"\n                        role=\"button\"\n"
+        },
+        {
+          "before": "      v-model:visible=\"priceDrawerVisible\"\n      header=\"价格编辑器\"\n      placement=\"right\"\n",
+          "after": "      v-model:visible=\"priceDrawerVisible\"\n      :header=\"priceDrawerReadonly ? '查看大板价格' : '编辑大板价格'\"\n      placement=\"right\"\n"
+        },
+        {
+          "before": "      :action=\"confirmAction\"\n      :title=\"confirmTitle\"\n      object-type=\"大板\"\n",
+          "after": "      :action=\"confirmAction\"\n      object-type=\"大板\"\n"
+        },
+        {
+          "before": "      confirm-function=\"close\"\n      header=\"历史下架原因\"\n      dialog-class-name=\"zdm-admin-responsive-dialog\"\n",
+          "after": "      confirm-function=\"close\"\n      header=\"大板历史下架原因\"\n      dialog-class-name=\"zdm-admin-responsive-dialog\"\n"
+        },
+        {
+          "before": "      :operation=\"batchOperation\"\n    />\n",
+          "after": "      :operation=\"batchOperation\"\n      object-type=\"大板\"\n    />\n"
+        },
+        {
+          "before": "});\nconst confirmTitle = computed(() => {\n  if (confirmState.type === 'restore') return '是否放回仓库';\n  if (confirmState.type === 'batchRestore') return '是否批量放回到仓库';\n  return '';\n});\nconst reasonState = reactive<{\n",
+          "after": "});\nconst reasonState = reactive<{\n"
+        },
+        {
+          "before": "  if (reasonState.type === 'deleteExternal') return '删除大板';\n  return reasonState.isBatch ? '批量下架' : '下架';\n});\n",
+          "after": "  if (reasonState.type === 'deleteExternal') return '删除大板';\n  return reasonState.isBatch ? '批量下架大板' : '下架大板';\n});\n"
         }
       ]
     },
@@ -5332,7 +5602,7 @@
     },
     "src/pages/store-category/management/index.vue": {
       "baseSha256": "e6db3a2a43404453ba0ed901036e24385ca44997bdc3755c825742efef8e94df",
-      "patchCount": 31,
+      "patchCount": 33,
       "patches": [
         {
           "stage": "before-migrations",
@@ -5489,6 +5759,14 @@
         {
           "before": "    }\n  } catch (error) {\n    showError(error, '分类保存失败');\n  } finally {\n",
           "after": "    }\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    showError(error, '分类保存失败');\n  } finally {\n"
+        },
+        {
+          "before": "      action=\"新增\"\n      title=\"新增下级分类\"\n      :loading=\"formSubmitting\"\n",
+          "after": "      action=\"新增\"\n      title=\"是否新增下级分类？\"\n      :loading=\"formSubmitting\"\n"
+        },
+        {
+          "before": "      :header=\"formMode === 'create' ? `新增${formLevel}级分类` : '编辑分类'\"\n",
+          "after": "      :header=\"formMode === 'create' ? `新增${['一', '二', '三'][formLevel - 1]}级分类` : '编辑分类'\"\n"
         }
       ]
     },
@@ -5583,7 +5861,7 @@
     },
     "src/pages/supplier/management/index.vue": {
       "baseSha256": "1d19b21835c32549d06501143c208108b975f1db74bffd4f997a4c202be36a06",
-      "patchCount": 21,
+      "patchCount": 22,
       "patches": [
         {
           "stage": "before-migrations",
@@ -5689,12 +5967,16 @@
         {
           "before": "    if (refresh) void loadSuppliers();\n  } catch (error) {\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n",
           "after": "    if (refresh) void loadSuppliers();\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n"
+        },
+        {
+          "before": "      width=\"480px\"\n      :header=\"dialogMode === 'create' ? '新增' : '编辑'\"\n      :confirm-btn=\"{ loading: handleSubmitPending }\"\n",
+          "after": "      width=\"480px\"\n      :header=\"dialogMode === 'create' ? '新增供应商' : '编辑供应商'\"\n      :confirm-btn=\"{ loading: handleSubmitPending }\"\n"
         }
       ]
     },
     "src/pages/supplier/supply-type/index.vue": {
       "baseSha256": "879b1e12bf5b8d24b18fa7b5d226fd0025097fa73105fd80a7da7624bb3a3f78",
-      "patchCount": 14,
+      "patchCount": 16,
       "patches": [
         {
           "stage": "before-migrations",
@@ -5763,12 +6045,20 @@
         {
           "before": "    await load();\n  } catch (error) {\n    adminFeedback.actionError({ action, target, error });\n  } finally {\n",
           "after": "    await load();\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    adminFeedback.actionError({ action, target, error });\n  } finally {\n"
+        },
+        {
+          "before": "      :visible=\"statusDialogVisible\"\n      :header=\"`是否${statusAction}`\"\n      width=\"440px\"\n",
+          "after": "      :visible=\"statusDialogVisible\"\n      :header=\"`是否${statusAction}供货类型？`\"\n      width=\"440px\"\n"
+        },
+        {
+          "before": "      :visible=\"Boolean(deleting)\"\n      header=\"删除供货类型\"\n      :confirm-btn=\"{ loading: saving }\"\n",
+          "after": "      :visible=\"Boolean(deleting)\"\n      header=\"是否删除供货类型？\"\n      :confirm-btn=\"{ loading: saving }\"\n"
         }
       ]
     },
     "src/pages/tenant/management/index.vue": {
       "baseSha256": "a956403dfd1cfaeafeb03541cf5a9b55a2c70944706af36f25923de11e0c3a38",
-      "patchCount": 25,
+      "patchCount": 29,
       "patches": [
         {
           "stage": "before-migrations",
@@ -5902,12 +6192,28 @@
         {
           "before": "    if (refresh) void loadTenants();\n  } catch (error) {\n    adminFeedback.actionError({ action, target: targetName, error });\n  }\n",
           "after": "    if (refresh) void loadTenants();\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    adminFeedback.actionError({ action, target: targetName, error });\n  }\n"
+        },
+        {
+          "before": "                  >\n                    业务开通\n                  </t-link>\n",
+          "after": "                  >\n                    设置开通业务\n                  </t-link>\n"
+        },
+        {
+          "before": "      dialog-class-name=\"zdm-admin-dialog zdm-admin-single-form\"\n      :header=\"dialogMode === 'create' ? '新增' : '编辑'\"\n      width=\"480px\"\n",
+          "after": "      dialog-class-name=\"zdm-admin-dialog zdm-admin-single-form\"\n      :header=\"dialogMode === 'create' ? '新增租户' : '编辑租户'\"\n      width=\"480px\"\n"
+        },
+        {
+          "before": "      v-model:visible=\"businessDialogVisible\"\n      header=\"业务开通\"\n      width=\"520px\"\n",
+          "after": "      v-model:visible=\"businessDialogVisible\"\n      header=\"设置租户开通业务\"\n      width=\"520px\"\n"
+        },
+        {
+          "before": "      confirm-function=\"purge\"\n      header=\"彻底删除租户\"\n      width=\"560px\"\n",
+          "after": "      confirm-function=\"purge\"\n      header=\"是否彻底删除租户？\"\n      width=\"560px\"\n"
         }
       ]
     },
     "src/pages/tenant/store/index.vue": {
       "baseSha256": "ce460c541cca46dd8c013e1fef94ef5f1679f1cd7b8dd61e59e40494eccec00f",
-      "patchCount": 23,
+      "patchCount": 27,
       "patches": [
         {
           "stage": "before-migrations",
@@ -6021,6 +6327,22 @@
         {
           "before": "    if (refresh) void loadStorePage();\n  } catch (error) {\n    if (error instanceof Error && error.message === '店铺名称已存在') {\n      formRef.value?.setValidateMessage({\n        shopName: [{ type: 'error', message: '门店名称已存在' }],\n      });\n      adminFeedback.actionError({\n        action,\n        target: targetName,\n        error: new Error('门店名称已存在'),\n        fallback: '请稍后重试',\n      });\n      return;\n    }\n    adminFeedback.actionError({ action, target: targetName, error, fallback: '请稍后重试' });\n  }\n",
           "after": "    if (refresh) void loadStorePage();\n  } catch (error) {\n    if (await reportFieldError(error)) return;\n    adminFeedback.actionError({ action, target: targetName, error, fallback: '请稍后重试' });\n  }\n"
+        },
+        {
+          "before": "                    :theme=\"buttonTheme('edit')\"\n                    aria-label=\"修改门店级别\"\n                    @click=\"openLevelDialog(row)\"\n",
+          "after": "                    :theme=\"buttonTheme('edit')\"\n                    aria-label=\"调整门店级别\"\n                    @click=\"openLevelDialog(row)\"\n"
+        },
+        {
+          "before": "      dialog-class-name=\"zdm-admin-dialog zdm-admin-single-form\"\n      :header=\"dialogMode === 'create' ? '新增' : '编辑'\"\n      width=\"480px\"\n",
+          "after": "      dialog-class-name=\"zdm-admin-dialog zdm-admin-single-form\"\n      :header=\"dialogMode === 'create' ? '新增门店' : '编辑门店'\"\n      width=\"480px\"\n"
+        },
+        {
+          "before": "      confirm-function=\"edit\"\n      header=\"门店级别\"\n      dialog-class-name=\"zdm-admin-single-form\"\n",
+          "after": "      confirm-function=\"edit\"\n      header=\"调整门店级别\"\n      dialog-class-name=\"zdm-admin-single-form\"\n"
+        },
+        {
+          "before": "      v-model:visible=\"deleteResultVisible\"\n      header=\"删除结果\"\n      confirm-function=\"close\"\n",
+          "after": "      v-model:visible=\"deleteResultVisible\"\n      header=\"门店彻底删除结果\"\n      confirm-function=\"close\"\n"
         }
       ]
     },
@@ -6098,7 +6420,7 @@
     },
     "src/components/product-logs/ProductOperationLogTemplate.vue": {
       "baseSha256": "e311a9c221761486d8a04f3bb2d84dbd4d9482ad970587c24fd33228498552e2",
-      "patchCount": 3,
+      "patchCount": 5,
       "patches": [
         {
           "before": "      </t-form>\n      <div>\n        <t-table row-key=\"id\" :data=\"records\" :columns=\"columns\" :loading=\"loading\" hover>\n          <template #subjectName=\"{ row }\">\n            <div>{{ row.subjectName }}</div>\n",
@@ -6111,6 +6433,14 @@
         {
           "before": "  { colKey: 'operation', title: '操作', width: 76, fixed: 'right' },\n]);\n</script>\n",
           "after": "  { colKey: 'operation', title: '操作', width: 76, fixed: 'right' },\n]);\n\nconst contentLoading = useDelayedLoading(() => Boolean(props.loading));\n</script>\n"
+        },
+        {
+          "before": "    :visible=\"visible\"\n    header=\"操作日志\"\n    size=\"min(1240px, 100%)\"\n",
+          "after": "    :visible=\"visible\"\n    :header=\"`${subjectLabel}操作日志`\"\n    size=\"min(1240px, 100%)\"\n"
+        },
+        {
+          "before": "    :visible=\"detailVisible\"\n    header=\"操作详情\"\n    width=\"min(1240px, 94vw)\"\n",
+          "after": "    :visible=\"detailVisible\"\n    :header=\"`${subjectLabel}操作详情`\"\n    width=\"min(1240px, 94vw)\"\n"
         }
       ]
     },
@@ -6150,7 +6480,7 @@
     },
     "src/pages/order/prototype/OrderEditor.vue": {
       "baseSha256": "81c0b5dd092cbd2f2838262a2ac9e8d51a384afb135b5761bf5d67238d5a590b",
-      "patchCount": 4,
+      "patchCount": 6,
       "patches": [
         {
           "before": "    confirm-function=\"save\"\n    :confirmation=\"formConfirmation(editing ? 'edit' : 'create')\"\n    @confirm=\"save\"\n  >\n    <t-alert\n",
@@ -6167,6 +6497,14 @@
         {
           "before": "  emit('save', clone(draft.value), reason.value);\n}\n</script>\n",
           "after": "  emit('save', clone(draft.value), reason.value);\n}\n\nconst { pending: savePending, run: saveOnce } = usePendingAction(save);\n</script>\n"
+        },
+        {
+          "before": "    v-model:visible=\"visible\"\n    :header=\"editing ? '编辑订单' : '新增订单'\"\n    :data=\"draft\"\n",
+          "after": "    v-model:visible=\"visible\"\n    :header=\"editing ? '编辑订单' : copied ? '复制开单' : '新增订单'\"\n    :data=\"draft\"\n"
+        },
+        {
+          "before": "import { addProduct, clone, freeStock, money, pricing, type State, type Order, type Line } from './model';\nconst props = defineProps<{ order: Order; state: State; editing: boolean; saving?: boolean }>();\nconst emit = defineEmits<{ save: [order: Order, reason: string] }>();\n",
+          "after": "import { addProduct, clone, freeStock, money, pricing, type State, type Order, type Line } from './model';\nconst props = defineProps<{ order: Order; state: State; editing: boolean; copied?: boolean; saving?: boolean }>();\nconst emit = defineEmits<{ save: [order: Order, reason: string] }>();\n"
         }
       ]
     },
@@ -6281,6 +6619,40 @@
         {
           "before": "  } catch (e) {\n    if (token !== generation) return;\n    if (e instanceof ApiError && e.status === 400) {\n      if (e.message === '本店已有同名服务') serverFeedback.reject('name', name, '服务名称已存在，请更换名称');\n      else if (e.message === '金额超出可精确保存的范围') serverFeedback.reject('price', form.price, e.message);\n      else if (e.message === '服务主图不可用') uploadError.value = '服务主图不可用，请重新选择图片';\n      else {\n        failure(e);\n        return;\n      }\n      await rejectFormSubmission(editor.value);\n    } else failure(e);\n  } finally {\n    if (token === generation) saving.value = false;\n",
           "after": "  } catch (e) {\n    if (token !== generation) return;\n    if (!(await reportFieldError(e))) failure(e);\n  } finally {\n    if (token === generation) saving.value = false;\n"
+        }
+      ]
+    },
+    "src/components/OperationsBatchShelfResult.vue": {
+      "baseSha256": "3c2082913c3c3edafe65b212b0c744a7c70d0fae6d3a37d7f3b8044a6b461fdd",
+      "patchCount": 2,
+      "patches": [
+        {
+          "before": "    :visible=\"visible\"\n    :header=\"`批量${operation}结果`\"\n    width=\"max-content\"\n",
+          "after": "    :visible=\"visible\"\n    :header=\"operation === '设置分类' ? '商品分类批量设置结果' : `${objectType}批量${operation}结果`\"\n    width=\"max-content\"\n"
+        },
+        {
+          "before": "import { groupShelfFailures, type BatchShelfResult } from '@/services/operationsBatchShelf';\nconst props = withDefaults(defineProps<{ visible: boolean; result: BatchShelfResult; operation?: '上架' | '删除' | '设置分类' }>(), {\n  operation: '上架',\n});\n",
+          "after": "import { groupShelfFailures, type BatchShelfResult } from '@/services/operationsBatchShelf';\nconst props = withDefaults(defineProps<{ visible: boolean; result: BatchShelfResult; objectType?: '商品' | '大板'; operation?: '上架' | '删除' | '设置分类' }>(), {\n  operation: '上架',\n  objectType: '商品',\n});\n"
+        }
+      ]
+    },
+    "src/pages/finished-stock/management/components/PriceSourceToggle.vue": {
+      "baseSha256": "7a57ad10bd0204aa07006fe050f34fc54e2d512f0447c1031c202eefb38fea3b",
+      "patchCount": 1,
+      "patches": [
+        {
+          "before": "    attach=\"body\"\n    header=\"更改价格浮动方式\"\n    @confirm=\"confirmToggle\"\n",
+          "after": "    attach=\"body\"\n    :header=\"source === 'auto' ? '是否切换为手工价格？' : '是否切换为跟随价格配置？'\"\n    @confirm=\"confirmToggle\"\n"
+        }
+      ]
+    },
+    "src/pages/finished-stock/store/StoreBatchCategoryDialog.vue": {
+      "baseSha256": "3aba69c79fc4f444ae4f0361c55aaaa8f832b7434741d136aef5495cb392cb5d",
+      "patchCount": 1,
+      "patches": [
+        {
+          "before": "<template>\n  <AdminDialog :visible=\"true\" header=\"批量设置分类\" width=\"min(920px, 94vw)\"\n    confirm-function=\"batch-fill\" :confirmation=\"operationConfirmation('设置分类', true)\"\n",
+          "after": "<template>\n  <AdminDialog :visible=\"true\" header=\"批量设置商品分类\" width=\"min(920px, 94vw)\"\n    confirm-function=\"batch-fill\" :confirmation=\"operationConfirmation('设置分类', true)\"\n"
         }
       ]
     }
@@ -6638,6 +7010,39 @@
       },
       "beforeChanges": {
         "src/pages/selection-center/components/SelectionDetail.vue": "4213738cabdb948ef2298146f177527df645a75e5ab7388931cd89a8a9c76ebf"
+      }
+    },
+    {
+      "source": "src/pages/selection-center/index.vue",
+      "sha256": "5824f72bf2791e26ac5f7d3c2edbf6eb06e055197e7abb60a58365d9e8e8e3f1",
+      "pages": {
+        "src/pages/selection-center/index.vue": {
+          "script": "e51afd968d44eeeed1f1525e8d9932d651e8a49776e20a42b6ce637c563cf1f6",
+          "actions": {
+            "add → add": "single",
+            "change → changeBasketPage": "query",
+            "choose → queryCategory": "query",
+            "clear → query = ''; search();": "query",
+            "click → add(p)": "single",
+            "click → changeView('basket')": "view",
+            "click → changeView('browse')": "view",
+            "click → clearSelectedCategory": "query",
+            "click → loadBrowse(retryRefresh)": "query",
+            "click → openDetail(p)": "view",
+            "click → remove(p.selectionId)": "single",
+            "click → search": "query",
+            "click → submit": "@perItem",
+            "click → syncContext": "query",
+            "click → toggleState(item.value)": "query",
+            "click → toggleType(item.value)": "query",
+            "close → closeDetail": "view",
+            "enter → search": "query",
+            "keydown → openDetail(p)": "view"
+          }
+        }
+      },
+      "beforeChanges": {
+        "src/pages/selection-center/index.vue": "ce5f4d26dfd05df3ba12353a7c518e5b9c6189e61c1e1d41b638d2d2e1b824f1"
       }
     }
   ]

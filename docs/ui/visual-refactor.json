@@ -633,6 +633,20 @@
           "reason": "按已确认的操作校验与反馈整改方案接入本页登记的操作",
           "before": "  const name = props.objectName ? `“${props.objectName}”` : '';\n  return `${props.objectType}${name}`;\n});\nconst dialogTitle = computed(\n  () => props.title || (props.mode === 'blocked' ? `无法${props.action}` : `是否${props.action}`),\n);\nconst confirmation = computed<Confirmation>(() =>\n  props.mode === 'blocked'\n    ? { kind: 'close', text: '我知道了' }\n    : props.visible\n      ? operationConfirmation(props.action, props.batch)\n      : { kind: 'none' },\n);\nconst dialogDescription = computed(() => {\n  if (props.description) return props.description;\n  return props.mode === 'blocked'\n    ? `${targetText.value || '当前对象'}暂时无法${props.action}。`\n    : `是否${props.action}${targetText.value}？`;\n});\n\nfunction handleConfirm() {\n  if (props.mode === 'blocked') emit('update:visible', false);\n  emit('confirm');\n}\n</script>\n\n<style scoped>\n",
           "after": "  const name = props.objectName ? `“${props.objectName}”` : '';\n  return `${props.objectType}${name}`;\n});\nconst dialogTitle = computed(() => props.title || `是否${props.action}`);\nconst confirmation = computed<Confirmation>(() =>\n  props.visible ? operationConfirmation(props.action, props.batch) : { kind: 'none' },\n);\nconst dialogDescription = computed(() => props.description || `是否${props.action}${targetText.value}？`);\n</script>\n\n<style scoped>\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "<script setup lang=\"ts\">\nimport { operationConfirmation, type Confirmation } from './actions/confirmation';\nimport { type ButtonFunction } from './actions/buttonFunctions';\n",
+          "after": "<script setup lang=\"ts\">\nimport { confirmationQuestion, operationConfirmation, type Confirmation } from './actions/confirmation';\nimport { type ButtonFunction } from './actions/buttonFunctions';\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "});\nconst dialogTitle = computed(() => props.title || `是否${props.action}`);\nconst confirmation = computed<Confirmation>(() =>\n",
+          "after": "});\nconst dialogTitle = computed(() => props.title || confirmationQuestion(props.action, props.objectType, props.batch));\nconst confirmation = computed<Confirmation>(() =>\n"
         }
       ]
     },
@@ -1274,6 +1288,20 @@
           "stage": "before-migrations",
           "before": "<script setup lang=\"ts\">\nimport { controlPlaceholder } from '@/utils/controlPlaceholder';\n",
           "after": "<script setup lang=\"ts\">\nimport { buttonTheme } from '@/components/foundation/actions/buttonFunctions';\nimport { controlPlaceholder } from '@/utils/controlPlaceholder';\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "    :visible=\"visible\"\n    header=\"操作日志\"\n    size=\"min(1240px, 100%)\"\n",
+          "after": "    :visible=\"visible\"\n    :header=\"`${subjectLabel}操作日志`\"\n    size=\"min(1240px, 100%)\"\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "    :visible=\"detailVisible\"\n    header=\"操作详情\"\n    width=\"min(1240px, 94vw)\"\n",
+          "after": "    :visible=\"detailVisible\"\n    :header=\"`${subjectLabel}操作详情`\"\n    width=\"min(1240px, 94vw)\"\n"
         }
       ]
     },
@@ -1601,6 +1629,13 @@
           "before": "import DecimalInput from '@/components/DecimalInput.vue';\nimport { numericError } from '@/utils/numericInput';\nimport { AdminDialog } from '@/components/foundation';\nimport { formConfirmation, dialogButtonProps } from '@/components/foundation/actions/confirmation';\nimport { buttonTheme, buttonFunctionFor, cancelButtonProps } from '@/components/foundation/actions/buttonFunctions';\n",
           "after": "import DecimalInput from '@/components/DecimalInput.vue';\nimport { numericError } from '@/utils/numericInput';\nimport { AdminMediaPreviewDialog } from '@/components/foundation';\nimport { formConfirmation, dialogButtonProps } from '@/components/foundation/actions/confirmation';\nimport { buttonTheme, buttonFunctionFor, cancelButtonProps } from '@/components/foundation/actions/buttonFunctions';\n",
           "stage": "before-migrations"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      dialog-class-name=\"zdm-admin-dialog zdm-admin-single-form\"\n      :header=\"dialogMode === 'create' ? '新增' : '编辑'\"\n      width=\"480px\"\n",
+          "after": "      dialog-class-name=\"zdm-admin-dialog zdm-admin-single-form\"\n      :header=\"dialogMode === 'create' ? '新增成品工艺' : '编辑成品工艺'\"\n      width=\"480px\"\n"
         }
       ]
     },
@@ -2671,6 +2706,41 @@
           "before": "import CustomerFollowupAttachments from '@/components/customer/CustomerFollowupAttachments.vue';\nimport AdminSideMenu from '@/components/AdminSideMenu.vue';\nimport AdminDialog from '@/components/foundation/AdminDialog.vue';\nimport {\n  AdminListPage,\n",
           "after": "import CustomerFollowupAttachments from '@/components/customer/CustomerFollowupAttachments.vue';\nimport AdminSideMenu from '@/components/AdminSideMenu.vue';\nimport { AdminMediaPreviewDialog } from '@/components/foundation';\nimport {\n  AdminListPage,\n",
           "stage": "before-migrations"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "                @click=\"openFollowup(undefined, row)\"\n                >跟进</t-link\n              >\n",
+          "after": "                @click=\"openFollowup(undefined, row)\"\n                >新增跟进</t-link\n              >\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      label-width=\"100px\"\n      :header=\"followId ? '编辑跟进' : '新增跟进'\"\n      width=\"480px\"\n",
+          "after": "      label-width=\"100px\"\n      :header=\"followId ? '编辑客户跟进记录' : '新增客户跟进记录'\"\n      width=\"480px\"\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      :data=\"{ ownerAccountId: newOwner }\"\n      header=\"调整归属\"\n      :confirm-btn=\"submitButton\"\n",
+          "after": "      :data=\"{ ownerAccountId: newOwner }\"\n      :header=\"pending.batch ? '批量调整客户归属' : '调整客户归属'\"\n      :confirm-btn=\"submitButton\"\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      :action=\"confirmAction\"\n      :object-type=\"confirmObjectType\"\n",
+          "after": "      :action=\"confirmAction\"\n      :title=\"confirmationQuestion(confirmAction, '客户', deletingFollowId == null && pending.batch)\"\n      :object-type=\"confirmObjectType\"\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "import { useDelayedLoading } from '@/composables/useDelayedLoading';\nimport { formConfirmation, operationConfirmation } from '@/components/foundation/actions/confirmation';\nimport { buttonTheme, buttonFunctionFor, cancelButtonProps } from '@/components/foundation/actions/buttonFunctions';\n",
+          "after": "import { useDelayedLoading } from '@/composables/useDelayedLoading';\nimport { confirmationQuestion, formConfirmation, operationConfirmation } from '@/components/foundation/actions/confirmation';\nimport { buttonTheme, buttonFunctionFor, cancelButtonProps } from '@/components/foundation/actions/buttonFunctions';\n"
         }
       ]
     },
@@ -3098,6 +3168,13 @@
           "stage": "before-migrations",
           "before": "    v-model:visible=\"confirmVisible\"\n    attach=\"body\"\n",
           "after": "    v-model:visible=\"confirmVisible\"\n    confirm-function=\"edit\"\n    attach=\"body\"\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "    attach=\"body\"\n    header=\"更改价格浮动方式\"\n    @confirm=\"confirmToggle\"\n",
+          "after": "    attach=\"body\"\n    :header=\"source === 'auto' ? '是否切换为手工价格？' : '是否切换为跟随价格配置？'\"\n    @confirm=\"confirmToggle\"\n"
         }
       ]
     },
@@ -5019,6 +5096,27 @@
           "before": "  adminFeedback,\n  AdminConfirmDialog,\n  AdminDialog,\n  AdminSectionCard,\n  getSafeErrorMessage,\n",
           "after": "  adminFeedback,\n  AdminConfirmDialog,\n  AdminMediaPreviewDialog,\n  AdminSectionCard,\n  getSafeErrorMessage,\n",
           "stage": "before-migrations"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      v-model:visible=\"priceDrawerVisible\"\n      header=\"批量填写\"\n      placement=\"right\"\n",
+          "after": "      v-model:visible=\"priceDrawerVisible\"\n      header=\"批量填写商品规格价格\"\n      placement=\"right\"\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      v-model:visible=\"reasonDialogVisible\"\n      header=\"下架\"\n      width=\"520px\"\n",
+          "after": "      v-model:visible=\"reasonDialogVisible\"\n      :header=\"reasonState.isBatch ? '批量下架商品' : '下架商品'\"\n      width=\"520px\"\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "    recycle: [\n      { action: 'batchRestore', label: '批量放回到仓库', icon: 'rollback' },\n      { action: 'batchPurge', label: '批量彻底删除', icon: 'delete', className: 'deep-danger-button' },\n",
+          "after": "    recycle: [\n      { action: 'batchRestore', label: '批量放回仓库', icon: 'rollback' },\n      { action: 'batchPurge', label: '批量彻底删除', icon: 'delete', className: 'deep-danger-button' },\n"
         }
       ]
     },
@@ -5846,6 +5944,13 @@
           "reason": "按已确认的操作校验与反馈整改方案接入本页登记的操作",
           "before": "        saleCoefficient: drafts[item.skuId].coefficient === '' ? null : Number(drafts[item.skuId].coefficient),\n      })),\n    });\n    adminFeedback.actionSuccess({ action: '修改', target: '商品' });\n    emit('saved', product);\n  } catch (error) {\n    adminFeedback.error(getSafeErrorMessage(error, '保存商品失败'));\n  } finally {\n    saving.value = false;\n  }\n}\n</script>\n",
           "after": "        saleCoefficient: drafts[item.skuId].coefficient === '' ? null : Number(drafts[item.skuId].coefficient),\n      })),\n    });\n    if (!current()) return;\n    adminFeedback.actionSuccess({ action: '修改', target: '商品' });\n    emit('saved', product);\n  } catch (error) {\n    if (!current()) return;\n    adminFeedback.error(getSafeErrorMessage(error, '保存商品失败'));\n  } finally {\n    if (current()) saving.value = false;\n  }\n}\n</script>\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "    v-model:visible=\"batchVisible\"\n    header=\"批量填写\"\n    placement=\"right\"\n",
+          "after": "    v-model:visible=\"batchVisible\"\n    header=\"批量填写商品规格售价\"\n    placement=\"right\"\n"
         }
       ]
     },
@@ -6662,6 +6767,20 @@
           "before": "import { finishedStockActions } from '../shared/finishedStockActions';\nimport { storeOperationLogSourceLabel as logSourceLabel } from './storeOperationLog';\nimport { AdminConfirmDialog, AdminDialog, adminFeedback, getSafeErrorMessage } from '@/components/foundation';\nimport { hasPermission } from '@/services/adminPermissions';\nimport { getLoginUser } from '@/services/auth';\n",
           "after": "import { finishedStockActions } from '../shared/finishedStockActions';\nimport { storeOperationLogSourceLabel as logSourceLabel } from './storeOperationLog';\nimport { AdminConfirmDialog, AdminDialog, AdminMediaPreviewDialog, adminFeedback, getSafeErrorMessage } from '@/components/foundation';\nimport { hasPermission } from '@/services/adminPermissions';\nimport { getLoginUser } from '@/services/auth';\n",
           "stage": "before-migrations"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      confirm-function=\"off-shelf\"\n      :header=\"pendingOffShelf?.batch ? '下架' : '下架商品'\"\n      :width=\"pendingOffShelf?.batch ? '520px' : '500px'\"\n",
+          "after": "      confirm-function=\"off-shelf\"\n      :header=\"pendingOffShelf?.batch ? '批量下架商品' : '下架商品'\"\n      :width=\"pendingOffShelf?.batch ? '520px' : '500px'\"\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "  selling: { kind: 'off-shelf', label: '批量下架', permission: 'batch-off-shelf' },\n  recycle: { kind: 'batch-restore', label: '批量放回到仓库', permission: 'batch-restore' },\n};\n",
+          "after": "  selling: { kind: 'off-shelf', label: '批量下架', permission: 'batch-off-shelf' },\n  recycle: { kind: 'batch-restore', label: '批量放回仓库', permission: 'batch-restore' },\n};\n"
         }
       ]
     },
@@ -6865,6 +6984,20 @@
           "reason": "按已确认的操作校验与反馈整改方案接入本页登记的操作",
           "before": "            createForm.roleId,\n            Number(createForm.coefficient),\n          );\n    createVisible.value = false;\n    adminFeedback.actionSuccess({ action: editingDiscountId.value == null ? '新增' : '修改', target: '折扣配置' });\n  } catch (error) {\n    adminFeedback.error(getSafeErrorMessage(error, '新增失败，请稍后重试'));\n  } finally {\n    saving.value = false;\n  }\n}\nfunction editDiscount(rule: StorePriceRule) {\n",
           "after": "            createForm.roleId,\n            Number(createForm.coefficient),\n          );\n    if (!current()) return;\n    rules.value = updatedRules;\n    createVisible.value = false;\n    adminFeedback.actionSuccess({ action: editingDiscountId.value == null ? '新增' : '修改', target: '折扣配置' });\n  } catch (error) {\n    if (!current()) return;\n    adminFeedback.error(getSafeErrorMessage(error, editing ? '修改失败，请稍后重试' : '新增失败，请稍后重试'));\n  } finally {\n    if (current()) saving.value = false;\n  }\n}\nfunction editDiscount(rule: StorePriceRule) {\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      confirm-function=\"save\"\n      :header=\"editingDiscountId == null ? '新增' : '编辑'\"\n      dialog-class-name=\"discount-config-dialog zdm-admin-dialog zdm-admin-single-form\"\n",
+          "after": "      confirm-function=\"save\"\n      :header=\"editingDiscountId == null ? '新增折扣配置' : '编辑折扣配置'\"\n      dialog-class-name=\"discount-config-dialog zdm-admin-dialog zdm-admin-single-form\"\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      width=\"320px\"\n      header=\"批量设置\"\n      :confirm-btn=\"{ loading: saving }\"\n",
+          "after": "      width=\"320px\"\n      header=\"批量设置价格系数\"\n      :confirm-btn=\"{ loading: saving }\"\n"
         }
       ],
       "approvedVisualPatches": [
@@ -8773,6 +8906,62 @@
           "before": "  AdminConfirmDialog,\n  AdminDialog,\n  AdminMediaUpload,\n  AdminSectionCard,\n",
           "after": "  AdminConfirmDialog,\n  AdminDialog,\n  AdminMediaPreviewDialog,\n  AdminMediaUpload,\n  AdminSectionCard,\n",
           "stage": "before-migrations"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      confirm-function=\"switch-category\"\n      header=\"切换分类\"\n      cancel-btn=\"取消\"\n",
+          "after": "      confirm-function=\"switch-category\"\n      header=\"是否切换商品分类？\"\n      cancel-btn=\"取消\"\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      confirm-function=\"close\"\n      header=\"创建规格\"\n      width=\"920px\"\n",
+          "after": "      confirm-function=\"close\"\n      :header=\"specFormMode === 'edit' ? '编辑商品规格' : '创建商品规格'\"\n      width=\"920px\"\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "              />\n              <t-button shape=\"square\" variant=\"text\" :theme=\"buttonTheme('delete')\" @click=\"removeSingleSpec(index)\">\n                <t-icon name=\"delete\" />\n",
+          "after": "              />\n              <t-button shape=\"square\" variant=\"text\" :theme=\"buttonTheme('delete')\" aria-label=\"删除规格项\" title=\"删除规格项\" @click=\"removeSingleSpec(index)\">\n                <t-icon name=\"delete\" />\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "                  :theme=\"buttonTheme('delete')\"\n                  @click=\"removeSpecValue(group.name, index)\"\n",
+          "after": "                  :theme=\"buttonTheme('delete')\"\n                  aria-label=\"删除属性值\"\n                  title=\"删除属性值\"\n                  @click=\"removeSpecValue(group.name, index)\"\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      confirm-function=\"edit\"\n      header=\"切换展示模式\"\n      cancel-btn=\"取消\"\n",
+          "after": "      confirm-function=\"edit\"\n      header=\"是否切换规格展示模式？\"\n      cancel-btn=\"取消\"\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      v-model:visible=\"priceDrawerVisible\"\n      header=\"批量填写\"\n      placement=\"right\"\n",
+          "after": "      v-model:visible=\"priceDrawerVisible\"\n      header=\"批量填写商品规格信息\"\n      placement=\"right\"\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      v-model:visible=\"reasonDialogVisible\"\n      header=\"下架\"\n      width=\"520px\"\n",
+          "after": "      v-model:visible=\"reasonDialogVisible\"\n      :header=\"reasonState.isBatch ? '批量下架商品' : '下架商品'\"\n      width=\"520px\"\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "    recycle: [\n      { action: 'batchRestore', label: '批量放回到仓库', icon: 'rollback' },\n      { action: 'batchPurge', label: '批量彻底删除', icon: 'delete', className: 'deep-danger-button' },\n",
+          "after": "    recycle: [\n      { action: 'batchRestore', label: '批量放回仓库', icon: 'rollback' },\n      { action: 'batchPurge', label: '批量彻底删除', icon: 'delete', className: 'deep-danger-button' },\n"
         }
       ]
     },
@@ -9063,6 +9252,34 @@
           "reason": "按已确认的操作校验与反馈整改方案接入本页登记的操作",
           "before": "const handleConfirmSubmit = async () => {\n  if (!confirmEmployee.value) return;\n\n  try {\n    if (confirmType.value === 'delete') {\n      await (\n        confirmEmployee.value.identityType === 'supply_chain_admin' ? deleteSupplyChainAdministrator : deleteEmployee\n      )(confirmEmployee.value.id);\n      employees.value = employees.value.filter((employee) => employee.id !== confirmEmployee.value?.id);\n      if (pagination.current > pageCount.value) pagination.current = pageCount.value;\n      adminFeedback.deleted(confirmEmployee.value.name);\n    } else {\n      const updated =\n        confirmEmployee.value.identityType === 'supply_chain_admin'\n          ? await setSupplyChainAdministratorStatus(\n              confirmEmployee.value.id,\n              confirmType.value === 'disable' ? 'disabled' : 'enabled',\n            )\n          : await updateEmployee(\n              confirmEmployee.value.id,\n              toEmployeePayload({\n                ...confirmEmployee.value,\n                status: confirmType.value === 'disable' ? 'disabled' : 'normal',\n              }),\n            );\n      const targetIndex = employees.value.findIndex((employee) => employee.id === confirmEmployee.value?.id);\n      if (targetIndex !== -1) {\n        employees.value.splice(targetIndex, 1, toEmployeeItem(updated));\n      }\n      adminFeedback.actionSuccess({\n        action: confirmType.value === 'disable' ? '停用' : '启用',\n        target: confirmEmployee.value.name,\n      });\n    }\n  } catch (error) {\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n    return;\n  }\n  closeConfirmDialog();\n};\n\nconst handleManagedClientChange = () => {\n",
           "after": "const handleConfirmSubmit = async () => {\n  if (!confirmEmployee.value) return;\n\n  const target = confirmEmployee.value;\n  const operationType = confirmType.value;\n  await operations.execute(`${operationType}:${target.id}`, async (current) => {\n    try {\n      if (operationType === 'delete') {\n        await (\n          target.identityType === 'supply_chain_admin' ? deleteSupplyChainAdministrator : deleteEmployee\n        )(target.id);\n        if (!current()) return;\n        employees.value = employees.value.filter((employee) => employee.id !== target.id);\n        if (pagination.current > pageCount.value) pagination.current = pageCount.value;\n        adminFeedback.deleted(target.name);\n      } else {\n        const updated =\n          target.identityType === 'supply_chain_admin'\n            ? await setSupplyChainAdministratorStatus(\n                target.id,\n                operationType === 'disable' ? 'disabled' : 'enabled',\n              )\n            : await updateEmployee(\n                target.id,\n                toEmployeePayload({\n                  ...target,\n                  status: operationType === 'disable' ? 'disabled' : 'normal',\n                }),\n              );\n              if (!current()) return;\n        const targetIndex = employees.value.findIndex((employee) => employee.id === target.id);\n        if (targetIndex !== -1) {\n          employees.value.splice(targetIndex, 1, toEmployeeItem(updated));\n        }\n        adminFeedback.actionSuccess({\n          action: operationType === 'disable' ? '停用' : '启用',\n          target: target.name,\n        });\n      }\n    } catch (error) {\n      if (!current()) return;\n      adminFeedback.error(getSafeErrorMessage(error, '操作失败'));\n      return;\n    }\n    closeConfirmDialog();\n  });\n};\n\nconst handleManagedClientChange = () => {\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "                  >\n                    角色\n                  </t-link>\n",
+          "after": "                  >\n                    配置权限\n                  </t-link>\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      :confirm-btn=\"dialogButtonProps('submit', operationConfirmation('邀请员工'))\"\n      header=\"邀请员工\"\n      width=\"560px\"\n",
+          "after": "      :confirm-btn=\"dialogButtonProps('submit', operationConfirmation('邀请员工'))\"\n      header=\"员工邀请链接\"\n      width=\"560px\"\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      dialog-class-name=\"zdm-admin-dialog zdm-admin-single-form\"\n      header=\"编辑资料\"\n      width=\"480px\"\n",
+          "after": "      dialog-class-name=\"zdm-admin-dialog zdm-admin-single-form\"\n      header=\"编辑员工资料\"\n      width=\"480px\"\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      v-model:visible=\"permissionDialogVisible\"\n      header=\"配置权限\"\n      width=\"560px\"\n",
+          "after": "      v-model:visible=\"permissionDialogVisible\"\n      header=\"配置员工权限\"\n      width=\"560px\"\n"
         }
       ]
     },
@@ -9338,6 +9555,13 @@
           "reason": "按已确认的操作校验与反馈整改方案接入本页登记的操作",
           "before": "  pagination.current = 1;\n});\nonMounted(loadAttributes);\n</script>\n\n<style scoped>\n",
           "after": "  pagination.current = 1;\n});\nonMounted(loadAttributes);\noperations.onInvalidate(() => {\n  confirmDialogVisible.value = false;\n  confirmTarget.value = null;\n});\n</script>\n\n<style scoped>\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      confirm-function=\"submit\"\n      header=\"新增\"\n      width=\"480px\"\n",
+          "after": "      confirm-function=\"submit\"\n      header=\"新增属性\"\n      width=\"480px\"\n"
         }
       ]
     },
@@ -9527,6 +9751,13 @@
           "reason": "按已确认的操作校验与反馈整改方案接入本页登记的操作",
           "before": "  pagination.current = 1;\n});\nonMounted(loadValues);\n</script>\n\n<style scoped>\n",
           "after": "  pagination.current = 1;\n});\nonMounted(loadValues);\noperations.onInvalidate(() => {\n  confirmDialogVisible.value = false;\n  confirmTarget.value = null;\n});\n</script>\n\n<style scoped>\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      dialog-class-name=\"zdm-admin-dialog zdm-admin-single-form\"\n      header=\"新增\"\n      width=\"480px\"\n",
+          "after": "      dialog-class-name=\"zdm-admin-dialog zdm-admin-single-form\"\n      header=\"新增属性值\"\n      width=\"480px\"\n"
         }
       ]
     },
@@ -10152,6 +10383,34 @@
           "reason": "按已确认的操作校验与反馈整改方案接入本页登记的操作",
           "before": "  window.removeEventListener('resize', updateCategoryHeight);\n  categoryLayoutObserver.disconnect();\n});\n</script>\n<style scoped>\n.publish-confirm-content {\n",
           "after": "  window.removeEventListener('resize', updateCategoryHeight);\n  categoryLayoutObserver.disconnect();\n});\noperations.onInvalidate(() => {\n  busy.value = false;\n  copyTarget.value = undefined;\n  publishVisible.value = false;\n});\n</script>\n<style scoped>\n.publish-confirm-content {\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      confirm-function=\"create\"\n      header=\"添加属性\"\n      width=\"720px\"\n",
+          "after": "      confirm-function=\"create\"\n      header=\"选择要添加的属性\"\n      width=\"720px\"\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      confirm-function=\"publish-version\"\n      header=\"发布新版本\"\n      width=\"max-content\"\n",
+          "after": "      confirm-function=\"publish-version\"\n      header=\"是否发布属性模板新版本？\"\n      width=\"max-content\"\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      :visible=\"!!copyTarget\"\n      header=\"复制版本\"\n      :confirm-btn=\"{ loading: busy }\"\n",
+          "after": "      :visible=\"!!copyTarget\"\n      header=\"是否复制属性模板版本并覆盖草稿？\"\n      :confirm-btn=\"{ loading: busy }\"\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "    >\n    <t-drawer v-model:visible=\"historyVisible\" header=\"版本记录\" size=\"min(760px, 100%)\" :footer=\"false\">\n      <t-table row-key=\"id\" :data=\"versions.filter((v) => v.state === 'published')\" :columns=\"historyColumns\">\n",
+          "after": "    >\n    <t-drawer v-model:visible=\"historyVisible\" header=\"属性模板版本记录\" size=\"min(760px, 100%)\" :footer=\"false\">\n      <t-table row-key=\"id\" :data=\"versions.filter((v) => v.state === 'published')\" :columns=\"historyColumns\">\n"
         }
       ]
     },
@@ -10365,6 +10624,20 @@
           "reason": "按已确认的操作校验与反馈整改方案接入本页登记的操作",
           "before": "  void loadData();\n});\nonMounted(loadData);\n</script>\n\n<style scoped>\n",
           "after": "  void loadData();\n});\nonMounted(loadData);\noperations.onInvalidate(() => {\n  confirmVisible.value = false;\n  confirmRow.value = null;\n});\n</script>\n\n<style scoped>\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      dialog-class-name=\"zdm-admin-dialog zdm-admin-single-form\"\n      :header=\"editingId ? '编辑' : '新增'\"\n      width=\"480px\"\n",
+          "after": "      dialog-class-name=\"zdm-admin-dialog zdm-admin-single-form\"\n      :header=\"`${editingId ? '编辑' : '新增'}${commodityLabel}价格配置`\"\n      width=\"480px\"\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      action=\"删除\"\n      object-type=\"价格配置\"\n",
+          "after": "      action=\"删除\"\n      :title=\"`是否删除${commodityLabel}价格配置？`\"\n      object-type=\"价格配置\"\n"
         }
       ],
       "approvedVisualPatches": [
@@ -10634,6 +10907,20 @@
           "reason": "按已确认的操作校验与反馈整改方案接入本页登记的操作",
           "before": "  if (!deletingRole.value) return;\n  const target = deletingRole.value;\n\n  try {\n    await deleteRole(target.id);\n    roles.value = roles.value.filter((item) => item.id !== target.id);\n    ensureCurrentPage();\n    closeDeleteDialog();\n    adminFeedback.deleted(target.name);\n  } catch (error) {\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n};\n\nconst openPermissionDialog = (row: RoleItem) => {\n",
           "after": "  if (!deletingRole.value) return;\n  const target = deletingRole.value;\n\n  await operations.execute(`delete:${target.id}`, async (current) => {\n    try {\n      await deleteRole(target.id);\n      if (!current()) return;\n      roles.value = roles.value.filter((item) => item.id !== target.id);\n      ensureCurrentPage();\n      closeDeleteDialog();\n      adminFeedback.deleted(target.name);\n    } catch (error) {\n      if (!current()) return;\n      adminFeedback.error(getSafeErrorMessage(error, '操作失败'));\n    }\n  });\n};\n\nconst openPermissionDialog = (row: RoleItem) => {\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      dialog-class-name=\"zdm-admin-dialog zdm-admin-single-form\"\n      :header=\"dialogMode === 'create' ? '新增' : '编辑'\"\n      width=\"480px\"\n",
+          "after": "      dialog-class-name=\"zdm-admin-dialog zdm-admin-single-form\"\n      :header=\"dialogMode === 'create' ? '新增角色' : '编辑角色'\"\n      width=\"480px\"\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      v-model:visible=\"permissionDialogVisible\"\n      header=\"权限配置\"\n      width=\"min(1560px, calc(100vw - 48px))\"\n",
+          "after": "      v-model:visible=\"permissionDialogVisible\"\n      header=\"配置角色权限\"\n      width=\"min(1560px, calc(100vw - 48px))\"\n"
         }
       ]
     },
@@ -12064,6 +12351,55 @@
           "before": "  AdminConfirmDialog,\n  AdminDialog,\n  AdminMediaUpload,\n  AdminListLayout,\n",
           "after": "  AdminConfirmDialog,\n  AdminDialog,\n  AdminMediaPreviewDialog,\n  AdminMediaUpload,\n  AdminListLayout,\n",
           "stage": "before-migrations"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "                        :alt=\"row.name\"\n                        role=\"button\"\n",
+          "after": "                        :alt=\"row.name\"\n                        :aria-label=\"`预览${row.name}主图`\"\n                        role=\"button\"\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      v-model:visible=\"priceDrawerVisible\"\n      header=\"价格编辑器\"\n      placement=\"right\"\n",
+          "after": "      v-model:visible=\"priceDrawerVisible\"\n      :header=\"priceDrawerReadonly ? '查看大板价格' : '编辑大板价格'\"\n      placement=\"right\"\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      :action=\"confirmAction\"\n      :title=\"confirmTitle\"\n      object-type=\"大板\"\n",
+          "after": "      :action=\"confirmAction\"\n      object-type=\"大板\"\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      confirm-function=\"close\"\n      header=\"历史下架原因\"\n      dialog-class-name=\"zdm-admin-responsive-dialog\"\n",
+          "after": "      confirm-function=\"close\"\n      header=\"大板历史下架原因\"\n      dialog-class-name=\"zdm-admin-responsive-dialog\"\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      :operation=\"batchOperation\"\n    />\n",
+          "after": "      :operation=\"batchOperation\"\n      object-type=\"大板\"\n    />\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "});\nconst confirmTitle = computed(() => {\n  if (confirmState.type === 'restore') return '是否放回仓库';\n  if (confirmState.type === 'batchRestore') return '是否批量放回到仓库';\n  return '';\n});\nconst reasonState = reactive<{\n",
+          "after": "});\nconst reasonState = reactive<{\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "  if (reasonState.type === 'deleteExternal') return '删除大板';\n  return reasonState.isBatch ? '批量下架' : '下架';\n});\n",
+          "after": "  if (reasonState.type === 'deleteExternal') return '删除大板';\n  return reasonState.isBatch ? '批量下架大板' : '下架大板';\n});\n"
         }
       ],
       "approvedPlaceholderPatches": [
@@ -13644,6 +13980,55 @@
           "before": "  AdminConfirmDialog,\n  AdminDialog,\n  AdminMediaUpload,\n  AdminListLayout,\n",
           "after": "  AdminConfirmDialog,\n  AdminDialog,\n  AdminMediaPreviewDialog,\n  AdminMediaUpload,\n  AdminListLayout,\n",
           "stage": "before-migrations"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "                        :alt=\"row.name\"\n                        role=\"button\"\n",
+          "after": "                        :alt=\"row.name\"\n                        :aria-label=\"`预览${row.name}主图`\"\n                        role=\"button\"\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      v-model:visible=\"priceDrawerVisible\"\n      header=\"价格编辑器\"\n      placement=\"right\"\n",
+          "after": "      v-model:visible=\"priceDrawerVisible\"\n      :header=\"priceDrawerReadonly ? '查看大板价格' : '编辑大板价格'\"\n      placement=\"right\"\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      :action=\"confirmAction\"\n      :title=\"confirmTitle\"\n      object-type=\"大板\"\n",
+          "after": "      :action=\"confirmAction\"\n      object-type=\"大板\"\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      confirm-function=\"close\"\n      header=\"历史下架原因\"\n      dialog-class-name=\"zdm-admin-responsive-dialog\"\n",
+          "after": "      confirm-function=\"close\"\n      header=\"大板历史下架原因\"\n      dialog-class-name=\"zdm-admin-responsive-dialog\"\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      :operation=\"batchOperation\"\n    />\n",
+          "after": "      :operation=\"batchOperation\"\n      object-type=\"大板\"\n    />\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "});\nconst confirmTitle = computed(() => {\n  if (confirmState.type === 'restore') return '是否放回仓库';\n  if (confirmState.type === 'batchRestore') return '是否批量放回到仓库';\n  return '';\n});\nconst reasonState = reactive<{\n",
+          "after": "});\nconst reasonState = reactive<{\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "  if (reasonState.type === 'deleteExternal') return '删除大板';\n  return reasonState.isBatch ? '批量下架' : '下架';\n});\n",
+          "after": "  if (reasonState.type === 'deleteExternal') return '删除大板';\n  return reasonState.isBatch ? '批量下架大板' : '下架大板';\n});\n"
         }
       ],
       "approvedPlaceholderPatches": [
@@ -14569,6 +14954,20 @@
           "task": "015",
           "before": "        level: node.level,\n        name: node.name,\n        status: node.status,\n        sort: position + 1,\n        productCount: node.productCount,\n        createdByName: node.createdByName,\n        createdAt: formatDateTime(node.createdAt),",
           "after": "        level: node.level,\n        name: node.name,\n        status: node.status,\n        productCount: node.productCount,\n        createdByName: node.createdByName,\n        createdAt: formatDateTime(node.createdAt),"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      action=\"新增\"\n      title=\"新增下级分类\"\n      :loading=\"formSubmitting\"\n",
+          "after": "      action=\"新增\"\n      title=\"是否新增下级分类？\"\n      :loading=\"formSubmitting\"\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按验收反馈将门店分类新增弹窗的层级数字与按钮统一为汉字",
+          "before": "      :header=\"formMode === 'create' ? `新增${formLevel}级分类` : '编辑分类'\"\n",
+          "after": "      :header=\"formMode === 'create' ? `新增${['一', '二', '三'][formLevel - 1]}级分类` : '编辑分类'\"\n"
         }
       ]
     },
@@ -14918,6 +15317,13 @@
           "reason": "按已确认的操作校验与反馈整改方案接入本页登记的操作",
           "before": "  if (!confirmState.row) return;\n\n  const targetName = confirmState.row.name;\n  try {\n    if (confirmState.type === 'delete') {\n      await deleteSupplier(confirmState.row.id);\n      tableData.value = tableData.value.filter((item) => item.id !== confirmState.row?.id);\n      ensureCurrentPage();\n    } else {\n      await persistSupplierStatus(confirmState.row, confirmState.type === 'enable' ? 'normal' : 'disabled');\n    }\n\n    closeConfirmDialog();\n    if (confirmState.type === 'delete') {\n      adminFeedback.deleted(targetName);\n    } else {\n      adminFeedback.actionSuccess({\n        action: confirmState.type === 'enable' ? '启用' : '停用',\n        target: targetName,\n      });\n    }\n  } catch (error) {\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n};\n\nonMounted(async () => {\n",
           "after": "  if (!confirmState.row) return;\n\n  const targetName = confirmState.row.name;\n  const target = confirmState.row;\n  const operationType = confirmState.type;\n  await operations.execute(`${operationType}:${target.id}`, async (current) => {\n    try {\n      if (operationType === 'delete') {\n        const deleted = await deleteSupplier(target.id);\n        if (!current()) return;\n        if (!deleted) throw new Error('供应商未删除，请刷新后重试');\n        tableData.value = tableData.value.filter((item) => item.id !== target.id);\n        ensureCurrentPage();\n      } else {\n        await persistSupplierStatus(target, operationType === 'enable' ? 'normal' : 'disabled');\n        if (!current()) return;\n      }\n\n      closeConfirmDialog();\n      if (operationType === 'delete') {\n        adminFeedback.deleted(targetName);\n      } else {\n        adminFeedback.actionSuccess({\n          action: operationType === 'enable' ? '启用' : '停用',\n          target: targetName,\n        });\n      }\n    } catch (error) {\n      if (!current()) return;\n      adminFeedback.error(getSafeErrorMessage(error, '操作失败'));\n    }\n  });\n};\n\nonMounted(async () => {\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      width=\"480px\"\n      :header=\"dialogMode === 'create' ? '新增' : '编辑'\"\n      :confirm-btn=\"{ loading: handleSubmitPending }\"\n",
+          "after": "      width=\"480px\"\n      :header=\"dialogMode === 'create' ? '新增供应商' : '编辑供应商'\"\n      :confirm-btn=\"{ loading: handleSubmitPending }\"\n"
         }
       ]
     },
@@ -15100,6 +15506,20 @@
           "reason": "按已确认的操作校验与反馈整改方案接入本页登记的操作",
           "before": "    changingStatus.value = false;\n  }\n};\nconst remove = async () => {\n  if (!deleting.value || saving.value) return;\n  const target = deleting.value;\n",
           "after": "    changingStatus.value = false;\n  }\n};\nconst openDelete = (row: SupplierSupplyTypeRecord) => operations.check(`delete:${row.id}`,\n  () => checkSupplierSupplyTypeDelete(row.id).then(requireCondition),\n  () => { deleting.value = row; },\n);\nconst remove = async () => {\n  if (!deleting.value || saving.value) return;\n  const target = deleting.value;\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      :visible=\"statusDialogVisible\"\n      :header=\"`是否${statusAction}`\"\n      width=\"440px\"\n",
+          "after": "      :visible=\"statusDialogVisible\"\n      :header=\"`是否${statusAction}供货类型？`\"\n      width=\"440px\"\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      :visible=\"Boolean(deleting)\"\n      header=\"删除供货类型\"\n      :confirm-btn=\"{ loading: saving }\"\n",
+          "after": "      :visible=\"Boolean(deleting)\"\n      header=\"是否删除供货类型？\"\n      :confirm-btn=\"{ loading: saving }\"\n"
         }
       ]
     },
@@ -15374,6 +15794,34 @@
           "reason": "按已确认的操作校验与反馈整改方案接入本页登记的操作",
           "before": "    businessSelection.value = [...businessSelection.value, business];\n  }\n};\n</script>\n\n<style scoped>\n",
           "after": "    businessSelection.value = [...businessSelection.value, business];\n  }\n};\noperations.onInvalidate(() => {\n  purgeDialogVisible.value = false;\n  purgeTarget.value = null;\n  confirmDialogVisible.value = false;\n  purgeSubmitting.value = false;\n  purgeConfirmationName.value = '';\n  purgePreview.value = null;\n});\n</script>\n\n<style scoped>\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "                  >\n                    业务开通\n                  </t-link>\n",
+          "after": "                  >\n                    设置开通业务\n                  </t-link>\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      dialog-class-name=\"zdm-admin-dialog zdm-admin-single-form\"\n      :header=\"dialogMode === 'create' ? '新增' : '编辑'\"\n      width=\"480px\"\n",
+          "after": "      dialog-class-name=\"zdm-admin-dialog zdm-admin-single-form\"\n      :header=\"dialogMode === 'create' ? '新增租户' : '编辑租户'\"\n      width=\"480px\"\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      v-model:visible=\"businessDialogVisible\"\n      header=\"业务开通\"\n      width=\"520px\"\n",
+          "after": "      v-model:visible=\"businessDialogVisible\"\n      header=\"设置租户开通业务\"\n      width=\"520px\"\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      confirm-function=\"purge\"\n      header=\"彻底删除租户\"\n      width=\"560px\"\n",
+          "after": "      confirm-function=\"purge\"\n      header=\"是否彻底删除租户？\"\n      width=\"560px\"\n"
         }
       ]
     },
@@ -15631,6 +16079,34 @@
           "reason": "按已确认的操作校验与反馈整改方案接入本页登记的操作",
           "before": "});\n\nonMounted(loadStorePage);\n</script>\n\n<style scoped>\n",
           "after": "});\n\nonMounted(loadStorePage);\noperations.onInvalidate(() => {\n  confirmDialogVisible.value = false;\n  deletePlanHash.value = '';\n});\n</script>\n\n<style scoped>\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "                    :theme=\"buttonTheme('edit')\"\n                    aria-label=\"修改门店级别\"\n                    @click=\"openLevelDialog(row)\"\n",
+          "after": "                    :theme=\"buttonTheme('edit')\"\n                    aria-label=\"调整门店级别\"\n                    @click=\"openLevelDialog(row)\"\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      dialog-class-name=\"zdm-admin-dialog zdm-admin-single-form\"\n      :header=\"dialogMode === 'create' ? '新增' : '编辑'\"\n      width=\"480px\"\n",
+          "after": "      dialog-class-name=\"zdm-admin-dialog zdm-admin-single-form\"\n      :header=\"dialogMode === 'create' ? '新增门店' : '编辑门店'\"\n      width=\"480px\"\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      confirm-function=\"edit\"\n      header=\"门店级别\"\n      dialog-class-name=\"zdm-admin-single-form\"\n",
+          "after": "      confirm-function=\"edit\"\n      header=\"调整门店级别\"\n      dialog-class-name=\"zdm-admin-single-form\"\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      v-model:visible=\"deleteResultVisible\"\n      header=\"删除结果\"\n      confirm-function=\"close\"\n",
+          "after": "      v-model:visible=\"deleteResultVisible\"\n      header=\"门店彻底删除结果\"\n      confirm-function=\"close\"\n"
         }
       ]
     },
@@ -17297,6 +17773,20 @@
           "stage": "before-migrations",
           "before": "<template>\n  <AdminDialog\n    :visible=\"visible\"\n    header=\"批量上架结果\"\n    width=\"max-content\"\n    dialog-class-name=\"zdm-operation-result-dialog\"\n    confirm-function=\"close\"\n    :confirmation=\"{ kind: 'acknowledgement', action: 'productBatchShelfResult' }\"\n    :cancel-btn=\"null\"\n    @update:visible=\"emit('update:visible', $event)\"\n    @confirm=\"emit('update:visible', false)\"\n    @close=\"emit('update:visible', false)\"\n  >\n    <t-typography-paragraph\n      >成功上架{{ result.successCount }}件，失败{{ result.failureCount }}件。</t-typography-paragraph\n    >\n    <t-table v-if=\"rows.length\" :data=\"rows\" :columns=\"columns\" row-key=\"key\" table-layout=\"auto\" />\n  </AdminDialog>\n</template>\n<script setup lang=\"ts\">\nimport { computed } from 'vue';\nimport { AdminDialog } from '@/components/foundation';\nimport { groupShelfFailures, type BatchShelfResult } from '@/services/operationsBatchShelf';\nconst props = defineProps<{ visible: boolean; result: BatchShelfResult }>();\nconst emit = defineEmits<{ 'update:visible': [value: boolean] }>();\nconst rows = computed(() => groupShelfFailures(props.result.failures));\nconst columns = [\n  { colKey: 'productIds', title: '商品ID' },\n  { colKey: 'reason', title: '失败原因' },\n",
           "after": "<template>\n  <AdminDialog\n    :visible=\"visible\"\n    :header=\"`批量${operation}结果`\"\n    width=\"max-content\"\n    dialog-class-name=\"zdm-operation-result-dialog\"\n    confirm-function=\"close\"\n    :confirmation=\"{ kind: 'acknowledgement', action: 'productBatchShelfResult' }\"\n    :cancel-btn=\"null\"\n    @update:visible=\"emit('update:visible', $event)\"\n    @confirm=\"emit('update:visible', false)\"\n    @close=\"emit('update:visible', false)\"\n  >\n    <t-typography-paragraph\n      >成功{{ operation }}{{ result.successCount }}件，失败{{ result.failureCount }}件。</t-typography-paragraph\n    >\n    <t-table v-if=\"rows.length\" :data=\"rows\" :columns=\"columns\" row-key=\"key\" table-layout=\"auto\" />\n  </AdminDialog>\n</template>\n<script setup lang=\"ts\">\nimport { computed } from 'vue';\nimport { AdminDialog } from '@/components/foundation';\nimport { groupShelfFailures, type BatchShelfResult } from '@/services/operationsBatchShelf';\nconst props = withDefaults(defineProps<{ visible: boolean; result: BatchShelfResult; operation?: '上架' | '删除' }>(), {\n  operation: '上架',\n});\nconst emit = defineEmits<{ 'update:visible': [value: boolean] }>();\nconst rows = computed(() => groupShelfFailures(props.result.failures));\nconst columns = [\n  { colKey: 'productIds', title: '商品ID' },\n  { colKey: 'reason', title: '失败原因' },\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "    :visible=\"visible\"\n    :header=\"`批量${operation}结果`\"\n    width=\"max-content\"\n",
+          "after": "    :visible=\"visible\"\n    :header=\"operation === '设置分类' ? '商品分类批量设置结果' : `${objectType}批量${operation}结果`\"\n    width=\"max-content\"\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "import { groupShelfFailures, type BatchShelfResult } from '@/services/operationsBatchShelf';\nconst props = withDefaults(defineProps<{ visible: boolean; result: BatchShelfResult; operation?: '上架' | '删除' | '设置分类' }>(), {\n  operation: '上架',\n});\n",
+          "after": "import { groupShelfFailures, type BatchShelfResult } from '@/services/operationsBatchShelf';\nconst props = withDefaults(defineProps<{ visible: boolean; result: BatchShelfResult; objectType?: '商品' | '大板'; operation?: '上架' | '删除' | '设置分类' }>(), {\n  operation: '上架',\n  objectType: '商品',\n});\n"
         }
       ]
     },
@@ -17589,6 +18079,13 @@
           "stage": "before-migrations",
           "before": "                :total=\"basketTotal\"\n                :current=\"basketPage\"\n                :page-size=\"basketPageSize\"\n                :page-size-options=\"[5, 10, 20]\"\n                @change=\"changeBasketPage\"\n              />\n            </div>\n",
           "after": "                :total=\"basketTotal\"\n                :current=\"basketPage\"\n                :page-size=\"basketPageSize\"\n                @change=\"changeBasketPage\"\n              />\n            </div>\n"
+        },
+        {
+          "stage": "before-migrations",
+          "task": "016",
+          "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
+          "before": "      v-model:visible=\"resultVisible\"\n      header=\"加入门店结果\"\n      width=\"min(760px, 90vw)\"\n",
+          "after": "      v-model:visible=\"resultVisible\"\n      header=\"商品加入门店结果\"\n      width=\"min(760px, 90vw)\"\n"
         }
       ]
     },

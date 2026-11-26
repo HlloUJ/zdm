@@ -5,6 +5,7 @@ import AdminDialog from '../AdminDialog.vue';
 import AdminConfirmDialog from '../AdminConfirmDialog.vue';
 import AdminFormDialog from '../official/AdminFormDialog.vue';
 import {
+  confirmationQuestion,
   confirmationText,
   dialogButtonProps,
   formConfirmation,
@@ -127,6 +128,20 @@ describe('global execution button naming', () => {
     );
     expect(hidden.findComponent(Dialog).props('confirmBtn')).toBeNull();
   });
+});
+
+it.each([
+  ['删除', '角色', false, '是否删除角色？'],
+  ['放回', '商品', false, '是否将商品放回仓库？'],
+  ['批量放回到仓库', '商品', true, '是否批量将商品放回仓库？'],
+  ['彻底删除', '客户', true, '是否批量彻底删除客户？'],
+  ['恢复运营', '门店', false, '是否恢复门店运营？'],
+  ['取消归档', '客户', false, '是否取消客户归档？'],
+  ['清空回收站', '大板', false, '是否清空大板回收站？'],
+  ['删除跟进记录', '客户', false, '是否删除客户跟进记录？'],
+  ['重新提交', '订单', false, '是否重新提交订单？'],
+] as const)('names confirmation %s for %s', (action, subject, batch, expected) => {
+  expect(confirmationQuestion(action, subject, batch)).toBe(expected);
 });
 
 it('registers only the product batch shelf result acknowledgement as a read-only confirmation', () => {

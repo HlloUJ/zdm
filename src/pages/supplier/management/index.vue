@@ -115,7 +115,7 @@
       confirm-function="submit"
       dialog-class-name="zdm-admin-dialog zdm-admin-single-form"
       width="480px"
-      :header="dialogMode === 'create' ? '新增' : '编辑'"
+      :header="dialogMode === 'create' ? '新增供应商' : '编辑供应商'"
       :confirm-btn="{ loading: handleSubmitPending }"
       @confirm="handleSubmitOnce"
       @cancel="closeFormDialog"

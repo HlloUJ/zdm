@@ -267,7 +267,7 @@
       v-model:visible="offShelfVisible"
       :confirmation="operationConfirmation('下架', Boolean(pendingOffShelf?.batch))"
       confirm-function="off-shelf"
-      :header="pendingOffShelf?.batch ? '下架' : '下架商品'"
+      :header="pendingOffShelf?.batch ? '批量下架商品' : '下架商品'"
       :width="pendingOffShelf?.batch ? '520px' : '500px'"
       :confirm-btn="{ loading: confirmOffShelfPending }"
       @confirm="confirmOffShelfOnce"
@@ -676,7 +676,7 @@ const {
 const batchActions: Record<string, { kind: ActionKind | 'off-shelf'; label: string; permission: string }> = {
   warehouse: { kind: 'batch-shelf', label: '批量上架', permission: 'batch-shelf' },
   selling: { kind: 'off-shelf', label: '批量下架', permission: 'batch-off-shelf' },
-  recycle: { kind: 'batch-restore', label: '批量放回到仓库', permission: 'batch-restore' },
+  recycle: { kind: 'batch-restore', label: '批量放回仓库', permission: 'batch-restore' },
 };
 const batchAction = computed(() => {
   const action = batchActions[activeTab.value === 'all' ? 'warehouse' : activeTab.value];

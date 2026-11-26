@@ -71,7 +71,7 @@
                     hover="color"
                     @click="openBusinessDialog(row)"
                   >
-                    业务开通
+                    设置开通业务
                   </t-link>
                   <t-link v-if="canEditTenant" :theme="buttonTheme('edit')" hover="color" @click="openEditDialog(row)"
                     >编辑</t-link
@@ -127,7 +127,7 @@
     <t-dialog
       v-model:visible="formDialogVisible"
       dialog-class-name="zdm-admin-dialog zdm-admin-single-form"
-      :header="dialogMode === 'create' ? '新增' : '编辑'"
+      :header="dialogMode === 'create' ? '新增租户' : '编辑租户'"
       width="480px"
       placement="center"
       :confirm-btn="handleSubmitButton"
@@ -157,7 +157,7 @@
 
     <t-dialog
       v-model:visible="businessDialogVisible"
-      header="业务开通"
+      header="设置租户开通业务"
       width="520px"
       placement="center"
       :confirm-btn="handleBusinessSubmitButton"
@@ -199,7 +199,7 @@
       v-model:visible="purgeDialogVisible"
       :confirmation="operationConfirmation('彻底删除')"
       confirm-function="purge"
-      header="彻底删除租户"
+      header="是否彻底删除租户？"
       width="560px"
       :confirm-btn="purgeConfirmButton"
       @confirm="handlePurge"

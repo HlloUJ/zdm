@@ -864,7 +864,7 @@ const moreIndicator = useDelayedLoading(() => Boolean(browseBusy.value && produc
     <SelectionDetail :detail="detail" :adding="Boolean(detail && adding.includes(keyOf(detail.product)))" :adding-indicator="Boolean(detail && addingIndicator(keyOf(detail.product)))" @close="closeDetail" @add="add" />
     <AdminDialog
       v-model:visible="resultVisible"
-      header="加入门店结果"
+      header="商品加入门店结果"
       width="min(760px, 90vw)"
       confirm-function="close"
       :confirmation="{ kind: 'close', text: '我知道了' }"

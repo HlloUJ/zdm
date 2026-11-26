@@ -145,7 +145,7 @@
       :confirmation="formConfirmation(formMode)"
       confirm-function="save"
       dialog-class-name="zdm-admin-dialog zdm-admin-single-form"
-      :header="formMode === 'create' ? `新增${formLevel}级分类` : '编辑分类'"
+      :header="formMode === 'create' ? `新增${['一', '二', '三'][formLevel - 1]}级分类` : '编辑分类'"
       width="480px"
       placement="center"
       :confirm-btn="{ loading: formSubmitting && !priceRemovalVisible }"
@@ -172,7 +172,7 @@
       v-model:visible="priceRemovalVisible"
       function="create"
       action="新增"
-      title="新增下级分类"
+      title="是否新增下级分类？"
       :loading="formSubmitting"
       @confirm="handleSubmit(true)"
     >

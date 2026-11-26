@@ -217,7 +217,7 @@ test('all data with grants allows ordinary staff to maintain other owner custome
   await row.getByText('详情', { exact: true }).click();
   const dialog = page.locator('.t-drawer__content-wrapper:visible').filter({ hasText: '客户详情' });
   await expect(dialog.getByRole('button', { name: '新增跟进', exact: true })).toHaveCount(0);
-  await expect(row.getByText('跟进', { exact: true })).toBeVisible();
+  await expect(row.getByText('新增跟进', { exact: true })).toBeVisible();
 });
 test('new customer requires name and defaults the required owner to self', async ({ page }) => {
   const requests = await setup(page, daily);
@@ -249,7 +249,7 @@ test('current owner edits historical followup without a separate followup grant'
   const detail = page.locator('.t-drawer__content-wrapper:visible').filter({ hasText: '客户详情' });
   await expect(detail.getByRole('button', { name: '新增跟进', exact: true })).toHaveCount(0);
   await detail.getByText('编辑', { exact: true }).click();
-  const edit = page.locator('.t-dialog:visible').filter({ hasText: '编辑跟进' });
+  const edit = page.locator('.t-dialog:visible').filter({ hasText: '编辑客户跟进记录' });
   await edit.locator('textarea').first().fill('接手后补充');
   await edit
     .getByRole('button', {
@@ -267,7 +267,7 @@ test('archive assignment is independent of role and returns the customer to dail
   await page.getByText('归档客户', { exact: true }).click();
   await page.locator('tr').filter({ hasText: '王先生3' }).locator('.t-checkbox').click();
   await page.getByRole('button', { name: '批量调整归属', exact: true }).click();
-  const dialog = page.locator('.t-dialog:visible').filter({ hasText: '调整归属' });
+  const dialog = page.locator('.t-dialog:visible').filter({ hasText: '批量调整客户归属' });
   await expect(dialog.getByText('调整归属后，客户将自动恢复为日常客户。')).toBeVisible();
   await dialog.locator('.t-select').click();
   await page.locator('.t-select-option').filter({ hasText: '导购B' }).click();
@@ -288,8 +288,8 @@ test('followup accepts at most three attachments and blocks files above 5MiB bef
 }, testInfo) => {
   const requests = await setup(page, ['daily.view', 'daily.followup']);
   await page.goto('/store/customer-management');
-  await page.locator('tr').filter({ hasText: '王先生1' }).getByText('跟进', { exact: true }).click();
-  const dialog = page.locator('.t-dialog:visible').filter({ hasText: '新增跟进' }).last();
+  await page.locator('tr').filter({ hasText: '王先生1' }).getByText('新增跟进', { exact: true }).click();
+  const dialog = page.locator('.t-dialog:visible').filter({ hasText: '新增客户跟进记录' }).last();
   const inputs = dialog.locator('.t-upload input[type=file]');
   await expect(inputs).toHaveCount(1);
   await inputs.first().setInputFiles({
@@ -633,17 +633,17 @@ test('customer followup dialogs retain native component visuals', async ({ page 
   );
   await detail.screenshot({ path: testInfo.outputPath('detail-owned.png'), animations: 'disabled' });
   await detail.getByRole('button', { name: '关闭', exact: true }).click();
-  await own.getByText('跟进', { exact: true }).click();
-  dialog = await checkDialog('新增跟进', 'followup-create', true);
+  await own.getByText('新增跟进', { exact: true }).click();
+  dialog = await checkDialog('新增客户跟进记录', 'followup-create', true);
   await checkSingleColumnWidth(dialog);
   await dialog.getByRole('button', { name: '取消', exact: true }).click();
   await own.getByText('详情', { exact: true }).click();
   await detail.getByText('编辑', { exact: true }).click();
-  dialog = await checkDialog('编辑跟进', 'followup-edit', true);
+  dialog = await checkDialog('编辑客户跟进记录', 'followup-edit', true);
   await checkSingleColumnWidth(dialog);
   await dialog.getByRole('button', { name: '取消', exact: true }).click();
   await detail.getByText('删除', { exact: true }).click();
-  dialog = page.locator('.t-dialog:visible').filter({ hasText: '是否删除跟进记录' });
+  dialog = page.locator('.t-dialog:visible').filter({ hasText: '是否删除客户跟进记录？' });
   await expect(dialog).toBeVisible();
   await dialog.screenshot({ path: testInfo.outputPath('followup-delete.png'), animations: 'disabled' });
   await dialog.getByRole('button', { name: '取消', exact: true }).click();
@@ -658,15 +658,15 @@ test('daily customer assignment and confirmations retain native component visual
   const own = page.locator('tr').filter({ hasText: '王先生1' });
   let dialog: ReturnType<Page['locator']>;
   await own.getByText('归档', { exact: true }).click();
-  dialog = await checkDialog('是否归档', 'archive-single', false);
+  dialog = await checkDialog('是否归档客户？', 'archive-single', false);
   await dialog.getByRole('button', { name: '取消', exact: true }).click();
   await own.locator('.t-checkbox').click();
   await expect(own.getByRole('checkbox')).toBeChecked();
   await page.getByRole('button', { name: '批量调整归属', exact: true }).click();
-  dialog = await checkDialog('调整归属', 'assign-batch', true);
+  dialog = await checkDialog('批量调整客户归属', 'assign-batch', true);
   await dialog.getByRole('button', { name: '取消', exact: true }).click();
   await page.getByRole('button', { name: '批量归档', exact: true }).click();
-  dialog = await checkDialog('是否归档', 'archive-batch', false);
+  dialog = await checkDialog('是否批量归档客户？', 'archive-batch', false);
   await dialog.getByRole('button', { name: '取消', exact: true }).click();
   await reference.close();
 });
@@ -680,7 +680,7 @@ test('archived customer assignment and confirmations retain native component vis
   const archivedRow = page.locator('tr').filter({ hasText: '王先生3' });
   await archivedRow.locator('.t-checkbox').click();
   await page.getByRole('button', { name: '批量调整归属', exact: true }).click();
-  dialog = await checkDialog('调整归属', 'assign-archived', true);
+  dialog = await checkDialog('批量调整客户归属', 'assign-archived', true);
   expect(await styleOf(dialog.locator('.t-alert'))).toEqual(await styleOf(native.locator('.t-alert')));
   const alert = (await dialog.locator('.t-alert').boundingBox())!;
   const select = (await dialog.locator('.t-select').boundingBox())!;
@@ -711,8 +711,8 @@ test('archived customer assignment and confirmations retain native component vis
 test('customer attachments retain native replace, remove and image preview behavior', async ({ page }, testInfo) => {
   await setup(page, ['daily.view', 'daily.followup']);
   await page.goto('/store/customer-management');
-  await page.locator('tr').filter({ hasText: '王先生1' }).getByText('跟进', { exact: true }).click();
-  const dialog = page.locator('.t-dialog:visible').filter({ hasText: '新增跟进' }).last();
+  await page.locator('tr').filter({ hasText: '王先生1' }).getByText('新增跟进', { exact: true }).click();
+  const dialog = page.locator('.t-dialog:visible').filter({ hasText: '新增客户跟进记录' }).last();
   const input = dialog.locator('.t-upload input[type=file]');
   await input.setInputFiles({ name: 'first.txt', mimeType: 'text/plain', buffer: Buffer.from('first') });
   await expect(dialog.getByText('first.txt', { exact: true })).toBeVisible();
@@ -826,10 +826,10 @@ test('followup submission keeps its original rules and displays a field error un
 }) => {
   const requests = await setup(page, ['daily.view', 'daily.followup']);
   await page.goto('/store/customer-management');
-  await page.locator('tr').filter({ hasText: '王先生1' }).getByText('跟进', { exact: true }).click();
+  await page.locator('tr').filter({ hasText: '王先生1' }).getByText('新增跟进', { exact: true }).click();
   const dialog = page
     .locator('.t-dialog:visible')
-    .filter({ has: page.locator('.t-dialog__header').filter({ hasText: /^新增跟进$/ }) });
+    .filter({ has: page.locator('.t-dialog__header').filter({ hasText: /^新增客户跟进记录$/ }) });
   const field = dialog
     .locator('.t-form__item')
     .filter({ has: page.locator('.t-form__label').filter({ hasText: '跟进内容' }) });
@@ -897,7 +897,7 @@ test('assignment missing-owner feedback stays at the field and clears after sele
   await page.getByText('归档客户', { exact: true }).click();
   await page.locator('tr').filter({ hasText: '王先生3' }).locator('.t-checkbox').click();
   await page.getByRole('button', { name: '批量调整归属', exact: true }).click();
-  const dialog = page.locator('.t-dialog:visible').filter({ hasText: '调整归属' });
+  const dialog = page.locator('.t-dialog:visible').filter({ hasText: '批量调整客户归属' });
   await dialog
     .getByRole('button', {
       name: /^确认(?:新增|保存|(?:批量)?(?:下架|调整归属)|配置权限|业务开通|添加属性|邀请员工)$/,
@@ -1308,15 +1308,15 @@ test('list followup is independent from details and appears immediately after it
   await setup(page, daily);
   await page.goto('/store/customer-management');
   const row = page.locator('tr').filter({ hasText: '王先生1' });
-  await expect(row.locator('td').last().locator('.t-link')).toHaveText(['详情', '跟进', '编辑', '归档']);
+  await expect(row.locator('td').last().locator('.t-link')).toHaveText(['详情', '新增跟进', '编辑', '归档']);
   await row.getByText('详情', { exact: true }).click();
   const drawer = page.locator('.t-drawer__content-wrapper:visible');
   await expect(drawer).toBeVisible();
-  await expect(drawer.getByText('跟进', { exact: true })).toHaveCount(0);
+  await expect(drawer.getByText('新增跟进', { exact: true })).toHaveCount(0);
   await page.keyboard.press('Escape');
   await expect(drawer).not.toBeVisible();
-  await row.getByText('跟进', { exact: true }).click();
-  await expect(page.locator('.t-dialog:visible').filter({ hasText: '新增跟进' })).toBeVisible();
+  await row.getByText('新增跟进', { exact: true }).click();
+  await expect(page.locator('.t-dialog:visible').filter({ hasText: '新增客户跟进记录' })).toBeVisible();
 });
 
 test('detail permission alone does not grant list followup', async ({ page }) => {
@@ -1324,7 +1324,7 @@ test('detail permission alone does not grant list followup', async ({ page }) =>
   await page.goto('/store/customer-management');
   const row = page.locator('tr').filter({ hasText: '王先生1' });
   await expect(row.getByText('详情', { exact: true })).toBeVisible();
-  await expect(row.getByText('跟进', { exact: true })).toHaveCount(0);
+  await expect(row.getByText('新增跟进', { exact: true })).toHaveCount(0);
 });
 
 test('followup permission works without loading customer details', async ({ page }) => {
@@ -1332,8 +1332,8 @@ test('followup permission works without loading customer details', async ({ page
   await page.goto('/store/customer-management');
   const row = page.locator('tr').filter({ hasText: '王先生1' });
   await expect(row.getByText('详情', { exact: true })).toHaveCount(0);
-  await row.getByText('跟进', { exact: true }).click();
-  const dialog = page.locator('.t-dialog:visible').filter({ hasText: '新增跟进' });
+  await row.getByText('新增跟进', { exact: true }).click();
+  const dialog = page.locator('.t-dialog:visible').filter({ hasText: '新增客户跟进记录' });
   await dialog.locator('textarea').first().fill('列表直接跟进');
   await dialog.getByRole('button', { name: '确认新增', exact: true }).click();
   await expect(dialog).not.toBeVisible();
@@ -1620,7 +1620,7 @@ test('followup actions appear only on the hovered or keyboard-focused record', a
   await actions.nth(0).getByText('编辑', { exact: true }).focus();
   await expect(actions.nth(0)).toHaveCSS('opacity', '1');
   await page.keyboard.press('Enter');
-  await expect(page.getByText('编辑跟进', { exact: true })).toBeVisible();
+  await expect(page.getByText('编辑客户跟进记录', { exact: true })).toBeVisible();
 });
 
 test('touch devices retain followup actions without requiring hover', async ({ browser }) => {
@@ -1638,7 +1638,7 @@ test('touch devices retain followup actions without requiring hover', async ({ b
     const actions = page.locator('.t-drawer__content-wrapper:visible .customer-followup-actions');
     await expect(actions).toHaveCSS('opacity', '1');
     await actions.getByText('编辑', { exact: true }).tap();
-    await expect(page.getByText('编辑跟进', { exact: true })).toBeVisible();
+    await expect(page.getByText('编辑客户跟进记录', { exact: true })).toBeVisible();
   } finally {
     await context.close();
   }
@@ -1679,9 +1679,9 @@ for (const field of ['followedAt', 'nextFollowAt'] as const) {
         await expect(drawer.getByText('下次跟进：2026-10-20 08:05', { exact: true })).toBeVisible();
         await drawer.getByText('编辑', { exact: true }).click();
       } else {
-        await row.getByText('跟进', { exact: true }).click();
+        await row.getByText('新增跟进', { exact: true }).click();
       }
-      const dialog = page.locator('.t-dialog:visible').filter({ hasText: mode === 'edit' ? '编辑跟进' : '新增跟进' });
+      const dialog = page.locator('.t-dialog:visible').filter({ hasText: mode === 'edit' ? '编辑客户跟进记录' : '新增客户跟进记录' });
       const next = dialog
         .locator('.t-form__item')
         .filter({ has: page.locator('label', { hasText: field === 'followedAt' ? /^跟进时间/ : '下次跟进时间' }) });
@@ -1739,7 +1739,7 @@ test('customer explicit operation links use native color-only hover without unde
   await page.goto('/store/customer-management');
   const row = page.locator('tr').filter({ hasText: '王先生1' });
   const links = row.locator('.t-link');
-  await expect(links).toHaveText(['详情', '跟进', '编辑', '归档']);
+  await expect(links).toHaveText(['详情', '新增跟进', '编辑', '归档']);
   await expect(row.getByRole('link', { name: '王先生1', exact: true })).toHaveCount(0);
   for (const link of await links.all()) {
     await expect(link).toHaveClass(/t-link--hover-color/);
@@ -1767,12 +1767,12 @@ for (const mode of ['create', 'edit'] as const) {
     const requests = await setup(page, ['daily.view', 'daily.detail', 'daily.followup']);
     await page.goto('/store/customer-management');
     const row = page.locator('tr').filter({ hasText: '王先生1' });
-    if (mode === 'create') await row.getByText('跟进', { exact: true }).click();
+    if (mode === 'create') await row.getByText('新增跟进', { exact: true }).click();
     else {
       await row.getByText('详情', { exact: true }).click();
       await page.locator('.t-drawer__content-wrapper:visible').getByText('编辑', { exact: true }).click();
     }
-    const dialog = page.locator('.t-dialog:visible').filter({ hasText: mode === 'create' ? '新增跟进' : '编辑跟进' });
+    const dialog = page.locator('.t-dialog:visible').filter({ hasText: mode === 'create' ? '新增客户跟进记录' : '编辑客户跟进记录' });
     const fields = dialog.locator('textarea');
     await expect(fields).toHaveCount(2);
     for (const field of await fields.all()) {
@@ -1797,8 +1797,8 @@ test('batch attachments keep distinct slots for duplicate names and release unsa
       released.push(request.url());
   });
   await page.goto('/store/customer-management');
-  await page.locator('tr').filter({ hasText: '王先生1' }).getByText('跟进', { exact: true }).click();
-  const dialog = page.locator('.t-dialog:visible').filter({ hasText: '新增跟进' });
+  await page.locator('tr').filter({ hasText: '王先生1' }).getByText('新增跟进', { exact: true }).click();
+  const dialog = page.locator('.t-dialog:visible').filter({ hasText: '新增客户跟进记录' });
   await dialog
     .locator('.t-upload input[type=file]')
     .setInputFiles(
@@ -1834,8 +1834,8 @@ test('replacement failure keeps the existing attachment and saving releases only
       released.push(Number(request.url().split('/').at(-1)));
   });
   await page.goto('/store/customer-management');
-  await page.locator('tr').filter({ hasText: '王先生1' }).getByText('跟进', { exact: true }).click();
-  const dialog = page.locator('.t-dialog:visible').filter({ hasText: '新增跟进' });
+  await page.locator('tr').filter({ hasText: '王先生1' }).getByText('新增跟进', { exact: true }).click();
+  const dialog = page.locator('.t-dialog:visible').filter({ hasText: '新增客户跟进记录' });
   await dialog
     .locator('.t-upload input[type=file]')
     .setInputFiles({ name: 'old.txt', mimeType: 'text/plain', buffer: Buffer.from('old') });
@@ -1890,7 +1890,7 @@ test('existing private attachments still preview through the authorized customer
   await page.goto('/store/customer-management');
   await page.locator('tr').filter({ hasText: '王先生1' }).getByText('详情', { exact: true }).click();
   await page.locator('.t-drawer__content-wrapper:visible').getByText('编辑', { exact: true }).click();
-  const dialog = page.locator('.t-dialog:visible').filter({ hasText: '编辑跟进' });
+  const dialog = page.locator('.t-dialog:visible').filter({ hasText: '编辑客户跟进记录' });
   const download = page.waitForEvent('download');
   await dialog.getByText('历史.txt', { exact: true }).click();
   expect((await download).suggestedFilename()).toBe('历史.txt');
@@ -1900,8 +1900,8 @@ test('existing private attachments still preview through the authorized customer
 test('scheme two preserves native upload geometry and reveals replacement only for its file row', async ({ page }) => {
   await setup(page, ['daily.view', 'daily.followup']);
   await page.goto('/store/customer-management');
-  await page.locator('tr').filter({ hasText: '王先生1' }).getByText('跟进', { exact: true }).click();
-  const dialog = page.locator('.t-dialog:visible').filter({ hasText: '新增跟进' });
+  await page.locator('tr').filter({ hasText: '王先生1' }).getByText('新增跟进', { exact: true }).click();
+  const dialog = page.locator('.t-dialog:visible').filter({ hasText: '新增客户跟进记录' });
   await dialog
     .locator('.t-upload input[type=file]')
     .setInputFiles(
@@ -2025,8 +2025,8 @@ test('scheme two preserves native upload geometry and reveals replacement only f
 test('scheme two accepts an attachment exactly at the 5MiB boundary', async ({ page }) => {
   const requests = await setup(page, ['daily.view', 'daily.followup']);
   await page.goto('/store/customer-management');
-  await page.locator('tr').filter({ hasText: '王先生1' }).getByText('跟进', { exact: true }).click();
-  const dialog = page.locator('.t-dialog:visible').filter({ hasText: '新增跟进' });
+  await page.locator('tr').filter({ hasText: '王先生1' }).getByText('新增跟进', { exact: true }).click();
+  const dialog = page.locator('.t-dialog:visible').filter({ hasText: '新增客户跟进记录' });
   await dialog.locator('.t-upload input[type=file]').setInputFiles({
     name: 'exact-5MiB.bin',
     mimeType: 'application/octet-stream',
@@ -2056,8 +2056,8 @@ test('canceling an in-flight attachment releases its media and never fills anoth
     await route.fulfill({ json: ok({ id: 501, mediaType: 'file', mimeType: 'text/plain' }) });
   });
   await page.goto('/store/customer-management');
-  await page.locator('tr').filter({ hasText: '王先生1' }).getByText('跟进', { exact: true }).click();
-  const dialog = page.locator('.t-dialog:visible').filter({ hasText: '新增跟进' });
+  await page.locator('tr').filter({ hasText: '王先生1' }).getByText('新增跟进', { exact: true }).click();
+  const dialog = page.locator('.t-dialog:visible').filter({ hasText: '新增客户跟进记录' });
   await dialog
     .locator('.t-upload input[type=file]')
     .setInputFiles({ name: 'late.txt', mimeType: 'text/plain', buffer: Buffer.from('late') });
@@ -2066,8 +2066,8 @@ test('canceling an in-flight attachment releases its media and never fills anoth
   await expect(dialog).not.toBeVisible();
   completeUpload();
   await expect.poll(() => released.length).toBe(1);
-  await page.locator('tr').filter({ hasText: '王先生2' }).getByText('跟进', { exact: true }).click();
-  const next = page.locator('.t-dialog:visible').filter({ hasText: '新增跟进' });
+  await page.locator('tr').filter({ hasText: '王先生2' }).getByText('新增跟进', { exact: true }).click();
+  const next = page.locator('.t-dialog:visible').filter({ hasText: '新增客户跟进记录' });
   await expect(next.locator('.customer-followup-file-row')).toHaveCount(0);
   await expect(next.getByText('late.txt', { exact: true })).toHaveCount(0);
 });

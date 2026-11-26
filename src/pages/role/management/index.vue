@@ -84,7 +84,7 @@
     <t-dialog
       v-model:visible="formDialogVisible"
       dialog-class-name="zdm-admin-dialog zdm-admin-single-form"
-      :header="dialogMode === 'create' ? '新增' : '编辑'"
+      :header="dialogMode === 'create' ? '新增角色' : '编辑角色'"
       width="480px"
       placement="center"
       :close-on-overlay-click="true"
@@ -120,7 +120,7 @@
 
     <t-dialog
       v-model:visible="permissionDialogVisible"
-      header="权限配置"
+      header="配置角色权限"
       width="min(1560px, calc(100vw - 48px))"
       placement="center"
       :close-on-overlay-click="true"

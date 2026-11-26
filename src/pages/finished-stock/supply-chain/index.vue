@@ -673,7 +673,7 @@
       v-model:visible="categorySwitchWarningVisible"
       :confirmation="operationConfirmation('切换分类')"
       confirm-function="switch-category"
-      header="切换分类"
+      header="是否切换商品分类？"
       cancel-btn="取消"
       @confirm="confirmCategorySwitchWarning"
     >
@@ -714,7 +714,7 @@
       v-model:visible="specDialogVisible"
       :confirmation="{ kind: 'none' }"
       confirm-function="close"
-      header="创建规格"
+      :header="specFormMode === 'edit' ? '编辑商品规格' : '创建商品规格'"
       width="920px"
       :footer="false"
       @close="closeSpecDialog"
@@ -740,7 +740,7 @@
                 "
                 placeholder="请输入商品规格"
               />
-              <t-button shape="square" variant="text" :theme="buttonTheme('delete')" @click="removeSingleSpec(index)">
+              <t-button shape="square" variant="text" :theme="buttonTheme('delete')" aria-label="删除规格项" title="删除规格项" @click="removeSingleSpec(index)">
                 <t-icon name="delete" />
               </t-button>
               <t-button
@@ -848,6 +848,8 @@
                   shape="square"
                   variant="text"
                   :theme="buttonTheme('delete')"
+                  aria-label="删除属性值"
+                  title="删除属性值"
                   @click="removeSpecValue(group.name, index)"
                 >
                   <t-icon name="delete" />
@@ -881,7 +883,7 @@
       v-model:visible="specModeConfirmVisible"
       :confirmation="operationConfirmation('切换展示模式')"
       confirm-function="edit"
-      header="切换展示模式"
+      header="是否切换规格展示模式？"
       cancel-btn="取消"
       @confirm="confirmSpecModeChange"
       @cancel="specModeConfirmVisible = false"
@@ -891,7 +893,7 @@
     </AdminDialog>
     <t-drawer
       v-model:visible="priceDrawerVisible"
-      header="批量填写"
+      header="批量填写商品规格信息"
       placement="right"
       size="min(1180px, 100%)"
       lazy
@@ -1016,7 +1018,7 @@
     </t-drawer>
     <t-dialog
       v-model:visible="reasonDialogVisible"
-      header="下架"
+      :header="reasonState.isBatch ? '批量下架商品' : '下架商品'"
       width="520px"
       placement="center"
       :confirm-btn="submitReasonButton"
@@ -2076,7 +2078,7 @@ const baseBatchButtons = computed(() => {
     ],
     soldOut: [],
     recycle: [
-      { action: 'batchRestore', label: '批量放回到仓库', icon: 'rollback' },
+      { action: 'batchRestore', label: '批量放回仓库', icon: 'rollback' },
       { action: 'batchPurge', label: '批量彻底删除', icon: 'delete', className: 'deep-danger-button' },
       { action: 'clearRecycle', label: '清空回收站', icon: 'clear' },
     ],

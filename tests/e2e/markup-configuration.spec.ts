@@ -213,7 +213,7 @@ test('价格配置引用统一门店级别并仅配置系数', async ({ page }) 
   await expect(page.getByText('价格系数不能小于1.00', { exact: true })).toBeVisible();
 
   await page.getByRole('button', { name: '新增', exact: true }).click();
-  const createDialog = page.locator('.t-dialog:visible').filter({ has: page.getByText('新增', { exact: true }) });
+  const createDialog = page.locator('.t-dialog:visible').filter({ has: page.getByText('新增成品价格配置', { exact: true }) });
   await createDialog.getByPlaceholder('请选择门店级别', { exact: true }).click();
   const levelDropdown = page.locator('.t-select__dropdown:visible');
   await expect(levelDropdown.getByText('城市中心店', { exact: true })).toBeVisible();
@@ -517,7 +517,8 @@ for (const scope of ['finished', 'accessory', 'slab'] as const) {
     if (scope !== 'finished')
       await page.getByText(scope === 'slab' ? '大板价格配置' : '配件价格配置', { exact: true }).click();
     await page.getByRole('button', { name: '新增', exact: true }).click();
-    const dialog = page.locator('.t-dialog:visible').filter({ has: page.getByText('新增', { exact: true }) });
+    const title = `新增${{ finished: '成品', slab: '大板', accessory: '配件' }[scope]}价格配置`;
+    const dialog = page.locator('.t-dialog:visible').filter({ has: page.getByText(title, { exact: true }) });
     await dialog.getByPlaceholder('请选择门店级别', { exact: true }).click();
     await page.locator('.t-select__dropdown:visible').getByText('社区门店', { exact: true }).click();
     await dialog.locator('.price-coefficient-input input').fill('1.50');

@@ -1,7 +1,7 @@
 <template>
   <t-drawer
     :visible="visible"
-    header="操作日志"
+    :header="`${subjectLabel}操作日志`"
     size="min(1240px, 100%)"
     :footer="false"
     @update:visible="emit('update:visible', $event)"
@@ -100,7 +100,7 @@
     :confirmation="{ kind: 'close', text: '关闭' }"
     confirm-function="close"
     :visible="detailVisible"
-    header="操作详情"
+    :header="`${subjectLabel}操作详情`"
     width="min(1240px, 94vw)"
     :cancel-btn="null"
     @confirm="emit('update:detailVisible', false)"

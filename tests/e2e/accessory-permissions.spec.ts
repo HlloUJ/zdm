@@ -259,7 +259,7 @@ test('operations role catalog exposes detail permission for all five finished st
   await page.goto(productWarehouseUrl('/role-management'));
   const row = page.locator('tbody tr').filter({ hasText: '运营管理平台角色' }).first();
   await row.getByText('权限', { exact: true }).click();
-  const dialog = page.locator('.t-dialog:visible').filter({ hasText: '权限配置' });
+  const dialog = page.locator('.t-dialog:visible').filter({ hasText: '配置角色权限' });
   await dialog.locator('.permission-module-list').getByText('商品管理', { exact: true }).click();
   const rows = dialog.locator('.permission-matrix tbody tr');
   const first = rows.filter({ hasText: '配件管理页' }).first();
@@ -596,7 +596,7 @@ for (const client of ['supply-chain', 'admin']) {
       }
       await log.click();
       await expect(
-        page.locator('.t-drawer--open .t-drawer__header').getByText('操作日志', { exact: true }),
+        page.locator('.t-drawer--open .t-drawer__header').getByText('商品操作日志', { exact: true }),
       ).toBeVisible();
     });
   }

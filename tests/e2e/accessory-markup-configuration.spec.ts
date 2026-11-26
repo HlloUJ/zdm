@@ -219,7 +219,7 @@ test('价格配置引用统一门店级别并仅配置系数', async ({ page }) 
   await expect(page.getByText('价格系数不能小于1.00', { exact: true })).toBeVisible();
 
   await page.getByRole('button', { name: '新增', exact: true }).click();
-  const createDialog = page.locator('.t-dialog:visible').filter({ has: page.getByText('新增', { exact: true }) });
+  const createDialog = page.locator('.t-dialog:visible').filter({ has: page.getByText('新增配件价格配置', { exact: true }) });
   await createDialog.getByPlaceholder('请选择门店级别', { exact: true }).click();
   const levelDropdown = page.locator('.t-select__dropdown:visible');
   await expect(levelDropdown.getByText('城市中心店', { exact: true })).toBeVisible();
