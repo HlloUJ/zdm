@@ -5,6 +5,7 @@ import { assess, assessMissing, development, localTasks, saveBaselines } from '.
 import { bindSummary, blockFor, eventBody, readSummary, summaryFor } from './quality/assessment-summary.mjs';
 import { mainPullRequest } from './quality/remote.mjs';
 import { checks } from './quality/policy.mjs';
+import { guardDesignPreview, setTaskStage } from './quality/design-preview.mjs';
 import { git, inspect } from './quality/repository.mjs';
 import { inputReader, fileDigest } from './quality/inputs.mjs';
 import { EvidenceStore, runId } from './quality/store.mjs';
@@ -205,6 +206,9 @@ function optionsFor(args, phase) {
 export function main(argv, cwd = process.cwd()) {
   let [phase, ...args] = argv;
   if (phase === 'assess') return assess(args,cwd);
+  if (phase === 'stage') return setTaskStage(cwd, args);
+  guardDesignPreview(cwd);
+  if (phase === 'preflight') return;
   if (phase === 'merge')
     return mergeVerified(cwd, args, (snap) =>
       verifyReport(new EvidenceStore(snap.common), snap, 'delivery'),
@@ -235,7 +239,7 @@ export function main(argv, cwd = process.cwd()) {
     return;
   }
   if (!['plan', 'dev', 'delivery', 'main', 'assert-dev', 'assert-delivery'].includes(phase))
-    throw Error('用法：node dev/quality.mjs plan|dev|delivery|assert-delivery|main|merge|run');
+    throw Error('用法：node dev/quality.mjs plan|dev|delivery|assert-delivery|main|merge|run|stage');
   const options = optionsFor(args, phase);
   const snap = snapshot(cwd, options, phase);
   if (phase === 'plan')

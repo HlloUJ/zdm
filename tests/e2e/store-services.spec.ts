@@ -215,6 +215,8 @@ test('主图上传、原生卡片预览、替换与删除保留表单草稿', as
   await expect(card).toHaveCSS('height', '110px');
   await expect(editor.getByRole('button', { name: '封面图', exact: true })).toBeVisible();
   const original = await card.locator('img').getAttribute('src');
+  // The dialog zooms in from 1%. Wait for the card to reach its actual click size.
+  await expect.poll(async () => (await card.boundingBox())?.width).toBe(110);
   await card.click();
   const preview = page
     .locator('.t-dialog')
