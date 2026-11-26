@@ -3291,7 +3291,7 @@
     },
     "src/pages/product/category/index.vue": {
       "baseSha256": "d0c3e9bc240c62acc821fb519b0a41a7b8e3c3f693eb8c564e4b74336713d6ca",
-      "patchCount": 24,
+      "patchCount": 25,
       "patches": [
         {
           "stage": "before-migrations",
@@ -3415,6 +3415,10 @@
         {
           "before": "      name: node.name,\n      status: node.status,\n      productCount: node.productCount,\n      sort: index + 1,\n      createdByName: node.createdByName,\n      createdByAccountId: node.createdByAccountId,\n      createdAt: formatDateTime(node.createdAt),",
           "after": "      name: node.name,\n      status: node.status,\n      productCount: node.productCount,\n      createdByName: node.createdByName,\n      createdByAccountId: node.createdByAccountId,\n      createdAt: formatDateTime(node.createdAt),"
+        },
+        {
+          "before": "<span class=\"level-label\">{{ levelLabel(row.level) }}</span>",
+          "after": "<span class=\"level-label\">{{ row.level }}级分类</span>"
         }
       ]
     },

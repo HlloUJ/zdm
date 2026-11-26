@@ -92,7 +92,7 @@
                 </div>
               </template>
               <template #level="{ row }"
-                ><span class="level-label">{{ levelLabel(row.level) }}</span></template
+                ><span class="level-label">{{ row.level }}级分类</span></template
               >
               <template #status="{ row }"
                 ><t-tag :theme="row.status === 'enabled' ? 'success' : 'danger'" variant="light">{{

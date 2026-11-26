@@ -9660,6 +9660,11 @@
           "task": "015",
           "before": "      name: node.name,\n      status: node.status,\n      productCount: node.productCount,\n      sort: index + 1,\n      createdByName: node.createdByName,\n      createdByAccountId: node.createdByAccountId,\n      createdAt: formatDateTime(node.createdAt),",
           "after": "      name: node.name,\n      status: node.status,\n      productCount: node.productCount,\n      createdByName: node.createdByName,\n      createdByAccountId: node.createdByAccountId,\n      createdAt: formatDateTime(node.createdAt),"
+        },
+        {
+          "task": "015",
+          "before": "<span class=\"level-label\">{{ levelLabel(row.level) }}</span>",
+          "after": "<span class=\"level-label\">{{ row.level }}级分类</span>"
         }
       ]
     },
