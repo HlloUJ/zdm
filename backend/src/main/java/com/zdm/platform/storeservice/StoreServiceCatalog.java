@@ -1,5 +1,7 @@
 package com.zdm.platform.storeservice;
 
+import com.zdm.platform.common.FieldValidationException;
+
 import com.zdm.platform.inventory.CityPartnerStoreScope;
 import com.zdm.platform.inventory.CityPartnerStoreScope.Store;
 import com.zdm.platform.media.*;
@@ -86,11 +88,11 @@ public class StoreServiceCatalog {
     Store store = writer(id == null ? "create" : "edit");
     Item previous = id == null ? null : find(store, id, false);
     String name = input.name() == null ? "" : input.name().strip();
-    if (name.isBlank() || name.codePointCount(0,name.length()) > 10) throw new IllegalArgumentException("服务名称须为 1 至 10 个字符");
+    if (name.isBlank() || name.codePointCount(0,name.length()) > 10) throw new FieldValidationException("name", "服务名称须为 1 至 10 个字符");
     if (input.price() == null || !input.price().matches("[0-9]+([.][0-9]{1,2})?"))
-      throw new IllegalArgumentException("请填写非负价格，最多两位小数");
+      throw new FieldValidationException("price", "请填写非负价格，最多两位小数");
     BigDecimal price = new BigDecimal(input.price()).setScale(2);
-    if (price.precision() > 65) throw new IllegalArgumentException("金额超出可精确保存的范围");
+    if (price.precision() > 65) throw new FieldValidationException("price", "金额超出可精确保存的范围");
     if (input.imageId() != null && (previous == null || !Objects.equals(previous.imageId(), input.imageId())))
       requireTemporaryImage(input.imageId(), store);
     try {
@@ -103,7 +105,7 @@ public class StoreServiceCatalog {
             name,price,input.imageId(),store.tenantId(),store.storeId(),id);
       }
     } catch (DuplicateKeyException ex) {
-      throw new IllegalArgumentException("本店已有同名服务");
+      throw FieldValidationException.withHint("name", "本店已有同名服务", "服务名称已存在，请更换名称");
     }
     references.replace(DOMAIN,id,input.imageId() == null ? Map.of() : Map.of("image",input.imageId()));
     return find(store,id,false);
@@ -137,7 +139,7 @@ public class StoreServiceCatalog {
     if (!"store-service".equals(asset.getAccessLevel()) || !"image".equals(asset.getMediaType())
         || !"temporary".equals(asset.getStatus()) || !Objects.equals(asset.getStoreId(),store.storeId())
         || !Objects.equals(asset.getTenantId(),store.tenantId()) || !Objects.equals(asset.getCreatedByAccountId(),store.accountId()))
-      throw new IllegalArgumentException("服务主图不可用");
+      throw FieldValidationException.withHint("imageId", "服务主图不可用", "服务主图不可用，请重新选择图片");
   }
 
   @Transactional

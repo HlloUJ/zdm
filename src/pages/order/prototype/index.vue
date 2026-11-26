@@ -338,17 +338,12 @@
       :object-name="deletingSetting?.name"
       @confirm="deleteSetting"
     />
-    <AdminDialog
+    <AdminMediaPreviewDialog
       :visible="scopeVerified && Boolean(proofUrl)"
       header="收退款凭证"
-      width="min(960px, 94vw)"
-      confirm-function="close"
-      :confirmation="{ kind: 'none' }"
-      :cancel-btn="null"
-      :close-on-overlay-click="true"
       @update:visible="!$event && (proofUrl = '')"
-      ><img :src="proofUrl" alt="收退款凭证" width="100%"
-    /></AdminDialog>
+      ><img :src="proofUrl" alt="收退款凭证"
+    /></AdminMediaPreviewDialog>
     <AdminDialog
       :visible="scopeVerified && Boolean(logDetail)"
       header="订单操作前后数据"
@@ -374,7 +369,8 @@ import { useDelayedLoading } from '@/composables/useDelayedLoading';
 import { useContentRequest } from '@/composables/useContentRequest';
 import { usePendingAction } from '@/composables/usePendingAction';
 import { useOperationPreflight } from '@/composables/useOperationPreflight';
-import { ApiFieldError, OperationBlockedError } from '@/services/http';
+import { useServerFields } from '@/utils/serverFieldValidation';
+import { OperationBlockedError } from '@/services/http';
 import { orderConfirmationBlock, requireOrderField } from './model';
 import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useRoute } from 'vue-router';
@@ -388,6 +384,7 @@ import {
   AdminFormDialog,
   AdminConfirmDialog,
   AdminDialog,
+  AdminMediaPreviewDialog,
   adminFeedback,
   type ListAction,
   type ListFilter,
@@ -1028,6 +1025,11 @@ function openSetting(row?: StorePaymentName) {
   settingName.value = row?.name ?? '';
   settingVisible.value = true;
 }
+const beginSettingFeedback = useServerFields(
+  () => settingVisible.value, settingDialog, () => ({ name: settingName.value }),
+  (field, message) => settingFeedback.reject(field, settingName.value, message),
+  undefined, field => settingFeedback.clearField(field),
+);
 async function addSetting() {
   if (settingsSaving.value || !canSetting(editingSettingId.value ? 'edit' : 'create')) return;
   const name = settingName.value.trim();
@@ -1036,6 +1038,7 @@ async function addSetting() {
     await rejectFormSubmission(settingDialog.value);
     return;
   }
+  const reportFieldError = beginSettingFeedback();
   const scope = key.value,
     editing = Boolean(editingSettingId.value);
   settingsSaving.value = true;
@@ -1048,10 +1051,7 @@ async function addSetting() {
     await loadSettings();
   } catch (error) {
     if (scope !== key.value) return;
-    if (error instanceof ApiFieldError && error.field === 'name') {
-      settingFeedback.reject('name', settingName.value, error.message);
-      await rejectFormSubmission(settingDialog.value);
-    } else {
+    if (!(await reportFieldError(error))) {
       adminFeedback.actionError({ action: editing ? '修改' : '新增', error });
     }
     await loadSettings();

@@ -176,6 +176,7 @@
 </template>
 
 <script setup lang="ts">
+import { useServerFieldValidation } from '@/utils/serverFieldValidation';
 import { useContentRequest } from '@/composables/useContentRequest';
 import { usePendingAction } from '@/composables/usePendingAction';
 import { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';
@@ -309,8 +310,13 @@ const openEdit = (row: TextureItem) => {
   Object.assign(formData, { name: row.name, remark: row.remark ?? '' });
   formVisible.value = true;
 };
+const beginSubmitTextureFeedback = useServerFieldValidation(
+  () => formVisible.value, formRef,
+  () => ({ name: formData.name, remark: formData.remark }),
+);
 const submitTexture = async () => {
   if ((await formRef.value?.validate()) !== true) return rejectFormSubmission(formRef.value);
+  const reportFieldError = beginSubmitTextureFeedback();
   try {
     const payload = { name: formData.name.trim(), remark: formData.remark.trim(), status: 'enabled' as const };
     if (editingId.value) {
@@ -323,6 +329,7 @@ const submitTexture = async () => {
     formVisible.value = false;
     await loadData();
   } catch (error) {
+    if (await reportFieldError(error)) return;
     adminFeedback.error(error instanceof Error ? error.message : '提交失败');
   }
 };
@@ -364,10 +371,15 @@ const openAliasForm = (row?: SlabTextureAliasRecord) => {
   aliasForm.name = row?.name ?? '';
   aliasFormVisible.value = true;
 };
+const beginSubmitAliasFeedback = useServerFieldValidation(
+  () => aliasFormVisible.value, aliasFormRef,
+  () => ({ name: aliasForm.name }),
+);
 const submitAlias = async () => {
   if ((await aliasFormRef.value?.validate()) !== true) return rejectFormSubmission(aliasFormRef.value);
   if (!activeTexture.value) return;
   const name = aliasForm.name.trim();
+  const reportFieldError = beginSubmitAliasFeedback();
   try {
     if (editingAliasId.value) {
       await updateSlabTextureAlias(activeTexture.value.id, editingAliasId.value, name);
@@ -380,6 +392,7 @@ const submitAlias = async () => {
     await refreshAliases(activeTexture.value.id);
     await loadData();
   } catch (error) {
+    if (await reportFieldError(error)) return;
     adminFeedback.error(error instanceof Error ? error.message : '别名提交失败');
   }
 };

@@ -1152,7 +1152,7 @@ test('shows the same object-specific success copy for category, store category, 
 
   await setMockBusinessClient(page, 'admin');
   await page.goto(productWarehouseUrl('/product-category'));
-  const productCategoryRow = page.getByRole('row', { name: /成品现货 一级分类/ });
+  const productCategoryRow = page.getByRole('row', { name: /成品现货 1级分类/ });
   await productCategoryRow.getByText('停用', { exact: true }).click();
   await page.getByRole('button', { name: '确认停用', exact: true }).click();
   const productCategoryFeedback = page.getByText('已停用“成品现货”', { exact: true });
@@ -1259,6 +1259,7 @@ test('shows the duplicate store name error on the edit form', async ({ page }) =
     await route.fulfill({
       status: 400,
       contentType: 'application/json',
+      headers: { 'X-Zdm-Invalid-Field': 'name' },
       body: JSON.stringify({ code: 400, message: '店铺名称已存在', data: null }),
     });
   });
@@ -1280,7 +1281,7 @@ test('shows the duplicate store name error on the edit form', async ({ page }) =
     .click();
 
   await expect(dialog.locator('.t-form__item').filter({ hasText: '门店名称' })).toContainText('门店名称已存在');
-  await expect(page.getByText('编辑“已归档门店”失败：门店名称已存在', { exact: true })).toBeVisible();
+  await expect(page.locator('.zdm-admin-feedback')).toHaveText('表单校验未通过，请检查标红字段');
   await expect(dialog).toBeVisible();
 });
 

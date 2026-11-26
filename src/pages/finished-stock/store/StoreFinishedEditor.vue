@@ -34,7 +34,7 @@
       <StoreProductDetail :product="product" editor-layout>
         <template #basic-extra>
           <t-form ref="formRef" class="supplier-form" :data="form" :rules="rules" label-width="100px" colon>
-            <t-form-item label="门店分类" name="categoryId"
+            <t-form-item label="门店分类" name="categoryId" v-bind="serverFeedback.field('storeCategoryId')"
               ><t-cascader
                 v-model="form.categoryId"
                 :options="categoryOptions"
@@ -86,6 +86,7 @@
                         <SpecPriceInput
                           v-if="drafts[row.skuId]"
                           v-model="drafts[row.skuId].coefficient"
+                          :server-error="serverFeedback.field(`skus.${row.skuId}.saleCoefficient`).tips"
                           class="store-sale-coefficient-input"
                           placeholder="请输入系数"
                           label="系数"
@@ -96,6 +97,7 @@
                         <SpecPriceInput
                           v-if="drafts[row.skuId]"
                           v-model="drafts[row.skuId].price"
+                          :server-error="serverFeedback.field(`skus.${row.skuId}.salePrice`).tips"
                           class="decimal-input store-sale-price-input"
                           label="商品售价"
                           placeholder="请输入商品售价"
@@ -213,6 +215,7 @@
   </t-drawer>
 </template>
 <script setup lang="ts">
+import { useBoundServerFields } from '@/utils/serverFieldValidation';
 import { useDelayedLoading } from '@/composables/useDelayedLoading';
 import { useOperationPreflight } from '@/composables/useOperationPreflight';
 import { useCommodityModule } from '@/composables/useCommodityModule';
@@ -418,9 +421,18 @@ onMounted(async () => {
 });
 const formOperation = useOperationPreflight(() => props.product.id);
 formOperation.onInvalidate(() => { saving.value = false; });
+const serverFeedback = useBoundServerFields(ready, productFormRoot, () => {
+  const fields: Record<string, unknown> = { storeCategoryId: form.categoryId };
+  for (const [id, draft] of Object.entries(drafts)) {
+    fields[`skus.${id}.salePrice`] = draft.price;
+    fields[`skus.${id}.saleCoefficient`] = draft.coefficient;
+  }
+  return fields;
+});
 async function save() {
   if (saving.value || !ready.value || !selectedLeaf.value) return;
   const current = formOperation.capture();
+  let reportFieldError: ReturnType<typeof serverFeedback.begin> | undefined;
   saving.value = true;
   try {
     submitted.value = true;
@@ -437,6 +449,7 @@ async function save() {
       )
     )
       return rejectFormSubmission(productFormRoot.value);
+    reportFieldError = serverFeedback.begin();
     const product = await saveStoreFinishedEdit(props.product.id, {
       storeCategoryId: category.id,
       skus: props.product.skus.map((item) => ({
@@ -455,6 +468,7 @@ async function save() {
     emit('saved', product);
   } catch (error) {
     if (!current()) return;
+    if (await reportFieldError?.(error)) return;
     adminFeedback.error(getSafeErrorMessage(error, '保存商品失败'));
   } finally {
     if (current()) saving.value = false;

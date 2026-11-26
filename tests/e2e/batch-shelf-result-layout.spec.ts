@@ -66,6 +66,7 @@ for (const scenario of ['short', 'long', 'plain', 'narrow'] as const) {
     });
     await page.goto('/finished-stock-management?tab=all');
     const main = page.getByRole('main');
+    await expect(main.getByRole('row').filter({ hasText: product.name })).toBeVisible();
     await main.locator('thead .t-checkbox__input').click();
     await main.getByRole('button', { name: '批量上架', exact: true }).click();
     await clickOpenedDialogConfirmation(page.locator('.t-dialog:visible'), '确认批量上架');

@@ -132,17 +132,10 @@
       }
     "
   />
-  <AdminDialog
+  <AdminMediaPreviewDialog
     :visible="!!preview"
-    confirm-function="close"
-    :confirmation="{ kind: 'none' }"
-    mode="modal"
-    show-overlay
-    close-on-overlay-click
     @close="preview = ''"
     header="服务主图"
-    :footer="false"
-    width="min(960px, 94vw)"
     @update:visible="
       (v) => {
         if (!v) preview = '';
@@ -150,7 +143,7 @@
     "
   >
     <img v-if="preview" :src="preview" alt="服务主图" class="service-preview-image" />
-  </AdminDialog>
+  </AdminMediaPreviewDialog>
 </template>
 <script setup lang="ts">
 import { computed, onScopeDispose, reactive, ref, watch } from 'vue';
@@ -162,7 +155,7 @@ import {
   AdminListPage,
   AdminFormDialog,
   AdminConfirmDialog,
-  AdminDialog,
+  AdminMediaPreviewDialog,
   adminFeedback,
 } from '@/components/foundation';
 import { buttonTheme } from '@/components/foundation/actions/buttonFunctions';
@@ -170,7 +163,8 @@ import { formConfirmation } from '@/components/foundation/actions/confirmation';
 import { useOperationPreflight } from '@/composables/useOperationPreflight';
 import { getLoginUser } from '@/services/auth';
 import { hasPermission } from '@/services/adminPermissions';
-import { ApiError, request } from '@/services/http';
+import { useServerFields } from '@/utils/serverFieldValidation';
+import { request } from '@/services/http';
 import DecimalInput from '@/components/DecimalInput.vue';
 import { fieldFeedback, useFormFeedback } from '@/utils/formValidation';
 import { rejectFormSubmission } from '@/utils/submitValidation';
@@ -361,6 +355,18 @@ async function upload(file: File) {
     if (token === dialogGeneration) uploading.value = false;
   }
 }
+const storeServiceFields = () => ({
+  name: form.name.trim(), price: form.price, imageId: mainImage.value?.mediaId ?? null,
+});
+const beginStoreServiceFeedback = useServerFields(
+  () => visible.value, editor, storeServiceFields, (key, message) => {
+    if (key === 'imageId') uploadError.value = message;
+    else serverFeedback.reject(key, key === 'name' ? form.name.trim() : form.price, message);
+  }, undefined, key => {
+    if (key === 'imageId') uploadError.value = '';
+    else serverFeedback.clearField(key);
+  },
+);
 async function save() {
   if (saving.value || uploading.value) return;
   submitted.value = true;
@@ -372,6 +378,7 @@ async function save() {
   }
   const imageId = mainImage.value?.mediaId ?? null;
   const token = generation;
+  const reportFieldError = beginStoreServiceFeedback();
   saving.value = true;
   try {
     await request(servicePath + (editId.value ? '/' + editId.value : ''), {
@@ -385,16 +392,7 @@ async function save() {
     await refresh();
   } catch (e) {
     if (token !== generation) return;
-    if (e instanceof ApiError && e.status === 400) {
-      if (e.message === '本店已有同名服务') serverFeedback.reject('name', name, '服务名称已存在，请更换名称');
-      else if (e.message === '金额超出可精确保存的范围') serverFeedback.reject('price', form.price, e.message);
-      else if (e.message === '服务主图不可用') uploadError.value = '服务主图不可用，请重新选择图片';
-      else {
-        failure(e);
-        return;
-      }
-      await rejectFormSubmission(editor.value);
-    } else failure(e);
+    if (!(await reportFieldError(e))) failure(e);
   } finally {
     if (token === generation) saving.value = false;
   }
@@ -434,14 +432,3 @@ async function confirmAction() {
   }
 }
 </script>
-
-<style scoped>
-.service-preview-image {
-  /* TDesign reserves 48px above and below its centered dialog, plus a 1px border. */
-  --dialog-spacing: calc(49px + var(--td-comp-paddingTB-xxl) + var(--td-comp-paddingTB-l));
-  display: block;
-  margin-inline: auto;
-  max-width: 100%;
-  max-height: max(1px, calc(100dvh - 2 * var(--dialog-spacing) - var(--td-line-height-title-medium)));
-}
-</style>

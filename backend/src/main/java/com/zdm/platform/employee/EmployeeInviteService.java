@@ -1,5 +1,6 @@
 package com.zdm.platform.employee;
 
+import com.zdm.platform.common.FieldValidationException;
 import com.zdm.platform.account.CreatorAwareService;
 import com.zdm.platform.security.CurrentIdentity;
 import com.zdm.platform.security.CurrentIdentityProvider;
@@ -152,7 +153,7 @@ public class EmployeeInviteService extends CreatorAwareService<EmployeeInviteMap
 
   private void requireDevCode(String verifyCode) {
     if (!DEV_VERIFY_CODE.equals(verifyCode)) {
-      throw new IllegalArgumentException("验证码错误");
+      throw new FieldValidationException("verifyCode", "验证码错误");
     }
   }
 

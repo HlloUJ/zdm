@@ -256,6 +256,7 @@
 </template>
 
 <script setup lang="ts">
+import { useServerFieldValidation } from '@/utils/serverFieldValidation';
 import { useContentRequest } from '@/composables/useContentRequest';
 import { useDialogLoading } from '@/composables/useDialogLoading';
 import { usePendingAction } from '@/composables/usePendingAction';
@@ -702,10 +703,14 @@ const closePermissionDialog = () => {
   permissionFormRef.value?.clearValidate();
 };
 
+const beginProfileFeedback = useServerFieldValidation(
+  () => profileDialogVisible.value, profileFormRef, () => ({ ...profileFormData }),
+);
 const handleProfileSubmit = async () => {
   if ((await profileFormRef.value?.validate()) !== true) return rejectFormSubmission(profileFormRef.value);
 
   if (activeEmployee.value) {
+    const reportFieldError = beginProfileFeedback();
     try {
       const updated = await (
         activeEmployee.value.identityType === 'supply_chain_admin' ? updateSupplyChainAdministrator : updateEmployee
@@ -724,6 +729,7 @@ const handleProfileSubmit = async () => {
       }
       adminFeedback.actionSuccess({ action: '修改' });
     } catch (error) {
+      if (await reportFieldError(error)) return;
       adminFeedback.error(error instanceof Error ? error.message : '更新失败');
       return;
     }
@@ -732,6 +738,9 @@ const handleProfileSubmit = async () => {
   closeProfileDialog();
 };
 
+const beginPermissionFeedback = useServerFieldValidation(
+  () => permissionDialogVisible.value, permissionFormRef, () => ({ ...permissionFormData }),
+);
 const handlePermissionSubmit = async () => {
   if ((await permissionFormRef.value?.validate()) !== true) return rejectFormSubmission(permissionFormRef.value);
   if (!permissionFormData.roleIds.length) {
@@ -741,6 +750,7 @@ const handlePermissionSubmit = async () => {
     return;
   }
   if (activeEmployee.value) {
+    const reportFieldError = beginPermissionFeedback();
     try {
       const updated = await updateEmployeePermissions(activeEmployee.value.id, {
         roleIds: permissionFormData.roleIds.join(','),
@@ -752,6 +762,7 @@ const handlePermissionSubmit = async () => {
       }
       adminFeedback.actionSuccess({ action: '修改' });
     } catch (error) {
+      if (await reportFieldError(error)) return;
       adminFeedback.error(error instanceof Error ? error.message : '更新失败');
       return;
     }

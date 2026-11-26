@@ -141,6 +141,7 @@
 </template>
 
 <script setup lang="ts">
+import { useServerFieldValidation } from '@/utils/serverFieldValidation';
 import { useContentRequest } from '@/composables/useContentRequest';
 import { usePendingAction } from '@/composables/usePendingAction';
 import { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';
@@ -312,6 +313,10 @@ const handleDragSort = async (context: { current: GradeItem; target: GradeItem }
     sorting.value = false;
   }
 };
+const beginSubmitGradeFeedback = useServerFieldValidation(
+  () => formVisible.value, formRef,
+  () => ({ code: formData.code, name: formData.name, remark: formData.remark }),
+);
 const submitGrade = async () => {
   if ((await formRef.value?.validate()) !== true || !formData.code) return rejectFormSubmission(formRef.value);
   const payload: SlabGradePayload = {
@@ -320,6 +325,7 @@ const submitGrade = async () => {
     status: 'enabled',
     remark: formData.remark.trim(),
   };
+  const reportFieldError = beginSubmitGradeFeedback();
   try {
     if (editingId.value) await updateSlabGrade(editingId.value, payload);
     else await createSlabGrade(payload);
@@ -329,6 +335,7 @@ const submitGrade = async () => {
     if (editingId.value) adminFeedback.actionSuccess({ action: '修改', target });
     else adminFeedback.created(target);
   } catch (error) {
+    if (await reportFieldError(error)) return;
     adminFeedback.error(error instanceof Error ? error.message : '操作失败');
   }
 };

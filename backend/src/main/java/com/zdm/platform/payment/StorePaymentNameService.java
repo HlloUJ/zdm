@@ -80,8 +80,8 @@ public class StorePaymentNameService {
 
   private String validName(String value) {
     String name = value == null ? "" : value.strip();
-    if (name.isEmpty()) { throw new IllegalArgumentException("请输入名称"); }
-    if (name.codePointCount(0, name.length()) > 10) { throw new IllegalArgumentException("名称不能超过10个字符"); }
+    if (name.isEmpty()) { throw new FieldValidationException("name", "请输入名称"); }
+    if (name.codePointCount(0, name.length()) > 10) { throw new FieldValidationException("name", "名称不能超过10个字符"); }
     return name;
   }
 

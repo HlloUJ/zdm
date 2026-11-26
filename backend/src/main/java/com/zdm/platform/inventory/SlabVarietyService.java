@@ -1,5 +1,6 @@
 package com.zdm.platform.inventory;
 
+import com.zdm.platform.common.FieldValidationException;
 import com.zdm.platform.common.OperationBlockedException;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -90,7 +91,7 @@ public class SlabVarietyService extends CreatorAwareService<SlabVarietyMapper, S
       duplicateQuery.ne(SlabVariety::getId, excludedVarietyId);
     }
     if (duplicateQuery.count() > 0) {
-      throw new IllegalArgumentException(DUPLICATE_NAME_MESSAGE);
+      throw new FieldValidationException("name", DUPLICATE_NAME_MESSAGE);
     }
   }
   @Override

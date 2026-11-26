@@ -1,5 +1,6 @@
 package com.zdm.platform.store;
 
+import com.zdm.platform.common.FieldValidationException;
 import com.zdm.platform.common.OperationBlockedException;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -270,7 +271,7 @@ public class StoreLevelService extends CreatorAwareService<StoreLevelMapper, Sto
       duplicateName.ne(StoreLevel::getId, excludedId);
     }
     if (duplicateName.count() > 0) {
-      throw new IllegalArgumentException("级别名称已存在");
+      throw new FieldValidationException("name", "级别名称已存在");
     }
   }
   @Override

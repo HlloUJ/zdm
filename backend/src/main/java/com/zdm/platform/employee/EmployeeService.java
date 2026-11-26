@@ -1,5 +1,7 @@
 package com.zdm.platform.employee;
 
+import com.zdm.platform.common.FieldValidationException;
+
 import com.zdm.platform.account.CreatorAwareService;
 import com.zdm.platform.security.CurrentIdentity;
 import com.zdm.platform.security.CurrentIdentityProvider;
@@ -208,7 +210,9 @@ public class EmployeeService extends CreatorAwareService<EmployeeMapper, Employe
     var existing = accountLifecycle.findByPhoneForUpdate(request.phone());
     if (existing.isEmpty() && (!StringUtils.hasText(request.name())
         || !List.of("male", "female").contains(request.gender() == null ? "" : request.gender()))) {
-      throw new IllegalArgumentException("请填写姓名并选择性别");
+      boolean missingName = !StringUtils.hasText(request.name());
+      throw FieldValidationException.withHint(missingName ? "name" : "gender", "请填写姓名并选择性别",
+          missingName ? "请输入姓名" : "请选择性别");
     }
     var account = existing.orElseGet(() -> accountLifecycle.findOrCreate(request.phone(), request.name().trim(), request.gender()));
     boolean existingAccount = !account.created();

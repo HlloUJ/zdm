@@ -1,5 +1,6 @@
 package com.zdm.platform.store;
 
+import com.zdm.platform.common.FieldValidationException;
 import com.zdm.platform.common.OperationBlockedException;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -152,7 +153,7 @@ public class StoreCategoryService extends CreatorAwareService<StoreCategoryMappe
     try {
       save(category);
     } catch (DuplicateKeyException exception) {
-      throw new IllegalArgumentException(DUPLICATE_NAME_MESSAGE, exception);
+      throw new FieldValidationException("name", DUPLICATE_NAME_MESSAGE, exception);
     }
     return requireCategory(category.getId(), request.scope());
   }
@@ -167,7 +168,7 @@ public class StoreCategoryService extends CreatorAwareService<StoreCategoryMappe
     try {
       updateById(category);
     } catch (DuplicateKeyException exception) {
-      throw new IllegalArgumentException(DUPLICATE_NAME_MESSAGE, exception);
+      throw new FieldValidationException("name", DUPLICATE_NAME_MESSAGE, exception);
     }
     if (request.status() != null && !request.status().equals(category.getStatus())) {
       updateStatus(id, scope, request.status());
@@ -308,7 +309,7 @@ public class StoreCategoryService extends CreatorAwareService<StoreCategoryMappe
   private void requireUniqueName(String scope, Long parentId, String name, Long excludedId) {
     if (listSiblings(scope, parentId).stream()
         .anyMatch(category -> category.getName().equals(name) && !Objects.equals(category.getId(), excludedId))) {
-      throw new IllegalArgumentException(DUPLICATE_NAME_MESSAGE);
+      throw new FieldValidationException("name", DUPLICATE_NAME_MESSAGE);
     }
   }
 }

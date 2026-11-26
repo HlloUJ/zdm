@@ -1,5 +1,6 @@
 package com.zdm.platform.supplier;
 
+import com.zdm.platform.common.FieldValidationException;
 import com.zdm.platform.common.OperationBlockedException;
 
 import com.zdm.platform.account.CreatorAwareService;
@@ -108,7 +109,7 @@ public class SupplierService extends CreatorAwareService<SupplierMapper, Supplie
       save(supplier);
       replaceSupplyTypes(supplier.getId(), types);
     } catch (DuplicateKeyException exception) {
-      throw new IllegalArgumentException(DUPLICATE_NAME_MESSAGE, exception);
+      throw new FieldValidationException("name", DUPLICATE_NAME_MESSAGE, exception);
     }
     return enrichSupplyTypes(supplier);
   }
@@ -128,7 +129,7 @@ public class SupplierService extends CreatorAwareService<SupplierMapper, Supplie
       updateById(payload);
       replaceSupplyTypes(id, types);
     } catch (DuplicateKeyException exception) {
-      throw new IllegalArgumentException(DUPLICATE_NAME_MESSAGE, exception);
+      throw new FieldValidationException("name", DUPLICATE_NAME_MESSAGE, exception);
     }
     return enrichSupplyTypes(getById(id));
   }
@@ -215,7 +216,7 @@ public class SupplierService extends CreatorAwareService<SupplierMapper, Supplie
       SupplierScope scope,
       Long excludedSupplierId) {
     if (!StringUtils.hasText(supplier.getName())) {
-      throw new IllegalArgumentException("请输入供应商名称");
+      throw new FieldValidationException("name", "请输入供应商名称");
     }
     String supplierName = supplier.getName().trim();
     supplier.setName(supplierName);
@@ -227,7 +228,7 @@ public class SupplierService extends CreatorAwareService<SupplierMapper, Supplie
       duplicateQuery.ne(Supplier::getId, excludedSupplierId);
     }
     if (duplicateQuery.count() > 0) {
-      throw new IllegalArgumentException(DUPLICATE_NAME_MESSAGE);
+      throw new FieldValidationException("name", DUPLICATE_NAME_MESSAGE);
     }
   }
 
@@ -238,18 +239,18 @@ public class SupplierService extends CreatorAwareService<SupplierMapper, Supplie
         ? List.of()
         : new ArrayList<>(new LinkedHashSet<>(requestedIds));
     if (ids.isEmpty()) {
-      throw new IllegalArgumentException("请至少选择一个供货类型");
+      throw new FieldValidationException("supplyTypeIds", "请至少选择一个供货类型");
     }
     Map<Long, SupplierSupplyType> typesById = new LinkedHashMap<>();
     supplyTypeMapper.selectBatchIds(ids).forEach(type -> typesById.put(type.getId(), type));
     if (typesById.size() != ids.size()) {
-      throw new IllegalArgumentException("供货类型不存在");
+      throw new FieldValidationException("supplyTypeIds", "供货类型不存在");
     }
     List<SupplierSupplyType> result = ids.stream().map(typesById::get).toList();
     boolean containsUnavailable = result.stream().anyMatch(
         type -> !"enabled".equals(type.getStatus()) && !existingIds.contains(type.getId()));
     if (containsUnavailable) {
-      throw new IllegalArgumentException("已停用的供货类型不可新增选择");
+      throw new FieldValidationException("supplyTypeIds", "已停用的供货类型不可新增选择");
     }
     return result;
   }

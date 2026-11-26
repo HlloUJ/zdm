@@ -179,12 +179,12 @@
                                   :status="
                                     validatedAttributeIds.includes(row.attributeId) && !row.attributeRole
                                       ? 'error'
-                                      : undefined
+                                      : rowFeedback.field(attributeKey(row, 'attributeRole'), row.attributeRole).status
                                   "
                                   :tips="
                                     validatedAttributeIds.includes(row.attributeId) && !row.attributeRole
                                       ? '请选择属性角色'
-                                      : undefined
+                                      : rowFeedback.field(attributeKey(row, 'attributeRole'), row.attributeRole).tips
                                   "
                                   :options="[
                                     { label: '商品属性', value: 'product' },
@@ -230,12 +230,11 @@
                               <template #options="{ row }">
                                 <t-form-item
                                   v-if="
-                                    validatedAttributeIds.includes(row.attributeId) &&
-                                    row.valueType === 'select' &&
-                                    !row.options.length
+                                    row.valueType === 'select' && (rowFeedback.field(attributeKey(row, 'options'), row.options).status ||
+                                    (validatedAttributeIds.includes(row.attributeId) && !row.options.length))
                                   "
                                   status="error"
-                                  tips="请选择选项值"
+                                  :tips="rowFeedback.field(attributeKey(row, 'options'), row.options).tips || '请选择选项值'"
                                 >
                                   <t-link hover="color" :theme="buttonTheme('options')" @click="openValues(row)">{{
                                     row.options.length
@@ -427,6 +426,9 @@ import { checkTemplateCategory } from '@/services/templateVersions';
 import { useOperationPreflight, requireCondition } from '@/composables/useOperationPreflight';
 import { operationConfirmation, formConfirmation } from '@/components/foundation/actions/confirmation';
 import { buttonTheme } from '@/components/foundation/actions/buttonFunctions';
+import { ApiFieldError } from '@/services/http';
+import { useFormFeedback } from '@/utils/formValidation';
+import { useServerFields } from '@/utils/serverFieldValidation';
 import { rejectFormSubmission } from '@/utils/submitValidation';
 import { toRaw, computed, h, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type { PageInfo, PrimaryTableCol, TableRowData } from 'tdesign-vue-next';
@@ -806,17 +808,30 @@ async function createDraft() {
     }
   });
 }
+const rowFeedback = useFormFeedback();
+watch(selectedId, rowFeedback.clear, { flush: 'sync' });
+const attributeKey = (row: TemplateAttribute, property: string) => `attributes.${row.attributeId}.${property}`;
+const rowValues = computed(() => Object.fromEntries(rows.value.flatMap(row => [
+  [attributeKey(row, 'attributeRole'), row.attributeRole], [attributeKey(row, 'options'), row.options],
+])));
+const beginRowFeedback = useServerFields(
+  () => isDraft.value, versionLayout, () => rowValues.value,
+  (field, message) => rowFeedback.reject(field, rowValues.value[field], message),
+  undefined, rowFeedback.clearField,
+);
 function save(): Promise<boolean> {
   if (savePromise) return savePromise;
   if (!selected.value || !isDraft.value || !can('create')) return Promise.resolve(!dirty.value);
   if (!dirty.value) return Promise.resolve(true);
   const draftId = selected.value.id;
   savePromise = (async () => {
+    let report: ReturnType<typeof beginRowFeedback> | undefined;
     try {
       // Serialize saves so rapid edits always use the latest server revision.
       while (selected.value?.id === draftId && isDraft.value && dirty.value && !discarding.value) {
         const snapshot = JSON.stringify([content(), note.value]);
         const [draftContent, draftNote] = JSON.parse(snapshot) as [TemplateVersion['content'], string];
+        report = beginRowFeedback({ inlineOnly: true });
         const updated = await saveTemplateDraft(draftId, selected.value.revision, draftContent, draftNote);
         versions.value = versions.value.map((version) => (version.id === draftId ? updated : version));
         saved.value = snapshot;
@@ -825,7 +840,7 @@ function save(): Promise<boolean> {
       adminFeedback.actionSuccess({ action: '修改' });
       return true;
     } catch (e) {
-      error(e, '保存', '草稿');
+      if (selected.value?.id === draftId && !(await report?.(e))) error(e, '保存', '草稿');
       return false;
     } finally {
       savePromise = undefined;
@@ -871,12 +886,24 @@ async function discardDraft() {
   }
 }
 const publishVisible = ref(false);
+async function saveBeforePublish() {
+  if (await save()) return true;
+  const index = rows.value.findIndex(row =>
+    rowFeedback.field(attributeKey(row, 'attributeRole'), row.attributeRole).status ||
+    rowFeedback.field(attributeKey(row, 'options'), row.options).status);
+  if (index >= 0) {
+    publishVisible.value = false;
+    attributePage.value = Math.floor(index / attributePageSize.value) + 1;
+    await rejectFormSubmission(versionLayout.value);
+  }
+  return false;
+}
 async function preparePublish() {
   const id = categoryId.value;
   if (!id || busy.value) return;
   await operations.check(`publish:${id}`, () => checkTemplateCategory(id, 'publish').then(requireCondition), async () => {
     const current = operations.capture();
-    if (!(await save()) || !current()) return;
+    if (!(await saveBeforePublish()) || !current()) return;
     validatedAttributeIds.value = rows.value.map((row) => row.attributeId);
     if (
       !rows.value.length ||
@@ -896,15 +923,27 @@ async function publish() {
   const id = selected.value.id;
   const current = operations.capture();
   busy.value = true;
+  let report: ReturnType<typeof beginRowFeedback> | undefined;
   try {
-    if (!(await save()) || !current() || selected.value?.id !== id) return;
+    if (!(await saveBeforePublish()) || !current() || selected.value?.id !== id) return;
+    report = beginRowFeedback();
     const published = await publishTemplateDraft(id, selected.value.revision);
     if (!current()) return;
     upsert(published);
     publishVisible.value = false;
     adminFeedback.actionSuccess({ action: '发布', target: '新版本' });
   } catch (e) {
-    if (current()) error(e, '发布', '新版本');
+    if (!current() || selected.value?.id !== id) return;
+    if (e instanceof ApiFieldError) {
+      const index = rows.value.findIndex(row => e.fields.some(item =>
+        item.field === attributeKey(row, 'attributeRole') || item.field === attributeKey(row, 'options')));
+      if (index >= 0) {
+        attributePage.value = Math.floor(index / attributePageSize.value) + 1;
+        publishVisible.value = false;
+        busy.value = false;
+      }
+    }
+    if (!(await report?.(e))) error(e, '发布', '新版本');
   } finally {
     if (current()) busy.value = false;
   }

@@ -34,7 +34,7 @@ export function published(cwd, args, authority) {
       .toString()
       .trim();
   } catch {
-    if (args[0] === 'run' || args[0] === 'plan' || args[0] === 'dev')
+    if (['run', 'plan', 'dev', 'stage'].includes(args[0]))
       return node(cwd, join(dirname(self), 'quality.mjs'), args);
     throw Error('无法读取已发布的验证规则，请取得目标 main 后再交付。');
   }
@@ -103,6 +103,8 @@ export function published(cwd, args, authority) {
       .toString()
       .trim();
     if (['delivery', 'main', 'merge'].includes(args[0]) && changes) {
+      if (process.env.GITHUB_ACTIONS !== 'true' && files.includes('dev/quality/design-preview.mjs'))
+        node(cwd, join(path, 'dev/quality.mjs'), ['preflight']);
       const env = { ...process.env, ZDM_QUALITY_SUBJECT: join(cwd, 'dev/quality.mjs') };
       delete env.NODE_TEST_CONTEXT;
       const tested = spawnSync(

@@ -1,5 +1,7 @@
 package com.zdm.platform.inventory;
 
+import com.zdm.platform.common.FieldValidationException;
+
 import com.zdm.platform.common.OperationBlockedException;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -149,7 +151,7 @@ public class ProductLifecycleService {
     String source=(String)row.get("source_status");
     String nextState = "offShelf".equals(target) ? "warehouse" : target;
     validateSourceTransition(kind, id, row, target);
-    if("offShelf".equals(target) && (reason==null || reason.isBlank())) { throw new IllegalArgumentException("请选择下架原因"); }
+    if("offShelf".equals(target) && (reason==null || reason.isBlank())) { throw new FieldValidationException("reason", "请选择下架原因"); }
     if(reason!=null && reason.length()>80 || detail!=null && detail.length()>500) { throw new IllegalArgumentException("下架说明超出长度限制"); }
     boolean publish="selling".equals(target);
     boolean recreate=publish && deleted(row);

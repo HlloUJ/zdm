@@ -1,5 +1,6 @@
+import { fileURLToPath } from 'node:url';
 import { productWarehouseUrl } from './product-test-navigation';
-import { expectStandardImagePreviewAndDismiss } from './image-preview-assertions';
+import { expectMediaToFit, expectStandardImagePreviewAndDismiss } from './image-preview-assertions';
 import { checkDecimalEditing } from './decimal-editing';
 import { expect, test } from '@playwright/test';
 import { installAdminApiMocks } from './admin-api-mocks';
@@ -137,6 +138,14 @@ test('供应链编辑复用发布页三段表单并回填数据', async ({ page 
 });
 
 test('已上传视频点击空白区域打开播放器，删除后才允许重新上传', async ({ page }) => {
+  await page.route('**/test-slab.png', (route) => route.fulfill({
+    contentType: 'image/svg+xml',
+    body: '<svg xmlns="http://www.w3.org/2000/svg" width="900" height="2400"><rect width="900" height="2400" fill="navy"/></svg>',
+  }));
+  await page.route('**/test-slab.mp4', (route) => route.fulfill({
+    contentType: 'video/webm',
+    path: fileURLToPath(new URL('./fixtures/portrait-preview.webm', import.meta.url)),
+  }));
   const videoSlab = {
     id: 6,
     name: '视频大板',
@@ -171,6 +180,7 @@ test('已上传视频点击空白区域打开播放器，删除后才允许重�
   const imagePreview = page.locator('.t-dialog:visible').filter({ has: page.locator('img.upload-large-preview') });
   await expect(imagePreview.locator('img.upload-large-preview')).toHaveAttribute('src', '/test-slab.png');
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(scrollBeforeImagePreview);
+  await expect.poll(() => imagePreview.locator('img').evaluate((img) => img instanceof HTMLImageElement && img.naturalHeight)).toBe(2400);
   await expectStandardImagePreviewAndDismiss(page, imagePreview);
   await expect(imagePreview).not.toBeVisible();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(scrollBeforeImagePreview);
@@ -184,6 +194,9 @@ test('已上传视频点击空白区域打开播放器，删除后才允许重�
   const player = page.locator('video.upload-large-preview');
   await expect(player).toBeVisible();
   await expect(player).toHaveAttribute('src', '/test-slab.mp4');
+  await expect(player).toHaveJSProperty('videoHeight', 960);
+  await expect(player).toHaveJSProperty('controls', true);
+  await expectMediaToFit(page.locator('.t-dialog:visible').filter({ has: player }), player);
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(scrollBeforePreview);
   expect(choosers).toBe(0);
   await page.locator('.t-dialog:visible').filter({ has: player }).locator('.t-dialog__close').click();

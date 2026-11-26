@@ -212,6 +212,7 @@
 </template>
 
 <script setup lang="ts">
+import { useServerFieldValidation } from '@/utils/serverFieldValidation';
 import { useContentRequest } from '@/composables/useContentRequest';
 import { usePendingAction } from '@/composables/usePendingAction';
 import { useDelayedLoading } from '@/composables/useDelayedLoading';
@@ -401,9 +402,14 @@ const loadData = async () => {
     request.finish();
   }
 };
+const beginGuideFeedback = useServerFieldValidation(
+  () => Boolean(guideFormRef.value), guideFormRef, () => ({ priceCoefficient: guideForm.priceCoefficient }),
+);
 const saveGuidePriceSetting = async () => {
   if ((await guideFormRef.value?.validate()) !== true) return rejectFormSubmission(guideFormRef.value);
   const coefficient = Number(guideForm.priceCoefficient);
+  const reportFieldError = beginGuideFeedback();
+  const submittedType = activeType.value;
   guideSaving.value = true;
   try {
     const setting =
@@ -417,6 +423,7 @@ const saveGuidePriceSetting = async () => {
       target: `${commodityLabel.value}指导价设置`,
     });
   } catch (error) {
+    if (submittedType !== activeType.value || await reportFieldError(error)) return;
     adminFeedback.error(error instanceof Error ? error.message : '指导价设置保存失败');
   } finally {
     guideSaving.value = false;
@@ -505,11 +512,16 @@ const handleDragSort = async (context: { current: MarkupConfigurationRecord; tar
     sorting.value = false;
   }
 };
+const beginSubmitFormFeedback = useServerFieldValidation(
+  () => formVisible.value, formRef,
+  () => ({ storeLevelId: formData.storeLevelId, priceCoefficient: formData.priceCoefficient }),
+);
 const submitForm = async () => {
   if ((await formRef.value?.validate()) !== true) return rejectFormSubmission(formRef.value);
   if (formData.storeLevelId == null || formData.priceCoefficient == null) return;
   const name = storeLevels.value.find((level) => level.id === formData.storeLevelId)?.name ?? '门店级别';
   const payload = { storeLevelId: formData.storeLevelId, priceCoefficient: Number(formData.priceCoefficient) };
+  const reportFieldError = beginSubmitFormFeedback();
   try {
     if (activeType.value !== 'slab') {
       if (editingId.value) await commodityPricing.value.updateFinishedMarkupConfiguration(editingId.value, payload);
@@ -524,6 +536,7 @@ const submitForm = async () => {
     if (wasEditing) adminFeedback.actionSuccess({ action: '修改', target: name });
     else adminFeedback.created(name);
   } catch (error) {
+    if (await reportFieldError(error)) return;
     adminFeedback.error(error instanceof Error ? error.message : '操作失败');
   }
 };

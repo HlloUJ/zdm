@@ -1,5 +1,6 @@
 package com.zdm.platform.inventory;
 
+import com.zdm.platform.common.FieldValidationException;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.zdm.platform.common.StoreLevelPricingDirectory;
 import com.zdm.platform.security.CurrentIdentity;
@@ -67,7 +68,7 @@ public class SlabMarkupConfigurationService {
     try {
       mapper.insert(payload);
     } catch (DuplicateKeyException exception) {
-      throw new IllegalArgumentException(DUPLICATE_LEVEL_MESSAGE, exception);
+      throw new FieldValidationException("storeLevelId", DUPLICATE_LEVEL_MESSAGE, exception);
     }
     SlabMarkupConfiguration created = requireConfiguration(payload.getId());
     priceSyncService.backfillMissingPrices(created);
@@ -91,7 +92,7 @@ public class SlabMarkupConfigurationService {
     try {
       mapper.updateById(payload);
     } catch (DuplicateKeyException exception) {
-      throw new IllegalArgumentException(DUPLICATE_LEVEL_MESSAGE, exception);
+      throw new FieldValidationException("storeLevelId", DUPLICATE_LEVEL_MESSAGE, exception);
     }
     SlabMarkupConfiguration updated = requireConfiguration(id);
     priceSyncService.refreshAutoPrices(updated);
@@ -178,7 +179,7 @@ public class SlabMarkupConfigurationService {
       query.ne(SlabMarkupConfiguration::getId, excludedId);
     }
     if (mapper.selectCount(query) > 0) {
-      throw new IllegalArgumentException(DUPLICATE_LEVEL_MESSAGE);
+      throw new FieldValidationException("storeLevelId", DUPLICATE_LEVEL_MESSAGE);
     }
   }
 

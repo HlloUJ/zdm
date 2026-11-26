@@ -1,5 +1,6 @@
 package com.zdm.platform.inventory;
 
+import com.zdm.platform.common.FieldValidationException;
 import com.zdm.platform.media.MediaAsset;
 import com.zdm.platform.media.MediaAssetService;
 import com.zdm.platform.security.CurrentIdentityProvider;
@@ -44,10 +45,10 @@ final class FinishedProductWriteValidator {
     }
 
     if (!StringUtils.hasText(product.getName())) {
-      throw new IllegalArgumentException("请输入商品名称");
+      throw new FieldValidationException("name", "请输入商品名称");
     }
     if (!StringUtils.hasText(product.getDetail())) {
-      throw new IllegalArgumentException("请输入宝贝详情");
+      throw new FieldValidationException("detail", "请输入宝贝详情");
     }
     product.setName(product.getName().trim());
     product.setSku(StringUtils.hasText(product.getSku()) ? product.getSku().trim() : null);
@@ -73,7 +74,7 @@ final class FinishedProductWriteValidator {
         Long.class,
         categoryId, com.zdm.platform.security.DataScope.isAll(identityProvider.require()), identityProvider.require().accountId());
     if (count == null || count == 0) {
-      throw new IllegalArgumentException("请选择有效的成品现货分类");
+      throw new FieldValidationException("categoryId", "请选择有效的成品现货分类");
     }
   }
 
@@ -92,7 +93,7 @@ final class FinishedProductWriteValidator {
           AND supply_type.status = 'enabled'
         """, Long.class, supplierId, com.zdm.platform.security.DataScope.isAll(identityProvider.require()), identityProvider.require().accountId());
     if (count == null || count == 0) {
-      throw new IllegalArgumentException("所选供应商未启用成品现货供货类型");
+      throw new FieldValidationException("supplierId", "所选供应商未启用成品现货供货类型");
     }
   }
 
@@ -102,22 +103,22 @@ final class FinishedProductWriteValidator {
       imageIds = product.getMainImageMediaId() == null ? List.of() : List.of(product.getMainImageMediaId());
     }
     if (imageIds.isEmpty() || imageIds.size() > 5) {
-      throw new IllegalArgumentException("商品主图需上传1至5张图片");
+      throw new FieldValidationException("mainImageMediaIds", "商品主图需上传1至5张图片");
     }
     if (imageIds.stream().anyMatch(java.util.Objects::isNull) || new LinkedHashSet<>(imageIds).size() != imageIds.size()) {
-      throw new IllegalArgumentException("商品主图不能为空或重复");
+      throw new FieldValidationException("mainImageMediaIds", "商品主图不能为空或重复");
     }
     for (Long imageId : imageIds) {
       MediaAsset mainImage = mediaAssetService.requireAvailable(imageId);
       if (mainImage == null || !"image".equals(mainImage.getMediaType())) {
-        throw new IllegalArgumentException("请上传商品主图");
+        throw new FieldValidationException("mainImageMediaIds", "请上传商品主图");
       }
     }
     product.setMainImageMediaIds(imageIds);
     product.setMainImageMediaId(imageIds.getFirst());
     MediaAsset video = mediaAssetService.requireAvailable(product.getVideoMediaId());
     if (video == null || !"video".equals(video.getMediaType())) {
-      throw new IllegalArgumentException("请上传商品视频");
+      throw new FieldValidationException("videoMediaId", "请上传商品视频");
     }
   }
 
@@ -156,7 +157,7 @@ final class FinishedProductWriteValidator {
   private void normalizeVariants(FinishedProduct product) {
     List<FinishedProductVariant> variants = product.getVariants() == null ? List.of() : product.getVariants();
     if (variants.isEmpty()) {
-      throw new IllegalArgumentException("请至少配置一条商品规格");
+      throw new FieldValidationException("variants", "请至少配置一条商品规格");
     }
     Set<Long> ids = new LinkedHashSet<>();
     int totalStock = 0;

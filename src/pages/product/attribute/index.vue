@@ -126,6 +126,7 @@
 </template>
 
 <script setup lang="ts">
+import { useServerFieldValidation } from '@/utils/serverFieldValidation';
 import { useContentRequest } from '@/composables/useContentRequest';
 import { usePendingAction } from '@/composables/usePendingAction';
 import { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';
@@ -330,10 +331,15 @@ const closeCreateDialog = () => {
   dialogVisible.value = false;
   formRef.value?.clearValidate();
 };
+const beginSubmitFeedback = useServerFieldValidation(
+  () => dialogVisible.value, formRef,
+  () => ({ name: form.name, valueType: form.valueType }),
+);
 const submit = async () => {
   const result = await formRef.value?.validate();
   if (result !== true) return rejectFormSubmission(formRef.value);
   const name = form.name.trim();
+  const reportFieldError = beginSubmitFeedback();
   try {
     await createProductAttribute({
       scope: form.scope,
@@ -348,6 +354,7 @@ const submit = async () => {
     adminFeedback.created(name);
     void loadAttributes();
   } catch (error) {
+    if (await reportFieldError(error)) return;
     adminFeedback.error(error instanceof Error ? error.message : '操作失败');
   }
 };

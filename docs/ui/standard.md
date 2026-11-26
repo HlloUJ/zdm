@@ -85,7 +85,7 @@
 
 新增、编辑和动态表格的字段校验必须遵守 [全局表单校验反馈标准](./form-validation-standard.md)：错误红框＋字段下方具体提示；原生Form规则优先，既有手工状态复用 `utils/formValidation.ts`。所有表单提交校验失败统一调用 `utils/submitValidation.ts`：只弹一次“表单校验未通过，请检查标红字段”，同时显示全部字段错误并自动定位首错；输入和失焦不弹Toast、不滚动。提交失败、网络异常及非字段操作前置提醒保留Toast，不替代字段提示，不修改现有规则。
 
-普通图片预览统一遵守 [图片预览全局标准](./image-preview-standard.md)：复用 `AdminDialog`＋原生图片，使用官方 `modal`、`show-overlay`、`close-on-overlay-click`，宽度 `min(960px, 94vw)`，保留官方关闭按钮和 ESC、隐藏底部栏。不拼接内部遮罩样式、不另建遮罩、不自定义皮肤。后续新增及调整时接入，保留原有权限、媒体访问与资源释放；存量特殊看图工具不得未经授权移除。
+普通图片与视频预览统一遵守 [图片预览全局标准](./image-preview-standard.md)：复用 `AdminMediaPreviewDialog`，按可用宽高完整展示原生图片或视频，使用官方 `modal`、`show-overlay`、`close-on-overlay-click`，宽度 `min(960px, 94vw)`，保留官方关闭按钮和 ESC、隐藏底部栏。不拼接内部遮罩样式、不另建遮罩、不自定义皮肤。后续新增及调整时接入，保留原有权限、媒体访问与资源释放；存量特殊看图工具不得未经授权移除。
 
 ## 按钮功能与颜色（2026-10-16确认）
 

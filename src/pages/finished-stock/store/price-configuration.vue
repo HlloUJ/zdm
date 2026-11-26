@@ -291,6 +291,7 @@
   </div>
 </template>
 <script setup lang="ts">
+import { useServerFieldValidation } from '@/utils/serverFieldValidation';
 import { usePendingAction } from '@/composables/usePendingAction';
 import { useDelayedLoading } from '@/composables/useDelayedLoading';
 import { useOperationPreflight } from '@/composables/useOperationPreflight';
@@ -641,11 +642,16 @@ function openCreateDiscount() {
 }
 const formOperation = useOperationPreflight(() => `${activeScope.value}:${editingDiscountId.value}:${createVisible.value}`);
 formOperation.onInvalidate(() => { saving.value = false; });
+const beginSaveDiscountFeedback = useServerFieldValidation(
+  () => createVisible.value, createFormRef,
+  () => ({ roleId: createForm.roleId, coefficient: createForm.coefficient }),
+);
 async function saveDiscount() {
   if (saving.value || !can(editingDiscountId.value == null ? 'create' : 'edit')) return;
   const editing = editingDiscountId.value != null;
   const current = formOperation.capture();
   saving.value = true;
+  const reportFieldError = beginSaveDiscountFeedback();
   try {
     const valid = await createFormRef.value?.validate();
     if (!current()) return;
@@ -664,6 +670,7 @@ async function saveDiscount() {
     createVisible.value = false;
     adminFeedback.actionSuccess({ action: editingDiscountId.value == null ? '新增' : '修改', target: '折扣配置' });
   } catch (error) {
+    if (await reportFieldError(error)) return;
     if (!current()) return;
     adminFeedback.error(getSafeErrorMessage(error, editing ? '修改失败，请稍后重试' : '新增失败，请稍后重试'));
   } finally {

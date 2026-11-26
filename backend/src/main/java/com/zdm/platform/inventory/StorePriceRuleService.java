@@ -1,5 +1,6 @@
 package com.zdm.platform.inventory;
 
+import com.zdm.platform.common.FieldValidationException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -84,7 +85,7 @@ public class StorePriceRuleService {
             coefficient,created_by_account_id,target_key,scope,discount_status) VALUES (?,?,'discount',NULL,?,?,?,?,?,'enabled')
           """, store.tenantId(), store.storeId(), roleId, coefficient, store.accountId(), roleId, scope);
     } catch (org.springframework.dao.DuplicateKeyException exception) {
-      throw new IllegalArgumentException("该角色已配置折扣系数，请勿重复新增", exception);
+      throw new FieldValidationException("roleId", "该角色已配置折扣系数，请勿重复新增", exception);
     }
     return list("discount", scope);
   }
@@ -124,7 +125,7 @@ public class StorePriceRuleService {
           WHERE id = ? AND tenant_id = ? AND store_id = ? AND kind = 'discount' AND scope = ?
           """, roleId, roleId, coefficient, id, store.tenantId(), store.storeId(), scope);
     } catch (org.springframework.dao.DuplicateKeyException exception) {
-      throw new IllegalArgumentException("该角色已配置折扣系数，请勿重复配置", exception);
+      throw new FieldValidationException("roleId", "该角色已配置折扣系数，请勿重复配置", exception);
     }
     return list("discount", scope);
   }
@@ -206,7 +207,7 @@ public class StorePriceRuleService {
       var coefficient = change.coefficient();
       if (coefficient != null && (coefficient.scale() > 2 || coefficient.signum() <= 0
           || coefficient.compareTo(new BigDecimal("999")) > 0)) {
-        throw new IllegalArgumentException("请输入大于0且不超过999的系数，最多两位小数");
+        throw new FieldValidationException("coefficient", "请输入大于0且不超过999的系数，最多两位小数");
       }
     }
     var writes = changes.stream().filter(change -> change.coefficient() != null)

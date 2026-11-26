@@ -134,6 +134,7 @@
 </template>
 
 <script setup lang="ts">
+import { useServerFieldValidation } from '@/utils/serverFieldValidation';
 import { useContentRequest } from '@/composables/useContentRequest';
 import { useDialogLoading } from '@/composables/useDialogLoading';
 import { usePendingAction } from '@/composables/usePendingAction';
@@ -356,11 +357,16 @@ const closeFormDialog = () => {
   formRef.value?.clearValidate();
 };
 
+const beginHandleSubmitFeedback = useServerFieldValidation(
+  () => formDialogVisible.value, formRef,
+  () => ({ name: formData.name, remark: formData.remark }),
+);
 const handleSubmit = async () => {
   const result = await formRef.value?.validate();
   if (result !== true) return rejectFormSubmission(formRef.value);
 
   let refresh = false;
+  const reportFieldError = beginHandleSubmitFeedback();
   try {
     if (dialogMode.value === 'create') {
       await createSlabVariety(toVarietyPayload('normal'));
@@ -381,6 +387,7 @@ const handleSubmit = async () => {
     }
     if (refresh) void loadVarieties();
   } catch (error) {
+    if (await reportFieldError(error)) return;
     adminFeedback.error(error instanceof Error ? error.message : '操作失败');
   }
 };

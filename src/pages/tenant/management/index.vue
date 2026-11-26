@@ -228,6 +228,7 @@
 </template>
 
 <script setup lang="ts">
+import { useServerFieldValidation } from '@/utils/serverFieldValidation';
 import { useContentRequest } from '@/composables/useContentRequest';
 import { useDialogLoading } from '@/composables/useDialogLoading';
 import { usePendingAction } from '@/composables/usePendingAction';
@@ -526,6 +527,11 @@ const closeFormDialog = () => {
   formRef.value?.clearValidate();
 };
 
+const beginHandleSubmitFeedback = useServerFieldValidation(
+  () => formDialogVisible.value, formRef,
+  () => ({ contactPhone: formData.phone, name: formData.tenantName, remark: formData.remark }),
+  { names: { contactPhone: 'phone', name: 'tenantName' } },
+);
 const handleSubmit = async () => {
   const result = await formRef.value?.validate();
   if (result !== true) return rejectFormSubmission(formRef.value);
@@ -533,6 +539,7 @@ const handleSubmit = async () => {
   const targetName = formData.tenantName.trim();
   const action = dialogMode.value === 'create' ? '新增' : '保存';
   let refresh = false;
+  const reportFieldError = beginHandleSubmitFeedback();
   try {
     if (dialogMode.value === 'create') {
       await createTenant(toTenantPayload('normal'));
@@ -552,6 +559,7 @@ const handleSubmit = async () => {
     }
     if (refresh) void loadTenants();
   } catch (error) {
+    if (await reportFieldError(error)) return;
     adminFeedback.actionError({ action, target: targetName, error });
   }
 };

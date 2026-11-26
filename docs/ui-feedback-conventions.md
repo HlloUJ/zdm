@@ -2,6 +2,8 @@
 
 所有业务模块必须通过 `@/components/foundation` 提供的反馈基座展示全局提示，不得直接调用 TDesign 的 `MessagePlugin`、`NotifyPlugin` 或 `DialogPlugin`。
 
+表单提交时，可定位到可修改字段的错误遵守[全局表单校验反馈标准](ui/form-validation-standard.md)。
+
 ## 提示类型
 
 | 场景         | 组件/API                               | 文案原则                                                |
