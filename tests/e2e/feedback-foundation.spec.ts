@@ -1152,7 +1152,7 @@ test('shows the same object-specific success copy for category, store category, 
 
   await setMockBusinessClient(page, 'admin');
   await page.goto(productWarehouseUrl('/product-category'));
-  const productCategoryRow = page.getByRole('row', { name: /成品现货 一级分类/ });
+  const productCategoryRow = page.getByRole('row', { name: /成品现货 1级分类/ });
   await productCategoryRow.getByText('停用', { exact: true }).click();
   await page.getByRole('button', { name: '确认停用', exact: true }).click();
   const productCategoryFeedback = page.getByText('已停用“成品现货”', { exact: true });
