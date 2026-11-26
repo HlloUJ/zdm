@@ -241,7 +241,13 @@ export function updateAssessment({ common, workspace, branch, base }, id, comman
   });
 }
 export function reviewed(intent, current, whole, round, from, disposition) {
-  const gaps = intent.behaviors.filter((k) => !whole.plan.behaviors.includes(k));
+  // A cumulative page diff can contain business logic as well as the separately verified copy
+  // change since the last passing tree. Keep the stronger cumulative finding and both obligations.
+  const copyPaths = new Set(whole.tree && whole.tree === round.tree
+    ? round.plan.facts.filter(f => f.kind === 'copy').map(f => f.path) : []);
+  const observedWhole = new Set(whole.plan.behaviors);
+  if (whole.plan.facts.some(f => copyPaths.has(f.path))) observedWhole.add('copy');
+  const gaps = intent.behaviors.filter((k) => !observedWhole.has(k));
   const resolved =
     disposition &&
     ['scope-changed', 'already-satisfied'].includes(disposition.kind) &&
@@ -259,6 +265,7 @@ export function reviewed(intent, current, whole, round, from, disposition) {
   const items = (intent.items || []).map(item => {
     const facts = whole.plan.facts.filter(f => item.paths?.includes(f.path));
     const observed = new Set(facts.flatMap(f => [f.kind, ...(f.other || [])]));
+    if (facts.some(f => copyPaths.has(f.path))) observed.add('copy');
     const missing = item.behaviors.filter(k => !observed.has(k));
     const explained = resolved && disposition.items?.includes(item.name);
     return { ...item, matchedPaths: facts.map(f => f.path), missing: explained ? [] : missing,
@@ -308,7 +315,7 @@ export function reviewed(intent, current, whole, round, from, disposition) {
     from,
     planId: whole.planId,
     roundPlanId: round.planId,
-    behaviors: [...new Set([...whole.plan.behaviors, ...missed])].sort(),
+    behaviors: [...new Set([...observedWhole, ...missed])].sort(),
     scopes: whole.plan.scopes,
     facts: whole.plan.facts,
     roundFacts: round.plan.facts,

@@ -4,9 +4,10 @@ import { existsSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSyn
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { consumers as findConsumers, displayTests } from './consumers.mjs';
+import { consumers as findConsumers, displayTests, presentationTests } from './consumers.mjs';
 import { planChanges } from './policy.mjs';
 import { layoutImpact, measuresSelector } from './layout-impact.mjs';
+import { presentationCopy } from './presentation.mjs';
 
 export function digest(value) {
   return createHash('sha256').update(value).digest('hex');
@@ -141,6 +142,35 @@ function changeSet(cwd, base, tree, blobs) {
       onlyQualityAliases: packageChange && manifest(cwd,base) === manifest(cwd,tree),
       onlyTestAdapters: packageChange && manifest(cwd,base,true) === manifest(cwd,tree,true),
     };
+    if (!change.unsafeType && path.endsWith('.vue') && was && now) {
+      const read = (ref, file) => (ref === base ? old : current).has(file) ? source(ref, file) : '';
+      const wrapper = tag => {
+        if (!/^[A-Z]\w+$/.test(tag)) return false;
+        const imported = new RegExp("import\\s*\\{[^}]*\\b" + tag + "\\b[^}]*\\}\\s*from\\s*['\"]@/components/foundation['\"]");
+        return [base, tree].every(ref => {
+          if (!imported.test(read(ref, path))) return false;
+          const barrel = read(ref, 'src/components/foundation/index.ts');
+          const target = new RegExp("export \\{ default as " + tag + " \\} from '\\./([\\w/-]+\\.vue)'").exec(barrel);
+          if (!target) return false;
+          const component = read(ref, 'src/components/foundation/' + target[1]);
+          return /<t-dialog\b[^>]*:header="header"/s.test(component)
+            && /header:\s*string\s*;/.test(component) && (component.match(/\bheader\b/g) || []).length === 3
+            && !/\.\.\.props\b|\b(?:toRefs|watch)\s*\(\s*props\b|props\s*\[/.test(component);
+        });
+      };
+      const terms = presentationCopy(change, wrapper);
+      if (terms) {
+        const suites = new Set();
+        let scoped = false;
+        for (const ref of [base, tree]) {
+          const coverage = presentationTests(cwd, ref, path, consumers, terms, read);
+          for (const suite of coverage.suites)
+            if (current.has(suite)) suites.add(suite);
+          if (ref === tree) scoped = coverage.scoped;
+        }
+        change.presentation = { terms, suites: [...suites].sort(), scoped };
+      }
+    }
     if (!change.unsafeType && /\.(?:css|vue)$/.test(path)) {
       change.layout = layoutImpact(change, [...current.keys()], {
         find: selector => [...new Set([...displayTests(cwd, base, [selector]), ...displayTests(cwd, tree, [selector])])],

@@ -1,6 +1,8 @@
 import { active } from './release.mjs';
 import { behaviors } from './behaviors.mjs';
 import { layoutImpact, layoutNote } from './layout-impact.mjs';
+import { changesRegistrationProtection, copyRegistration, isCopyRegistry } from './copy-registration.mjs';
+import { copyTestWeakened } from './presentation.mjs';
 import {
   dangerousCopy,
   ordinaryComments,
@@ -136,6 +138,13 @@ function classify(c, changes, files, oldPlan) {
         ['unit', 'build', 'e2e', 'backend'],
         '危险操作提示改变了用户对删除后果的理解',
       );
+    if (c.presentation) {
+      const unit = c.presentation.suites.filter(unitFile);
+      const e2e = c.presentation.scoped ? c.presentation.suites.filter(browserFile) : [];
+      const ids = unit.length ? ['unit', 'e2e'] : ['e2e'];
+      const reason = e2e.length ? '展示文字等价，重验实际页面和使用方' : '展示文字等价，使用方缺少定向覆盖，扩至端到端验证域';
+      return row('copy', ids, ['build', ...ids], reason, { unit, e2e });
+    }
     const label = display(c);
     if (label) {
       const unit = c.textTests.filter((p) => files.includes(p) && unitFile(p));
@@ -231,6 +240,27 @@ export function semanticPlan(changes, fallback, files, catalogue, legacy) {
   fallback ||= process.env.ZDM_QUALITY_FULL === '1';
   const old = legacy(changes, fallback);
   const facts = changes.map((c) => withOperations(classify(c, changes, files, legacy), c));
+  const copies = new Map(changes.filter((c, i) => facts[i].kind === 'copy').map(c => [c.path, c]));
+  if (copies.size) {
+    const terms = new Set([...copies.values()].flatMap(c => c.presentation?.terms || []));
+    for (const [i, change] of changes.entries()) {
+      if (copyRegistration(change, copies)) {
+        const unit = files.filter(p => p === 'src/__tests__/operationFeedbackPolicy.test.ts');
+        facts[i] = { ...facts[i], kind: 'note', reason: '文案登记逐条重放与实际源码一致，原有基线和规则完整',
+          dev: ['unit'], delivery: ['unit'], scope: { unit } };
+      } else if (isCopyRegistry(change.path) && facts[i].kind === 'shared' && changesRegistrationProtection(change, changes, copies)) {
+        facts[i] = { ...facts[i], kind: 'control', reason: '登记存在无法逐条匹配的条目、基线或规则变化，独立复核放行范围',
+          dev: ['quality', 'unit'], delivery: ['quality', 'acceptance', 'unit'], scope: {} };
+      } else if (testPath(change.path) && ['note', 'guard'].includes(facts[i].kind)) {
+        if (copyTestWeakened(change, terms)) {
+          facts[i] = { ...facts[i], kind: 'guard', reason: '配套测试中已有断言、执行条件或测试输入发生独立变化',
+            dev: [...new Set([...facts[i].dev, 'quality'])], delivery: [...new Set([...facts[i].delivery, 'quality'])] };
+        } else if (facts[i].kind === 'guard') {
+          facts[i] = { ...facts[i], kind: 'note', reason: '文本定位与显示等价，原保护断言及执行条件仍在，重验实际用例' };
+        }
+      }
+    }
+  }
   if (facts.some(f => f.kind === 'layout' && f.path.startsWith('src/'))) {
     for (const [i, change] of changes.entries()) {
       if (facts[i].kind === 'shared' && layoutNote(change))
