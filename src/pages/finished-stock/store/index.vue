@@ -346,34 +346,23 @@
         />
       </template>
     </ProductOperationLogTemplate>
-    <AdminDialog
-      :confirmation="{ kind: 'close', text: '关闭' }"
-      confirm-function="close"
+    <AdminMediaPreviewDialog
       :visible="Boolean(logVideoPreview)"
       header="商品视频"
-      width="min(960px, 94vw)"
-      :cancel-btn="null"
       @confirm="logVideoPreview = null"
       @close="logVideoPreview = null"
       @update:visible="!$event && (logVideoPreview = null)"
     >
       <video v-if="logVideoPreview" :src="logVideoPreview" controls autoplay playsinline class="log-video-preview" />
-    </AdminDialog>
-    <AdminDialog
-      :confirmation="{ kind: 'none' }"
-      confirm-function="close"
+    </AdminMediaPreviewDialog>
+    <AdminMediaPreviewDialog
       :visible="Boolean(imagePreview)"
       header="商品主图"
-      mode="modal"
-      show-overlay
-      close-on-overlay-click
-      width="min(960px, 94vw)"
-      :footer="false"
       @close="imagePreview = null"
       @update:visible="!$event && (imagePreview = null)"
     >
-      <img v-if="imagePreview" :src="imagePreview" alt="商品主图" style="max-width: 100%" />
-    </AdminDialog>
+      <img v-if="imagePreview" :src="imagePreview" alt="商品主图" />
+    </AdminMediaPreviewDialog>
     <StoreBatchCategoryDialog
       v-if="categoryDialog && canSetCategory"
       :categories="listCategories"
@@ -438,7 +427,7 @@ import AdminSideMenu from '@/components/AdminSideMenu.vue';
 import AdminTopNav from '@/components/AdminTopNav.vue';
 import { finishedStockActions } from '../shared/finishedStockActions';
 import { storeOperationLogSourceLabel as logSourceLabel } from './storeOperationLog';
-import { AdminConfirmDialog, AdminDialog, adminFeedback, getSafeErrorMessage } from '@/components/foundation';
+import { AdminConfirmDialog, AdminDialog, AdminMediaPreviewDialog, adminFeedback, getSafeErrorMessage } from '@/components/foundation';
 import { hasPermission } from '@/services/adminPermissions';
 import { getLoginUser } from '@/services/auth';
 import ProductOperationLogTemplate from '@/components/product-logs/ProductOperationLogTemplate.vue';

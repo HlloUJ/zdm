@@ -411,7 +411,7 @@
       }
     },
     "src/pages/craft/finished-stock/index.vue": {
-      "script": "afaa1ec4395018504d212fcc063cefebd79fb4c883f57c7a095fe39825fd5345",
+      "script": "6301fd35830ae440b19ca2bdd2bc758588e49bf53fa589821b36bb7c69dffca2",
       "actions": {
         "cancel → closeConfirmDialog": "view",
         "cancel → closeFormDialog": "view",
@@ -436,7 +436,7 @@
       }
     },
     "src/pages/customer/index.vue": {
-      "script": "24f54b807d42aea778f1b004d1860a5ba7f52a39a5e292ece7fc5580b7761160",
+      "script": "13476ed7d927dd84bf84331fe0efaa41130a2c371540117c3f55bdb5b34b3b99",
       "actions": {
         "action → handleToolbarAction": "@customerToolbar",
         "cancel → detailVisible = false": "view",
@@ -504,7 +504,7 @@
       "actions": {}
     },
     "src/pages/finished-stock/management/components/FinishedOperationLogs.vue": {
-      "script": "a7517c9d6c04747c10fb29d1b90d135f04b5a8fbe32841b154e8373b69d7579b",
+      "script": "82a48a9d355c558e04a25a19b50349332d3610a297b22f4220ad3dab83dae948",
       "actions": {
         "cancel → preview = null": "view",
         "close → preview = null": "view",
@@ -568,7 +568,7 @@
       }
     },
     "src/pages/finished-stock/management/index.vue": {
-      "script": "892ec39c0bd86757b808daa654295ee96355642d0b29daa3d9db3f65e5018a1e",
+      "script": "ad02b268021e96922c2173bfbb1c56bca30a61a419c159457a280c7fd2c3eb64",
       "actions": {
         "blur → formatDecimalValue(row, 'level1')": "form",
         "blur → formatDecimalValue(row, 'level1Coefficient')": "form",
@@ -636,7 +636,7 @@
       }
     },
     "src/pages/finished-stock/shared/StoreFinishedStockDetailAdapter.vue": {
-      "script": "c8bda91da708510d6e8a0d308179443c5853810366ed3521bcfd207eaeeec5ee",
+      "script": "03f6e3744d9f574ede585bce19ba897378ef6553534f7778c5a7a6855812f99a",
       "actions": {
         "close → preview = null": "view",
         "preview → (media, type) => (preview = { url: media.url, kind: type })": "view",
@@ -661,7 +661,7 @@
       }
     },
     "src/pages/finished-stock/store/index.vue": {
-      "script": "b5cd55b704cae479f8365d3621f72244445fa9e236ce9f0a737c110772295cfa",
+      "script": "2d355f3f9631741dcffd3dffa06bfc1469f2b3b70323552e9e99739db455acde",
       "actions": {
         "cancel → categoryDialog = false": "view",
         "cancel → closeEdit": "view",
@@ -739,7 +739,7 @@
       }
     },
     "src/pages/finished-stock/supply-chain/index.vue": {
-      "script": "9d0efd3eba3c533f0177f549f11f5ef1b063ac7307849de27aba1deced7abe74",
+      "script": "9b2180021e3a5c955c2daf81e76dd1585b50949f112733803a5b56c14b644a2f",
       "actions": {
         "blur → formatDecimalValue(row, 'level1')": "form",
         "blur → formatDecimalValue(row, 'level1Coefficient')": "form",
@@ -866,7 +866,7 @@
       }
     },
     "src/pages/order/prototype/SalesOrderList.vue": {
-      "script": "f5709e70a1c062796a24fdba6fc4425abc7f8a064bc74e558e1b8e8321fa21ac",
+      "script": "aae142f183390e46451c7d734f6a72266e055ba4b7d542f955eb389808184a44",
       "actions": {
         "change → changeDates": "form",
         "change → emit('pageChange', $event)": "view",
@@ -888,7 +888,7 @@
       }
     },
     "src/pages/order/prototype/index.vue": {
-      "script": "892de6f7e5e1300b578ed5ca39e3d2fd94ea16fefec61c58854a95ddf0087847",
+      "script": "caeece5cca40add3f1242f19d5ee9a49ad1e0a9834850b0fc406c29f384199e3",
       "actions": {
         "action → openAction": "@order",
         "action → openSetting()": "form",
@@ -1231,7 +1231,7 @@
       }
     },
     "src/pages/slab/management/index.vue": {
-      "script": "fa3f5b558e5846db4da4f38ec7ec6b436c9ada200accba2c9ae2fdcd9ca37419",
+      "script": "e457969ba146c090f16992bdfbc1cd1359ce1bbb3b2ae4e0b6233c5677f8c5db",
       "actions": {
         "blur → handleMeasurementBlur('height')": "form",
         "blur → handleMeasurementBlur('length')": "form",
@@ -1325,7 +1325,7 @@
       }
     },
     "src/pages/slab/supply-chain/index.vue": {
-      "script": "56656e29cbce4e78d53e870a1fece458691b793f42bcb40aa9d3cc41c8134ba9",
+      "script": "7db72bbeaf5707bf3b4b6e613a57667e699db452570a06d7c9ad3c0e1c75aa6d",
       "actions": {
         "blur → handleMeasurementBlur('height')": "form",
         "blur → handleMeasurementBlur('length')": "form",
@@ -1569,7 +1569,7 @@
       }
     },
     "src/pages/store-services/index.vue": {
-      "script": "8220464e14264093ada7424f9246d3fd3c120a2504f194997d193f25db6791e2",
+      "script": "359071bc954748407738b4539d2f24b6b608cd462ac944773a11aff6ebda00e6",
       "actions": {
         "action → openCreate": "form",
         "blur → priceTouched = true": "form",
@@ -1594,6 +1594,12 @@
       "actions": {
         "click → $emit('preview', url)": "view",
         "keydown → $emit('preview', url)": "view"
+      }
+    },
+    "src/components/foundation/AdminMediaPreviewDialog.vue": {
+      "script": "f1e0aa59df57993d5b66b690eec277c6af54c2e0a54028b96b59206f1fb8a4cb",
+      "actions": {
+        "update:visible → emit('update:visible', $event)": "view"
       }
     }
   },
@@ -1729,7 +1735,7 @@
     },
     "src/pages/craft/finished-stock/index.vue": {
       "baseSha256": "fee4684dce44b6badbfc8d3c712b61e8365a906ef02e74f8c6cfe7c839cd16a7",
-      "patchCount": 18,
+      "patchCount": 21,
       "patches": [
         {
           "stage": "before-migrations",
@@ -1806,6 +1812,24 @@
           "after": "\nonMounted(loadCrafts);\n\nconst contentLoading = listRequest.indicator;\n\nconst { pending: handleSubmitPending, run: handleSubmitOnce } = usePendingAction(handleSubmit);\nconst handleSubmitButton = useDialogLoading(() => formDialogVisible.value, () => dialogButtonProps('submit', formConfirmation(dialogMode.value), { loading: handleSubmitPending.value }));\n</script>\n\n"
         },
         {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "    </AdminConfirmDialog>\n\n    <AdminDialog\n      v-model:visible=\"imagePreviewVisible\"\n      :header=\"previewCraftName\"\n      :prevent-scroll-through=\"true\"\n      width=\"min(960px, 94vw)\"\n      :confirmation=\"{ kind: 'none' }\"\n      confirm-function=\"close\"\n      mode=\"modal\"\n      show-overlay\n      close-on-overlay-click\n      :footer=\"false\"\n      @close=\"imagePreviewVisible = false\"\n    >\n      <div class=\"image-preview\">\n        <img\n          v-if=\"previewImageUrl\"\n          class=\"image-preview__img\"\n          style=\"max-width: 100%\"\n          :src=\"previewImageUrl\"\n          alt=\"工艺大图\"\n",
+          "after": "    </AdminConfirmDialog>\n\n    <AdminMediaPreviewDialog\n      v-model:visible=\"imagePreviewVisible\"\n      :header=\"previewCraftName\"\n      :prevent-scroll-through=\"true\"\n      @close=\"imagePreviewVisible = false\"\n    >\n      <div class=\"image-preview zdm-media-preview__group\">\n        <img\n          v-if=\"previewImageUrl\"\n          class=\"image-preview__img\"\n          :src=\"previewImageUrl\"\n          alt=\"工艺大图\"\n"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "        <div>统一3D工艺图</div>\n      </div>\n    </AdminDialog>\n  </div>\n</template>\n",
+          "after": "      </div>\n    </AdminMediaPreviewDialog>\n  </div>\n</template>\n"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "import DecimalInput from '@/components/DecimalInput.vue';\nimport { numericError } from '@/utils/numericInput';\nimport { AdminDialog } from '@/components/foundation';\nimport { formConfirmation, dialogButtonProps } from '@/components/foundation/actions/confirmation';\nimport { buttonTheme, buttonFunctionFor, cancelButtonProps } from '@/components/foundation/actions/buttonFunctions';\n",
+          "after": "import DecimalInput from '@/components/DecimalInput.vue';\nimport { numericError } from '@/utils/numericInput';\nimport { AdminMediaPreviewDialog } from '@/components/foundation';\nimport { formConfirmation, dialogButtonProps } from '@/components/foundation/actions/confirmation';\nimport { buttonTheme, buttonFunctionFor, cancelButtonProps } from '@/components/foundation/actions/buttonFunctions';\n"
+        },
+        {
           "before": "\n<script setup lang=\"ts\">\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { useDialogLoading } from '@/composables/useDialogLoading';\n",
           "after": "\n<script setup lang=\"ts\">\nimport { useServerFieldValidation } from '@/utils/serverFieldValidation';\nimport { useContentRequest } from '@/composables/useContentRequest';\nimport { useDialogLoading } from '@/composables/useDialogLoading';\n"
         },
@@ -1825,7 +1849,7 @@
     },
     "src/pages/customer/index.vue": {
       "baseSha256": "7ce0147064da82ad5a10a65ab144f82e3af0e9ced32081e6dcfd756bd7903f9b",
-      "patchCount": 27,
+      "patchCount": 29,
       "patches": [
         {
           "stage": "before-migrations",
@@ -1861,6 +1885,18 @@
         {
           "before": "status.value = tabs.value[0]?.value ?? 'daily';\nvoid reload();\n</script>\n\n",
           "after": "status.value = tabs.value[0]?.value ?? 'daily';\nvoid reload();\n\nconst detailIndicator = useDelayedLoading(() => Boolean(detailLoading.value));\n\nconst { pending: confirmOperationPending, run: confirmOperationOnce } = usePendingAction(confirmOperation);\n</script>\n\n"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "      @confirm=\"confirmOperationOnce\"\n    />\n    <AdminDialog\n      v-model:visible=\"imageVisible\"\n      :confirmation=\"{ kind: 'none' }\"\n      confirm-function=\"close\"\n      header=\"图片预览\"\n      width=\"min(960px, 94vw)\"\n      mode=\"modal\"\n      show-overlay\n      close-on-overlay-click\n      :footer=\"false\"\n      @close=\"imageVisible = false\"\n    >\n      <img v-if=\"imageVisible\" :src=\"previewImages[0]\" alt=\"附件图片\" style=\"max-width: 100%\" />\n    </AdminDialog>\n  </div>\n</template>\n",
+          "after": "      @confirm=\"confirmOperationOnce\"\n    />\n    <AdminMediaPreviewDialog\n      v-model:visible=\"imageVisible\"\n      header=\"图片预览\"\n      @close=\"imageVisible = false\"\n    >\n      <img v-if=\"imageVisible\" :src=\"previewImages[0]\" alt=\"附件图片\" />\n    </AdminMediaPreviewDialog>\n  </div>\n</template>\n"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "import CustomerFollowupAttachments from '@/components/customer/CustomerFollowupAttachments.vue';\nimport AdminSideMenu from '@/components/AdminSideMenu.vue';\nimport AdminDialog from '@/components/foundation/AdminDialog.vue';\nimport {\n  AdminListPage,\n",
+          "after": "import CustomerFollowupAttachments from '@/components/customer/CustomerFollowupAttachments.vue';\nimport AdminSideMenu from '@/components/AdminSideMenu.vue';\nimport { AdminMediaPreviewDialog } from '@/components/foundation';\nimport {\n  AdminListPage,\n"
         },
         {
           "before": "      @confirm=\"submitProfile\"\n    >\n      <t-form-item label=\"归属人\" required-mark v-bind=\"profileFeedback.field('owner', profile.ownerAccountId)\">\n        <t-select\n          v-model=\"profile.ownerAccountId\"\n",
@@ -2006,7 +2042,7 @@
     },
     "src/pages/finished-stock/management/index.vue": {
       "baseSha256": "eb08f195b1aa64cd889f68d480b68817e39177546244f73af819fb3cb89e4a34",
-      "patchCount": 44,
+      "patchCount": 47,
       "patches": [
         {
           "stage": "before-migrations",
@@ -2171,6 +2207,24 @@
         {
           "before": "};\noperations.onInvalidate(closeConfirmDialog);\n</script>\n\n",
           "after": "};\noperations.onInvalidate(closeConfirmDialog);\n\nconst contentLoading = useDelayedLoading(() => Boolean(loading.value));\nconst saveIndicator = useDelayedLoading(() => Boolean(saving.value));\n\nconst { pending: submitReasonPending, run: submitReasonOnce } = usePendingAction(submitReason);\nconst submitReasonButton = useDialogLoading(() => reasonDialogVisible.value, () => dialogButtonProps('off-shelf', operationConfirmation('下架', reasonState.isBatch), { loading: submitReasonPending.value }));\n</script>\n\n"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "      />\n    </t-drawer>\n    <AdminDialog\n      v-model:visible=\"imagePreviewVisible\"\n      :header=\"imagePreviewTitle\"\n      :width=\"productPreviewType === 'video' ? '960px' : 'min(960px, 94vw)'\"\n      :confirmation=\"{ kind: 'none' }\"\n      confirm-function=\"close\"\n      mode=\"modal\"\n      show-overlay\n      close-on-overlay-click\n      :prevent-scroll-through=\"false\"\n      :footer=\"false\"\n      @close=\"closeImagePreview\"\n    >\n      <div class=\"image-preview-dialog\">\n        <video\n          v-if=\"imagePreviewVisible && productPreviewType === 'video'\"\n",
+          "after": "      />\n    </t-drawer>\n    <AdminMediaPreviewDialog\n      v-model:visible=\"imagePreviewVisible\"\n      :header=\"imagePreviewTitle\"\n      :prevent-scroll-through=\"false\"\n      @close=\"closeImagePreview\"\n    >\n      <div class=\"image-preview-dialog zdm-media-preview__group\">\n        <video\n          v-if=\"imagePreviewVisible && productPreviewType === 'video'\"\n"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "          aria-label=\"商品视频播放器\"\n        />\n        <img v-else-if=\"imagePreviewVisible\" :src=\"imagePreviewSrc\" :alt=\"imagePreviewTitle\" style=\"max-width: 100%\" />\n      </div>\n    </AdminDialog>\n    <FinishedOperationLogs v-if=\"canViewOperationLogs\" v-model:visible=\"operationLogsVisible\" />\n    <AdminConfirmDialog\n",
+          "after": "          aria-label=\"商品视频播放器\"\n        />\n        <img v-else-if=\"imagePreviewVisible\" :src=\"imagePreviewSrc\" :alt=\"imagePreviewTitle\" />\n      </div>\n    </AdminMediaPreviewDialog>\n    <FinishedOperationLogs v-if=\"canViewOperationLogs\" v-model:visible=\"operationLogsVisible\" />\n    <AdminConfirmDialog\n"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "  adminFeedback,\n  AdminConfirmDialog,\n  AdminDialog,\n  AdminSectionCard,\n  getSafeErrorMessage,\n",
+          "after": "  adminFeedback,\n  AdminConfirmDialog,\n  AdminMediaPreviewDialog,\n  AdminSectionCard,\n  getSafeErrorMessage,\n"
         },
         {
           "before": "                            <SpecPriceInput\n                              v-model=\"row.markupPrices[configuration.id].coefficient\"\n                              placeholder=\"请输入系数\"\n                              label=\"系数\"\n",
@@ -2363,7 +2417,7 @@
     },
     "src/pages/finished-stock/store/index.vue": {
       "baseSha256": "f1f785011a4d1a96737a1b17627dcc8ec77f54e224bfaa60c4f21f79fd6df568",
-      "patchCount": 63,
+      "patchCount": 65,
       "patches": [
         {
           "stage": "before-migrations",
@@ -2700,6 +2754,18 @@
           "after": "                      <t-tag theme=\"danger\" variant=\"light\" size=\"small\" title=\"\">{{ categoryAdjustmentFor(row)?.label }}</t-tag>\n"
         },
         {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "        />\n      </template>\n    </ProductOperationLogTemplate>\n    <AdminDialog\n      :confirmation=\"{ kind: 'close', text: '关闭' }\"\n      confirm-function=\"close\"\n      :visible=\"Boolean(logVideoPreview)\"\n      header=\"商品视频\"\n      width=\"min(960px, 94vw)\"\n      :cancel-btn=\"null\"\n      @confirm=\"logVideoPreview = null\"\n      @close=\"logVideoPreview = null\"\n      @update:visible=\"!$event && (logVideoPreview = null)\"\n    >\n      <video v-if=\"logVideoPreview\" :src=\"logVideoPreview\" controls autoplay playsinline class=\"log-video-preview\" />\n    </AdminDialog>\n    <AdminDialog\n      :confirmation=\"{ kind: 'none' }\"\n      confirm-function=\"close\"\n      :visible=\"Boolean(imagePreview)\"\n      header=\"商品主图\"\n      mode=\"modal\"\n      show-overlay\n      close-on-overlay-click\n      width=\"min(960px, 94vw)\"\n      :footer=\"false\"\n      @close=\"imagePreview = null\"\n      @update:visible=\"!$event && (imagePreview = null)\"\n    >\n      <img v-if=\"imagePreview\" :src=\"imagePreview\" alt=\"商品主图\" style=\"max-width: 100%\" />\n    </AdminDialog>\n    <StoreBatchCategoryDialog\n      v-if=\"categoryDialog && canSetCategory\"\n      :categories=\"listCategories\"\n",
+          "after": "        />\n      </template>\n    </ProductOperationLogTemplate>\n    <AdminMediaPreviewDialog\n      :visible=\"Boolean(logVideoPreview)\"\n      header=\"商品视频\"\n      @confirm=\"logVideoPreview = null\"\n      @close=\"logVideoPreview = null\"\n      @update:visible=\"!$event && (logVideoPreview = null)\"\n    >\n      <video v-if=\"logVideoPreview\" :src=\"logVideoPreview\" controls autoplay playsinline class=\"log-video-preview\" />\n    </AdminMediaPreviewDialog>\n    <AdminMediaPreviewDialog\n      :visible=\"Boolean(imagePreview)\"\n      header=\"商品主图\"\n      @close=\"imagePreview = null\"\n      @update:visible=\"!$event && (imagePreview = null)\"\n    >\n      <img v-if=\"imagePreview\" :src=\"imagePreview\" alt=\"商品主图\" />\n    </AdminMediaPreviewDialog>\n    <StoreBatchCategoryDialog\n      v-if=\"categoryDialog && canSetCategory\"\n      :categories=\"listCategories\"\n"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "import AdminTopNav from '@/components/AdminTopNav.vue';\nimport { finishedStockActions } from '../shared/finishedStockActions';\nimport { storeOperationLogSourceLabel as logSourceLabel } from './storeOperationLog';\nimport { AdminConfirmDialog, AdminDialog, adminFeedback, getSafeErrorMessage } from '@/components/foundation';\nimport { hasPermission } from '@/services/adminPermissions';\nimport { getLoginUser } from '@/services/auth';\nimport ProductOperationLogTemplate from '@/components/product-logs/ProductOperationLogTemplate.vue';\n",
+          "after": "import AdminTopNav from '@/components/AdminTopNav.vue';\nimport { finishedStockActions } from '../shared/finishedStockActions';\nimport { storeOperationLogSourceLabel as logSourceLabel } from './storeOperationLog';\nimport { AdminConfirmDialog, AdminDialog, AdminMediaPreviewDialog, adminFeedback, getSafeErrorMessage } from '@/components/foundation';\nimport { hasPermission } from '@/services/adminPermissions';\nimport { getLoginUser } from '@/services/auth';\nimport ProductOperationLogTemplate from '@/components/product-logs/ProductOperationLogTemplate.vue';\n"
+        },
+        {
           "before": "              label=\"商品信息调整\" /><t-option value=\"其他\" label=\"其他\" /></t-select\n        ></t-form-item>\n        <t-form-item label=\"详细说明\"\n          ><t-textarea v-model=\"offShelf.detail\" :maxlength=\"100\" placeholder=\"请输入详细说明\" :autosize=\"{}\"\n        /></t-form-item>\n",
           "after": "              label=\"商品信息调整\" /><t-option value=\"其他\" label=\"其他\" /></t-select\n        ></t-form-item>\n        <t-form-item label=\"详细说明\" v-bind=\"offShelfFeedback.field('detail', offShelf.detail)\"\n          ><t-textarea v-model=\"offShelf.detail\" :maxlength=\"100\" placeholder=\"请输入详细说明\" :autosize=\"{}\"\n        /></t-form-item>\n"
         },
@@ -2858,7 +2924,7 @@
     },
     "src/pages/finished-stock/supply-chain/index.vue": {
       "baseSha256": "e1587ec2d5c209a426f8bfe9c584eb6a421289c0ef3ca40651b955330d06e1da",
-      "patchCount": 41,
+      "patchCount": 44,
       "patches": [
         {
           "stage": "before-migrations",
@@ -2986,6 +3052,24 @@
           "after": "};\noperations.onInvalidate(closeConfirmDialog);\n\nconst contentLoading = listRequest.indicator;\nconst saveIndicator = useDelayedLoading(() => Boolean(saving.value));\n\nconst { pending: submitReasonPending, run: submitReasonOnce } = usePendingAction(submitReason);\nconst submitReasonButton = useDialogLoading(() => reasonDialogVisible.value, () => dialogButtonProps('off-shelf', operationConfirmation('下架', reasonState.isBatch), { loading: submitReasonPending.value }));\n</script>\n\n"
         },
         {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "      />\n    </t-drawer>\n    <AdminDialog\n      v-model:visible=\"imagePreviewVisible\"\n      :header=\"imagePreviewTitle\"\n      :width=\"productPreviewType === 'video' ? '960px' : 'min(960px, 94vw)'\"\n      :confirmation=\"{ kind: 'none' }\"\n      confirm-function=\"close\"\n      mode=\"modal\"\n      show-overlay\n      close-on-overlay-click\n      :prevent-scroll-through=\"false\"\n      :footer=\"false\"\n      @close=\"closeImagePreview\"\n    >\n      <div class=\"image-preview-dialog\">\n        <video\n          v-if=\"imagePreviewVisible && productPreviewType === 'video'\"\n",
+          "after": "      />\n    </t-drawer>\n    <AdminMediaPreviewDialog\n      v-model:visible=\"imagePreviewVisible\"\n      :header=\"imagePreviewTitle\"\n      :prevent-scroll-through=\"false\"\n      @close=\"closeImagePreview\"\n    >\n      <div class=\"image-preview-dialog zdm-media-preview__group\">\n        <video\n          v-if=\"imagePreviewVisible && productPreviewType === 'video'\"\n"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "          aria-label=\"商品视频播放器\"\n        />\n        <img v-else-if=\"imagePreviewVisible\" :src=\"imagePreviewSrc\" :alt=\"imagePreviewTitle\" style=\"max-width: 100%\" />\n      </div>\n    </AdminDialog>\n    <FinishedOperationLogs v-if=\"canViewOperationLogs\" v-model:visible=\"operationLogsVisible\" />\n    <AdminConfirmDialog\n",
+          "after": "          aria-label=\"商品视频播放器\"\n        />\n        <img v-else-if=\"imagePreviewVisible\" :src=\"imagePreviewSrc\" :alt=\"imagePreviewTitle\" />\n      </div>\n    </AdminMediaPreviewDialog>\n    <FinishedOperationLogs v-if=\"canViewOperationLogs\" v-model:visible=\"operationLogsVisible\" />\n    <AdminConfirmDialog\n"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "  AdminConfirmDialog,\n  AdminDialog,\n  AdminMediaUpload,\n  AdminSectionCard,\n",
+          "after": "  AdminConfirmDialog,\n  AdminDialog,\n  AdminMediaPreviewDialog,\n  AdminMediaUpload,\n  AdminSectionCard,\n"
+        },
+        {
           "before": "                  <h1>{{ formPageTitle }}</h1>\n                  <div class=\"selected-category\">\n                    当前分类：{{ selectedCategoryPath }}\n                    <t-button\n                      v-if=\"formPageMode === 'create'\"\n",
           "after": "                  <h1>{{ formPageTitle }}</h1>\n                  <div class=\"selected-category\">\n                    <t-form-item v-if=\"productFieldErrors.field('categoryId').status\" v-bind=\"productFieldErrors.field('categoryId')\">当前分类：{{ selectedCategoryPath }}</t-form-item>\n                    <template v-else>当前分类：{{ selectedCategoryPath }}</template>\n                    <t-button\n                      v-if=\"formPageMode === 'create'\"\n"
         },
@@ -3090,7 +3174,7 @@
     },
     "src/pages/order/prototype/index.vue": {
       "baseSha256": "ff3c5f3cbc085070d7ce4d9a0457c1441a23759cd18681c34794378ebcd6ac02",
-      "patchCount": 19,
+      "patchCount": 21,
       "patches": [
         {
           "stage": "before-migrations",
@@ -3166,6 +3250,18 @@
         {
           "before": "    actionVisible.value = true;\n  } catch (e) {\n    if (openingScope === key.value) adminFeedback.error(e instanceof Error ? e.message : '操作失败');\n  }\n}\nasync function saveEditor(o: Order, reason: string) {\n  const savingScope = key.value;\n",
           "after": "    actionVisible.value = true;\n  } catch (e) {\n    if (request.current() && openingScope === key.value) adminFeedback.error(e instanceof Error ? e.message : '操作失败');\n  } finally {\n    request.finish();\n  }\n}\nconst { pending: editorSaving, run: saveEditorOnce } = usePendingAction(saveEditor);\nasync function saveEditor(o: Order, reason: string) {\n  const savingScope = key.value;\n"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "      @confirm=\"deleteSetting\"\n    />\n    <AdminDialog\n      :visible=\"scopeVerified && Boolean(proofUrl)\"\n      header=\"收退款凭证\"\n      width=\"min(960px, 94vw)\"\n      confirm-function=\"close\"\n      :confirmation=\"{ kind: 'none' }\"\n      :cancel-btn=\"null\"\n      :close-on-overlay-click=\"true\"\n      @update:visible=\"!$event && (proofUrl = '')\"\n      ><img :src=\"proofUrl\" alt=\"收退款凭证\" width=\"100%\"\n    /></AdminDialog>\n    <AdminDialog\n      :visible=\"scopeVerified && Boolean(logDetail)\"\n",
+          "after": "      @confirm=\"deleteSetting\"\n    />\n    <AdminMediaPreviewDialog\n      :visible=\"scopeVerified && Boolean(proofUrl)\"\n      header=\"收退款凭证\"\n      @update:visible=\"!$event && (proofUrl = '')\"\n      ><img :src=\"proofUrl\" alt=\"收退款凭证\"\n    /></AdminMediaPreviewDialog>\n    <AdminDialog\n      :visible=\"scopeVerified && Boolean(logDetail)\"\n"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "  AdminConfirmDialog,\n  AdminDialog,\n  adminFeedback,\n  type ListAction,\n",
+          "after": "  AdminConfirmDialog,\n  AdminDialog,\n  AdminMediaPreviewDialog,\n  adminFeedback,\n  type ListAction,\n"
         },
         {
           "before": "import { usePendingAction } from '@/composables/usePendingAction';\nimport { useOperationPreflight } from '@/composables/useOperationPreflight';\nimport { ApiFieldError, OperationBlockedError } from '@/services/http';\nimport { orderConfirmationBlock, requireOrderField } from './model';\nimport { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue';\n",
@@ -4453,7 +4549,7 @@
     },
     "src/pages/slab/management/index.vue": {
       "baseSha256": "191459ad149f78ebaa6c495a2617ce9c60c105742ee3f70125c032c438d3c29b",
-      "patchCount": 50,
+      "patchCount": 53,
       "patches": [
         {
           "stage": "before-migrations",
@@ -4602,8 +4698,26 @@
           "after": "};\noperations.onInvalidate(closeConfirmDialog);\n\nconst contentLoading = useDelayedLoading(() => Boolean(loading.value));\n\nconst { pending: handleReasonSubmitPending, run: handleReasonSubmitOnce } = usePendingAction(handleReasonSubmit);\nconst handleReasonSubmitButton = useDialogLoading(() => reasonDialogVisible.value, () => dialogButtonProps(\n          'off-shelf',\n          operationConfirmation(reasonState.type === 'deleteExternal' ? '删除' : '下架', reasonState.isBatch), { loading: handleReasonSubmitPending.value }));\n</script>\n\n"
         },
         {
-          "before": "                :accept=\"item.accept\"\n                :media-type=\"item.key === 'video' ? 'video' : 'image'\"\n                :disabled=\"readonlyProductFields\"\n                :error-message=\"uploadErrors[item.key] ? `请上传${item.title}` : ''\"\n                :upload=\"(file) => uploadSlabMedia(item, file)\"\n                @uploaded=\"uploadErrors[item.key] = false\"\n                @removed=\"releasePendingUpload\"\n",
-          "after": "                :accept=\"item.accept\"\n                :media-type=\"item.key === 'video' ? 'video' : 'image'\"\n                :disabled=\"readonlyProductFields\"\n                :error-message=\"productErrors.field(mediaFields[item.key]).tips || (item.key === 'video' && productErrors.field('videoCoverMediaId').tips) || (uploadErrors[item.key] ? `请上传${item.title}` : '')\"\n                :upload=\"(file) => uploadSlabMedia(item, file)\"\n                @uploaded=\"uploadErrors[item.key] = false\"\n                @removed=\"releasePendingUpload\"\n"
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "    </t-drawer>\n\n    <AdminDialog\n      v-model:visible=\"uploadPreviewDialogVisible\"\n      :header=\"uploadPreviewTitle\"\n      :width=\"uploadPreviewType === 'video' ? '760px' : 'min(960px, 94vw)'\"\n      :confirmation=\"{ kind: 'none' }\"\n      confirm-function=\"close\"\n      mode=\"modal\"\n      show-overlay\n      close-on-overlay-click\n      :prevent-scroll-through=\"false\"\n      :footer=\"false\"\n      @close=\"uploadPreviewDialogVisible = false\"\n    >\n",
+          "after": "    </t-drawer>\n\n    <AdminMediaPreviewDialog\n      v-model:visible=\"uploadPreviewDialogVisible\"\n      :header=\"uploadPreviewTitle\"\n      :prevent-scroll-through=\"false\"\n      @close=\"uploadPreviewDialogVisible = false\"\n    >\n"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "        v-else-if=\"uploadPreviewUrl\"\n        class=\"upload-large-preview\"\n        style=\"max-width: 100%\"\n        :src=\"uploadPreviewUrl\"\n        :alt=\"uploadPreviewTitle\"\n      />\n    </AdminDialog>\n\n    <AdminConfirmDialog\n",
+          "after": "        v-else-if=\"uploadPreviewUrl\"\n        class=\"upload-large-preview\"\n        :src=\"uploadPreviewUrl\"\n        :alt=\"uploadPreviewTitle\"\n      />\n    </AdminMediaPreviewDialog>\n\n    <AdminConfirmDialog\n"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "  AdminConfirmDialog,\n  AdminDialog,\n  AdminMediaUpload,\n  AdminListLayout,\n",
+          "after": "  AdminConfirmDialog,\n  AdminDialog,\n  AdminMediaPreviewDialog,\n  AdminMediaUpload,\n  AdminListLayout,\n"
+        },
+        {
+          "before": "                :media-type=\"item.key === 'video' ? 'video' : 'image'\"\n                :disabled=\"readonlyProductFields\"\n                :error-message=\"uploadErrors[item.key] ? `请上传${item.title}` : ''\"\n                :upload=\"(file) => uploadSlabMedia(item, file)\"\n                @uploaded=\"uploadErrors[item.key] = false\"\n                @removed=\"releasePendingUpload\"\n",
+          "after": "                :media-type=\"item.key === 'video' ? 'video' : 'image'\"\n                :disabled=\"readonlyProductFields\"\n                :error-message=\"productErrors.field(mediaFields[item.key]).tips || (item.key === 'video' && productErrors.field('videoCoverMediaId').tips) || (uploadErrors[item.key] ? `请上传${item.title}` : '')\"\n                :upload=\"(file) => uploadSlabMedia(item, file)\"\n                @uploaded=\"uploadErrors[item.key] = false\"\n                @removed=\"releasePendingUpload\"\n"
         },
         {
           "before": "                    @keydown=\"handleStockKeydown\"\n                  />\n                </t-form-item>\n                <t-form-item label=\"大板编号\" name=\"sku\">\n                  <span v-if=\"readonlyProductFields\">{{ productForm.sku || '-' }}</span>\n                  <t-input\n                    v-else\n",
@@ -4682,8 +4796,8 @@
           "after": "      await loadSlabs();\n      ensureCurrentPage();\n    } catch (error) {\n      if (await reportFieldError(error)) return;\n      await loadSlabs();\n      adminFeedback.actionError({\n        action: '下架',\n"
         },
         {
-          "before": "      closeReasonDialog();\n      adminFeedback.actionSuccess({ action: '删除', target: row.name });\n    } catch (error) {\n      await loadSlabs();\n      adminFeedback.actionError({ action: '删除', error, fallback: '请稍后重试', target: row.name });\n    } finally {\n",
-          "after": "      closeReasonDialog();\n      adminFeedback.actionSuccess({ action: '删除', target: row.name });\n    } catch (error) {\n      if (await reportFieldError(error)) return;\n      await loadSlabs();\n      adminFeedback.actionError({ action: '删除', error, fallback: '请稍后重试', target: row.name });\n    } finally {\n"
+          "before": "      closeReasonDialog();\n      adminFeedback.actionSuccess({ action: '删除', target: row.name });\n    } catch (error) {\n      await loadSlabs();\n      adminFeedback.actionError({ action: '删除', error, fallback: '请稍后重试', target: row.name });\n",
+          "after": "      closeReasonDialog();\n      adminFeedback.actionSuccess({ action: '删除', target: row.name });\n    } catch (error) {\n      if (await reportFieldError(error)) return;\n      await loadSlabs();\n      adminFeedback.actionError({ action: '删除', error, fallback: '请稍后重试', target: row.name });\n"
         }
       ]
     },
@@ -4788,7 +4902,7 @@
     },
     "src/pages/slab/supply-chain/index.vue": {
       "baseSha256": "0181b2543f11c694d882f3f565779c2f0b3c3a3332a24d2277acbf6009ce93d6",
-      "patchCount": 38,
+      "patchCount": 41,
       "patches": [
         {
           "stage": "before-migrations",
@@ -4929,8 +5043,26 @@
           "after": "};\noperations.onInvalidate(closeConfirmDialog);\n\nconst contentLoading = useDelayedLoading(() => Boolean(loading.value));\n\nconst { pending: handleReasonSubmitPending, run: handleReasonSubmitOnce } = usePendingAction(handleReasonSubmit);\nconst handleReasonSubmitButton = useDialogLoading(() => reasonDialogVisible.value, () => dialogButtonProps(\n          'off-shelf',\n          operationConfirmation(reasonState.type === 'deleteExternal' ? '删除' : '下架', reasonState.isBatch), { loading: handleReasonSubmitPending.value }));\n</script>\n\n"
         },
         {
-          "before": "                :accept=\"item.accept\"\n                :media-type=\"item.key === 'video' ? 'video' : 'image'\"\n                :disabled=\"readonlyProductFields\"\n                :error-message=\"uploadErrors[item.key] ? `请上传${item.title}` : ''\"\n                :upload=\"(file) => uploadSlabMedia(item, file)\"\n                @uploaded=\"uploadErrors[item.key] = false\"\n                @removed=\"releasePendingUpload\"\n",
-          "after": "                :accept=\"item.accept\"\n                :media-type=\"item.key === 'video' ? 'video' : 'image'\"\n                :disabled=\"readonlyProductFields\"\n                :error-message=\"productErrors.field(mediaFields[item.key]).tips || (item.key === 'video' && productErrors.field('videoCoverMediaId').tips) || (uploadErrors[item.key] ? `请上传${item.title}` : '')\"\n                :upload=\"(file) => uploadSlabMedia(item, file)\"\n                @uploaded=\"uploadErrors[item.key] = false\"\n                @removed=\"releasePendingUpload\"\n"
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "    </t-drawer>\n\n    <AdminDialog\n      v-model:visible=\"uploadPreviewDialogVisible\"\n      :header=\"uploadPreviewTitle\"\n      :width=\"uploadPreviewType === 'video' ? '760px' : 'min(960px, 94vw)'\"\n      :confirmation=\"{ kind: 'none' }\"\n      confirm-function=\"close\"\n      mode=\"modal\"\n      show-overlay\n      close-on-overlay-click\n      :prevent-scroll-through=\"false\"\n      :footer=\"false\"\n      @close=\"uploadPreviewDialogVisible = false\"\n    >\n",
+          "after": "    </t-drawer>\n\n    <AdminMediaPreviewDialog\n      v-model:visible=\"uploadPreviewDialogVisible\"\n      :header=\"uploadPreviewTitle\"\n      :prevent-scroll-through=\"false\"\n      @close=\"uploadPreviewDialogVisible = false\"\n    >\n"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "        v-else-if=\"uploadPreviewUrl\"\n        class=\"upload-large-preview\"\n        style=\"max-width: 100%\"\n        :src=\"uploadPreviewUrl\"\n        :alt=\"uploadPreviewTitle\"\n      />\n    </AdminDialog>\n\n    <AdminConfirmDialog\n",
+          "after": "        v-else-if=\"uploadPreviewUrl\"\n        class=\"upload-large-preview\"\n        :src=\"uploadPreviewUrl\"\n        :alt=\"uploadPreviewTitle\"\n      />\n    </AdminMediaPreviewDialog>\n\n    <AdminConfirmDialog\n"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "  AdminConfirmDialog,\n  AdminDialog,\n  AdminMediaUpload,\n  AdminListLayout,\n",
+          "after": "  AdminConfirmDialog,\n  AdminDialog,\n  AdminMediaPreviewDialog,\n  AdminMediaUpload,\n  AdminListLayout,\n"
+        },
+        {
+          "before": "                :media-type=\"item.key === 'video' ? 'video' : 'image'\"\n                :disabled=\"readonlyProductFields\"\n                :error-message=\"uploadErrors[item.key] ? `请上传${item.title}` : ''\"\n                :upload=\"(file) => uploadSlabMedia(item, file)\"\n                @uploaded=\"uploadErrors[item.key] = false\"\n                @removed=\"releasePendingUpload\"\n",
+          "after": "                :media-type=\"item.key === 'video' ? 'video' : 'image'\"\n                :disabled=\"readonlyProductFields\"\n                :error-message=\"productErrors.field(mediaFields[item.key]).tips || (item.key === 'video' && productErrors.field('videoCoverMediaId').tips) || (uploadErrors[item.key] ? `请上传${item.title}` : '')\"\n                :upload=\"(file) => uploadSlabMedia(item, file)\"\n                @uploaded=\"uploadErrors[item.key] = false\"\n                @removed=\"releasePendingUpload\"\n"
         },
         {
           "before": "              label-width=\"100px\"\n              colon\n            >\n              <t-form-item label=\"成本价\" name=\"cost\" required-mark>\n                <SpecPriceInput\n                  v-model=\"productForm.cost\"\n                  label=\"成本价\"\n",
@@ -4969,8 +5101,8 @@
           "after": "      await loadSlabs();\n      ensureCurrentPage();\n    } catch (error) {\n      if (await reportFieldError(error)) return;\n      await loadSlabs();\n      adminFeedback.actionError({\n        action: '下架',\n"
         },
         {
-          "before": "      closeReasonDialog();\n      adminFeedback.actionSuccess({ action: '删除', target: row.name });\n    } catch (error) {\n      await loadSlabs();\n      adminFeedback.actionError({ action: '删除', error, fallback: '请稍后重试', target: row.name });\n    } finally {\n",
-          "after": "      closeReasonDialog();\n      adminFeedback.actionSuccess({ action: '删除', target: row.name });\n    } catch (error) {\n      if (await reportFieldError(error)) return;\n      await loadSlabs();\n      adminFeedback.actionError({ action: '删除', error, fallback: '请稍后重试', target: row.name });\n    } finally {\n"
+          "before": "      closeReasonDialog();\n      adminFeedback.actionSuccess({ action: '删除', target: row.name });\n    } catch (error) {\n      await loadSlabs();\n      adminFeedback.actionError({ action: '删除', error, fallback: '请稍后重试', target: row.name });\n",
+          "after": "      closeReasonDialog();\n      adminFeedback.actionSuccess({ action: '删除', target: row.name });\n    } catch (error) {\n      if (await reportFieldError(error)) return;\n      await loadSlabs();\n      adminFeedback.actionError({ action: '删除', error, fallback: '请稍后重试', target: row.name });\n"
         }
       ]
     },
@@ -6040,7 +6172,7 @@
     },
     "src/pages/selection-center/components/SelectionDetail.vue": {
       "baseSha256": "4213738cabdb948ef2298146f177527df645a75e5ab7388931cd89a8a9c76ebf",
-      "patchCount": 5,
+      "patchCount": 8,
       "patches": [
         {
           "before": "import { selectionSalesModel, selectionAttributes } from '../selectionDetailModel';\nimport HistoricalRichText from '@/pages/finished-stock/management/components/HistoricalRichText.vue';\nconst props = defineProps<{ detail: CenterDetail | null }>();\nconst emit = defineEmits<{ close: []; add: [product: CenterProduct] }>();\nconst mode = ref<'video' | 'gallery'>('gallery');\n",
@@ -6061,6 +6193,24 @@
         {
           "before": "  <t-drawer\n    header=\"商品详情\"\n    :visible=\"Boolean(detail) || loading\"\n    size=\"min(1120px, 100%)\"\n    :footer=\"false\"\n    @close=\"emit('close')\"\n  >\n    <t-loading v-if=\"loading\" />\n    <template v-else-if=\"detail\">\n      <div class=\"detail-media-layout\">\n        <aside class=\"media-thumbnails\" aria-label=\"商品媒体缩略图\">\n",
           "after": "  <t-drawer\n    header=\"商品详情\"\n    :visible=\"Boolean(detail)\"\n    size=\"min(1120px, 100%)\"\n    :footer=\"false\"\n    @close=\"emit('close')\"\n  >\n    <template v-if=\"detail\">\n      <div class=\"detail-media-layout\">\n        <aside class=\"media-thumbnails\" aria-label=\"商品媒体缩略图\">\n"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "import { buttonTheme } from '@/components/foundation/actions/buttonFunctions';\nimport { computed, ref, watch, onBeforeUnmount } from 'vue';\nimport { AdminDialog } from '@/components/foundation';\nimport type { CenterDetail, CenterProduct } from '@/services/storeSelectionCenter';\nimport { centerPrice, selectionLabel } from '@/services/storeSelectionCenter';\n",
+          "after": "import { buttonTheme } from '@/components/foundation/actions/buttonFunctions';\nimport { computed, ref, watch, onBeforeUnmount } from 'vue';\nimport { AdminMediaPreviewDialog } from '@/components/foundation';\nimport type { CenterDetail, CenterProduct } from '@/services/storeSelectionCenter';\nimport { centerPrice, selectionLabel } from '@/services/storeSelectionCenter';\n"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "    </template>\n  </t-drawer>\n  <AdminDialog\n    :visible=\"Boolean(mediaPreview)\"\n    header=\"商品媒体\"\n    :footer=\"false\"\n    :confirmation=\"{ kind: 'none' }\"\n    confirm-function=\"close\"\n    mode=\"modal\"\n    show-overlay\n    close-on-overlay-click\n    width=\"min(960px, 94vw)\"\n    @close=\"mediaPreview = null\"\n    @update:visible=\"!$event && (mediaPreview = null)\"\n",
+          "after": "    </template>\n  </t-drawer>\n  <AdminMediaPreviewDialog\n    :visible=\"Boolean(mediaPreview)\"\n    header=\"商品媒体\"\n    @close=\"mediaPreview = null\"\n    @update:visible=\"!$event && (mediaPreview = null)\"\n"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "      playsinline\n      class=\"center-description-preview\"\n  /></AdminDialog>\n</template>\n<style scoped>\n.center-description-preview {\n  max-width: 100%;\n  max-height: calc(100dvh - 160px);\n}\n\n.selection-sales-table :deep(.selection-sales-heading),\n",
+          "after": "      playsinline\n      class=\"center-description-preview\"\n  /></AdminMediaPreviewDialog>\n</template>\n<style scoped>\n\n.selection-sales-table :deep(.selection-sales-heading),\n"
         }
       ]
     },
@@ -6098,8 +6248,24 @@
     },
     "src/pages/store-services/index.vue": {
       "baseSha256": "8783a73f8260831bd7529c751b3eba9e16695e03395ce5f9df5ae4cee4ebca54",
-      "patchCount": 4,
+      "patchCount": 8,
       "patches": [
+        {
+          "before": "    \"\n  />\n  <AdminDialog\n    :visible=\"!!preview\"\n    confirm-function=\"close\"\n    :confirmation=\"{ kind: 'none' }\"\n    mode=\"modal\"\n    show-overlay\n    close-on-overlay-click\n    @close=\"preview = ''\"\n    header=\"服务主图\"\n    :footer=\"false\"\n    width=\"min(960px, 94vw)\"\n    @update:visible=\"\n      (v) => {\n",
+          "after": "    \"\n  />\n  <AdminMediaPreviewDialog\n    :visible=\"!!preview\"\n    @close=\"preview = ''\"\n    header=\"服务主图\"\n    @update:visible=\"\n      (v) => {\n"
+        },
+        {
+          "before": "  >\n    <img v-if=\"preview\" :src=\"preview\" alt=\"服务主图\" class=\"service-preview-image\" />\n  </AdminDialog>\n</template>\n<script setup lang=\"ts\">\n",
+          "after": "  >\n    <img v-if=\"preview\" :src=\"preview\" alt=\"服务主图\" class=\"service-preview-image\" />\n  </AdminMediaPreviewDialog>\n</template>\n<script setup lang=\"ts\">\n"
+        },
+        {
+          "before": "  AdminFormDialog,\n  AdminConfirmDialog,\n  AdminDialog,\n  adminFeedback,\n} from '@/components/foundation';\n",
+          "after": "  AdminFormDialog,\n  AdminConfirmDialog,\n  AdminMediaPreviewDialog,\n  adminFeedback,\n} from '@/components/foundation';\n"
+        },
+        {
+          "before": "}\n</script>\n\n<style scoped>\n.service-preview-image {\n  /* TDesign reserves 48px above and below its centered dialog, plus a 1px border. */\n  --dialog-spacing: calc(49px + var(--td-comp-paddingTB-xxl) + var(--td-comp-paddingTB-l));\n  display: block;\n  margin-inline: auto;\n  max-width: 100%;\n  max-height: max(1px, calc(100dvh - 2 * var(--dialog-spacing) - var(--td-line-height-title-medium)));\n}\n</style>\n",
+          "after": "}\n</script>\n"
+        },
         {
           "before": "import { getLoginUser } from '@/services/auth';\nimport { hasPermission } from '@/services/adminPermissions';\nimport { ApiError, request } from '@/services/http';\nimport DecimalInput from '@/components/DecimalInput.vue';\nimport { fieldFeedback, useFormFeedback } from '@/utils/formValidation';\n",
           "after": "import { getLoginUser } from '@/services/auth';\nimport { hasPermission } from '@/services/adminPermissions';\nimport { useServerFields } from '@/utils/serverFieldValidation';\nimport { request } from '@/services/http';\nimport DecimalInput from '@/components/DecimalInput.vue';\nimport { fieldFeedback, useFormFeedback } from '@/utils/formValidation';\n"
@@ -6406,6 +6572,73 @@
       "sha256": "7dc5e81de1f2b11c745a1d57d80d0ec89b8e67922a34a32a3429cfbe7c66ae82",
       "pages": {},
       "beforeChanges": {}
+    },
+    {
+      "source": "src/pages/order/prototype/index.vue",
+      "sha256": "4d3227bc642cf3e5a5eddfea8eb22cec2bca2df1b09140914eade68ef540fc69",
+      "pages": {
+        "src/pages/order/prototype/index.vue": {
+          "script": "6d412eb6244c0521494e58975f5665a05d3a4c4f4fbf0831e7e606ed4b0f2283",
+          "actions": {
+            "action → openAction": "@order",
+            "action → openSetting()": "form",
+            "click → deletingSetting = row; deleteSettingVisible = true;": "single",
+            "click → loadSettings": "query",
+            "click → openAction('correct-payment', selected!, row.id)": "form",
+            "click → openAction('correct-shipment', selected!, row.id)": "form",
+            "click → openAction('receive', findOrder(row.orderId), row.id)": "form",
+            "click → openAction('revoke-plan', selected!, row.id)": "form",
+            "click → openAction('ship', findOrder(row.orderId), row.id)": "form",
+            "click → openAction('void-payment', selected!, row.id)": "form",
+            "click → openAction(a.id, selected!)": "@order",
+            "click → openSetting(row)": "form",
+            "click → openToggleSetting(row)": "single",
+            "click → proofUrl = row.proof.url": "view",
+            "click → runScopedRead(() => { logDetail = row; })": "view",
+            "click → runScopedRead(() => { selectedId = ''; })": "view",
+            "click → runScopedRead(() => {})": "view",
+            "confirm → addSetting": "form",
+            "confirm → confirmToggleSetting": "single",
+            "confirm → deleteSetting": "single",
+            "confirm → logDetail = null": "view",
+            "expand-change → updateOrderExpansion": "view",
+            "page-change → changePage": "query",
+            "page-change → updateListPagination(detailPagination, $event)": "query",
+            "page-change → updateListPagination(fulfillmentPagination, $event)": "query",
+            "page-change → updateListPagination(settingsPagination, $event)": "query",
+            "reset → reset": "query",
+            "save → saveEditorOnce": "form",
+            "search → search": "query",
+            "tab-change → switchTab": "query",
+            "update:visible → !$event && (logDetail = null)": "view",
+            "update:visible → !$event && (proofUrl = '')": "view"
+          }
+        }
+      },
+      "beforeChanges": {
+        "src/pages/order/prototype/index.vue": "ff3c5f3cbc085070d7ce4d9a0457c1441a23759cd18681c34794378ebcd6ac02"
+      }
+    },
+    {
+      "source": "src/pages/selection-center/components/SelectionDetail.vue",
+      "sha256": "8e6f8bf6a179f2499ade6aa85492ab3fba18c378d1f66f5e6333dadbc6e6e8a2",
+      "pages": {
+        "src/pages/selection-center/components/SelectionDetail.vue": {
+          "script": "724455aee62f1633c20c2c8a63400f9d1af0185bde6eb6b248adb1c2b7ecaed6",
+          "actions": {
+            "change → mode = 'gallery'; index = i;": "view",
+            "change → mode = 'video'": "view",
+            "click → emit('add', detail.product)": "single",
+            "close → emit('close')": "view",
+            "close → mediaPreview = null": "view",
+            "preview → mediaPreview = $event": "view",
+            "update:visible → !$event && (mediaPreview = null)": "view"
+          }
+        }
+      },
+      "beforeChanges": {
+        "src/pages/selection-center/components/SelectionDetail.vue": "4213738cabdb948ef2298146f177527df645a75e5ab7388931cd89a8a9c76ebf"
+      }
     }
   ]
 }

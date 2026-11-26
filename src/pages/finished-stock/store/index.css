@@ -21,13 +21,6 @@
   background: var(--td-bg-color-component-disabled);
 }
 
-.log-video-preview {
-  display: block;
-  width: min(900px, 100%);
-  height: min(760px, calc(100vh - 220px));
-  object-fit: contain;
-}
-
 /* Match the operations finished-stock list's product cells and media preview. */
 .product-meta {
   display: grid;

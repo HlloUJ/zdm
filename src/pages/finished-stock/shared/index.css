@@ -121,20 +121,6 @@
   transition: transform 0.2s ease;
 }
 
-.image-preview-dialog:has(video) {
-  display: flex;
-  min-height: 620px;
-  align-items: center;
-  justify-content: center;
-  background: var(--td-bg-color-secondarycontainer);
-}
-
-.image-preview-dialog video {
-  display: block;
-  width: min(900px, 100%);
-  height: min(760px, calc(100vh - 220px));
-  object-fit: contain;
-}
 
 .product-meta,
 .tenant-cell,
