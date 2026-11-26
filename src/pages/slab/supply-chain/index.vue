@@ -296,7 +296,7 @@
                 :accept="item.accept"
                 :media-type="item.key === 'video' ? 'video' : 'image'"
                 :disabled="readonlyProductFields"
-                :error-message="uploadErrors[item.key] ? `请上传${item.title}` : ''"
+                :error-message="productErrors.field(mediaFields[item.key]).tips || (item.key === 'video' && productErrors.field('videoCoverMediaId').tips) || (uploadErrors[item.key] ? `请上传${item.title}` : '')"
                 :upload="(file) => uploadSlabMedia(item, file)"
                 @uploaded="uploadErrors[item.key] = false"
                 @removed="releasePendingUpload"
@@ -494,7 +494,7 @@
               label-width="100px"
               colon
             >
-              <t-form-item label="成本价" name="cost" required-mark>
+              <t-form-item label="成本价" name="cost" v-bind="productErrors.field('costPrice')" required-mark>
                 <SpecPriceInput
                   v-model="productForm.cost"
                   label="成本价"
@@ -535,7 +535,7 @@
                     @keydown="handleStockKeydown"
                   />
                 </t-form-item>
-                <t-form-item label="大板编号" name="sku">
+                <t-form-item label="大板编号" name="sku" v-bind="productErrors.field('serialNo')">
                   <t-input
                     v-model="productForm.sku"
                     :disabled="readonlyProductFields"
@@ -955,6 +955,7 @@
 </template>
 
 <script setup lang="ts">
+import { useBoundServerFields, useServerFieldValidation } from '@/utils/serverFieldValidation';
 import { useContentRequest } from '@/composables/useContentRequest';
 import { useDialogLoading } from '@/composables/useDialogLoading';
 import { usePendingAction } from '@/composables/usePendingAction';
@@ -1946,13 +1947,25 @@ const handleMeasurementBlur = async (field: MeasurementField) => {
     showErrorMessage: true,
   });
 };
-const rejectProductForm = () =>
-  rejectFormSubmission(productLayoutRef.value, {
-    reveal: (field) => {
+const productErrorLocation = {
+  reveal: (field: HTMLElement) => {
       const key = field.closest('[id^="slab-product-"]')?.id.replace('slab-product-', '');
       if (key === 'images' || key === 'base' || key === 'sales') productTab.value = key;
     },
-  });
+};
+const rejectProductForm = () => rejectFormSubmission(productLayoutRef.value, productErrorLocation);
+const productErrors = useBoundServerFields(productDialogVisible, productLayoutRef, () => ({
+  ...(!readonlyProductFields.value ? {
+    serialNo: productForm.sku,
+    mainImageMediaId: uploadPreviews.main?.mediaId,
+    scanImageMediaId: uploadPreviews.scan?.mediaId,
+    designImageMediaId: uploadPreviews.design?.mediaId,
+    videoMediaId: uploadPreviews.video?.mediaId,
+    videoCoverMediaId: uploadPreviews.video?.coverMediaId,
+    costPrice: productForm.cost,
+  } : {}),
+ }), productErrorLocation);
+const mediaFields = { main: 'mainImageMediaId', scan: 'scanImageMediaId', design: 'designImageMediaId', video: 'videoMediaId' };
 const handleProductSubmit = async () => {
   productPriceSubmitted.value = true;
   if (productMode.value === 'view') {
@@ -2045,6 +2058,7 @@ const handleProductSubmit = async () => {
     status: publishTargetStatus.value,
   };
   saving.value = true;
+  const reportFieldError = productErrors.begin();
   try {
     if (productMode.value === 'edit' && editingItem) {
       upsertSlabItem(await updateSlab(editingItem.id, payload));
@@ -2058,6 +2072,7 @@ const handleProductSubmit = async () => {
     if (productMode.value === 'create') adminFeedback.created(targetName);
     else adminFeedback.actionSuccess({ action: '修改', target: targetName });
   } catch (error) {
+    if (await reportFieldError(error)) return;
     adminFeedback.actionError({
       action: productMode.value === 'create' ? '新增' : '保存',
       error,
@@ -2390,7 +2405,11 @@ const closeOffShelfHistory = () => {
   offShelfHistoryVisible.value = false;
   offShelfHistoryRow.value = null;
 };
+const beginReasonFeedback = useServerFieldValidation(
+  () => reasonDialogVisible.value, reasonFormRef, () => ({ ...reasonForm }),
+);
 const handleReasonSubmit = async () => {
+  const reportFieldError = beginReasonFeedback();
   if (!reasonForm.reason) {
     await reasonFormRef.value?.validate({ trigger: 'submit', showErrorMessage: true });
     return rejectFormSubmission(reasonFormRef.value);
@@ -2410,6 +2429,7 @@ const handleReasonSubmit = async () => {
       await loadSlabs();
       ensureCurrentPage();
     } catch (error) {
+      if (await reportFieldError(error)) return;
       await loadSlabs();
       adminFeedback.actionError({
         action: '批量下架',
@@ -2432,6 +2452,7 @@ const handleReasonSubmit = async () => {
       await loadSlabs();
       ensureCurrentPage();
     } catch (error) {
+      if (await reportFieldError(error)) return;
       await loadSlabs();
       adminFeedback.actionError({
         action: '下架',
@@ -2457,6 +2478,7 @@ const handleReasonSubmit = async () => {
       closeReasonDialog();
       adminFeedback.actionSuccess({ action: '删除', target: row.name });
     } catch (error) {
+      if (await reportFieldError(error)) return;
       await loadSlabs();
       adminFeedback.actionError({ action: '删除', error, fallback: '请稍后重试', target: row.name });
     } finally {

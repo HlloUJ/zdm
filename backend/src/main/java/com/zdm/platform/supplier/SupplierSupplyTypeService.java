@@ -1,5 +1,6 @@
 package com.zdm.platform.supplier;
 
+import com.zdm.platform.common.FieldValidationException;
 import com.zdm.platform.common.OperationBlockedException;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -50,7 +51,7 @@ public class SupplierSupplyTypeService {
     try {
       mapper.insert(type);
     } catch (DuplicateKeyException exception) {
-      throw new IllegalArgumentException(DUPLICATE_NAME_MESSAGE, exception);
+      throw new FieldValidationException("name", DUPLICATE_NAME_MESSAGE, exception);
     }
     return requireType(type.getId());
   }
@@ -68,7 +69,7 @@ public class SupplierSupplyTypeService {
     try {
       mapper.updateById(payload);
     } catch (DuplicateKeyException exception) {
-      throw new IllegalArgumentException(DUPLICATE_NAME_MESSAGE, exception);
+      throw new FieldValidationException("name", DUPLICATE_NAME_MESSAGE, exception);
     }
     return requireType(id);
   }
@@ -121,13 +122,13 @@ public class SupplierSupplyTypeService {
       query.ne(SupplierSupplyType::getId, excludedId);
     }
     if (mapper.selectCount(query) > 0) {
-      throw new IllegalArgumentException(DUPLICATE_NAME_MESSAGE);
+      throw new FieldValidationException("name", DUPLICATE_NAME_MESSAGE);
     }
   }
 
   private String normalizedName(String value) {
     if (!StringUtils.hasText(value)) {
-      throw new IllegalArgumentException("请输入供货类型名称");
+      throw new FieldValidationException("name", "请输入供货类型名称");
     }
     return value.trim();
   }

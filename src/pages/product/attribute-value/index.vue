@@ -135,6 +135,7 @@
 </template>
 
 <script setup lang="ts">
+import { useServerFieldValidation } from '@/utils/serverFieldValidation';
 import { useContentRequest } from '@/composables/useContentRequest';
 import { usePendingAction } from '@/composables/usePendingAction';
 import { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';
@@ -372,6 +373,11 @@ const closeFormDialog = () => {
   dialogVisible.value = false;
   formRef.value?.clearValidate();
 };
+const beginSubmitFeedback = useServerFieldValidation(
+  () => dialogVisible.value, formRef,
+  () => ({ value: form.name, attributeId: form.attribute }),
+  { names: { value: 'name', attributeId: 'attribute' } },
+);
 const submit = async () => {
   const result = await formRef.value?.validate();
   if (result !== true) return rejectFormSubmission(formRef.value);
@@ -384,6 +390,7 @@ const submit = async () => {
     formRef.value?.setValidateMessage({ name: [{ type: 'error', message: '该属性下的值名称已存在' }] });
     return rejectFormSubmission(formRef.value);
   }
+  const reportFieldError = beginSubmitFeedback();
   try {
     await createProductAttributeValue({
       attributeId: Number(form.attribute),
@@ -397,6 +404,7 @@ const submit = async () => {
     adminFeedback.created(name);
     void loadValues();
   } catch (error) {
+    if (await reportFieldError(error)) return;
     adminFeedback.error(error instanceof Error ? error.message : '操作失败');
   }
 };

@@ -3412,6 +3412,31 @@ class PlatformApiSmokeTest extends SpringContainerTestSupport {
   }
 
   @Test
+  void concurrentVarietyCreationIdentifiesTheConflictingField() throws Exception {
+    String name = "并发重名-" + System.nanoTime();
+    var start = new java.util.concurrent.CountDownLatch(1);
+    try (var pool = java.util.concurrent.Executors.newFixedThreadPool(2)) {
+      java.util.concurrent.Callable<MvcResult> create = () -> {
+        start.await();
+        return mockMvc.perform(post("/api/admin/slab-varieties")
+            .header("Authorization", "Bearer " + TokenAuthenticationFilter.DEV_TOKEN)
+            .contentType("application/json")
+            .content("{\"name\":\"" + name + "\",\"status\":\"enabled\"}")).andReturn();
+      };
+      var first = pool.submit(create);
+      var second = pool.submit(create);
+      start.countDown();
+      var responses = List.of(first.get().getResponse(), second.get().getResponse());
+      assertThat(responses).extracting(response -> response.getStatus()).containsExactlyInAnyOrder(200, 400);
+      var rejected = responses.stream().filter(response -> response.getStatus() == 400).findFirst().orElseThrow();
+      assertThat(rejected.getHeader("X-Zdm-Invalid-Field")).isEqualTo("name");
+      assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM slab_varieties WHERE name = ?", Integer.class, name)).isEqualTo(1);
+    } finally {
+      jdbcTemplate.update("DELETE FROM slab_varieties WHERE name = ?", name);
+    }
+  }
+
+  @Test
   void slabVarietyNameMustBeUniqueWhenCreatingAndEditing() throws Exception {
     mockMvc.perform(post("/api/admin/slab-varieties")
             .header("Authorization", "Bearer " + TokenAuthenticationFilter.DEV_TOKEN)
@@ -3423,6 +3448,7 @@ class PlatformApiSmokeTest extends SpringContainerTestSupport {
                 }
                 """))
         .andExpect(status().isBadRequest())
+        .andExpect(header().string("X-Zdm-Invalid-Field", "name"))
         .andExpect(jsonPath("$.message").value("品种名称已存在"));
 
     String varietyName = "重名编辑测试品种-" + System.nanoTime();
@@ -3452,6 +3478,7 @@ class PlatformApiSmokeTest extends SpringContainerTestSupport {
                 }
                 """))
         .andExpect(status().isBadRequest())
+        .andExpect(header().string("X-Zdm-Invalid-Field", "name"))
         .andExpect(jsonPath("$.message").value("品种名称已存在"));
 
     mockMvc.perform(delete("/api/admin/slab-varieties/{id}", varietyId)

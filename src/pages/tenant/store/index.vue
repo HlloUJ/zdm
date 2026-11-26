@@ -275,6 +275,7 @@
 </template>
 
 <script setup lang="ts">
+import { useServerFieldValidation } from '@/utils/serverFieldValidation';
 import { useContentRequest } from '@/composables/useContentRequest';
 import { usePendingAction } from '@/composables/usePendingAction';
 import { checkStoreRestore } from '@/services/stores';
@@ -659,6 +660,11 @@ const closeFormDialog = () => {
   formRef.value?.clearValidate();
 };
 
+const beginHandleSubmitFeedback = useServerFieldValidation(
+  () => formDialogVisible.value, formRef,
+  () => ({ name: formData.shopName, type: formData.shopType, region: formData.region, detailAddress: formData.detailAddress, remark: formData.remark }),
+  { names: { name: 'shopName', type: 'shopType' }, messages: { '店铺名称已存在': '门店名称已存在' } },
+);
 const handleSubmit = async () => {
   const result = await formRef.value?.validate();
   if (result !== true) return rejectFormSubmission(formRef.value);
@@ -667,6 +673,7 @@ const handleSubmit = async () => {
   const action = dialogMode.value === 'create' ? '新增' : '编辑';
   const targetName = formData.shopName.trim();
   let refresh = false;
+  const reportFieldError = beginHandleSubmitFeedback();
   try {
     if (dialogMode.value === 'create') {
       if (!formData.storeLevelId) return;
@@ -687,18 +694,7 @@ const handleSubmit = async () => {
     }
     if (refresh) void loadStorePage();
   } catch (error) {
-    if (error instanceof Error && error.message === '店铺名称已存在') {
-      formRef.value?.setValidateMessage({
-        shopName: [{ type: 'error', message: '门店名称已存在' }],
-      });
-      adminFeedback.actionError({
-        action,
-        target: targetName,
-        error: new Error('门店名称已存在'),
-        fallback: '请稍后重试',
-      });
-      return;
-    }
+    if (await reportFieldError(error)) return;
     adminFeedback.actionError({ action, target: targetName, error, fallback: '请稍后重试' });
   }
 };

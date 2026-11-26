@@ -1,5 +1,6 @@
 package com.zdm.platform.inventory;
 
+import com.zdm.platform.common.FieldValidationException;
 import com.zdm.platform.common.OperationBlockedException;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -88,7 +89,7 @@ public class SlabOriginService extends CreatorAwareService<SlabOriginMapper, Sla
       duplicateQuery.ne(SlabOrigin::getId, excludedOriginId);
     }
     if (duplicateQuery.count() > 0) {
-      throw new IllegalArgumentException(DUPLICATE_NAME_MESSAGE);
+      throw new FieldValidationException("name", DUPLICATE_NAME_MESSAGE);
     }
   }
   @Override

@@ -117,7 +117,10 @@ test('新增与编辑使用必填标记、字段错误及精确金额输入', as
     }
     if (route.request().method() === 'POST' || route.request().method() === 'PUT') {
       writes.push(route.request().postDataJSON().price);
-      return route.fulfill({ status: 400, json: { code: 400, message: '本店已有同名服务' } });
+      return route.fulfill({ status: 400, headers: { 'X-Zdm-Invalid-Field': 'name' }, json: {
+        code: 400, message: '本店已有同名服务',
+        fieldErrors: [{ field: 'name', message: '服务名称已存在，请更换名称' }],
+      } });
     }
     await route.fulfill({
       json: {

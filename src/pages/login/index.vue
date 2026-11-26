@@ -59,6 +59,7 @@
 </template>
 
 <script setup lang="ts">
+import { useServerFieldValidation } from '@/utils/serverFieldValidation';
 import { useDelayedLoading } from '@/composables/useDelayedLoading';
 import { buttonTheme } from '@/components/foundation/actions/buttonFunctions';
 import { rejectFormSubmission } from '@/utils/submitValidation';
@@ -131,11 +132,16 @@ const sendCode = async () => {
   }
 };
 
+const beginOnSubmitFeedback = useServerFieldValidation(
+  () => true, formRef,
+  () => ({ phone: formData.phone, verifyCode: formData.verifyCode }),
+);
 const onSubmit = async (ctx: SubmitContext) => {
   if (submitting.value) return;
   if (ctx.validateResult !== true) return rejectFormSubmission(formRef.value);
 
   submitting.value = true;
+  const reportFieldError = beginOnSubmitFeedback();
   try {
     const result = await login({
       phone: formData.phone,
@@ -143,6 +149,7 @@ const onSubmit = async (ctx: SubmitContext) => {
     });
     await router.push(getFirstAccessiblePath(result.user) || '/dashboard');
   } catch (error) {
+    if (await reportFieldError(error)) return;
     adminFeedback.error(error instanceof Error ? error.message : '登录失败，请稍后重试');
   } finally {
     submitting.value = false;

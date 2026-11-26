@@ -1,5 +1,6 @@
 package com.zdm.platform.inventory;
 
+import com.zdm.platform.common.FieldValidationException;
 import com.zdm.platform.common.OperationBlockedException;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -125,7 +126,7 @@ public class SlabTextureService extends CreatorAwareService<SlabTextureMapper, S
     }
     if (query.count() > 0 || aliasMapper.selectCount(
         Wrappers.<SlabTextureAlias>lambdaQuery().eq(SlabTextureAlias::getName, name)) > 0) {
-      throw new IllegalArgumentException("纹理名称已存在");
+      throw new FieldValidationException("name", "纹理名称已存在");
     }
   }
 
@@ -137,7 +138,7 @@ public class SlabTextureService extends CreatorAwareService<SlabTextureMapper, S
       query.ne(SlabTextureAlias::getId, excludedId);
     }
     if (aliasMapper.selectCount(query) > 0 || lambdaQuery().eq(SlabTexture::getName, name).count() > 0) {
-      throw new IllegalArgumentException("别名已存在或与标准纹理重复");
+      throw new FieldValidationException("name", "别名已存在或与标准纹理重复");
     }
   }
 

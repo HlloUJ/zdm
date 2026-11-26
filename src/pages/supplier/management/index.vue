@@ -171,6 +171,7 @@
 </template>
 
 <script setup lang="ts">
+import { useServerFieldValidation } from '@/utils/serverFieldValidation';
 import { useContentRequest } from '@/composables/useContentRequest';
 import { usePendingAction } from '@/composables/usePendingAction';
 import { getSafeErrorMessage } from '@/components/foundation/feedback/adminFeedback';
@@ -459,6 +460,11 @@ const closeFormDialog = () => {
   formRef.value?.clearValidate();
 };
 
+const beginHandleSubmitFeedback = useServerFieldValidation(
+  () => formDialogVisible.value, formRef,
+  () => ({ name: formData.name, supplyTypeIds: formData.supplyTypeIds, contactName: formData.contact, contactPhone: formData.phone, remark: formData.remark }),
+  { names: { contactName: 'contact', contactPhone: 'phone' } },
+);
 const handleSubmit = async () => {
   const result = await formRef.value?.validate();
   if (result !== true) return rejectFormSubmission(formRef.value);
@@ -466,6 +472,7 @@ const handleSubmit = async () => {
   if (!formData.supplyTypeIds.length) return;
 
   let refresh = false;
+  const reportFieldError = beginHandleSubmitFeedback();
   try {
     if (dialogMode.value === 'create') {
       await createSupplier(toSupplierPayload('normal'));
@@ -485,6 +492,7 @@ const handleSubmit = async () => {
     }
     if (refresh) void loadSuppliers();
   } catch (error) {
+    if (await reportFieldError(error)) return;
     adminFeedback.error(error instanceof Error ? error.message : '操作失败');
   }
 };

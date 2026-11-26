@@ -1,5 +1,6 @@
 package com.zdm.platform.inventory;
 
+import com.zdm.platform.common.FieldValidationException;
 import com.zdm.platform.common.OperationBlockedException;
 
 import com.zdm.platform.account.CreatorAwareService;
@@ -120,7 +121,7 @@ public class SlabInventoryService extends CreatorAwareService<SlabInventoryMappe
     try {
       save(inventory);
     } catch (DuplicateKeyException exception) {
-      throw new IllegalArgumentException(DUPLICATE_SKU_MESSAGE, exception);
+      throw new FieldValidationException("serialNo", DUPLICATE_SKU_MESSAGE, exception);
     }
     if(inventory.getStock()==0) {
       lambdaUpdate().eq(SlabInventory::getId,inventory.getId()).set(SlabInventory::getSourceStatus,"soldOut").update();
@@ -173,7 +174,7 @@ public class SlabInventoryService extends CreatorAwareService<SlabInventoryMappe
     try {
       updateById(inventory);
     } catch (DuplicateKeyException exception) {
-      throw new IllegalArgumentException(DUPLICATE_SKU_MESSAGE, exception);
+      throw new FieldValidationException("serialNo", DUPLICATE_SKU_MESSAGE, exception);
     }
     if (costChanged) { lifecycle.reprice(ProductLifecycleService.Kind.SLAB,id,true); }
     syncMediaReferences(inventory, existing);
@@ -402,13 +403,13 @@ public class SlabInventoryService extends CreatorAwareService<SlabInventoryMappe
     String normalizedReason = normalizeOptionalText(reason);
     String normalizedDetail = normalizeOptionalText(detail);
     if ("offShelf".equals(status) && normalizedReason == null) {
-      throw new IllegalArgumentException("请选择下架原因");
+      throw new FieldValidationException("reason", "请选择下架原因");
     }
     if (normalizedReason != null && normalizedReason.length() > 80) {
-      throw new IllegalArgumentException("下架原因不能超过80个字");
+      throw new FieldValidationException("reason", "下架原因不能超过80个字");
     }
     if (normalizedDetail != null && normalizedDetail.length() > 500) {
-      throw new IllegalArgumentException("详细说明不能超过500个字");
+      throw new FieldValidationException("detail", "详细说明不能超过500个字");
     }
     List<Long> normalizedIds = new LinkedHashSet<>(ids).stream().filter(java.util.Objects::nonNull).toList();
     if (normalizedIds.isEmpty()) {
@@ -565,18 +566,19 @@ public class SlabInventoryService extends CreatorAwareService<SlabInventoryMappe
         && inventory.getGuidePriceCoefficient() == null) {
       return;
     }
-    if (inventory.getCostPrice() == null
-        || inventory.getGuidePrice() == null
-        || inventory.getGuidePriceCoefficient() == null
-        || inventory.getCostPrice().signum() < 0
-        || inventory.getGuidePrice().signum() < 0
-        || inventory.getGuidePriceCoefficient().signum() < 0) {
-      throw new IllegalArgumentException("成本价、指导价系数和指导价不能为空且不能小于0");
+    if (inventory.getCostPrice() == null || inventory.getCostPrice().signum() < 0) {
+      throw FieldValidationException.withHint("costPrice", "成本价、指导价系数和指导价不能为空且不能小于0", "请输入大于或等于0的成本价");
+    }
+    if (inventory.getGuidePrice() == null || inventory.getGuidePrice().signum() < 0) {
+      throw FieldValidationException.withHint("guidePrice", "成本价、指导价系数和指导价不能为空且不能小于0", "请输入大于或等于0的指导价");
+    }
+    if (inventory.getGuidePriceCoefficient() == null || inventory.getGuidePriceCoefficient().signum() < 0) {
+      throw FieldValidationException.withHint("guidePriceCoefficient", "成本价、指导价系数和指导价不能为空且不能小于0", "请输入大于或等于0的指导价系数");
     }
     var expected = inventory.getCostPrice().multiply(inventory.getGuidePriceCoefficient())
         .setScale(2, RoundingMode.HALF_UP);
     if (inventory.getGuidePrice().setScale(2, RoundingMode.HALF_UP).compareTo(expected) != 0) {
-      throw new IllegalArgumentException("指导价必须等于成本价按指导价系数计算后的结果");
+      throw new FieldValidationException("guidePrice", "指导价必须等于成本价按指导价系数计算后的结果");
     }
   }
 
@@ -627,20 +629,20 @@ public class SlabInventoryService extends CreatorAwareService<SlabInventoryMappe
 
   private void validateMedia(SlabInventory inventory, SlabInventory existing) {
     requireMediaType(
-        inventory.getMainImageMediaId(), existing == null ? null : existing.getMainImageMediaId(),
+        "mainImageMediaId", inventory.getMainImageMediaId(), existing == null ? null : existing.getMainImageMediaId(),
         "image", "请上传商品主图");
     requireMediaType(
-        inventory.getScanImageMediaId(), existing == null ? null : existing.getScanImageMediaId(),
+        "scanImageMediaId", inventory.getScanImageMediaId(), existing == null ? null : existing.getScanImageMediaId(),
         "image", "请上传扫描图");
     requireMediaType(
-        inventory.getDesignImageMediaId(), existing == null ? null : existing.getDesignImageMediaId(),
+        "designImageMediaId", inventory.getDesignImageMediaId(), existing == null ? null : existing.getDesignImageMediaId(),
         "image", "请上传设计图");
     if (inventory.getVideoMediaId() != null) {
       requireMediaType(
-          inventory.getVideoMediaId(), existing == null ? null : existing.getVideoMediaId(),
+          "videoMediaId", inventory.getVideoMediaId(), existing == null ? null : existing.getVideoMediaId(),
           "video", "商品视频格式不正确");
       requireMediaType(
-          inventory.getVideoCoverMediaId(), existing == null ? null : existing.getVideoCoverMediaId(),
+          "videoCoverMediaId", inventory.getVideoCoverMediaId(), existing == null ? null : existing.getVideoCoverMediaId(),
           "image", "商品视频封面不存在");
     } else if (inventory.getVideoCoverMediaId() != null) {
       throw new OperationBlockedException("商品视频不存在");
@@ -648,15 +650,15 @@ public class SlabInventoryService extends CreatorAwareService<SlabInventoryMappe
   }
 
   private void requireMediaType(
-      Long mediaId, Long existingMediaId, String mediaType, String emptyMessage) {
+      String field, Long mediaId, Long existingMediaId, String mediaType, String emptyMessage) {
     if (mediaId == null) {
-      throw new IllegalArgumentException(emptyMessage);
+      throw new FieldValidationException(field, emptyMessage);
     }
     MediaAsset asset = java.util.Objects.equals(mediaId, existingMediaId)
         ? mediaAssetService.requireReferencedAvailableForUpdate(mediaId)
         : mediaAssetService.requireAvailable(mediaId);
     if (!mediaType.equals(asset.getMediaType())) {
-      throw new IllegalArgumentException("媒体文件类型不正确");
+      throw FieldValidationException.withHint(field, "媒体文件类型不正确", "媒体文件类型不正确，请重新上传");
     }
   }
 
