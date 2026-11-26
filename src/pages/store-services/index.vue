@@ -132,17 +132,10 @@
       }
     "
   />
-  <AdminDialog
+  <AdminMediaPreviewDialog
     :visible="!!preview"
-    confirm-function="close"
-    :confirmation="{ kind: 'none' }"
-    mode="modal"
-    show-overlay
-    close-on-overlay-click
     @close="preview = ''"
     header="服务主图"
-    :footer="false"
-    width="min(960px, 94vw)"
     @update:visible="
       (v) => {
         if (!v) preview = '';
@@ -150,7 +143,7 @@
     "
   >
     <img v-if="preview" :src="preview" alt="服务主图" class="service-preview-image" />
-  </AdminDialog>
+  </AdminMediaPreviewDialog>
 </template>
 <script setup lang="ts">
 import { computed, onScopeDispose, reactive, ref, watch } from 'vue';
@@ -162,7 +155,7 @@ import {
   AdminListPage,
   AdminFormDialog,
   AdminConfirmDialog,
-  AdminDialog,
+  AdminMediaPreviewDialog,
   adminFeedback,
 } from '@/components/foundation';
 import { buttonTheme } from '@/components/foundation/actions/buttonFunctions';
@@ -434,14 +427,3 @@ async function confirmAction() {
   }
 }
 </script>
-
-<style scoped>
-.service-preview-image {
-  /* TDesign reserves 48px above and below its centered dialog, plus a 1px border. */
-  --dialog-spacing: calc(49px + var(--td-comp-paddingTB-xxl) + var(--td-comp-paddingTB-l));
-  display: block;
-  margin-inline: auto;
-  max-width: 100%;
-  max-height: max(1px, calc(100dvh - 2 * var(--dialog-spacing) - var(--td-line-height-title-medium)));
-}
-</style>

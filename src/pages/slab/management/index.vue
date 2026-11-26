@@ -1048,17 +1048,10 @@
       </template>
     </t-drawer>
 
-    <AdminDialog
+    <AdminMediaPreviewDialog
       v-model:visible="uploadPreviewDialogVisible"
       :header="uploadPreviewTitle"
-      :width="uploadPreviewType === 'video' ? '760px' : 'min(960px, 94vw)'"
-      :confirmation="{ kind: 'none' }"
-      confirm-function="close"
-      mode="modal"
-      show-overlay
-      close-on-overlay-click
       :prevent-scroll-through="false"
-      :footer="false"
       @close="uploadPreviewDialogVisible = false"
     >
       <video
@@ -1070,11 +1063,10 @@
       <img
         v-else-if="uploadPreviewUrl"
         class="upload-large-preview"
-        style="max-width: 100%"
         :src="uploadPreviewUrl"
         :alt="uploadPreviewTitle"
       />
-    </AdminDialog>
+    </AdminMediaPreviewDialog>
 
     <AdminConfirmDialog
       v-model:visible="confirmDialogVisible"
@@ -1239,6 +1231,7 @@ import {
   adminFeedback,
   AdminConfirmDialog,
   AdminDialog,
+  AdminMediaPreviewDialog,
   AdminMediaUpload,
   AdminListLayout,
   AdminPagination,

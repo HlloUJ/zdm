@@ -1057,20 +1057,13 @@
         @preview="openProductMediaPreview"
       />
     </t-drawer>
-    <AdminDialog
+    <AdminMediaPreviewDialog
       v-model:visible="imagePreviewVisible"
       :header="imagePreviewTitle"
-      :width="productPreviewType === 'video' ? '960px' : 'min(960px, 94vw)'"
-      :confirmation="{ kind: 'none' }"
-      confirm-function="close"
-      mode="modal"
-      show-overlay
-      close-on-overlay-click
       :prevent-scroll-through="false"
-      :footer="false"
       @close="closeImagePreview"
     >
-      <div class="image-preview-dialog">
+      <div class="image-preview-dialog zdm-media-preview__group">
         <video
           v-if="imagePreviewVisible && productPreviewType === 'video'"
           :src="imagePreviewSrc"
@@ -1079,9 +1072,9 @@
           playsinline
           aria-label="商品视频播放器"
         />
-        <img v-else-if="imagePreviewVisible" :src="imagePreviewSrc" :alt="imagePreviewTitle" style="max-width: 100%" />
+        <img v-else-if="imagePreviewVisible" :src="imagePreviewSrc" :alt="imagePreviewTitle" />
       </div>
-    </AdminDialog>
+    </AdminMediaPreviewDialog>
     <FinishedOperationLogs v-if="canViewOperationLogs" v-model:visible="operationLogsVisible" />
     <AdminConfirmDialog
       v-model:visible="confirmDialogVisible"
@@ -1196,6 +1189,7 @@ import {
   adminFeedback,
   AdminConfirmDialog,
   AdminDialog,
+  AdminMediaPreviewDialog,
   AdminMediaUpload,
   AdminSectionCard,
   getSafeErrorMessage,

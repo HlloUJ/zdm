@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { buttonTheme } from '@/components/foundation/actions/buttonFunctions';
 import { computed, ref, watch, onBeforeUnmount } from 'vue';
-import { AdminDialog } from '@/components/foundation';
+import { AdminMediaPreviewDialog } from '@/components/foundation';
 import type { CenterDetail, CenterProduct } from '@/services/storeSelectionCenter';
 import { centerPrice, selectionLabel } from '@/services/storeSelectionCenter';
 import { selectionSalesModel, selectionAttributes } from '../selectionDetailModel';
@@ -174,16 +174,9 @@ onBeforeUnmount(unlock);
       </t-space>
     </template>
   </t-drawer>
-  <AdminDialog
+  <AdminMediaPreviewDialog
     :visible="Boolean(mediaPreview)"
     header="商品媒体"
-    :footer="false"
-    :confirmation="{ kind: 'none' }"
-    confirm-function="close"
-    mode="modal"
-    show-overlay
-    close-on-overlay-click
-    width="min(960px, 94vw)"
     @close="mediaPreview = null"
     @update:visible="!$event && (mediaPreview = null)"
     ><img
@@ -197,13 +190,9 @@ onBeforeUnmount(unlock);
       autoplay
       playsinline
       class="center-description-preview"
-  /></AdminDialog>
+  /></AdminMediaPreviewDialog>
 </template>
 <style scoped>
-.center-description-preview {
-  max-width: 100%;
-  max-height: calc(100dvh - 160px);
-}
 
 .selection-sales-table :deep(.selection-sales-heading),
 .selection-sales-table :deep(.selection-sales-cell) {

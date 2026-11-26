@@ -94,7 +94,7 @@ for (const [width, height] of [[1600, 900], [1536, 1536], [900, 1800]]) {
     await expect.poll(() => image.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBe(width);
     const box = (await image.boundingBox())!;
     expect(box.width / box.height).toBeCloseTo(width / height, 2);
-    await expectStandardImagePreviewAndDismiss(page, preview, true);
+    await expectStandardImagePreviewAndDismiss(page, preview);
   });
 }
 
@@ -134,7 +134,7 @@ test('新增与编辑使用必填标记、字段错误及精确金额输入', as
   const preview = page
     .locator('.t-dialog')
     .filter({ has: page.locator('.t-dialog__header').filter({ hasText: '服务主图' }) });
-  await expectStandardImagePreviewAndDismiss(page, preview, true);
+  await expectStandardImagePreviewAndDismiss(page, preview);
   await page.getByRole('button', { name: '新增', exact: true }).click();
   const dialog = page.locator('.t-dialog').filter({ hasText: '新增服务' });
   await expect(dialog.locator('.t-form__label--required')).toHaveCount(2);
@@ -216,7 +216,7 @@ test('主图上传、原生卡片预览、替换与删除保留表单草稿', as
   const preview = page
     .locator('.t-dialog')
     .filter({ has: page.locator('.t-dialog__header').filter({ hasText: '服务主图' }) });
-  await expectStandardImagePreviewAndDismiss(page, preview, true);
+  await expectStandardImagePreviewAndDismiss(page, preview);
   await editor.locator('.admin-media-upload').press('Enter');
   await expect(preview).toBeVisible();
   await page.keyboard.press('Escape');

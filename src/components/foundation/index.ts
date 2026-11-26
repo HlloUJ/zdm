@@ -1,3 +1,4 @@
+export { default as AdminMediaPreviewDialog } from './AdminMediaPreviewDialog.vue';
 export { default as AdminDialog } from './AdminDialog.vue';
 export { default as AdminConfirmDialog } from './AdminConfirmDialog.vue';
 export { default as AdminListLayout } from './AdminListLayout.vue';

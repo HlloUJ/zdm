@@ -213,20 +213,13 @@
         </article>
       </template>
     </AdminListPage>
-    <AdminDialog
+    <AdminMediaPreviewDialog
       v-model:visible="previewVisible"
-      :confirmation="{ kind: 'none' }"
-      confirm-function="close"
       :header="previewTitle"
-      width="min(960px, 94vw)"
-      mode="modal"
-      show-overlay
-      close-on-overlay-click
-      :footer="false"
       @close="previewVisible = false"
     >
-      <img v-if="previewVisible" :src="previewUrl" :alt="previewTitle" style="max-width: 100%" />
-    </AdminDialog>
+      <img v-if="previewVisible" :src="previewUrl" :alt="previewTitle" />
+    </AdminMediaPreviewDialog>
     <div class="zdm-admin-pagination">
       <t-pagination v-bind="visiblePagination" @change="emit('pageChange', $event)" />
     </div>
@@ -237,7 +230,7 @@ import { computed, ref } from 'vue';
 import type { PageInfo, TableProps } from 'tdesign-vue-next';
 import {
   AdminListPage,
-  AdminDialog,
+  AdminMediaPreviewDialog,
   adminFeedback,
   type ListAction,
   type ListFilter,

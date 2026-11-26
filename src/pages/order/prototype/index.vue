@@ -337,17 +337,12 @@
       :object-name="deletingSetting?.name"
       @confirm="deleteSetting"
     />
-    <AdminDialog
+    <AdminMediaPreviewDialog
       :visible="scopeVerified && Boolean(proofUrl)"
       header="收退款凭证"
-      width="min(960px, 94vw)"
-      confirm-function="close"
-      :confirmation="{ kind: 'none' }"
-      :cancel-btn="null"
-      :close-on-overlay-click="true"
       @update:visible="!$event && (proofUrl = '')"
-      ><img :src="proofUrl" alt="收退款凭证" width="100%"
-    /></AdminDialog>
+      ><img :src="proofUrl" alt="收退款凭证"
+    /></AdminMediaPreviewDialog>
     <AdminDialog
       :visible="scopeVerified && Boolean(logDetail)"
       header="操作前后数据"
@@ -387,6 +382,7 @@ import {
   AdminFormDialog,
   AdminConfirmDialog,
   AdminDialog,
+  AdminMediaPreviewDialog,
   adminFeedback,
   type ListAction,
   type ListFilter,

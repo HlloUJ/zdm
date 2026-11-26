@@ -822,6 +822,13 @@
           "after": "\nexport { default as AdminListToolbar } from './AdminListToolbar.vue';\n\nexport { default as AdminPhoneInput } from './AdminPhoneInput.vue';\n",
           "reason": "用户确认按全局原生表单规范增加复用的只读区号和号码组合控件。",
           "stage": "before-migrations"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "export { default as AdminDialog } from './AdminDialog.vue';\nexport { default as AdminConfirmDialog } from './AdminConfirmDialog.vue';\n",
+          "after": "export { default as AdminMediaPreviewDialog } from './AdminMediaPreviewDialog.vue';\nexport { default as AdminDialog } from './AdminDialog.vue';\nexport { default as AdminConfirmDialog } from './AdminConfirmDialog.vue';\n",
+          "stage": "before-migrations"
         }
       ]
     },
@@ -1573,6 +1580,27 @@
           "reason": "按已确认的操作校验与反馈整改方案接入本页登记的操作",
           "before": "  const target = confirmState.row;\n  const action = confirmState.type === 'delete' ? '删除' : confirmState.type === 'enable' ? '启用' : '停用';\n\n  try {\n    if (confirmState.type === 'delete') {\n      await deleteCraft(target.id);\n      tableData.value = tableData.value.filter((item) => item.id !== target.id);\n      ensureCurrentPage();\n    } else {\n      const updated = await updateCraftStatus(\n        target.id,\n        toBackendStatus(confirmState.type === 'enable' ? 'normal' : 'disabled'),\n      );\n      const targetIndex = tableData.value.findIndex((item) => item.id === target.id);\n      if (targetIndex !== -1) {\n        tableData.value.splice(targetIndex, 1, toCraftItem(updated));\n      }\n    }\n\n    closeConfirmDialog();\n    if (confirmState.type === 'delete') {\n      adminFeedback.deleted(target.name);\n    } else {\n      adminFeedback.actionSuccess({ action, target: target.name });\n    }\n  } catch (error) {\n    adminFeedback.error(error instanceof Error ? error.message : '操作失败');\n  }\n};\n\nonMounted(loadCrafts);\n",
           "after": "  const target = confirmState.row;\n  const action = confirmState.type === 'delete' ? '删除' : confirmState.type === 'enable' ? '启用' : '停用';\n\n  const operationType = confirmState.type;\n  await operations.execute(`${operationType}:${target.id}`, async (current) => {\n    try {\n      if (operationType === 'delete') {\n        const deleted = await deleteCraft(target.id);\n        if (!current()) return;\n        if (!deleted) throw new Error('成品工艺未删除，请刷新后重试');\n        tableData.value = tableData.value.filter((item) => item.id !== target.id);\n        ensureCurrentPage();\n      } else {\n        const updated = await updateCraftStatus(\n          target.id,\n          toBackendStatus(operationType === 'enable' ? 'normal' : 'disabled'),\n        );\n        if (!current()) return;\n        const targetIndex = tableData.value.findIndex((item) => item.id === target.id);\n        if (targetIndex !== -1) {\n          tableData.value.splice(targetIndex, 1, toCraftItem(updated));\n        }\n      }\n\n      closeConfirmDialog();\n      if (operationType === 'delete') {\n        adminFeedback.deleted(target.name);\n      } else {\n        adminFeedback.actionSuccess({ action, target: target.name });\n      }\n    } catch (error) {\n      if (!current()) return;\n      adminFeedback.error(getSafeErrorMessage(error, '操作失败'));\n    }\n  });\n};\n\nonMounted(loadCrafts);\n"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "    </AdminConfirmDialog>\n\n    <AdminDialog\n      v-model:visible=\"imagePreviewVisible\"\n      :header=\"previewCraftName\"\n      :prevent-scroll-through=\"true\"\n      width=\"min(960px, 94vw)\"\n      :confirmation=\"{ kind: 'none' }\"\n      confirm-function=\"close\"\n      mode=\"modal\"\n      show-overlay\n      close-on-overlay-click\n      :footer=\"false\"\n      @close=\"imagePreviewVisible = false\"\n    >\n      <div class=\"image-preview\">\n        <img\n          v-if=\"previewImageUrl\"\n          class=\"image-preview__img\"\n          style=\"max-width: 100%\"\n          :src=\"previewImageUrl\"\n          alt=\"工艺大图\"\n",
+          "after": "    </AdminConfirmDialog>\n\n    <AdminMediaPreviewDialog\n      v-model:visible=\"imagePreviewVisible\"\n      :header=\"previewCraftName\"\n      :prevent-scroll-through=\"true\"\n      @close=\"imagePreviewVisible = false\"\n    >\n      <div class=\"image-preview zdm-media-preview__group\">\n        <img\n          v-if=\"previewImageUrl\"\n          class=\"image-preview__img\"\n          :src=\"previewImageUrl\"\n          alt=\"工艺大图\"\n",
+          "stage": "before-migrations"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "        <div>统一3D工艺图</div>\n      </div>\n    </AdminDialog>\n  </div>\n</template>\n",
+          "after": "      </div>\n    </AdminMediaPreviewDialog>\n  </div>\n</template>\n",
+          "stage": "before-migrations"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "import DecimalInput from '@/components/DecimalInput.vue';\nimport { numericError } from '@/utils/numericInput';\nimport { AdminDialog } from '@/components/foundation';\nimport { formConfirmation, dialogButtonProps } from '@/components/foundation/actions/confirmation';\nimport { buttonTheme, buttonFunctionFor, cancelButtonProps } from '@/components/foundation/actions/buttonFunctions';\n",
+          "after": "import DecimalInput from '@/components/DecimalInput.vue';\nimport { numericError } from '@/utils/numericInput';\nimport { AdminMediaPreviewDialog } from '@/components/foundation';\nimport { formConfirmation, dialogButtonProps } from '@/components/foundation/actions/confirmation';\nimport { buttonTheme, buttonFunctionFor, cancelButtonProps } from '@/components/foundation/actions/buttonFunctions';\n",
+          "stage": "before-migrations"
         }
       ]
     },
@@ -2629,6 +2657,20 @@
           "reason": "按已确认的操作校验与反馈整改方案接入本页登记的操作",
           "before": "    return;\n  }\n  if (!detail.value || submitting.value) return;\n  submitting.value = true;\n  try {\n    await deleteFollowup(detail.value.customer.id, deletingFollowId.value);\n    confirmVisible.value = false;\n    detail.value = await getCustomerDetail(detail.value.customer.id);\n    await reload();\n  } catch (error) {\n    fail('删除', error);\n  } finally {\n",
           "after": "    return;\n  }\n  if (!detail.value || submitting.value) return;\n  const customerId = detail.value.customer.id;\n  submitting.value = true;\n  try {\n    const deleted = await deleteFollowup(customerId, deletingFollowId.value);\n    if (!deleted) throw new Error('跟进记录未删除，请刷新后重试');\n    adminFeedback.success('已删除跟进记录');\n    confirmVisible.value = false;\n    try {\n      const updated = await getCustomerDetail(customerId);\n      if (detail.value?.customer.id === customerId) detail.value = updated;\n      await reload();\n    } catch (error) {\n      fail('刷新客户详情', error);\n    }\n  } catch (error) {\n    fail('删除', error);\n  } finally {\n"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "      @confirm=\"confirmOperationOnce\"\n    />\n    <AdminDialog\n      v-model:visible=\"imageVisible\"\n      :confirmation=\"{ kind: 'none' }\"\n      confirm-function=\"close\"\n      header=\"图片预览\"\n      width=\"min(960px, 94vw)\"\n      mode=\"modal\"\n      show-overlay\n      close-on-overlay-click\n      :footer=\"false\"\n      @close=\"imageVisible = false\"\n    >\n      <img v-if=\"imageVisible\" :src=\"previewImages[0]\" alt=\"附件图片\" style=\"max-width: 100%\" />\n    </AdminDialog>\n  </div>\n</template>\n",
+          "after": "      @confirm=\"confirmOperationOnce\"\n    />\n    <AdminMediaPreviewDialog\n      v-model:visible=\"imageVisible\"\n      header=\"图片预览\"\n      @close=\"imageVisible = false\"\n    >\n      <img v-if=\"imageVisible\" :src=\"previewImages[0]\" alt=\"附件图片\" />\n    </AdminMediaPreviewDialog>\n  </div>\n</template>\n",
+          "stage": "before-migrations"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "import CustomerFollowupAttachments from '@/components/customer/CustomerFollowupAttachments.vue';\nimport AdminSideMenu from '@/components/AdminSideMenu.vue';\nimport AdminDialog from '@/components/foundation/AdminDialog.vue';\nimport {\n  AdminListPage,\n",
+          "after": "import CustomerFollowupAttachments from '@/components/customer/CustomerFollowupAttachments.vue';\nimport AdminSideMenu from '@/components/AdminSideMenu.vue';\nimport { AdminMediaPreviewDialog } from '@/components/foundation';\nimport {\n  AdminListPage,\n",
+          "stage": "before-migrations"
         }
       ]
     },
@@ -2896,6 +2938,34 @@
           "stage": "before-migrations",
           "before": "  <AdminDialog\n    :visible=\"!!preview\"\n",
           "after": "  <AdminDialog\n    confirm-function=\"close\"\n    :visible=\"!!preview\"\n"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "    </template>\n  </ProductOperationLogTemplate>\n  <AdminDialog\n    :confirmation=\"{ kind: 'none' }\"\n    confirm-function=\"close\"\n    :visible=\"!!preview\"\n    header=\"历史媒体\"\n    mode=\"modal\"\n    show-overlay\n    close-on-overlay-click\n    width=\"min(960px, 94vw)\"\n    :footer=\"false\"\n    @close=\"preview = null\"\n    @cancel=\"preview = null\"\n",
+          "after": "    </template>\n  </ProductOperationLogTemplate>\n  <AdminMediaPreviewDialog\n    :visible=\"!!preview\"\n    header=\"历史媒体\"\n    @close=\"preview = null\"\n    @cancel=\"preview = null\"\n",
+          "stage": "before-migrations"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "        :src=\"preview.url\"\n        controls\n        class=\"history-large-media\" /><img v-else :src=\"preview.url\" alt=\"历史图片\" style=\"max-width: 100%\"\n    /></template>\n  </AdminDialog>\n</template>\n<script setup lang=\"ts\">\n",
+          "after": "        :src=\"preview.url\"\n        controls\n        class=\"history-large-media\" /><img v-else :src=\"preview.url\" alt=\"历史图片\"\n    /></template>\n  </AdminMediaPreviewDialog>\n</template>\n<script setup lang=\"ts\">\n",
+          "stage": "before-migrations"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "import { formatProductDateTime } from '@/utils/formatProductDateTime';\nimport { getLoginUser } from '@/services/auth';\nimport { AdminDialog, adminFeedback } from '@/components/foundation';\nimport ProductOperationLogTemplate from '@/components/product-logs/ProductOperationLogTemplate.vue';\nimport {\n",
+          "after": "import { formatProductDateTime } from '@/utils/formatProductDateTime';\nimport { getLoginUser } from '@/services/auth';\nimport { AdminMediaPreviewDialog, adminFeedback } from '@/components/foundation';\nimport ProductOperationLogTemplate from '@/components/product-logs/ProductOperationLogTemplate.vue';\nimport {\n",
+          "stage": "before-migrations"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "  object-fit: contain;\n}\n.history-large-media {\n  display: block;\n  max-width: 100%;\n  max-height: 70vh;\n  margin: auto;\n}\n.history-rich-text {\n  overflow-wrap: anywhere;\n",
+          "after": "  object-fit: contain;\n}\n.history-rich-text {\n  overflow-wrap: anywhere;\n",
+          "stage": "before-migrations"
         }
       ]
     },
@@ -4928,6 +4998,27 @@
           "reason": "按已确认的操作校验与反馈整改方案接入本页登记的操作",
           "before": "    saving.value = false;\n  }\n};\n</script>\n\n<style scoped>\n",
           "after": "    saving.value = false;\n  }\n};\noperations.onInvalidate(closeConfirmDialog);\n</script>\n\n<style scoped>\n"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "      />\n    </t-drawer>\n    <AdminDialog\n      v-model:visible=\"imagePreviewVisible\"\n      :header=\"imagePreviewTitle\"\n      :width=\"productPreviewType === 'video' ? '960px' : 'min(960px, 94vw)'\"\n      :confirmation=\"{ kind: 'none' }\"\n      confirm-function=\"close\"\n      mode=\"modal\"\n      show-overlay\n      close-on-overlay-click\n      :prevent-scroll-through=\"false\"\n      :footer=\"false\"\n      @close=\"closeImagePreview\"\n    >\n      <div class=\"image-preview-dialog\">\n        <video\n          v-if=\"imagePreviewVisible && productPreviewType === 'video'\"\n",
+          "after": "      />\n    </t-drawer>\n    <AdminMediaPreviewDialog\n      v-model:visible=\"imagePreviewVisible\"\n      :header=\"imagePreviewTitle\"\n      :prevent-scroll-through=\"false\"\n      @close=\"closeImagePreview\"\n    >\n      <div class=\"image-preview-dialog zdm-media-preview__group\">\n        <video\n          v-if=\"imagePreviewVisible && productPreviewType === 'video'\"\n",
+          "stage": "before-migrations"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "          aria-label=\"商品视频播放器\"\n        />\n        <img v-else-if=\"imagePreviewVisible\" :src=\"imagePreviewSrc\" :alt=\"imagePreviewTitle\" style=\"max-width: 100%\" />\n      </div>\n    </AdminDialog>\n    <FinishedOperationLogs v-if=\"canViewOperationLogs\" v-model:visible=\"operationLogsVisible\" />\n    <AdminConfirmDialog\n",
+          "after": "          aria-label=\"商品视频播放器\"\n        />\n        <img v-else-if=\"imagePreviewVisible\" :src=\"imagePreviewSrc\" :alt=\"imagePreviewTitle\" />\n      </div>\n    </AdminMediaPreviewDialog>\n    <FinishedOperationLogs v-if=\"canViewOperationLogs\" v-model:visible=\"operationLogsVisible\" />\n    <AdminConfirmDialog\n",
+          "stage": "before-migrations"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "  adminFeedback,\n  AdminConfirmDialog,\n  AdminDialog,\n  AdminSectionCard,\n  getSafeErrorMessage,\n",
+          "after": "  adminFeedback,\n  AdminConfirmDialog,\n  AdminMediaPreviewDialog,\n  AdminSectionCard,\n  getSafeErrorMessage,\n",
+          "stage": "before-migrations"
         }
       ]
     },
@@ -5023,6 +5114,27 @@
           "stage": "before-migrations",
           "before": "  <AdminDialog\n    :visible=\"Boolean(preview)\"\n",
           "after": "  <AdminDialog\n    confirm-function=\"close\"\n    :visible=\"Boolean(preview)\"\n"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "    <template v-if=\"$slots.sale\" #sale=\"slotProps\"><slot name=\"sale\" v-bind=\"slotProps\" /></template>\n  </ProductDetail>\n  <AdminDialog\n    :confirmation=\"{ kind: 'none' }\"\n    confirm-function=\"close\"\n    :visible=\"Boolean(preview)\"\n    header=\"商品媒体\"\n    mode=\"modal\"\n    show-overlay\n    close-on-overlay-click\n    attach=\"body\"\n    width=\"min(960px, 94vw)\"\n    :footer=\"false\"\n    @close=\"preview = null\"\n    @update:visible=\"!$event && (preview = null)\"\n  >\n    <img v-if=\"preview?.kind === 'image'\" :src=\"preview.url\" alt=\"商品图片\" style=\"max-width: 100%\" />\n    <video\n      v-if=\"preview?.kind === 'video'\"\n",
+          "after": "    <template v-if=\"$slots.sale\" #sale=\"slotProps\"><slot name=\"sale\" v-bind=\"slotProps\" /></template>\n  </ProductDetail>\n  <AdminMediaPreviewDialog\n    :visible=\"Boolean(preview)\"\n    header=\"商品媒体\"\n    attach=\"body\"\n    @close=\"preview = null\"\n    @update:visible=\"!$event && (preview = null)\"\n  >\n    <img v-if=\"preview?.kind === 'image'\" :src=\"preview.url\" alt=\"商品图片\" />\n    <video\n      v-if=\"preview?.kind === 'video'\"\n",
+          "stage": "before-migrations"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "      class=\"product-video-preview\"\n    />\n  </AdminDialog>\n</template>\n\n<script setup lang=\"ts\">\nimport { computed, ref } from 'vue';\nimport { AdminDialog } from '@/components/foundation';\nimport ProductDetail from '../management/components/ProductDetail.vue';\nimport type { StoreFinishedProduct } from '@/services/storeFinishedStock';\n",
+          "after": "      class=\"product-video-preview\"\n    />\n  </AdminMediaPreviewDialog>\n</template>\n\n<script setup lang=\"ts\">\nimport { computed, ref } from 'vue';\nimport { AdminMediaPreviewDialog } from '@/components/foundation';\nimport ProductDetail from '../management/components/ProductDetail.vue';\nimport type { StoreFinishedProduct } from '@/services/storeFinishedStock';\n",
+          "stage": "before-migrations"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "}));\n</script>\n\n<style scoped>\n.product-video-preview {\n  display: block;\n  width: min(900px, 100%);\n  height: min(760px, calc(100vh - 220px));\n  object-fit: contain;\n}\n</style>\n",
+          "after": "}));\n</script>\n",
+          "stage": "before-migrations"
         }
       ],
       "approvedVisualPatches": []
@@ -6529,6 +6641,27 @@
           "reason": "按已确认的操作校验与反馈整改方案接入本页登记的操作",
           "before": "  window.addEventListener('focus', refreshOnSelectionReturn);\n});\nonBeforeUnmount(() => window.removeEventListener('focus', refreshOnSelectionReturn));\n</script>\n<style scoped>\n@import url('./index.css');\n",
           "after": "  window.addEventListener('focus', refreshOnSelectionReturn);\n});\nonBeforeUnmount(() => window.removeEventListener('focus', refreshOnSelectionReturn));\noperations.onInvalidate(() => { confirm.value = null; });\n</script>\n<style scoped>\n@import url('./index.css');\n"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "      </template>\n    </ProductOperationLogTemplate>\n    <AdminDialog\n      :confirmation=\"{ kind: 'close', text: '关闭' }\"\n      confirm-function=\"close\"\n      :visible=\"Boolean(logVideoPreview)\"\n      header=\"商品视频\"\n      width=\"min(960px, 94vw)\"\n      :cancel-btn=\"null\"\n      @confirm=\"logVideoPreview = null\"\n      @close=\"logVideoPreview = null\"\n",
+          "after": "      </template>\n    </ProductOperationLogTemplate>\n    <AdminMediaPreviewDialog\n      :visible=\"Boolean(logVideoPreview)\"\n      header=\"商品视频\"\n      @confirm=\"logVideoPreview = null\"\n      @close=\"logVideoPreview = null\"\n",
+          "stage": "before-migrations"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "    >\n      <video v-if=\"logVideoPreview\" :src=\"logVideoPreview\" controls autoplay playsinline class=\"log-video-preview\" />\n    </AdminDialog>\n    <AdminDialog\n      :confirmation=\"{ kind: 'none' }\"\n      confirm-function=\"close\"\n      :visible=\"Boolean(imagePreview)\"\n      header=\"商品主图\"\n      mode=\"modal\"\n      show-overlay\n      close-on-overlay-click\n      width=\"min(960px, 94vw)\"\n      :footer=\"false\"\n      @close=\"imagePreview = null\"\n      @update:visible=\"!$event && (imagePreview = null)\"\n    >\n      <img v-if=\"imagePreview\" :src=\"imagePreview\" alt=\"商品主图\" style=\"max-width: 100%\" />\n    </AdminDialog>\n    <StoreBatchCategoryDialog\n      v-if=\"categoryDialog && canSetCategory\"\n",
+          "after": "    >\n      <video v-if=\"logVideoPreview\" :src=\"logVideoPreview\" controls autoplay playsinline class=\"log-video-preview\" />\n    </AdminMediaPreviewDialog>\n    <AdminMediaPreviewDialog\n      :visible=\"Boolean(imagePreview)\"\n      header=\"商品主图\"\n      @close=\"imagePreview = null\"\n      @update:visible=\"!$event && (imagePreview = null)\"\n    >\n      <img v-if=\"imagePreview\" :src=\"imagePreview\" alt=\"商品主图\" />\n    </AdminMediaPreviewDialog>\n    <StoreBatchCategoryDialog\n      v-if=\"categoryDialog && canSetCategory\"\n",
+          "stage": "before-migrations"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "import { finishedStockActions } from '../shared/finishedStockActions';\nimport { storeOperationLogSourceLabel as logSourceLabel } from './storeOperationLog';\nimport { AdminConfirmDialog, AdminDialog, adminFeedback, getSafeErrorMessage } from '@/components/foundation';\nimport { hasPermission } from '@/services/adminPermissions';\nimport { getLoginUser } from '@/services/auth';\n",
+          "after": "import { finishedStockActions } from '../shared/finishedStockActions';\nimport { storeOperationLogSourceLabel as logSourceLabel } from './storeOperationLog';\nimport { AdminConfirmDialog, AdminDialog, AdminMediaPreviewDialog, adminFeedback, getSafeErrorMessage } from '@/components/foundation';\nimport { hasPermission } from '@/services/adminPermissions';\nimport { getLoginUser } from '@/services/auth';\n",
+          "stage": "before-migrations"
         }
       ]
     },
@@ -8619,6 +8752,27 @@
           "reason": "按已确认的操作校验与反馈整改方案接入本页登记的操作",
           "before": "    saving.value = false;\n  }\n};\n</script>\n\n<style scoped src=\"../shared/index.css\"></style>\n",
           "after": "    saving.value = false;\n  }\n};\noperations.onInvalidate(closeConfirmDialog);\n</script>\n\n<style scoped src=\"../shared/index.css\"></style>\n"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "      />\n    </t-drawer>\n    <AdminDialog\n      v-model:visible=\"imagePreviewVisible\"\n      :header=\"imagePreviewTitle\"\n      :width=\"productPreviewType === 'video' ? '960px' : 'min(960px, 94vw)'\"\n      :confirmation=\"{ kind: 'none' }\"\n      confirm-function=\"close\"\n      mode=\"modal\"\n      show-overlay\n      close-on-overlay-click\n      :prevent-scroll-through=\"false\"\n      :footer=\"false\"\n      @close=\"closeImagePreview\"\n    >\n      <div class=\"image-preview-dialog\">\n        <video\n          v-if=\"imagePreviewVisible && productPreviewType === 'video'\"\n",
+          "after": "      />\n    </t-drawer>\n    <AdminMediaPreviewDialog\n      v-model:visible=\"imagePreviewVisible\"\n      :header=\"imagePreviewTitle\"\n      :prevent-scroll-through=\"false\"\n      @close=\"closeImagePreview\"\n    >\n      <div class=\"image-preview-dialog zdm-media-preview__group\">\n        <video\n          v-if=\"imagePreviewVisible && productPreviewType === 'video'\"\n",
+          "stage": "before-migrations"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "          aria-label=\"商品视频播放器\"\n        />\n        <img v-else-if=\"imagePreviewVisible\" :src=\"imagePreviewSrc\" :alt=\"imagePreviewTitle\" style=\"max-width: 100%\" />\n      </div>\n    </AdminDialog>\n    <FinishedOperationLogs v-if=\"canViewOperationLogs\" v-model:visible=\"operationLogsVisible\" />\n    <AdminConfirmDialog\n",
+          "after": "          aria-label=\"商品视频播放器\"\n        />\n        <img v-else-if=\"imagePreviewVisible\" :src=\"imagePreviewSrc\" :alt=\"imagePreviewTitle\" />\n      </div>\n    </AdminMediaPreviewDialog>\n    <FinishedOperationLogs v-if=\"canViewOperationLogs\" v-model:visible=\"operationLogsVisible\" />\n    <AdminConfirmDialog\n",
+          "stage": "before-migrations"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "  AdminConfirmDialog,\n  AdminDialog,\n  AdminMediaUpload,\n  AdminSectionCard,\n",
+          "after": "  AdminConfirmDialog,\n  AdminDialog,\n  AdminMediaPreviewDialog,\n  AdminMediaUpload,\n  AdminSectionCard,\n",
+          "stage": "before-migrations"
         }
       ]
     },
@@ -11889,6 +12043,27 @@
           "reason": "按已确认的操作校验与反馈整改方案接入本页登记的操作",
           "before": "    openConfirm('savePrice', target, `是否保存大板“${target.name}”的价格？`);\n  }\n};\n</script>\n\n<style scoped src=\"../shared/index.css\"></style>\n",
           "after": "    openConfirm('savePrice', target, `是否保存大板“${target.name}”的价格？`);\n  }\n};\noperations.onInvalidate(closeConfirmDialog);\n</script>\n\n<style scoped src=\"../shared/index.css\"></style>\n"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "    </t-drawer>\n\n    <AdminDialog\n      v-model:visible=\"uploadPreviewDialogVisible\"\n      :header=\"uploadPreviewTitle\"\n      :width=\"uploadPreviewType === 'video' ? '760px' : 'min(960px, 94vw)'\"\n      :confirmation=\"{ kind: 'none' }\"\n      confirm-function=\"close\"\n      mode=\"modal\"\n      show-overlay\n      close-on-overlay-click\n      :prevent-scroll-through=\"false\"\n      :footer=\"false\"\n      @close=\"uploadPreviewDialogVisible = false\"\n    >\n",
+          "after": "    </t-drawer>\n\n    <AdminMediaPreviewDialog\n      v-model:visible=\"uploadPreviewDialogVisible\"\n      :header=\"uploadPreviewTitle\"\n      :prevent-scroll-through=\"false\"\n      @close=\"uploadPreviewDialogVisible = false\"\n    >\n",
+          "stage": "before-migrations"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "        v-else-if=\"uploadPreviewUrl\"\n        class=\"upload-large-preview\"\n        style=\"max-width: 100%\"\n        :src=\"uploadPreviewUrl\"\n        :alt=\"uploadPreviewTitle\"\n      />\n    </AdminDialog>\n\n    <AdminConfirmDialog\n",
+          "after": "        v-else-if=\"uploadPreviewUrl\"\n        class=\"upload-large-preview\"\n        :src=\"uploadPreviewUrl\"\n        :alt=\"uploadPreviewTitle\"\n      />\n    </AdminMediaPreviewDialog>\n\n    <AdminConfirmDialog\n",
+          "stage": "before-migrations"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "  AdminConfirmDialog,\n  AdminDialog,\n  AdminMediaUpload,\n  AdminListLayout,\n",
+          "after": "  AdminConfirmDialog,\n  AdminDialog,\n  AdminMediaPreviewDialog,\n  AdminMediaUpload,\n  AdminListLayout,\n",
+          "stage": "before-migrations"
         }
       ],
       "approvedPlaceholderPatches": [
@@ -13448,6 +13623,27 @@
           "reason": "按已确认的操作校验与反馈整改方案接入本页登记的操作",
           "before": "    openConfirm('savePrice', target, `是否保存大板“${target.name}”的价格？`);\n  }\n};\n</script>\n\n<style scoped src=\"../shared/index.css\"></style>\n",
           "after": "    openConfirm('savePrice', target, `是否保存大板“${target.name}”的价格？`);\n  }\n};\noperations.onInvalidate(closeConfirmDialog);\n</script>\n\n<style scoped src=\"../shared/index.css\"></style>\n"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "    </t-drawer>\n\n    <AdminDialog\n      v-model:visible=\"uploadPreviewDialogVisible\"\n      :header=\"uploadPreviewTitle\"\n      :width=\"uploadPreviewType === 'video' ? '760px' : 'min(960px, 94vw)'\"\n      :confirmation=\"{ kind: 'none' }\"\n      confirm-function=\"close\"\n      mode=\"modal\"\n      show-overlay\n      close-on-overlay-click\n      :prevent-scroll-through=\"false\"\n      :footer=\"false\"\n      @close=\"uploadPreviewDialogVisible = false\"\n    >\n",
+          "after": "    </t-drawer>\n\n    <AdminMediaPreviewDialog\n      v-model:visible=\"uploadPreviewDialogVisible\"\n      :header=\"uploadPreviewTitle\"\n      :prevent-scroll-through=\"false\"\n      @close=\"uploadPreviewDialogVisible = false\"\n    >\n",
+          "stage": "before-migrations"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "        v-else-if=\"uploadPreviewUrl\"\n        class=\"upload-large-preview\"\n        style=\"max-width: 100%\"\n        :src=\"uploadPreviewUrl\"\n        :alt=\"uploadPreviewTitle\"\n      />\n    </AdminDialog>\n\n    <AdminConfirmDialog\n",
+          "after": "        v-else-if=\"uploadPreviewUrl\"\n        class=\"upload-large-preview\"\n        :src=\"uploadPreviewUrl\"\n        :alt=\"uploadPreviewTitle\"\n      />\n    </AdminMediaPreviewDialog>\n\n    <AdminConfirmDialog\n",
+          "stage": "before-migrations"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "  AdminConfirmDialog,\n  AdminDialog,\n  AdminMediaUpload,\n  AdminListLayout,\n",
+          "after": "  AdminConfirmDialog,\n  AdminDialog,\n  AdminMediaPreviewDialog,\n  AdminMediaUpload,\n  AdminListLayout,\n",
+          "stage": "before-migrations"
         }
       ],
       "approvedPlaceholderPatches": [
@@ -17029,6 +17225,20 @@
           "reason": "2026-10-22 user approved reusing public pagination styles and removing legacy style hooks only; all business props and handlers retained.",
           "before": "class=\"order-pagination\"",
           "after": "class=\"zdm-admin-pagination\""
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "      </template>\n    </AdminListPage>\n    <AdminDialog\n      v-model:visible=\"previewVisible\"\n      :confirmation=\"{ kind: 'none' }\"\n      confirm-function=\"close\"\n      :header=\"previewTitle\"\n      width=\"min(960px, 94vw)\"\n      mode=\"modal\"\n      show-overlay\n      close-on-overlay-click\n      :footer=\"false\"\n      @close=\"previewVisible = false\"\n    >\n      <img v-if=\"previewVisible\" :src=\"previewUrl\" :alt=\"previewTitle\" style=\"max-width: 100%\" />\n    </AdminDialog>\n    <div class=\"zdm-admin-pagination\">\n      <t-pagination v-bind=\"visiblePagination\" @change=\"emit('pageChange', $event)\" />\n",
+          "after": "      </template>\n    </AdminListPage>\n    <AdminMediaPreviewDialog\n      v-model:visible=\"previewVisible\"\n      :header=\"previewTitle\"\n      @close=\"previewVisible = false\"\n    >\n      <img v-if=\"previewVisible\" :src=\"previewUrl\" :alt=\"previewTitle\" />\n    </AdminMediaPreviewDialog>\n    <div class=\"zdm-admin-pagination\">\n      <t-pagination v-bind=\"visiblePagination\" @change=\"emit('pageChange', $event)\" />\n",
+          "stage": "before-migrations"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "import {\n  AdminListPage,\n  AdminDialog,\n  adminFeedback,\n  type ListAction,\n",
+          "after": "import {\n  AdminListPage,\n  AdminMediaPreviewDialog,\n  adminFeedback,\n  type ListAction,\n",
+          "stage": "before-migrations"
         }
       ]
     },
@@ -17201,6 +17411,27 @@
           "stage": "before-migrations",
           "before": "          >\n        </div>\n        <t-tag v-if=\"detail.product.addedToStore\" theme=\"primary\" variant=\"light\">已加入门店</t-tag\n        ><t-tag v-else-if=\"detail.product.inSelection\" theme=\"success\" variant=\"light\">已加入选品清单</t-tag\n        ><t-tag v-if=\"detail.product.soldOut\" theme=\"warning\" variant=\"light\">已售完</t-tag>\n        <t-tag\n          v-for=\"reason in detail.product.reasons.filter((r) => !r.includes('已加入门店') && !r.includes('已售完'))\"\n",
           "after": "          >\n        </div>\n        <t-tag v-if=\"detail.product.addedToStore\" theme=\"primary\" variant=\"light\">已加入门店</t-tag\n        ><t-tag v-else-if=\"detail.product.inSelection\" theme=\"success\" variant=\"light\">{{ selectionLabel(detail.product) }}</t-tag\n        ><t-tag v-if=\"detail.product.soldOut\" theme=\"warning\" variant=\"light\">已售完</t-tag>\n        <t-tag\n          v-for=\"reason in detail.product.reasons.filter((r) => !r.includes('已加入门店') && !r.includes('已售完'))\"\n"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "import { buttonTheme } from '@/components/foundation/actions/buttonFunctions';\nimport { computed, ref, watch, onBeforeUnmount } from 'vue';\nimport { AdminDialog } from '@/components/foundation';\nimport type { CenterDetail, CenterProduct } from '@/services/storeSelectionCenter';\nimport { centerPrice, selectionLabel } from '@/services/storeSelectionCenter';\n",
+          "after": "import { buttonTheme } from '@/components/foundation/actions/buttonFunctions';\nimport { computed, ref, watch, onBeforeUnmount } from 'vue';\nimport { AdminMediaPreviewDialog } from '@/components/foundation';\nimport type { CenterDetail, CenterProduct } from '@/services/storeSelectionCenter';\nimport { centerPrice, selectionLabel } from '@/services/storeSelectionCenter';\n",
+          "stage": "before-migrations"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "    </template>\n  </t-drawer>\n  <AdminDialog\n    :visible=\"Boolean(mediaPreview)\"\n    header=\"商品媒体\"\n    :footer=\"false\"\n    :confirmation=\"{ kind: 'none' }\"\n    confirm-function=\"close\"\n    mode=\"modal\"\n    show-overlay\n    close-on-overlay-click\n    width=\"min(960px, 94vw)\"\n    @close=\"mediaPreview = null\"\n    @update:visible=\"!$event && (mediaPreview = null)\"\n",
+          "after": "    </template>\n  </t-drawer>\n  <AdminMediaPreviewDialog\n    :visible=\"Boolean(mediaPreview)\"\n    header=\"商品媒体\"\n    @close=\"mediaPreview = null\"\n    @update:visible=\"!$event && (mediaPreview = null)\"\n",
+          "stage": "before-migrations"
+        },
+        {
+          "task": "014",
+          "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
+          "before": "      playsinline\n      class=\"center-description-preview\"\n  /></AdminDialog>\n</template>\n<style scoped>\n.center-description-preview {\n  max-width: 100%;\n  max-height: calc(100dvh - 160px);\n}\n\n.selection-sales-table :deep(.selection-sales-heading),\n",
+          "after": "      playsinline\n      class=\"center-description-preview\"\n  /></AdminMediaPreviewDialog>\n</template>\n<style scoped>\n\n.selection-sales-table :deep(.selection-sales-heading),\n",
+          "stage": "before-migrations"
         }
       ]
     },

@@ -1,3 +1,4 @@
+import { waitForOpenedDialog } from './dialog-confirmation';
 import { productWarehouseUrl } from './product-test-navigation';
 import { expect, test } from '@playwright/test';
 
@@ -498,6 +499,7 @@ test('opens supplier create and edit dialogs', async ({ page }) => {
   await expect(createDialog.getByText('供应商名称')).toBeVisible();
   await expect(createDialog.getByText('供货类型', { exact: true })).toBeVisible();
   await expect(createDialog.getByText('联系电话')).toBeVisible();
+  await waitForOpenedDialog(createDialog);
   await createDialog.getByRole('button', { name: '取消' }).click();
   await expect(createDialog).toBeHidden();
 
@@ -507,6 +509,7 @@ test('opens supplier create and edit dialogs', async ({ page }) => {
   const editDialog = page.locator('.t-dialog:visible').filter({ hasText: '编辑' });
   await expect(editDialog).toBeVisible();
   await expect(editDialog.locator('input').first()).toHaveValue('装点猫大板供应商');
+  await waitForOpenedDialog(editDialog);
   await editDialog.getByRole('button', { name: '取消' }).click();
   await expect(editDialog).toBeHidden();
 });
