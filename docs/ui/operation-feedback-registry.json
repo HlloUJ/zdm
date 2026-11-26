@@ -1820,7 +1820,7 @@
           "task": "014",
           "reason": "统一图片与视频预览弹窗的视口布局及公共入口",
           "before": "        <div>统一3D工艺图</div>\n      </div>\n    </AdminDialog>\n  </div>\n</template>\n",
-          "after": "        <div>统一3D工艺图</div>\n      </div>\n    </AdminMediaPreviewDialog>\n  </div>\n</template>\n"
+          "after": "      </div>\n    </AdminMediaPreviewDialog>\n  </div>\n</template>\n"
         },
         {
           "task": "014",

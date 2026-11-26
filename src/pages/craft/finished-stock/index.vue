@@ -207,7 +207,6 @@
           alt="工艺大图"
         />
         <div v-else class="image-preview__empty">暂无图片</div>
-        <div>统一3D工艺图</div>
       </div>
     </AdminMediaPreviewDialog>
   </div>
