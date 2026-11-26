@@ -92,14 +92,13 @@
                 </div>
               </template>
               <template #level="{ row }"
-                ><span class="level-label">{{ levelLabel(row.level) }}</span></template
+                ><span class="level-label">{{ row.level }}级分类</span></template
               >
               <template #status="{ row }"
                 ><t-tag :theme="row.status === 'enabled' ? 'success' : 'danger'" variant="light">{{
                   row.status === 'enabled' ? '启用' : '停用'
                 }}</t-tag></template
               >
-              <template #sort="{ row }">{{ row.sort }}</template>
               <template #createdAt="{ row }">{{ row.createdAt }}</template>
               <template #operation="{ row }">
                 <div class="table-actions">
@@ -256,7 +255,6 @@ interface CategoryRow {
   name: string;
   status: Status;
   productCount: number;
-  sort: number;
   createdByName: string;
   createdByAccountId?: number;
   createdAt: string;
@@ -324,13 +322,12 @@ const formRules: Record<string, FormRule[]> = {
 
 const columns = computed<PrimaryTableCol<TableRowData>[]>(() => [
   ...(canSortCategory.value ? [{ colKey: 'drag', title: 'dragTitle', width: 28 }] : []),
-  { colKey: 'name', title: '分类名称', minWidth: 240, align: 'left' },
-  { colKey: 'level', title: '分类级别', width: 120, align: 'left' },
-  { colKey: 'productCount', title: '关联商品', width: 120 },
+  { colKey: 'name', title: '分类名称', minWidth: 280, align: 'left' },
+  { colKey: 'level', title: '分类级别', width: 130, align: 'left' },
+  { colKey: 'productCount', title: '关联商品', width: 130 },
   { colKey: 'status', title: '状态', width: 100 },
-  { colKey: 'sort', title: '排序', width: 100 },
-  { colKey: 'createdByName', title: '创建人', width: 120 },
-  { colKey: 'createdAt', title: '创建时间', width: 200 },
+  { colKey: 'createdByName', title: '创建人', width: 140 },
+  { colKey: 'createdAt', title: '创建时间', width: 220 },
   {
     colKey: 'operation',
     title: '操作',
@@ -398,7 +395,7 @@ function collectRows(
   rows: CategoryRow[],
   forceVisible: boolean,
 ) {
-  nodes.forEach((node, index) => {
+  nodes.forEach((node) => {
     const selfMatches = nodeMatches(node);
     const descendantMatches = hasMatchingDescendant(node);
     const visible = !hasSearch.value || forceVisible || selfMatches || descendantMatches;
@@ -411,7 +408,6 @@ function collectRows(
       name: node.name,
       status: node.status,
       productCount: node.productCount,
-      sort: index + 1,
       createdByName: node.createdByName,
       createdByAccountId: node.createdByAccountId,
       createdAt: formatDateTime(node.createdAt),

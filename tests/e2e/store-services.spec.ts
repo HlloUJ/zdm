@@ -210,6 +210,7 @@ test('主图上传、原生卡片预览、替换与删除保留表单草稿', as
   await expect(editor.locator('.t-upload__card-item')).toHaveCount(1);
   await expect(card).toHaveCSS('width', '110px');
   await expect(card).toHaveCSS('height', '110px');
+  await expect(editor.getByRole('button', { name: '封面图', exact: true })).toBeVisible();
   const original = await card.locator('img').getAttribute('src');
   await card.click();
   const preview = page

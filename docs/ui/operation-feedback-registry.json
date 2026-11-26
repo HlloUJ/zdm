@@ -1034,7 +1034,7 @@
       }
     },
     "src/pages/product/category/index.vue": {
-      "script": "6586a3efd44479bc8af0d178538fbf05c082c1d8982006bc62ab9c12d8bb1d5d",
+      "script": "caff63e64845f2196ddecf71af0b20260ad16af72a2bf0d3943ce8eeb1ef645c",
       "actions": {
         "click → handleReset": "query",
         "click → handleSearch": "query",
@@ -1435,7 +1435,7 @@
       }
     },
     "src/pages/store-category/management/index.vue": {
-      "script": "0b47e91966e13a9a9eda6fe94802bea1ee9392000927e177820eac0efaa2a862",
+      "script": "665291e8308ecd489dc79215539f512469324f0d4cbc6bee5e40a1e2788b8b89",
       "actions": {
         "click → handleReset": "query",
         "click → handleSearch": "query",
@@ -3387,7 +3387,7 @@
     },
     "src/pages/product/category/index.vue": {
       "baseSha256": "d0c3e9bc240c62acc821fb519b0a41a7b8e3c3f693eb8c564e4b74336713d6ca",
-      "patchCount": 19,
+      "patchCount": 25,
       "patches": [
         {
           "stage": "before-migrations",
@@ -3491,6 +3491,30 @@
         {
           "before": "  deleteTarget.value = null;\n});\n</script>\n\n",
           "after": "  deleteTarget.value = null;\n});\n\nconst tableIndicator = useDelayedLoading(() => Boolean(loading.value || sorting.value));\n\nconst { pending: handleSubmitPending, run: handleSubmitOnce } = usePendingAction(handleSubmit);\nconst handleSubmitButton = useDialogLoading(() => formVisible.value, () => dialogButtonProps('save', formConfirmation(formMode.value), { loading: handleSubmitPending.value }));\nconst { pending: handleStatusConfirmPending, run: handleStatusConfirmOnce } = usePendingAction(handleStatusConfirm);\n</script>\n\n"
+        },
+        {
+          "before": "                  row.status === 'enabled' ? '启用' : '停用'\n                }}</t-tag></template\n              >\n              <template #sort=\"{ row }\">{{ row.sort }}</template>\n              <template #createdAt=\"{ row }\">{{ row.createdAt }}</template>\n              <template #operation=\"{ row }\">\n                <div class=\"table-actions\">",
+          "after": "                  row.status === 'enabled' ? '启用' : '停用'\n                }}</t-tag></template\n              >\n              <template #createdAt=\"{ row }\">{{ row.createdAt }}</template>\n              <template #operation=\"{ row }\">\n                <div class=\"table-actions\">"
+        },
+        {
+          "before": "  name: string;\n  status: Status;\n  productCount: number;\n  sort: number;\n  createdByName: string;\n  createdByAccountId?: number;\n  createdAt: string;",
+          "after": "  name: string;\n  status: Status;\n  productCount: number;\n  createdByName: string;\n  createdByAccountId?: number;\n  createdAt: string;"
+        },
+        {
+          "before": "\nconst columns = computed<PrimaryTableCol<TableRowData>[]>(() => [\n  ...(canSortCategory.value ? [{ colKey: 'drag', title: 'dragTitle', width: 28 }] : []),\n  { colKey: 'name', title: '分类名称', minWidth: 240, align: 'left' },\n  { colKey: 'level', title: '分类级别', width: 120, align: 'left' },\n  { colKey: 'productCount', title: '关联商品', width: 120 },\n  { colKey: 'status', title: '状态', width: 100 },\n  { colKey: 'sort', title: '排序', width: 100 },\n  { colKey: 'createdByName', title: '创建人', width: 120 },\n  { colKey: 'createdAt', title: '创建时间', width: 200 },\n  {\n    colKey: 'operation',\n    title: '操作',",
+          "after": "\nconst columns = computed<PrimaryTableCol<TableRowData>[]>(() => [\n  ...(canSortCategory.value ? [{ colKey: 'drag', title: 'dragTitle', width: 28 }] : []),\n  { colKey: 'name', title: '分类名称', minWidth: 280, align: 'left' },\n  { colKey: 'level', title: '分类级别', width: 130, align: 'left' },\n  { colKey: 'productCount', title: '关联商品', width: 130 },\n  { colKey: 'status', title: '状态', width: 100 },\n  { colKey: 'createdByName', title: '创建人', width: 140 },\n  { colKey: 'createdAt', title: '创建时间', width: 220 },\n  {\n    colKey: 'operation',\n    title: '操作',"
+        },
+        {
+          "before": "  rows: CategoryRow[],\n  forceVisible: boolean,\n) {\n  nodes.forEach((node, index) => {\n    const selfMatches = nodeMatches(node);\n    const descendantMatches = hasMatchingDescendant(node);\n    const visible = !hasSearch.value || forceVisible || selfMatches || descendantMatches;",
+          "after": "  rows: CategoryRow[],\n  forceVisible: boolean,\n) {\n  nodes.forEach((node) => {\n    const selfMatches = nodeMatches(node);\n    const descendantMatches = hasMatchingDescendant(node);\n    const visible = !hasSearch.value || forceVisible || selfMatches || descendantMatches;"
+        },
+        {
+          "before": "      name: node.name,\n      status: node.status,\n      productCount: node.productCount,\n      sort: index + 1,\n      createdByName: node.createdByName,\n      createdByAccountId: node.createdByAccountId,\n      createdAt: formatDateTime(node.createdAt),",
+          "after": "      name: node.name,\n      status: node.status,\n      productCount: node.productCount,\n      createdByName: node.createdByName,\n      createdByAccountId: node.createdByAccountId,\n      createdAt: formatDateTime(node.createdAt),"
+        },
+        {
+          "before": "<span class=\"level-label\">{{ levelLabel(row.level) }}</span>",
+          "after": "<span class=\"level-label\">{{ row.level }}级分类</span>"
         }
       ]
     },
@@ -4651,7 +4675,7 @@
     },
     "src/pages/store-category/management/index.vue": {
       "baseSha256": "e6db3a2a43404453ba0ed901036e24385ca44997bdc3755c825742efef8e94df",
-      "patchCount": 23,
+      "patchCount": 28,
       "patches": [
         {
           "stage": "before-migrations",
@@ -4776,6 +4800,26 @@
           "reason": "删除分类时以服务端当前商品关联数预检",
           "before": "    if (node.productCount) throw new OperationBlockedError('该分类已关联商品，不能删除，请先停用该分类');\n    requireCondition(await checkStoreCategoryDelete(node.id, activeScope.value));\n",
           "after": "    requireCondition(await checkStoreCategoryDelete(node.id, activeScope.value));\n"
+        },
+        {
+          "before": "                  {{ row.status === 'enabled' ? '启用' : '停用' }}\n                </t-tag>\n              </template>\n              <template #sort=\"{ row }\">{{ row.sort }}</template>\n              <template #createdByName=\"{ row }\">{{ row.createdByName }}</template>\n              <template #createdAt=\"{ row }\">{{ row.createdAt }}</template>\n              <template #operation=\"{ row }\">",
+          "after": "                  {{ row.status === 'enabled' ? '启用' : '停用' }}\n                </t-tag>\n              </template>\n              <template #createdByName=\"{ row }\">{{ row.createdByName }}</template>\n              <template #createdAt=\"{ row }\">{{ row.createdAt }}</template>\n              <template #operation=\"{ row }\">"
+        },
+        {
+          "before": "  level: 1 | 2 | 3;\n  name: string;\n  status: CategoryStatus;\n  sort: number;\n  productCount: number;\n  createdByName: string;\n  createdAt: string;",
+          "after": "  level: 1 | 2 | 3;\n  name: string;\n  status: CategoryStatus;\n  productCount: number;\n  createdByName: string;\n  createdAt: string;"
+        },
+        {
+          "before": "\nconst columns = computed<PrimaryTableCol<TableRowData>[]>(() => [\n  ...(canSortCategory.value ? [{ colKey: 'drag', title: 'dragTitle', width: 28 }] : []),\n  { colKey: 'name', title: '分类名称', minWidth: 240, align: 'left' },\n  { colKey: 'level', title: '分类级别', width: 120, align: 'left' },\n  { colKey: 'productCount', title: '关联商品', width: 120 },\n  { colKey: 'status', title: '状态', width: 100 },\n  { colKey: 'sort', title: '排序', width: 100 },\n  { colKey: 'createdByName', title: '创建人', width: 120 },\n  { colKey: 'createdAt', title: '创建时间', width: 200 },\n  {\n    colKey: 'operation',\n    title: '操作',",
+          "after": "\nconst columns = computed<PrimaryTableCol<TableRowData>[]>(() => [\n  ...(canSortCategory.value ? [{ colKey: 'drag', title: 'dragTitle', width: 28 }] : []),\n  { colKey: 'name', title: '分类名称', minWidth: 280, align: 'left' },\n  { colKey: 'level', title: '分类级别', width: 130, align: 'left' },\n  { colKey: 'productCount', title: '关联商品', width: 130 },\n  { colKey: 'status', title: '状态', width: 100 },\n  { colKey: 'createdByName', title: '创建人', width: 140 },\n  { colKey: 'createdAt', title: '创建时间', width: 220 },\n  {\n    colKey: 'operation',\n    title: '操作',"
+        },
+        {
+          "before": "  const subtreeMatches = (node: CategoryNode): boolean => matches(node) || node.children.some(subtreeMatches);\n  const rows: CategoryRow[] = [];\n  const appendNodes = (nodes: CategoryNode[], forceDescendants = false) => {\n    nodes.forEach((node, position) => {\n      const nodeMatches = matches(node);\n      if (hasFilter && !forceDescendants && !subtreeMatches(node)) return;\n      rows.push({",
+          "after": "  const subtreeMatches = (node: CategoryNode): boolean => matches(node) || node.children.some(subtreeMatches);\n  const rows: CategoryRow[] = [];\n  const appendNodes = (nodes: CategoryNode[], forceDescendants = false) => {\n    nodes.forEach((node) => {\n      const nodeMatches = matches(node);\n      if (hasFilter && !forceDescendants && !subtreeMatches(node)) return;\n      rows.push({"
+        },
+        {
+          "before": "        level: node.level,\n        name: node.name,\n        status: node.status,\n        sort: position + 1,\n        productCount: node.productCount,\n        createdByName: node.createdByName,\n        createdAt: formatDateTime(node.createdAt),",
+          "after": "        level: node.level,\n        name: node.name,\n        status: node.status,\n        productCount: node.productCount,\n        createdByName: node.createdByName,\n        createdAt: formatDateTime(node.createdAt),"
         }
       ]
     },
