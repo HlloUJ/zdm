@@ -14,14 +14,15 @@ const named = (source, target) => ({ type: 'volume', source, target });
 const rawHex = value => Buffer.from(value).toString('hex').toUpperCase();
 
 // Model the Compose and SQL client boundaries. Real MySQL executes the same queries in the R4 rehearsal.
-function fixture(t, { imageAfter = 'kept.jpg', rowsAfter = 1, changeConfig = () => {}, healthy = true, failStart = false, failCleanup = false, changedFile } = {}) {
+function fixture(t, { imageAfter = 'kept.jpg', rowsAfter = 1, changeConfig = () => {}, healthy = true, failStart = false, failCleanup = false, sharedImage = false, changedFile } = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'zdm-migration-contract-'));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   const backup = join(dir, 'original.sql');
   writeFileSync(backup, 'isolated fixture');
   const operations = [];
   let candidateRunning = false;
-  let stage;
+  let stage, projectName, built = false;
+  const imageId = 'sha256:'+'e'.repeat(64);
   function run(cwd, program, args, options) {
     if (program === 'tar') mkdirSync(join(cwd, 'backend/src/main/resources/db/migration'), { recursive: true });
     if (program === 'git' || program === 'tar' || program === process.execPath) return '';
@@ -33,8 +34,12 @@ function fixture(t, { imageAfter = 'kept.jpg', rowsAfter = 1, changeConfig = () 
       writeFileSync(options.stdio[1], data);
       return '';
     }
+    if (args[0]==='image' && args[1]==='ls') return built?imageId:'';
+    if (args[0]==='image' && args[1]==='inspect') return JSON.stringify([projectName+'-ledger:latest',...(sharedImage ? ['shared:latest'] : [])])+'\n'+projectName+'\nledger';
+    if (args[0]==='ps') return '';
+    if (args[0]==='image' && args[1]==='rm') { assert.equal(args[2],imageId); built=false; return ''; }
     stage = cwd;
-    const identity = args[2];
+    const identity = args[2]; projectName=identity;
     const command = args.slice(args.indexOf('preflight.yml') + 1);
     operations.push(command[0]);
     if (command[0] === 'config') {
@@ -64,7 +69,7 @@ function fixture(t, { imageAfter = 'kept.jpg', rowsAfter = 1, changeConfig = () 
       if (candidateRunning && failStart) throw Error('candidate startup failed');
       return '';
     }
-    if (command[0] === 'build') return '';
+    if (command[0] === 'build') { built=true; return ''; }
     if (command[0] === 'run') {
       assert(command.includes('tar'));
       assert.equal(readFileSync(options.stdio[0], 'utf8'), 'archive');
@@ -152,4 +157,10 @@ test('changing an original media or ledger file refuses the candidate even when 
     assert.throws(f.rehearse, error => error.message.includes('原文件') && error.message.includes(service));
     f.checkCleanup();
   }
+});
+
+test('a second tag protects a rehearsal image and its recovery record', t => {
+  const f = fixture(t, { sharedImage: true });
+  assert.throws(f.rehearse, error => error.cause?.message.includes('引用已变化'));
+  assert.ok(existsSync(f.stage));
 });

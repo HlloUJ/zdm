@@ -58,6 +58,8 @@ wait 和 blocked 可选 user、ci、resource、dependency、approval、delivery�
 
 返工开始时用 begin 登记 stage 为 rework:feedback 或 rework:validation，key 识别这一轮，ref 使用原反馈消息或故障记录的同一标识，验收返工可附原版本 revision。报告用相同 ref 的反馈计算反馈至实际开始处理的时长。随后通过 exec 023 --round 轮次号 -- 命令 或 measure 023 development --round 轮次号 -- 命令关联同轮操作。健康重提验或相应完整验证通过后自动结束适用轮次，定向复验亦可按原记录显式 end。多个复验保留各自尝试。同一版本、同一源码树和检查范围失败后重跑时，报告先记原因待核。有环境故障依据时用 retry-cause 023 传入 previous、attempt、cause（environment）、ref 和 at，引用报告中的两次执行号。独立新增需求按原始新交办另登记。
 
+在独立任务工作区，`exec` 和 `measure` 自动分配任务临时目录，`mark closed` 触发该任务的资源回收。工作区外文件、Docker 测试卷、延期重试和保全记录的用法见[任务环境清理](task-completion-cleanup.md#自动登记和回收)。
+
 ## PR、CI 和报告
 
 在任务目录创建 PR 后运行 link-pr 023 PR号，核对当前 HEAD、同仓 PR 及目标 main。候选更新后重新关联新版本。收尾时 sync-pr 023 把远端 PR 和 CI 元数据写入本地，report 的 --live 可只读查询最新状态。按 PR、版本、运行、尝试和作业识别来源。只有运行创建与首个作业开跑时刻时显示为 CI 启动前等待，实际受阻须有额外依据。

@@ -125,6 +125,9 @@ export function rehearseMigration(directory, revision, backup, config, run) {
     'mysql', ...(query ? ['-e', query] : []),
   ], options);
 
+  const ledgerTag = identity+'-ledger:latest';
+  const imageId = () => run(stage,'docker',['image','ls','--no-trunc','--filter','reference='+ledgerTag,'-q'],{env});
+  let ledgerImage;
   let created = false;
   try {
     run(directory, 'git', ['archive', '-o', join(stage, 'candidate.tar'), revision]);
@@ -154,6 +157,8 @@ export function rehearseMigration(directory, revision, backup, config, run) {
     const callbacks = join(stage, 'backend/src/main/resources/db/migration');
     writeFileSync(join(callbacks, 'afterMigrate__zz_' + identity + '.sql'), queries.callback, { flag: 'wx', mode: 0o600 });
     compose('build', 'ledger');
+    ledgerImage=imageId();
+    if (!/^sha256:[a-f0-9]{64}$/.test(ledgerImage)) throw Error('未定位本次演练的独占账本镜像');
     copyFiles(directory, stage, run, project);
     compose('up', '-d', '--no-deps', 'ledger', 'backend');
     const health = compose('exec', '-T', 'backend', 'curl', '--fail', '--silent', '--show-error', '--max-time', '3',
@@ -170,6 +175,16 @@ export function rehearseMigration(directory, revision, backup, config, run) {
     if (created) {
       try {
         compose('down', '--volumes');
+        const id=imageId(); // A failed build can still have published the task tag.
+        if (id) {
+          const format='{{json .RepoTags}}\n{{index .Config.Labels "com.docker.compose.project"}}\n{{index .Config.Labels "com.docker.compose.service"}}';
+          const [tags,project,service]=run(stage,'docker',['image','inspect','--format',format,id],{env}).split('\n');
+          if ((ledgerImage && id!==ledgerImage) || !/^sha256:[a-f0-9]{64}$/.test(id) ||
+              project!==identity || service!=='ledger' || JSON.stringify(JSON.parse(tags))!==JSON.stringify([ledgerTag]) ||
+              run(stage,'docker',['ps','-aq','--filter','ancestor='+id],{env}))
+            throw Error('演练镜像的身份或引用已变化');
+          run(stage,'docker',['image','rm',id],{env});
+        }
       } catch (error) {
         throw new Error('迁移演练环境尚未完成清理：' + stage, { cause: error });
       }

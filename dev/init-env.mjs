@@ -1,5 +1,7 @@
 import { createHmac, randomBytes } from 'node:crypto';
-import { writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, realpathSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { dirname, join } from 'node:path';
 
 const [frontend = '5273', backend = '8280'] = process.argv.slice(2);
 const validPort = (value) => /^\d+$/.test(value) && Number(value) >= 1024 && Number(value) < 65536;
@@ -23,3 +25,28 @@ const entries = {
 const file = Object.entries(entries).map(([key, value]) => key + '=' + value).join('\n') + '\n';
 writeFileSync('.env', file, { flag: 'wx', mode: 0o600 });
 console.log('已为本工作目录创建 .env，前端端口 ' + frontend + '，后端端口 ' + backend + '。');
+
+// Only genuine task checkouts receive a creation receipt. CI, migration rehearsals and standalone directories keep their original behavior.
+async function noteTaskProject() {
+  const cwd = realpathSync('.');
+  if (!existsSync(join(cwd,'.git'))) return;
+  const {managedRepository}=await import('./task-timing/resource-host.mjs');
+  if (!managedRepository(cwd)) return;
+  const common = realpathSync(execFileSync('git',['rev-parse','--path-format=absolute','--git-common-dir'],{encoding:'utf8'}).trim());
+  const branch = execFileSync('git',['branch','--show-current'],{encoding:'utf8'}).trim();
+  if (!branch || branch==='main' || dirname(common)===cwd || !existsSync(join(common,'zdm-tasks','activation.json'))) return;
+  const {engineIdentity}=await import('./task-timing/resource-docker.mjs');
+  let engine=null;
+  try {engine=engineIdentity();} catch { /* A frontend-only environment can start offline. */ }
+  const at=Date.now();
+  mkdirSync('.private',{recursive:true,mode:0o700});
+  writeFileSync('.private/resource-environment.json',JSON.stringify({workspace:cwd,at,project:entries.COMPOSE_PROJECT_NAME,engine})+'\n',{flag:'wx',mode:0o600});
+  const context=process.env.ZDM_QUALITY_TIMING_CONTEXT;
+  if (!context) return;
+  const hint=JSON.parse(context);
+  if (hint.common===common && hint.workspace===cwd && hint.ids?.length===1) {
+    const {bindEnvironment}=await import('./task-timing/resources.mjs');
+    bindEnvironment(common,hint.ids[0],cwd,entries.COMPOSE_PROJECT_NAME,at,engine);
+  }
+}
+await noteTaskProject();

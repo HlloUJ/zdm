@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import {
   activated,
   bound,
+  label,
   contextVariable,
   measured,
   observe,
@@ -29,6 +30,10 @@ import {
   unassigned,
   update,
 } from './task-timing/registry.mjs';
+import { bindEnvironment, collectResources, otherOwner, registerCopy, resourceStatus, retryReleased, scratch, temporaryFile, temporaryVolume } from './task-timing/resources.mjs';
+import { managedRepository } from './task-timing/resource-host.mjs';
+import { existsSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { bindPr, collect, github, releaseProof, syncPr } from './task-timing/github.mjs';
 import { report, summary } from './task-timing/report.mjs';
 
@@ -71,6 +76,22 @@ function execute(cwd, common, command, args) {
         });
       }
     });
+  }
+  if (ctx?.ids.length === 1 && realpathSync(cwd) !== dirname(common) && managedRepository(cwd) &&
+      !['closed','cancelled'].includes(ctx.tasks[0].status) &&
+      !otherOwner(common,ctx.ids[0],realpathSync(cwd)) &&
+      realpathSync(cwd) === realpathSync(git(cwd,'rev-parse','--show-toplevel')) &&
+      git(cwd,'branch','--show-current') && git(cwd,'branch','--show-current') !== 'main') {
+    const taskId = ctx.ids[0];
+    env.ZDM_TASK_TMPDIR = scratch(common,taskId,cwd);
+    env.TMPDIR = env.TMP = env.TEMP = env.ZDM_TASK_TMPDIR;
+    const path=join(cwd,'.private','resource-environment.json');
+    if (existsSync(path)) {
+      const e=JSON.parse(readFileSync(path,'utf8'));
+      if (e.workspace===realpathSync(cwd) && !resourceStatus(common,taskId)?.environment?.engine &&
+          readFileSync(join(cwd,'.env'),'utf8').split(/\r?\n/).includes('COMPOSE_PROJECT_NAME='+e.project))
+        bindEnvironment(common,taskId,cwd,e.project,e.at,e.engine);
+    }
   }
   const run = () => {
     const child = spawnSync(rest[separator + 1], rest.slice(separator + 2), {
@@ -195,8 +216,36 @@ export function main(argv, cwd = process.cwd()) {
     }
     case 'rename':
       return rename(common, id, arg);
-    case 'mark':
-      return mark(common, id, json(arg));
+    case 'scratch':
+      return scratch(common,id,cwd);
+    case 'temp-file':
+      return temporaryFile(common,id,cwd,arg);
+    case 'test-volume':
+      return temporaryVolume(common,id,cwd,arg);
+    case 'resource-copy':
+      return registerCopy(common,id,cwd,json(arg));
+    case 'resources':
+      return resourceStatus(common,id);
+    case 'retry-cleanup':
+      if (!resourceStatus(common,id)?.requested) throw Error('尚无已交付的回收请求');
+      return collectResources(common,id);
+    case 'mark': {
+      const data=json(arg);
+      if (data.stage!=='closed') return mark(common,id,data);
+      if (!resourceStatus(common,id)) {
+        const row=mark(common,id,data);
+        if (managedRepository(cwd)) retryReleased(common,id);
+        return row;
+      }
+      const task=taskRecord(root,id);
+      label(data.ref,'原始事件来源');
+      if(time(data.at)<task.originalAt || time(data.at)<(task.stateAt??0)) throw Error('结项时间早于任务当前状态');
+      if (data.revision && !/^[a-f0-9]{40}$/.test(data.revision)) throw Error('需要完整 Git 提交');
+      const cleanup=collectResources(common,id);
+      const row=mark(common,id,data);
+      retryReleased(common,id);
+      return cleanup ? {...row,cleanup} : row;
+    }
     case 'begin':
       return manualStart(common, id.split(','), json(arg));
     case 'end':
@@ -246,7 +295,7 @@ export function main(argv, cwd = process.cwd()) {
     }
     default:
       throw Error(
-        '命令：status, activate, register, start, rename, exec, measure, mark, begin, end, link-pr, sync-pr, report, summary, unassigned, resolve',
+        '命令：status, activate, register, start, rename, exec, measure, mark, begin, end, link-pr, sync-pr, report, summary, unassigned, resolve, scratch, temp-file, resource-copy, test-volume, resources, retry-cleanup',
       );
   }
 }
