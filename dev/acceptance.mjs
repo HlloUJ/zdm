@@ -1,3 +1,4 @@
+import { retryReleased } from './task-timing/resources.mjs';
 import { EvidenceStore } from './quality/store.mjs';
 import { stateFor } from './quality/assessment-store.mjs';
 import { spawnSync } from 'node:child_process';
@@ -206,9 +207,19 @@ function runAcceptance(cwd, command, argument, runtimeFactory = createRuntime, c
       tasks = previous ? tasks.map((task) => task.branch === branch ? update : task) : [...tasks, update];
     }
 
+    const collectAfterHandoff = (runtime, active, previous) => {
+      // Runtime and publication have already succeeded. A failed eviction is retried on the next handoff.
+      try { runtime.collectDependencies?.(active,previous); }
+      catch (error) { console.error('5274 依赖回收待重试：'+error.message); }
+      try { retryReleased(commonDir); }
+      catch (error) { console.error('退役任务资源回收待重试：'+error.message); }
+    };
     if (main === state.main && JSON.stringify(tasks) === JSON.stringify(state.tasks)) {
-      runtimeFactory(state.directory, run).check();
-      return commitPublication(() => state);
+      const runtime=runtimeFactory(state.directory, run);
+      runtime.check();
+      const result=commitPublication(() => state);
+      collectAfterHandoff(runtime,state);
+      return result;
     }
     let combined = main;
     for (const task of tasks) {
@@ -243,6 +254,7 @@ function runAcceptance(cwd, command, argument, runtimeFactory = createRuntime, c
       }
       throw new Error(error.message + '\n已恢复上一个验收版本。');
     }
+    collectAfterHandoff(runtime,next,state.revision);
     return next;
   } finally {
     rmdirSync(lockPath);

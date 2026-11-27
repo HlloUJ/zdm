@@ -1,5 +1,5 @@
-import { createHash } from 'node:crypto';
-import { closeSync, existsSync, mkdirSync, mkdtempSync, openSync, readFileSync, renameSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { dependencyCache } from './acceptance-dependencies.mjs';
+import { closeSync, existsSync, mkdirSync, openSync, readFileSync, renameSync, rmSync, symlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import { rehearseMigration } from './acceptance-migration.mjs';
 
@@ -97,25 +97,7 @@ export function createRuntime(directory, run) {
     }
   }
 
-  function dependencies(revision) {
-    const manifest = git('show', revision + ':package.json');
-    const lock = git('show', revision + ':package-lock.json');
-    const hash = createHash('sha256').update(manifest + '\0' + lock).digest('hex');
-    const cache = join(privateDir, 'frontend-dependencies', hash);
-    if (!existsSync(join(cache, 'node_modules', 'vite', 'bin', 'vite.js'))) {
-      mkdirSync(join(privateDir, 'frontend-dependencies'), { recursive: true });
-      const temporary = mkdtempSync(cache + '-');
-      try {
-        writeFileSync(join(temporary, 'package.json'), manifest + '\n');
-        writeFileSync(join(temporary, 'package-lock.json'), lock + '\n');
-        run(temporary, 'npm', ['ci', '--prefer-offline', '--no-audit'], { stdio: 'inherit' });
-        renameSync(temporary, cache);
-      } finally {
-        rmSync(temporary, { recursive: true, force: true });
-      }
-    }
-    return join(cache, 'node_modules');
-  }
+  const {ensure:dependencies,sweep:collectDependencies} = dependencyCache(directory,run);
 
   function useDependencies(revision) {
     const target = dependencies(revision);
@@ -145,6 +127,7 @@ export function createRuntime(directory, run) {
 
   return {
     installDependencies: useDependencies,
+    collectDependencies,
     check() {
       checkBindings();
       probe(healthURL, true);

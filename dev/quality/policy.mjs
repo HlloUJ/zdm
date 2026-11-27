@@ -30,7 +30,8 @@ export const checks = {
     family: 'node',
     command: nodeTest('tests/acceptance*.test.mjs'),
     inputs: (p) =>
-      acceptance.test(p) || governance.test(p) || npmInput.test(p) || p === 'dev/init-env.mjs',
+      acceptance.test(p) || governance.test(p) || npmInput.test(p) || p === 'dev/init-env.mjs' ||
+      p.startsWith('dev/task-timing/'),
   },
   ledger: {
     family: 'node',
