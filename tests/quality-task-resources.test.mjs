@@ -89,6 +89,21 @@ test('completion proves delivery, preserves open and changed copies, retries ind
   assert.deepEqual(collectResources(common, id), late);
   assert.ok(!existsSync(join(root, 'pending-cleanup', id + '.json')));
 });
+test('a missing original cannot hide the loss of its independent backup', (t) => {
+  const f = repo(t),
+    path = join(f.base, 'log'),
+    copy = join(f.root, f.id, 'log.copy');
+  main(['temp-file', f.id, path], f.tree);
+  writeFileSync(path, 'result');
+  writeFileSync(copy, 'result');
+  main(['resource-copy', f.id, JSON.stringify({ path, backup: copy })], f.tree);
+  rmSync(path);
+  writeFileSync(copy, 'unexpected');
+  f.retire();
+  const result = collectResources(f.common, f.id, { readers: () => () => false });
+  assert.equal(result.pending.length, 1);
+  assert.deepEqual(result.missing, []);
+});
 test('a replacement symlink, an active peer and an unmerged task tip each retain the original allocation', (t) => {
   const f = repo(t),
     path = join(f.base, 'allocated');

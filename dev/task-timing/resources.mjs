@@ -167,7 +167,7 @@ export function registerCopy(common, id, cwd, input) {
   });
 }
 // Called only for the freshly generated random Compose name, never for a pre-existing .env.
-export function bindEnvironment(common, id, cwd, project, at) {
+export function bindEnvironment(common, id, cwd, project, at, creationEngine) {
   if (!/^zdm-dev-[a-f0-9]{16}$/.test(project)) throw Error('无效的任务 Compose 身份');
   return edit(common, id, cwd, (state) => {
     if (state.environment && state.environment.project !== project) throw Error('任务已有独立 Compose 环境');
@@ -178,8 +178,9 @@ export function bindEnvironment(common, id, cwd, project, at) {
       } catch {
         /* Frontend-only tasks can run without a Docker daemon. */
       }
-      const previous = state.environment;
-      if (previous && engine) {
+      if (creationEngine && engine && creationEngine !== engine)
+        throw Error('已切换 Docker 引擎，不能接管已有环境');
+      if (!creationEngine && engine) {
         // Never adopt existing resources from an engine that was unavailable at creation.
         const filter = 'label=com.docker.compose.project=' + project;
         if (
@@ -194,9 +195,9 @@ export function bindEnvironment(common, id, cwd, project, at) {
             ]),
           )
         )
-          return previous;
+          engine = null;
       }
-      state.environment = { project, at, engine };
+      state.environment = { project, at, engine: creationEngine ?? engine };
     }
     return state.environment;
   });
@@ -289,13 +290,11 @@ export function collectResources(
       ...(s.temporaryFiles ?? []).filter((x) => !s.files.some((f) => f.path === x.path)),
     ])
       attempt(f.path, () => {
+        if (f.backup && (realpathSync(f.backup) !== f.backup || hash(f.backup) !== f.digest))
+          throw Error('独立保全文件已变化');
         if (absent(f.path)) return false;
         guard(f.path);
-        if (
-          identity(f.path) !== f.identity ||
-          (f.backup &&
-            (realpathSync(f.backup) !== f.backup || hash(f.path) !== f.digest || hash(f.backup) !== f.digest))
-        )
+        if (identity(f.path) !== f.identity || (f.backup && hash(f.path) !== f.digest))
           throw Error('文件身份或保全摘要已变化');
         unlinkSync(f.path);
       });

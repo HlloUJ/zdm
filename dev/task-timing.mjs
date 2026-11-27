@@ -90,7 +90,7 @@ function execute(cwd, common, command, args) {
       const e=JSON.parse(readFileSync(path,'utf8'));
       if (e.workspace===realpathSync(cwd) && !resourceStatus(common,taskId)?.environment?.engine &&
           readFileSync(join(cwd,'.env'),'utf8').split(/\r?\n/).includes('COMPOSE_PROJECT_NAME='+e.project))
-        bindEnvironment(common,taskId,cwd,e.project,e.at);
+        bindEnvironment(common,taskId,cwd,e.project,e.at,e.engine);
     }
   }
   const run = () => {

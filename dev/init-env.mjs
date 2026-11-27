@@ -35,14 +35,18 @@ async function noteTaskProject() {
   const common = realpathSync(execFileSync('git',['rev-parse','--path-format=absolute','--git-common-dir'],{encoding:'utf8'}).trim());
   const branch = execFileSync('git',['branch','--show-current'],{encoding:'utf8'}).trim();
   if (!branch || branch==='main' || dirname(common)===cwd || !existsSync(join(common,'zdm-tasks','activation.json'))) return;
+  const {engineIdentity}=await import('./task-timing/resource-docker.mjs');
+  let engine=null;
+  try {engine=engineIdentity();} catch { /* A frontend-only environment can start offline. */ }
+  const at=Date.now();
   mkdirSync('.private',{recursive:true,mode:0o700});
-  writeFileSync('.private/resource-environment.json',JSON.stringify({workspace:cwd,at:Date.now(),project:entries.COMPOSE_PROJECT_NAME})+'\n',{flag:'wx',mode:0o600});
+  writeFileSync('.private/resource-environment.json',JSON.stringify({workspace:cwd,at,project:entries.COMPOSE_PROJECT_NAME,engine})+'\n',{flag:'wx',mode:0o600});
   const context=process.env.ZDM_QUALITY_TIMING_CONTEXT;
   if (!context) return;
   const hint=JSON.parse(context);
   if (hint.common===common && hint.workspace===cwd && hint.ids?.length===1) {
     const {bindEnvironment}=await import('./task-timing/resources.mjs');
-    bindEnvironment(common,hint.ids[0],cwd,entries.COMPOSE_PROJECT_NAME,Date.now());
+    bindEnvironment(common,hint.ids[0],cwd,entries.COMPOSE_PROJECT_NAME,at,engine);
   }
 }
 await noteTaskProject();

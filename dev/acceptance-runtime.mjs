@@ -1,10 +1,10 @@
 import { dependencyCache } from './acceptance-dependencies.mjs';
-import { closeSync, existsSync, mkdirSync, openSync, readFileSync, renameSync, rmSync, symlinkSync } from 'node:fs';
+import { closeSync, existsSync, mkdirSync, openSync, readFileSync, realpathSync, renameSync, rmSync, symlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import { rehearseMigration } from './acceptance-migration.mjs';
 
 const migrationDir = 'backend/src/main/resources/db/migration/';
-const frontendInput = /^(src\/|public\/|index\.html$|vite\.config\.|tsconfig|package(?:-lock)?\.json$)/;
+const frontendInput = /^(src\/|public\/|index\.html$|vite\.config\.|tsconfig|\.npmrc$|package(?:-lock)?\.json$)/;
 const backendInput = /^backend\/(src\/main\/|pom\.xml$)/;
 const ledgerInput = /^infrastructure\/store-exit-ledger\//;
 const composeInput = /^(docker-compose\.yml|compose\.private-migrations\.yml)$/;
@@ -97,10 +97,13 @@ export function createRuntime(directory, run) {
     }
   }
 
-  const {ensure:dependencies,sweep:collectDependencies} = dependencyCache(directory,run);
+  const {ensure:dependencies,sweep} = dependencyCache(directory,run);
+  let previousDependencies;
 
   function useDependencies(revision) {
     const target = dependencies(revision);
+    const active=join(directory,'node_modules');
+    if (existsSync(active) && realpathSync(active)!==target) previousDependencies=realpathSync(active);
     const link = join(directory, 'node_modules.acceptance-next');
     rmSync(link, { force: true });
     symlinkSync(target, link, 'dir');
@@ -127,7 +130,7 @@ export function createRuntime(directory, run) {
 
   return {
     installDependencies: useDependencies,
-    collectDependencies,
+    collectDependencies: (state, previous) => sweep(state, previous, previousDependencies),
     check() {
       checkBindings();
       probe(healthURL, true);

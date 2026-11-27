@@ -68,7 +68,7 @@ test('eviction preserves active, rollback, alias, busy and legacy installations'
   const state = { main: 'a', revision: 'a', tasks: [] };
   c.sweep({ ...state, pending: true }, 'b');
   assert.ok(existsSync(remove));
-  c.sweep(state, 'b');
+  c.sweep(state, 'different-toolchain', rollback);
   assert.ok(!existsSync(remove));
   assert.ok(existsSync(rollback));
   for (const entry of [active, aliased, held, legacy, other]) assert.ok(existsSync(entry));

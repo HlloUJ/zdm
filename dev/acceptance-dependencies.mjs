@@ -109,7 +109,7 @@ export function dependencyCache(directory, run, readers = currentReaders) {
       throw Error('验收依赖缓存身份或安装结果异常');
     return join(cache, 'node_modules');
   }
-  function sweep(state, previous) {
+  function sweep(state, previous, oldPath) {
     if (!existsSync(root) || realpathSync(root) !== root || state.pending) return;
     // Unmarked legacy directories and compatibility links stay available for offline recovery.
     const owned = readdirSync(root, { withFileTypes: true }).filter(
@@ -117,12 +117,14 @@ export function dependencyCache(directory, run, readers = currentReaders) {
     );
     if (!owned.length) return;
     const pinnedFile = join(root, '.rollback.json');
-    if (previous && previous !== state.revision) {
-      const key = input(previous).key;
+    const activeKey = basename(dirname(realpathSync(join(directory, 'node_modules'))));
+    const oldKey = oldPath && dirname(dirname(oldPath)) === root ? basename(dirname(oldPath)) : undefined;
+    const key = oldKey ?? (previous && previous !== state.revision ? input(previous).key : undefined);
+    if (key && key !== activeKey) {
       writeFileSync(pinnedFile + '.next', JSON.stringify({ key }), { mode: 0o600 });
       renameSync(pinnedFile + '.next', pinnedFile);
     }
-    const pinned = new Set([basename(dirname(realpathSync(join(directory, 'node_modules'))))]);
+    const pinned = new Set([activeKey]);
     if (existsSync(pinnedFile)) pinned.add(JSON.parse(readFileSync(pinnedFile, 'utf8')).key);
     for (const rev of new Set([state.main, state.revision, ...state.tasks.map((t) => t.revision)]))
       pinned.add(input(rev).key);

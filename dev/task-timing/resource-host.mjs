@@ -37,14 +37,18 @@ export function containers(run = docker) {
     .split('\n')
     .map((s) => JSON.parse(s));
 }
+// macOS reports both /var and /private/var for handles to the same object.
+function hostPath(path) {
+  return process.platform === 'darwin' ? path.replace(/^\/(tmp|var|etc)(?=\/|$)/, '/private/$1') : path;
+}
 export function currentReaders() {
   const files = command('lsof', ['-nP', '-Fn'])
     .split('\n')
     .filter((s) => s.startsWith('n/'))
-    .map((s) => s.slice(1));
+    .map((s) => hostPath(s.slice(1)));
   if (!files.length) throw Error('无法确认宿主进程引用');
   const binds = containers().flatMap((c) =>
-    c.mounts.filter((m) => m.Type === 'bind').map((m) => m.Source.replace(/^\/host_mnt(?=\/)/, '')),
+    c.mounts.filter((m) => m.Type === 'bind').map((m) => hostPath(m.Source.replace(/^\/host_mnt(?=\/)/, ''))),
   );
   return (path) =>
     files.some((f) => inside(path, f)) || binds.some((b) => inside(path, b) || inside(b, path));
