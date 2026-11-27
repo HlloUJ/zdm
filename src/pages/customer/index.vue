@@ -329,6 +329,7 @@ import AdminSideMenu from '@/components/AdminSideMenu.vue';
 import { AdminMediaPreviewDialog } from '@/components/foundation';
 import {
   AdminListPage,
+  listRowNumberColumn,
   AdminFormDialog,
   AdminPhoneInput,
   AdminDetailPage,
@@ -471,6 +472,7 @@ function handleToolbarAction(id: string) {
 }
 const columns: TableProps['columns'] = [
   { colKey: 'row-select', type: 'multiple', width: 46 },
+  listRowNumberColumn(),
   { colKey: 'name', title: '客户姓名', width: 90, ellipsis: true },
   { colKey: 'phone', title: '联系电话', width: 120, ellipsis: { placement: 'bottom' } },
   { colKey: 'ownerName', title: '归属人', width: 80, ellipsis: true },

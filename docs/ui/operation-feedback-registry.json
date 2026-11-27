@@ -436,7 +436,7 @@
       }
     },
     "src/pages/customer/index.vue": {
-      "script": "f91b1da30dd522802081c9bb7be5f4bd884061d63132588c1df2eb27d02654e8",
+      "script": "d55b1188545f8a9f51c79e04827f5d2148fad1c4cb1f894de6283fc5eafe2f51",
       "actions": {
         "action → handleToolbarAction": "@customerToolbar",
         "cancel → detailVisible = false": "view",
@@ -888,7 +888,7 @@
       }
     },
     "src/pages/order/prototype/index.vue": {
-      "script": "686aa72357d3c7ec8b003e773e01ab46abbbec60132fb78d424b7328859fa8c1",
+      "script": "e379ba5e9149c707418b6923187fa5483ef70ea1bca54abc4b4afc21d3b54ba7",
       "actions": {
         "action → openAction": "@order",
         "action → openSetting()": "form",
@@ -960,7 +960,7 @@
       }
     },
     "src/pages/product/attribute-value/index.vue": {
-      "script": "6b67fde37cda32fc39587b71601a3146df05d70d0480d5d7bfb41080a2c13f3e",
+      "script": "d51040d27f2bb9c31a23955b0a9df59b9acc4fde2df6ec12f9861abf9c60bffe",
       "actions": {
         "cancel → closeConfirmDialog": "view",
         "change → handlePaginationChange": "view",
@@ -976,7 +976,7 @@
       }
     },
     "src/pages/product/attribute/index.vue": {
-      "script": "696815256872e0e1a278d961c53d7228a8afca0efadd2ac6605bdaeec730626b",
+      "script": "b0f6af784b9569286b51ca11590d3d9c1d3ae78e3d532c2bb8936751d4959361",
       "actions": {
         "cancel → closeConfirmDialog": "view",
         "change → handlePaginationChange": "view",
@@ -994,7 +994,7 @@
       }
     },
     "src/pages/product/category-attribute-template/index.vue": {
-      "script": "41afc16cf3adaf7d2d40bbbbb446d70f0317043960f484cb5cb5db46c9b26de5",
+      "script": "103219cc5cbf1df218a62fb21fc15925bb5c246fa0d623541c05712a2846ca3b",
       "actions": {
         "active → selectCategory": "query",
         "cancel → !busy && (discardTarget = undefined)": "view",
@@ -1057,7 +1057,7 @@
       }
     },
     "src/pages/product/markup-configuration/index.vue": {
-      "script": "cd4a34874cb7d2f96d210db30897258c2950167b70991d9eafeeb8684d72a5b2",
+      "script": "62db0152b009f83af41e0e53764baf44788b10c380fe4b77df0efb72ab024481",
       "actions": {
         "cancel → closeForm": "view",
         "cancel → confirmVisible = false": "view",
@@ -1879,7 +1879,7 @@
     },
     "src/pages/customer/index.vue": {
       "baseSha256": "7ce0147064da82ad5a10a65ab144f82e3af0e9ced32081e6dcfd756bd7903f9b",
-      "patchCount": 34,
+      "patchCount": 36,
       "patches": [
         {
           "stage": "before-migrations",
@@ -2023,6 +2023,14 @@
         {
           "before": "import { useDelayedLoading } from '@/composables/useDelayedLoading';\nimport { formConfirmation, operationConfirmation } from '@/components/foundation/actions/confirmation';\nimport { buttonTheme, buttonFunctionFor, cancelButtonProps } from '@/components/foundation/actions/buttonFunctions';\n",
           "after": "import { useDelayedLoading } from '@/composables/useDelayedLoading';\nimport { confirmationQuestion, formConfirmation, operationConfirmation } from '@/components/foundation/actions/confirmation';\nimport { buttonTheme, buttonFunctionFor, cancelButtonProps } from '@/components/foundation/actions/buttonFunctions';\n"
+        },
+        {
+          "before": "  AdminListPage,\n  AdminFormDialog,\n",
+          "after": "  AdminListPage,\n  listRowNumberColumn,\n  AdminFormDialog,\n"
+        },
+        {
+          "before": "  { colKey: 'row-select', type: 'multiple', width: 46 },\n  { colKey: 'name', title: '客户姓名', width: 90, ellipsis: true },\n",
+          "after": "  { colKey: 'row-select', type: 'multiple', width: 46 },\n  listRowNumberColumn(),\n  { colKey: 'name', title: '客户姓名', width: 90, ellipsis: true },\n"
         }
       ]
     },
@@ -3300,7 +3308,7 @@
     },
     "src/pages/order/prototype/index.vue": {
       "baseSha256": "ff3c5f3cbc085070d7ce4d9a0457c1441a23759cd18681c34794378ebcd6ac02",
-      "patchCount": 28,
+      "patchCount": 31,
       "patches": [
         {
           "stage": "before-migrations",
@@ -3432,6 +3440,18 @@
         {
           "before": "    if (['create', 'copy', 'edit'].includes(id)) {\n      editing.value = id === 'edit';\n      editingOrder.value =\n",
           "after": "    if (['create', 'copy', 'edit'].includes(id)) {\n      editorAction.value = id;\n      editingOrder.value =\n"
+        },
+        {
+          "before": "  AdminListPage,\n  AdminDetailPage,\n",
+          "after": "  AdminListPage,\n  listRowNumberColumn,\n  AdminDetailPage,\n"
+        },
+        {
+          "before": "const taskColumns = [\n  { colKey: 'orderId', title: '销售订单' },\n",
+          "after": "const taskColumns = [\n  listRowNumberColumn(),\n  { colKey: 'orderId', title: '销售订单' },\n"
+        },
+        {
+          "before": "const settingColumns = [\n  { colKey: 'name', title: '名称' },\n",
+          "after": "const settingColumns = [\n  listRowNumberColumn(),\n  { colKey: 'name', title: '名称' },\n"
         }
       ]
     },
@@ -3599,7 +3619,7 @@
     },
     "src/pages/product/attribute-value/index.vue": {
       "baseSha256": "5b2fe9b3f9019ed577c60c50ec3fc546b8697276abbf866728e2b1c824cbf6a6",
-      "patchCount": 19,
+      "patchCount": 21,
       "patches": [
         {
           "stage": "before-migrations",
@@ -3694,12 +3714,20 @@
         {
           "before": "      dialog-class-name=\"zdm-admin-dialog zdm-admin-single-form\"\n      header=\"新增\"\n      width=\"480px\"\n",
           "after": "      dialog-class-name=\"zdm-admin-dialog zdm-admin-single-form\"\n      header=\"新增属性值\"\n      width=\"480px\"\n"
+        },
+        {
+          "before": "  AdminListLayout,\n  AdminPagination,\n",
+          "after": "  AdminListLayout,\n  listRowNumberColumn,\n  AdminPagination,\n"
+        },
+        {
+          "before": "const columns = computed<PrimaryTableCol<TableRowData>[]>(() => [\n  { colKey: 'name', title: '属性值名称', minWidth: 190, align: 'left' },\n",
+          "after": "const columns = computed<PrimaryTableCol<TableRowData>[]>(() => [\n  listRowNumberColumn(pagination),\n  { colKey: 'name', title: '属性值名称', minWidth: 190, align: 'left' },\n"
         }
       ]
     },
     "src/pages/product/attribute/index.vue": {
       "baseSha256": "0acfd70bf9f3452864fd54b0bfe14e5f055c7051f7e2e8796800e69a22309935",
-      "patchCount": 20,
+      "patchCount": 22,
       "patches": [
         {
           "stage": "before-migrations",
@@ -3804,12 +3832,20 @@
         {
           "before": "      confirm-function=\"submit\"\n      header=\"新增\"\n      width=\"480px\"\n",
           "after": "      confirm-function=\"submit\"\n      header=\"新增属性\"\n      width=\"480px\"\n"
+        },
+        {
+          "before": "  AdminListLayout,\n  AdminPagination,\n",
+          "after": "  AdminListLayout,\n  listRowNumberColumn,\n  AdminPagination,\n"
+        },
+        {
+          "before": "const columns = computed<PrimaryTableCol<TableRowData>[]>(() => [\n  { colKey: 'name', title: '属性名称', minWidth: 260, align: 'left' },\n",
+          "after": "const columns = computed<PrimaryTableCol<TableRowData>[]>(() => [\n  listRowNumberColumn(pagination),\n  { colKey: 'name', title: '属性名称', minWidth: 260, align: 'left' },\n"
         }
       ]
     },
     "src/pages/product/category-attribute-template/index.vue": {
       "baseSha256": "90bcf5cad3bc1de818bece56995c4077e25cfc36536d7876adc72250b06c5e4c",
-      "patchCount": 34,
+      "patchCount": 36,
       "patches": [
         {
           "stage": "before-migrations",
@@ -3961,6 +3997,14 @@
         {
           "before": "    >\n    <t-drawer v-model:visible=\"historyVisible\" header=\"版本记录\" size=\"min(760px, 100%)\" :footer=\"false\">\n      <t-table row-key=\"id\" :data=\"versions.filter((v) => v.state === 'published')\" :columns=\"historyColumns\">\n",
           "after": "    >\n    <t-drawer v-model:visible=\"historyVisible\" header=\"属性模板版本记录\" size=\"min(760px, 100%)\" :footer=\"false\">\n      <t-table row-key=\"id\" :data=\"versions.filter((v) => v.state === 'published')\" :columns=\"historyColumns\">\n"
+        },
+        {
+          "before": "                            >\n                              <template #serialNumber=\"{ rowIndex }\">{{\n                                (attributePage - 1) * attributePageSize + rowIndex + 1\n                              }}</template>\n                              <template #drag><t-icon name=\"move\" /></template>\n",
+          "after": "                            >\n                              <template #drag><t-icon name=\"move\" /></template>\n"
+        },
+        {
+          "before": "  ...(canSortAttributes.value ? [{ colKey: 'drag', title: '', width: 24, className: 'attribute-drag-cell' }] : []),\n  { colKey: 'serialNumber', title: '序号', width: 80 },\n  { colKey: 'name', title: '属性名称' },\n",
+          "after": "  ...(canSortAttributes.value ? [{ colKey: 'drag', title: '', width: 24, className: 'attribute-drag-cell' }] : []),\n  { colKey: 'name', title: '属性名称' },\n"
         }
       ]
     },
@@ -4115,7 +4159,7 @@
     },
     "src/pages/product/markup-configuration/index.vue": {
       "baseSha256": "d69caf8ea2cc461065afd84d0232145b6ef6b919127078c5b2dad73b2b6f297e",
-      "patchCount": 28,
+      "patchCount": 30,
       "patches": [
         {
           "stage": "before-migrations",
@@ -4246,6 +4290,14 @@
         {
           "before": "      action=\"删除\"\n      object-type=\"价格配置\"\n",
           "after": "      action=\"删除\"\n      :title=\"`是否删除${commodityLabel}价格配置？`\"\n      object-type=\"价格配置\"\n"
+        },
+        {
+          "before": "              <template #drag><t-icon name=\"move\" title=\"拖拽排序\" /></template>\n              <template #index=\"{ rowIndex }\">\n                {{ (pagination.current - 1) * pagination.pageSize + rowIndex + 1 }}\n              </template>\n              <template #priceCoefficient=\"{ row }\">{{ formatNumber(row.priceCoefficient, 4) }}</template>\n",
+          "after": "              <template #drag><t-icon name=\"move\" title=\"拖拽排序\" /></template>\n              <template #priceCoefficient=\"{ row }\">{{ formatNumber(row.priceCoefficient, 4) }}</template>\n"
+        },
+        {
+          "before": "  ...(canSort.value ? [{ colKey: 'drag', title: 'dragTitle', width: 28, align: 'left' as const }] : []),\n  { colKey: 'index', title: '序号', width: 80, align: 'left' },\n  { colKey: 'name', title: '门店级别', minWidth: 200, align: 'left' },\n",
+          "after": "  ...(canSort.value ? [{ colKey: 'drag', title: 'dragTitle', width: 28, align: 'left' as const }] : []),\n  { colKey: 'name', title: '门店级别', minWidth: 200, align: 'left' },\n"
         }
       ]
     },

@@ -174,6 +174,7 @@ test('价格配置引用统一门店级别并仅配置系数', async ({ page }) 
   await expect(page.getByRole('main').locator('.page-header')).toHaveCount(0);
   await expect(page.getByText('指导价设置', { exact: true })).toBeVisible();
   await expect(page.getByRole('columnheader', { name: '门店级别' })).toBeVisible();
+  await expect(page.getByRole('columnheader', { name: '序号', exact: true })).toHaveCount(0);
   await expect(page.getByRole('columnheader', { name: '状态' })).toBeVisible();
   await expect(page.locator('thead').getByTitle('拖拽排序')).toBeVisible();
   await expect(page.getByRole('cell', { name: '城市中心店', exact: true })).toBeVisible();

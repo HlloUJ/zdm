@@ -153,7 +153,13 @@ for (const width of [1366, 768, 390]) {
     await page.goto('/store/order-management/settings');
 
     const pager = page.locator('main .t-pagination');
-    const names = page.locator('main .t-table:has(.t-pagination) tbody > tr > td:first-child');
+    const table = page.locator('main .t-table:has(.t-pagination)');
+    await expect(table.getByRole('columnheader').first()).toHaveText('序号');
+    const cells = table.locator('tbody > tr');
+    const numbers = cells.locator('td:first-child');
+    const nameIndex = await table.getByRole('columnheader', { name: '名称', exact: true })
+      .evaluate((header) => (header as HTMLTableCellElement).cellIndex);
+    const names = cells.locator(`td:nth-child(${nameIndex + 1})`);
     const newestFirst = [...paymentNames].reverse();
     await expect(pager.locator('.t-pagination__select input')).toHaveValue('10 条/页');
     await expect(pager.locator('.t-pagination__total')).toHaveText('共 55 条数据');
@@ -164,10 +170,33 @@ for (const width of [1366, 768, 390]) {
       await expect(names).toHaveText(newestFirst.slice(0, size));
       await pager.locator('.t-pagination__btn-next').click();
       await expect(pager.locator('.t-pagination__number.t-is-current')).toHaveText('2');
-      await expect(names).toHaveText(newestFirst.slice(size, 2 * size));
+      const nextPage = newestFirst.slice(size, 2 * size);
+      await expect(names).toHaveText(nextPage);
+      await expect(numbers).toHaveText(nextPage.map((_, i) => String(size + i + 1)));
       await expect(pager.locator('.t-pagination__total')).toHaveText('共 55 条数据');
       await pager.locator('.t-pagination__btn-prev').click();
       await expect(names).toHaveText(newestFirst.slice(0, size));
+      await expect(numbers.first()).toHaveText('1');
     }
   });
 }
+
+test('attribute rows continue across pages with the separate pager', async ({ page }) => {
+  await setup(page);
+  const records = Array.from({ length: 12 }, (_, index) => ({
+    id: 100 + index,
+    name: `测试属性${index + 1}`,
+    scope: 'shared',
+    valueType: 'text',
+    status: 'enabled',
+  }));
+  await page.route('**/api/admin/product-attributes', (route) => route.fulfill({ json: { code: 0, data: records } }));
+  await page.goto('/product-attribute?scope=shared');
+  const table = page.locator('main table');
+  await expect(table.getByRole('columnheader').first()).toHaveText('序号');
+  const numbers = table.locator('tbody tr > td:first-child');
+  await expect(numbers).toHaveText(records.slice(0, 10).map((_, i) => String(i + 1)));
+  await page.locator('main .t-pagination__btn-next').click();
+  await expect(numbers).toHaveText(['11', '12']);
+  await expect(table.locator('tbody tr').first()).toContainText('测试属性11');
+});

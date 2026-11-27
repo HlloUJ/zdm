@@ -245,12 +245,11 @@ test('attribute list paginates without dropping draft rows on save', async ({ pa
   await continueDraft.click();
   const list = page.locator('.attribute-table');
   await expect(list.locator('tbody tr')).toHaveCount(10);
-  await expect(list.locator('tbody tr').first().locator('td').nth(1)).toHaveText('1');
+  await expect(list.locator('tbody tr').first().getByRole('cell', { name: '分页属性1', exact: true })).toBeVisible();
   await expect(list.getByText('分页属性11', { exact: true })).toHaveCount(0);
   await page.locator('.zdm-admin-pagination:visible').getByText('2', { exact: true }).click();
   await expect(list.locator('tbody tr')).toHaveCount(2);
-  await expect(list.locator('tbody tr').first().locator('td').nth(1)).toHaveText('11');
-  await expect(list.getByText('分页属性11', { exact: true })).toBeVisible();
+  await expect(list.locator('tbody tr').first().getByRole('cell', { name: '分页属性11', exact: true })).toBeVisible();
   await list.locator('tbody tr').first().locator('.required-switch').click();
   await expect(page.getByText('修改成功', { exact: true })).toBeVisible();
   const saved = draft.content as Record<string, unknown>[];
@@ -509,13 +508,14 @@ test('published option values show all rows without search pagination or footer 
   ).toHaveCount(0);
 });
 
-test('attribute list and draft show serial numbers and support dragging', async ({ page }) => {
+test('published and draft attributes omit row numbers and retain drag sorting', async ({ page }) => {
   await setup(page);
   await page.goto('/category-attribute-template');
   const table = page.locator('.attribute-table');
-  await expect(table.getByRole('columnheader', { name: '序号', exact: true })).toBeVisible();
+  await expect(table.getByRole('columnheader', { name: '属性名称', exact: true })).toBeVisible();
+  await expect(table.getByRole('columnheader', { name: '序号', exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: '继续编辑草稿', exact: true }).click();
-  await expect(table.getByRole('columnheader', { name: '序号', exact: true })).toBeVisible();
+  await expect(table.getByRole('columnheader', { name: '序号', exact: true })).toHaveCount(0);
   await expect(table.locator('.t-icon-move')).toBeVisible();
 });
 
@@ -531,7 +531,7 @@ test('published drag order saves automatically and survives refresh', async ({ p
   }));
   await page.goto('/category-attribute-template');
   await page.locator('.zdm-admin-pagination:visible').getByText('2', { exact: true }).click();
-  const handles = page.locator('.attribute-table tbody tr td:nth-child(2)');
+  const handles = page.locator('.attribute-table tbody .attribute-drag-cell');
   await handles.first().dragTo(handles.nth(1), { targetPosition: { x: 8, y: 13 } });
   await expect(page.getByText('已调整“字段显示顺序”', { exact: true })).toBeVisible();
   expect((version.content as Array<{ attributeId: number }>)[10]!.attributeId).toBe(1011);
@@ -539,7 +539,7 @@ test('published drag order saves automatically and survives refresh', async ({ p
   await page.reload();
   await page.locator('.zdm-admin-pagination:visible').getByText('2', { exact: true }).click();
   await expect(page.locator('.attribute-table tbody tr').first()).toContainText('拖拽属性12');
-  await expect(page.locator('.attribute-table tbody tr').first().locator('td').nth(1)).toHaveText('11');
+  await expect(page.locator('.attribute-table tbody tr').last()).toContainText('拖拽属性11');
 });
 
 test('failed display order save restores rows', async ({ page }) => {
@@ -550,7 +550,7 @@ test('failed display order save restores rows', async ({ page }) => {
     route.fulfill({ status: 400, json: { code: 400, message: '排序保存失败' } }),
   );
   await page.goto('/category-attribute-template');
-  const handles = page.locator('.attribute-table tbody tr td:nth-child(2)');
+  const handles = page.locator('.attribute-table tbody .attribute-drag-cell');
   await expect
     .poll(() =>
       page

@@ -206,6 +206,8 @@ test('partitioned order cards retain summaries and independently toggle product 
   await page.reload();
   const cards = page.locator('.order-card');
   await expect(cards).toHaveCount(2);
+  await expect(page.locator('.order-card-row > td')).toHaveCount(2);
+  await expect(page.getByRole('main').getByText('序号', { exact: true })).toHaveCount(0);
   const first = page.locator(`[data-order-id="${firstId}"]`),
     second = page.locator(`[data-order-id="${secondId}"]`);
   for (const label of ['客户', '负责人', '创建人', '创建时间', '成交金额', '收款情况', '发货进度', '异常'])

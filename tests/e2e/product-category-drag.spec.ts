@@ -46,6 +46,7 @@ test('sorts siblings, retains children and rejects cross-parent or cross-level d
     await row(from).locator('.category-name-cell').dragTo(target);
   };
   await expect(rows).toHaveCount(2);
+  await expect(page.getByRole('columnheader', { name: '序号', exact: true })).toHaveCount(0);
   await expect(page.getByRole('columnheader', { name: '排序', exact: true })).toHaveCount(0);
   await expect(page.getByText('上移', { exact: true })).toHaveCount(0);
   await expect(page.getByText('下移', { exact: true })).toHaveCount(0);
