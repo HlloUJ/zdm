@@ -1270,13 +1270,17 @@ test('customer requirement uses 180px native ellipsis and hover reveals full tex
   });
   await page.goto('/store/customer-management');
   const row = page.locator('tbody tr').filter({ hasText: '王先生1' });
-  const phoneText = row.getByRole('cell').nth(2).locator('.t-table__ellipsis');
+  const cellFor = async (title: string) => {
+    const header = page.getByRole('main').getByRole('columnheader', { name: title, exact: true });
+    return row.getByRole('cell').nth(await header.evaluate((element) => (element as HTMLTableCellElement).cellIndex));
+  };
+  const phoneText = (await cellFor('联系电话')).locator('.t-table__ellipsis');
   await phoneText.hover();
   const phonePopup = page.locator('.t-popup__content:visible').filter({ hasText: '123456789012345678901234567890' });
   await expect(phonePopup).toBeVisible();
   const phoneBox = (await phoneText.boundingBox())!;
   expect((await phonePopup.boundingBox())!.y).toBeGreaterThanOrEqual(phoneBox.y + phoneBox.height);
-  const cell = row.getByRole('cell').nth(4);
+  const cell = await cellFor('客户需求');
   await expect(cell).toHaveText(requirement);
   expect((await cell.boundingBox())!.width).toBeCloseTo(180, 0);
   const text = cell.locator('.t-table__ellipsis');
@@ -1286,18 +1290,17 @@ test('customer requirement uses 180px native ellipsis and hover reveals full tex
   const popupBox = (await page.locator('.t-popup__content:visible').filter({ hasText: requirement }).boundingBox())!;
   const textBox = (await text.boundingBox())!;
   expect(popupBox.y).toBeGreaterThanOrEqual(textBox.y + textBox.height);
-  const date = row.getByRole('cell').nth(7);
+  const date = await cellFor('创建时间');
   await date.scrollIntoViewIfNeeded();
   const fits = await date
     .locator('.t-table__ellipsis')
     .evaluate((element) => element.scrollWidth <= element.clientWidth);
   expect(fits).toBe(true);
   await expect(date).toHaveText('2026-10-13 10:00');
-  await expect(row.getByRole('cell').nth(5)).toHaveText('2026-10-16 19:30');
+  const lastFollow = await cellFor('最近跟进时间');
+  await expect(lastFollow).toHaveText('2026-10-16 19:30');
   expect(
-    await row
-      .getByRole('cell')
-      .nth(5)
+    await lastFollow
       .locator('.t-table__ellipsis')
       .evaluate((element) => element.scrollWidth <= element.clientWidth),
   ).toBe(true);

@@ -66,6 +66,7 @@ test('switches isolated category types and limits maintenance to three levels', 
   await expect(page.locator('.t-tabs__nav-item').filter({ hasText: '成品现货分类' })).toBeVisible();
   await expect(page.locator('.t-tabs__nav-item').filter({ hasText: '配件分类' })).toBeVisible();
   await expect(page.getByText('其他员工', { exact: true })).toBeVisible();
+  await expect(page.getByRole('columnheader', { name: '序号', exact: true })).toHaveCount(0);
   await expect(page.getByRole('columnheader', { name: '排序', exact: true })).toHaveCount(0);
   const dragIcon = page.locator('tbody [data-category-id]').first();
   await expect(dragIcon).toBeVisible();

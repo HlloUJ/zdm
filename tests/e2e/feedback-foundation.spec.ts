@@ -1290,7 +1290,9 @@ for (const item of deletionCases) {
     if (item.path === '/supplier-management') await setMockBusinessClient(page, 'supply-chain');
     await page.goto(productWarehouseUrl(item.path));
     const row = page.locator('tbody tr').filter({ hasText: item.targetPattern ?? item.target });
-    const targetName = item.targetPattern ? await row.locator('td').first().innerText() : item.target;
+    const targetName = item.targetPattern
+      ? await row.getByRole('cell', { name: item.targetPattern }).innerText()
+      : item.target;
     await row.getByText('删除', { exact: true }).click();
     await page.getByRole('button', { name: '确认删除', exact: true }).click();
     await expect(page.getByText(`已删除“${targetName}”`, { exact: true })).toBeVisible();

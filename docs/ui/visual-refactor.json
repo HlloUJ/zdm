@@ -843,6 +843,12 @@
           "before": "export { default as AdminDialog } from './AdminDialog.vue';\nexport { default as AdminConfirmDialog } from './AdminConfirmDialog.vue';\n",
           "after": "export { default as AdminMediaPreviewDialog } from './AdminMediaPreviewDialog.vue';\nexport { default as AdminDialog } from './AdminDialog.vue';\nexport { default as AdminConfirmDialog } from './AdminConfirmDialog.vue';\n",
           "stage": "before-migrations"
+        },
+        {
+          "task": "021",
+          "reason": "列表行序号展示",
+          "before": "\nexport { useListBatchSelection } from './useListBatchSelection';\n",
+          "after": "\nexport { listRowNumberColumn } from './listRowNumberColumn';\nexport { useListBatchSelection } from './useListBatchSelection';\n"
         }
       ]
     },
@@ -2741,6 +2747,18 @@
           "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
           "before": "import { useDelayedLoading } from '@/composables/useDelayedLoading';\nimport { formConfirmation, operationConfirmation } from '@/components/foundation/actions/confirmation';\nimport { buttonTheme, buttonFunctionFor, cancelButtonProps } from '@/components/foundation/actions/buttonFunctions';\n",
           "after": "import { useDelayedLoading } from '@/composables/useDelayedLoading';\nimport { confirmationQuestion, formConfirmation, operationConfirmation } from '@/components/foundation/actions/confirmation';\nimport { buttonTheme, buttonFunctionFor, cancelButtonProps } from '@/components/foundation/actions/buttonFunctions';\n"
+        },
+        {
+          "task": "021",
+          "reason": "列表行序号展示",
+          "before": "  AdminListPage,\n  AdminFormDialog,\n",
+          "after": "  AdminListPage,\n  listRowNumberColumn,\n  AdminFormDialog,\n"
+        },
+        {
+          "task": "021",
+          "reason": "列表行序号展示",
+          "before": "  { colKey: 'row-select', type: 'multiple', width: 46 },\n  { colKey: 'name', title: '客户姓名', width: 90, ellipsis: true },\n",
+          "after": "  { colKey: 'row-select', type: 'multiple', width: 46 },\n  listRowNumberColumn(),\n  { colKey: 'name', title: '客户姓名', width: 90, ellipsis: true },\n"
         }
       ]
     },
@@ -9562,6 +9580,18 @@
           "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
           "before": "      confirm-function=\"submit\"\n      header=\"新增\"\n      width=\"480px\"\n",
           "after": "      confirm-function=\"submit\"\n      header=\"新增属性\"\n      width=\"480px\"\n"
+        },
+        {
+          "task": "021",
+          "reason": "列表行序号展示",
+          "before": "  AdminListLayout,\n  AdminPagination,\n",
+          "after": "  AdminListLayout,\n  listRowNumberColumn,\n  AdminPagination,\n"
+        },
+        {
+          "task": "021",
+          "reason": "列表行序号展示",
+          "before": "const columns = computed<PrimaryTableCol<TableRowData>[]>(() => [\n  { colKey: 'name', title: '属性名称', minWidth: 260, align: 'left' },\n",
+          "after": "const columns = computed<PrimaryTableCol<TableRowData>[]>(() => [\n  listRowNumberColumn(pagination),\n  { colKey: 'name', title: '属性名称', minWidth: 260, align: 'left' },\n"
         }
       ]
     },
@@ -9758,6 +9788,18 @@
           "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
           "before": "      dialog-class-name=\"zdm-admin-dialog zdm-admin-single-form\"\n      header=\"新增\"\n      width=\"480px\"\n",
           "after": "      dialog-class-name=\"zdm-admin-dialog zdm-admin-single-form\"\n      header=\"新增属性值\"\n      width=\"480px\"\n"
+        },
+        {
+          "task": "021",
+          "reason": "列表行序号展示",
+          "before": "  AdminListLayout,\n  AdminPagination,\n",
+          "after": "  AdminListLayout,\n  listRowNumberColumn,\n  AdminPagination,\n"
+        },
+        {
+          "task": "021",
+          "reason": "列表行序号展示",
+          "before": "const columns = computed<PrimaryTableCol<TableRowData>[]>(() => [\n  { colKey: 'name', title: '属性值名称', minWidth: 190, align: 'left' },\n",
+          "after": "const columns = computed<PrimaryTableCol<TableRowData>[]>(() => [\n  listRowNumberColumn(pagination),\n  { colKey: 'name', title: '属性值名称', minWidth: 190, align: 'left' },\n"
         }
       ]
     },
@@ -10411,6 +10453,18 @@
           "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
           "before": "    >\n    <t-drawer v-model:visible=\"historyVisible\" header=\"版本记录\" size=\"min(760px, 100%)\" :footer=\"false\">\n      <t-table row-key=\"id\" :data=\"versions.filter((v) => v.state === 'published')\" :columns=\"historyColumns\">\n",
           "after": "    >\n    <t-drawer v-model:visible=\"historyVisible\" header=\"属性模板版本记录\" size=\"min(760px, 100%)\" :footer=\"false\">\n      <t-table row-key=\"id\" :data=\"versions.filter((v) => v.state === 'published')\" :columns=\"historyColumns\">\n"
+        },
+        {
+          "task": "021",
+          "reason": "移除用户指定页面的展示序号",
+          "before": "                            >\n                              <template #serialNumber=\"{ rowIndex }\">{{\n                                (attributePage - 1) * attributePageSize + rowIndex + 1\n                              }}</template>\n                              <template #drag><t-icon name=\"move\" /></template>\n",
+          "after": "                            >\n                              <template #drag><t-icon name=\"move\" /></template>\n"
+        },
+        {
+          "task": "021",
+          "reason": "移除用户指定页面的展示序号",
+          "before": "  ...(canSortAttributes.value ? [{ colKey: 'drag', title: '', width: 24, className: 'attribute-drag-cell' }] : []),\n  { colKey: 'serialNumber', title: '序号', width: 80 },\n  { colKey: 'name', title: '属性名称' },\n",
+          "after": "  ...(canSortAttributes.value ? [{ colKey: 'drag', title: '', width: 24, className: 'attribute-drag-cell' }] : []),\n  { colKey: 'name', title: '属性名称' },\n"
         }
       ]
     },

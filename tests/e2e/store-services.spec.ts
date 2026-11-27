@@ -53,6 +53,7 @@ test('门店可新增无图的零元服务，并查看和停用它', async ({ pa
   await expect(row.locator('.t-tag')).toHaveClass(/t-tag--success/);
   await expect(row.getByAltText('默认图片')).toBeVisible();
   await expect(row.getByAltText('默认图片')).toHaveCSS('width', '64px');
+  await expect(page.getByRole('columnheader', { name: '序号', exact: true })).toHaveCount(0);
   await expect(row.getByAltText('默认图片')).toHaveCSS('height', '64px');
   await expect(row.getByRole('cell', { name: '2026/11/24 17:00', exact: true })).toBeVisible();
   const actions = row.getByRole('cell').last();

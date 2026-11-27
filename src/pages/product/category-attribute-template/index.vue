@@ -165,9 +165,6 @@
                               }"
                               @drag-sort="sortAttributes"
                             >
-                              <template #serialNumber="{ rowIndex }">{{
-                                (attributePage - 1) * attributePageSize + rowIndex + 1
-                              }}</template>
                               <template #drag><t-icon name="move" /></template>
                               <template #scope="{ row }">{{ row.scope === 'shared' ? '共享' : '专属' }}</template>
                               <template #valueType="{ row }">{{ typeLabel(row.valueType) }}</template>
@@ -583,7 +580,6 @@ const filterCategory = (node: { data: { name?: string } }) =>
 const typeLabel = (type: string) => ({ select: '下拉选择', number: '数字输入', text: '文本输入' })[type] || type;
 const attributeColumns = computed<PrimaryTableCol<TableRowData>[]>(() => [
   ...(canSortAttributes.value ? [{ colKey: 'drag', title: '', width: 24, className: 'attribute-drag-cell' }] : []),
-  { colKey: 'serialNumber', title: '序号', width: 80 },
   { colKey: 'name', title: '属性名称' },
   { colKey: 'valueType', title: '输入类型', width: 100 },
   {

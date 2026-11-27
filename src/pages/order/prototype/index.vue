@@ -380,6 +380,7 @@ import AdminTopNav from '@/components/AdminTopNav.vue';
 import AdminSideMenu from '@/components/AdminSideMenu.vue';
 import {
   AdminListPage,
+  listRowNumberColumn,
   AdminDetailPage,
   AdminFormDialog,
   AdminConfirmDialog,
@@ -1220,6 +1221,7 @@ const logColumns = [
   { colKey: 'change', title: '前后数据', width: 150 },
 ];
 const taskColumns = [
+  listRowNumberColumn(),
   { colKey: 'orderId', title: '销售订单' },
   { colKey: 'name', title: '商品' },
   { colKey: 'source', title: '执行来源' },
@@ -1231,6 +1233,7 @@ const taskColumns = [
   { colKey: 'operation', title: '操作' },
 ];
 const settingColumns = [
+  listRowNumberColumn(),
   { colKey: 'name', title: '名称' },
   { colKey: 'enabled', title: '状态' },
   { colKey: 'createdByName', title: '创建人' },

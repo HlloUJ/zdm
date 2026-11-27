@@ -22,4 +22,5 @@ export { default as AdminListToolbar } from './AdminListToolbar.vue';
 
 export { default as AdminPhoneInput } from './AdminPhoneInput.vue';
 
+export { listRowNumberColumn } from './listRowNumberColumn';
 export { useListBatchSelection } from './useListBatchSelection';

@@ -146,6 +146,7 @@ import {
   AdminConfirmDialog,
   AdminDialog,
   AdminListLayout,
+  listRowNumberColumn,
   AdminPagination,
 } from '@/components/foundation';
 import { usePermissionTabs } from '@/composables/usePermissionTabs';
@@ -235,6 +236,7 @@ const formRules: Record<string, FormRule[]> = {
   valueType: [{ required: true, message: '请选择值类型', type: 'error' }],
 };
 const columns = computed<PrimaryTableCol<TableRowData>[]>(() => [
+  listRowNumberColumn(pagination),
   { colKey: 'name', title: '属性名称', minWidth: 260, align: 'left' },
   { colKey: 'valueType', title: '值类型', width: 220, align: 'left' },
   { colKey: 'templateCount', title: '被引用次数', width: 190, align: 'left' },

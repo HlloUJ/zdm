@@ -174,11 +174,13 @@ test('价格配置引用统一门店级别并仅配置系数', async ({ page }) 
   await expect(page.getByRole('main').locator('.page-header')).toHaveCount(0);
   await expect(page.getByText('指导价设置', { exact: true })).toBeVisible();
   await expect(page.getByRole('columnheader', { name: '门店级别' })).toBeVisible();
+  await expect(page.getByRole('columnheader', { name: '序号', exact: true })).toBeVisible();
   await expect(page.getByRole('columnheader', { name: '状态' })).toBeVisible();
   await expect(page.locator('thead').getByTitle('拖拽排序')).toBeVisible();
   await expect(page.getByRole('cell', { name: '城市中心店', exact: true })).toBeVisible();
 
   const finishedRow = page.getByRole('row').filter({ hasText: '城市中心店' });
+  await expect(finishedRow.getByRole('cell', { name: '1', exact: true })).toBeVisible();
   const finishedStatusRequest = page.waitForRequest(
     (request) => request.method() === 'PATCH' && request.url().endsWith('/finished-markup-configurations/3/status'),
   );
@@ -244,6 +246,9 @@ test('价格配置引用统一门店级别并仅配置系数', async ({ page }) 
 
   await page.getByText('大板价格配置', { exact: true }).click();
   await checkDecimalEditing(page.locator('.guide-coefficient-input input'));
+  await expect(page.getByRole('columnheader', { name: '序号', exact: true })).toBeVisible();
+  const secondSlabRow = page.getByRole('row').filter({ hasText: '区域合作店' });
+  await expect(secondSlabRow.getByRole('cell', { name: '2', exact: true })).toBeVisible();
   await expect(page.getByRole('columnheader', { name: '状态' })).toBeVisible();
   await expect(page.getByRole('cell', { name: '城市中心店', exact: true })).toBeVisible();
   await expect(page.getByRole('cell', { name: '1.2', exact: true })).toBeVisible();
@@ -280,15 +285,34 @@ test('价格配置引用统一门店级别并仅配置系数', async ({ page }) 
   await expect(page.locator('.zdm-admin-confirm-dialog:visible')).toContainText('是否删除价格配置“区域合作店”？');
 });
 
-test('只有一个 Tab 权限时隐藏 Tab 栏', async ({ page }) => {
+test('只有成品查看权限时隐藏页签栏，序号随实际记录跨页连续', async ({ page }) => {
   await seedLogin(page, ['admin.product-data-center.markup-configuration.finished.view']);
   await mockMarkupConfigurations(page);
+  const records = Array.from({ length: 12 }, (_, index) => ({
+    id: 100 + index,
+    storeLevelId: 50 + index,
+    name: `门店级别${index + 1}`,
+    sortOrder: (index + 1) * 10,
+    priceCoefficient: 1.5,
+    status: 'enabled',
+  }));
+  await page.route('**/api/admin/finished-markup-configurations', (route) =>
+    route.fulfill({ json: { code: 0, data: records } }),
+  );
   await page.goto(productWarehouseUrl('/markup-configuration'));
 
   await expect(page.locator('.t-tabs')).toHaveCount(0);
   await expect(page.getByText('指导价设置', { exact: true })).toBeVisible();
   await expect(page.locator('.guide-coefficient-input input')).toBeDisabled();
   await expect(page.getByRole('button', { name: '确认保存' })).toHaveCount(0);
+  const table = page.getByRole('main').getByRole('table');
+  await expect(table.getByRole('columnheader').first()).toHaveText('序号');
+  const numbers = table.locator('tbody tr > td:first-child');
+  await expect(numbers).toHaveText(records.slice(0, 10).map((_, index) => String(index + 1)));
+  await page.locator('main .t-pagination__btn-next').click();
+  await expect(numbers).toHaveText(['11', '12']);
+  const firstRowOnSecondPage = table.getByRole('row').filter({ hasText: '门店级别11' });
+  await expect(firstRowOnSecondPage.getByRole('cell').first()).toHaveText('11');
 });
 
 test('价格配置无排序和停启权限时隐藏对应操作', async ({ page }) => {

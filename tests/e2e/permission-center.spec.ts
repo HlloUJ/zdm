@@ -76,6 +76,7 @@ test('allows account 15900000001 to operate the granted attribute tab', async ({
   await expect(row).toContainText('韩健');
   await expect(row).toContainText('2026/08/04 09:00');
   await expect(main.locator('thead th')).toContainText([
+    '序号',
     '属性名称',
     '值类型',
     '被引用次数',
@@ -138,6 +139,7 @@ test('allows account 15900000001 to operate the granted attribute-value tab', as
   await expect(row).toContainText('韩健');
   await expect(row).toContainText('2026/08/04 09:20');
   await expect(main.locator('thead th')).toContainText([
+    '序号',
     '属性值名称',
     '所属属性',
     '被引用次数',
