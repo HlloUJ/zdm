@@ -90,6 +90,9 @@
             >
               <template #dragTitle><t-icon name="move" title="拖拽排序" /></template>
               <template #drag><t-icon name="move" title="拖拽排序" /></template>
+              <template #index="{ rowIndex }">
+                {{ (pagination.current - 1) * pagination.pageSize + rowIndex + 1 }}
+              </template>
               <template #priceCoefficient="{ row }">{{ formatNumber(row.priceCoefficient, 4) }}</template>
               <template #status="{ row }">
                 <t-tag :theme="row.status === 'enabled' ? 'success' : 'danger'" variant="light">
@@ -343,6 +346,7 @@ const appliedSearchForm = reactive({ ...searchForm });
 const pagination = reactive({ current: 1, pageSize: 10 });
 const columns = computed<PrimaryTableCol<TableRowData>[]>(() => [
   ...(canSort.value ? [{ colKey: 'drag', title: 'dragTitle', width: 28, align: 'left' as const }] : []),
+  { colKey: 'index', title: '序号', width: 80, align: 'left' },
   { colKey: 'name', title: '门店级别', minWidth: 200, align: 'left' },
   { colKey: 'priceCoefficient', title: '价格系数', width: 130 },
   { colKey: 'status', title: '状态', width: 100 },

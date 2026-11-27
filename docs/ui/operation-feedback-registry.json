@@ -1057,7 +1057,7 @@
       }
     },
     "src/pages/product/markup-configuration/index.vue": {
-      "script": "62db0152b009f83af41e0e53764baf44788b10c380fe4b77df0efb72ab024481",
+      "script": "cd4a34874cb7d2f96d210db30897258c2950167b70991d9eafeeb8684d72a5b2",
       "actions": {
         "cancel → closeForm": "view",
         "cancel → confirmVisible = false": "view",
@@ -4159,7 +4159,7 @@
     },
     "src/pages/product/markup-configuration/index.vue": {
       "baseSha256": "d69caf8ea2cc461065afd84d0232145b6ef6b919127078c5b2dad73b2b6f297e",
-      "patchCount": 30,
+      "patchCount": 28,
       "patches": [
         {
           "stage": "before-migrations",
@@ -4290,14 +4290,6 @@
         {
           "before": "      action=\"删除\"\n      object-type=\"价格配置\"\n",
           "after": "      action=\"删除\"\n      :title=\"`是否删除${commodityLabel}价格配置？`\"\n      object-type=\"价格配置\"\n"
-        },
-        {
-          "before": "              <template #drag><t-icon name=\"move\" title=\"拖拽排序\" /></template>\n              <template #index=\"{ rowIndex }\">\n                {{ (pagination.current - 1) * pagination.pageSize + rowIndex + 1 }}\n              </template>\n              <template #priceCoefficient=\"{ row }\">{{ formatNumber(row.priceCoefficient, 4) }}</template>\n",
-          "after": "              <template #drag><t-icon name=\"move\" title=\"拖拽排序\" /></template>\n              <template #priceCoefficient=\"{ row }\">{{ formatNumber(row.priceCoefficient, 4) }}</template>\n"
-        },
-        {
-          "before": "  ...(canSort.value ? [{ colKey: 'drag', title: 'dragTitle', width: 28, align: 'left' as const }] : []),\n  { colKey: 'index', title: '序号', width: 80, align: 'left' },\n  { colKey: 'name', title: '门店级别', minWidth: 200, align: 'left' },\n",
-          "after": "  ...(canSort.value ? [{ colKey: 'drag', title: 'dragTitle', width: 28, align: 'left' as const }] : []),\n  { colKey: 'name', title: '门店级别', minWidth: 200, align: 'left' },\n"
         }
       ]
     },

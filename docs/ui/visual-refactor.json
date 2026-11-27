@@ -10692,18 +10692,6 @@
           "reason": "按已确认的业务操作与弹窗标题命名规范明确动作、对象和步骤",
           "before": "      action=\"删除\"\n      object-type=\"价格配置\"\n",
           "after": "      action=\"删除\"\n      :title=\"`是否删除${commodityLabel}价格配置？`\"\n      object-type=\"价格配置\"\n"
-        },
-        {
-          "task": "021",
-          "reason": "移除用户指定页面的展示序号",
-          "before": "              <template #drag><t-icon name=\"move\" title=\"拖拽排序\" /></template>\n              <template #index=\"{ rowIndex }\">\n                {{ (pagination.current - 1) * pagination.pageSize + rowIndex + 1 }}\n              </template>\n              <template #priceCoefficient=\"{ row }\">{{ formatNumber(row.priceCoefficient, 4) }}</template>\n",
-          "after": "              <template #drag><t-icon name=\"move\" title=\"拖拽排序\" /></template>\n              <template #priceCoefficient=\"{ row }\">{{ formatNumber(row.priceCoefficient, 4) }}</template>\n"
-        },
-        {
-          "task": "021",
-          "reason": "移除用户指定页面的展示序号",
-          "before": "  ...(canSort.value ? [{ colKey: 'drag', title: 'dragTitle', width: 28, align: 'left' as const }] : []),\n  { colKey: 'index', title: '序号', width: 80, align: 'left' },\n  { colKey: 'name', title: '门店级别', minWidth: 200, align: 'left' },\n",
-          "after": "  ...(canSort.value ? [{ colKey: 'drag', title: 'dragTitle', width: 28, align: 'left' as const }] : []),\n  { colKey: 'name', title: '门店级别', minWidth: 200, align: 'left' },\n"
         }
       ],
       "approvedVisualPatches": [
